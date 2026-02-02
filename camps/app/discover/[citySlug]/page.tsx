@@ -80,7 +80,6 @@ export default function DiscoverPage() {
   const [selectedLocations, setSelectedLocations] = useState<string[]>(() => getInitialState().selectedLocations);
   const [maxDistanceMiles, setMaxDistanceMiles] = useState<number | undefined>(() => getInitialState().maxDistanceMiles);
   const [sortBy, setSortBy] = useState<'date' | 'price-low' | 'price-high' | 'spots' | 'distance'>('date');
-  const [showAllOrgs, setShowAllOrgs] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
   // Ref for results section and initial render tracking
@@ -251,28 +250,26 @@ export default function DiscoverPage() {
     return counts;
   }, [sessions]);
 
-  // Filter locations based on selected organizations
-  // If orgs are selected, only show locations used by those orgs' sessions
+  // Filter locations to only show those with sessions in current results
+  // (based on date/age/org filters already applied)
   const relevantLocations = useMemo(() => {
-    if (!allLocations) return [];
+    if (!allLocations || !sessions) return [];
 
-    // If no organizations selected, show all locations
-    if (selectedOrganizations.length === 0) {
-      return allLocations;
-    }
+    // Get location IDs that have at least one session in current results
+    const locationsWithSessions = new Set<string>();
 
-    // Get location IDs from sessions that match selected organizations
-    if (!sessions) return [];
-    const relevantLocationIds = new Set<string>();
-    sessions.forEach((s) => {
-      if (selectedOrganizations.includes(s.organizationId)) {
-        relevantLocationIds.add(s.locationId);
-      }
-    });
+    // If org filter is active, only count sessions from selected orgs
+    const sessionsToCount = selectedOrganizations.length === 0
+      ? sessions
+      : sessions.filter((s) => selectedOrganizations.includes(s.organizationId));
 
-    // Filter locations to only those used by selected orgs
-    return allLocations.filter((loc) => relevantLocationIds.has(loc._id));
-  }, [allLocations, sessions, selectedOrganizations]);
+    sessionsToCount.forEach((s) => locationsWithSessions.add(s.locationId));
+
+    // Also include any currently selected locations (so they don't disappear)
+    selectedLocations.forEach((locId) => locationsWithSessions.add(locId));
+
+    return allLocations.filter((loc) => locationsWithSessions.has(loc._id));
+  }, [allLocations, sessions, selectedOrganizations, selectedLocations]);
 
   // Loading state
   if (city === undefined) {
@@ -838,21 +835,15 @@ export default function DiscoverPage() {
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                    Filter by Organization
+                    Filter by Organization ({allOrganizations.filter(org => (sessionCountsByOrg.get(org._id) || 0) > 0 || selectedOrganizations.includes(org._id)).length})
                   </p>
-                  {allOrganizations.length > 6 && (
-                    <button
-                      type="button"
-                      onClick={() => setShowAllOrgs(!showAllOrgs)}
-                      aria-expanded={showAllOrgs}
-                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                    >
-                      {showAllOrgs ? 'Show less' : `Show all ${allOrganizations.length}`}
-                    </button>
-                  )}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {(showAllOrgs ? allOrganizations : allOrganizations.slice(0, 6)).map((org) => {
+                  {allOrganizations.filter(org => {
+                    const sessionCount = sessionCountsByOrg.get(org._id) || 0;
+                    // Show org if it has sessions OR if it's currently selected
+                    return sessionCount > 0 || selectedOrganizations.includes(org._id);
+                  }).map((org) => {
                     const sessionCount = sessionCountsByOrg.get(org._id) || 0;
                     return (
                       <button
