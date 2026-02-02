@@ -288,6 +288,63 @@ export default function DiscoverPage() {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Date Range
                 </label>
+                {/* Quick date presets */}
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  <QuickDateButton
+                    label="This Week"
+                    onClick={() => {
+                      const { start, end } = getThisWeekDates();
+                      setStartDateAfter(start);
+                      setStartDateBefore(end);
+                    }}
+                    isActive={isThisWeekSelected(startDateAfter, startDateBefore)}
+                  />
+                  <QuickDateButton
+                    label="Next Week"
+                    onClick={() => {
+                      const { start, end } = getNextWeekDates();
+                      setStartDateAfter(start);
+                      setStartDateBefore(end);
+                    }}
+                    isActive={isNextWeekSelected(startDateAfter, startDateBefore)}
+                  />
+                  <QuickDateButton
+                    label="June"
+                    onClick={() => {
+                      const year = new Date().getFullYear();
+                      setStartDateAfter(`${year}-06-01`);
+                      setStartDateBefore(`${year}-06-30`);
+                    }}
+                    isActive={startDateAfter.endsWith('-06-01') && startDateBefore.endsWith('-06-30')}
+                  />
+                  <QuickDateButton
+                    label="July"
+                    onClick={() => {
+                      const year = new Date().getFullYear();
+                      setStartDateAfter(`${year}-07-01`);
+                      setStartDateBefore(`${year}-07-31`);
+                    }}
+                    isActive={startDateAfter.endsWith('-07-01') && startDateBefore.endsWith('-07-31')}
+                  />
+                  <QuickDateButton
+                    label="August"
+                    onClick={() => {
+                      const year = new Date().getFullYear();
+                      setStartDateAfter(`${year}-08-01`);
+                      setStartDateBefore(`${year}-08-31`);
+                    }}
+                    isActive={startDateAfter.endsWith('-08-01') && startDateBefore.endsWith('-08-31')}
+                  />
+                  <QuickDateButton
+                    label="All Summer"
+                    onClick={() => {
+                      const year = new Date().getFullYear();
+                      setStartDateAfter(`${year}-06-01`);
+                      setStartDateBefore(`${year}-08-31`);
+                    }}
+                    isActive={startDateAfter.endsWith('-06-01') && startDateBefore.endsWith('-08-31')}
+                  />
+                </div>
                 <div className="space-y-2">
                   <div>
                     <label className="text-xs text-slate-500 dark:text-slate-400">From</label>
@@ -1097,6 +1154,68 @@ function calculateDisplayAge(birthdate: string): string {
     age--;
   }
   return `${age} years old`;
+}
+
+// Date helpers for quick filters
+function getThisWeekDates() {
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const start = new Date(today);
+  start.setDate(today.getDate() - dayOfWeek + 1); // Monday
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6); // Sunday
+  return {
+    start: start.toISOString().split('T')[0],
+    end: end.toISOString().split('T')[0],
+  };
+}
+
+function getNextWeekDates() {
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const start = new Date(today);
+  start.setDate(today.getDate() - dayOfWeek + 8); // Next Monday
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6); // Next Sunday
+  return {
+    start: start.toISOString().split('T')[0],
+    end: end.toISOString().split('T')[0],
+  };
+}
+
+function isThisWeekSelected(startDate: string, endDate: string): boolean {
+  const { start, end } = getThisWeekDates();
+  return startDate === start && endDate === end;
+}
+
+function isNextWeekSelected(startDate: string, endDate: string): boolean {
+  const { start, end } = getNextWeekDates();
+  return startDate === start && endDate === end;
+}
+
+// Quick date filter button component
+function QuickDateButton({
+  label,
+  onClick,
+  isActive,
+}: {
+  label: string;
+  onClick: () => void;
+  isActive: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`px-2 py-1 text-xs rounded-md font-medium transition-colors ${
+        isActive
+          ? 'bg-blue-600 text-white'
+          : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+      }`}
+    >
+      {label}
+    </button>
+  );
 }
 
 // Icons
