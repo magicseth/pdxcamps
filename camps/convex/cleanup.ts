@@ -275,3 +275,48 @@ export const countRecords = mutation({
     };
   },
 });
+
+/**
+ * Sync organization websites from scrape sources
+ * Copies the URL from scrape sources to organizations that have <UNKNOWN> or missing websites
+ */
+export const syncOrgWebsitesFromSources = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const scrapeSources = await ctx.db.query("scrapeSources").collect();
+    const organizations = await ctx.db.query("organizations").collect();
+
+    let updated = 0;
+    const updates: Array<{ orgName: string; website: string }> = [];
+
+    for (const source of scrapeSources) {
+      if (!source.organizationId || !source.url) continue;
+
+      const org = organizations.find((o) => o._id === source.organizationId);
+      if (!org) continue;
+
+      // Check if org needs website update
+      const needsUpdate =
+        !org.website ||
+        org.website === "<UNKNOWN>" ||
+        org.website === "UNKNOWN" ||
+        !org.website.startsWith("http");
+
+      if (needsUpdate) {
+        // Extract base domain from source URL
+        try {
+          const url = new URL(source.url);
+          const website = url.origin;
+
+          await ctx.db.patch(org._id, { website });
+          updated++;
+          updates.push({ orgName: org.name, website });
+        } catch {
+          // Invalid URL, skip
+        }
+      }
+    }
+
+    return { updated, updates };
+  },
+});
