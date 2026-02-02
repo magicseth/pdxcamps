@@ -248,8 +248,12 @@ function PlannerHub({
     // Count unique registrations (registered status)
     const registeredSessionIds = new Set<string>();
     const interestedSessionIds = new Set<string>();
+    let totalGaps = 0;
     for (const week of coverage) {
       for (const child of week.childCoverage) {
+        if (child.status === 'gap') {
+          totalGaps++;
+        }
         for (const reg of child.registrations) {
           if (reg.status === 'registered') {
             registeredSessionIds.add(reg.sessionId);
@@ -267,6 +271,7 @@ function PlannerHub({
       coverage: totalWeeks > 0 ? Math.round((fullyPlannedWeeks / totalWeeks) * 100) : 0,
       registeredCount: registeredSessionIds.size,
       savedCount: interestedSessionIds.size,
+      totalGaps,
     };
   }, [coverage]);
 
@@ -309,11 +314,16 @@ function PlannerHub({
                     <div className="text-3xl font-bold">{stats.fullyPlannedWeeks}</div>
                     <div className="text-sm text-blue-100">Weeks Covered</div>
                   </div>
-                  <div>
+                  <div title={stats.totalGaps > 0 ? `${stats.totalGaps} child-weeks need camps` : 'All covered!'}>
                     <div className={`text-3xl font-bold ${stats.weeksWithGaps > 0 ? 'text-yellow-300' : ''}`}>
                       {stats.weeksWithGaps}
                     </div>
-                    <div className="text-sm text-blue-100">Gaps to Fill</div>
+                    <div className="text-sm text-blue-100">
+                      Gaps to Fill
+                      {stats.totalGaps > stats.weeksWithGaps && (
+                        <span className="text-blue-200/70"> ({stats.totalGaps} slots)</span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 {/* Visual progress bar */}
