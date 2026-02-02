@@ -1,10 +1,10 @@
 export default function DiscoverLoading() {
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+    <div role="status" aria-live="polite" className="min-h-screen bg-slate-50 dark:bg-slate-900">
       {/* Header skeleton */}
       <div className="sticky top-0 z-10 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-4">
         <div className="max-w-6xl mx-auto">
-          <div className="h-8 w-48 bg-slate-200 dark:bg-slate-700 rounded animate-pulse motion-reduce:animate-none" />
+          <div className="h-8 w-48 bg-slate-200 dark:bg-slate-700 rounded animate-pulse motion-reduce:animate-none" aria-hidden="true" />
         </div>
       </div>
 
@@ -16,6 +16,7 @@ export default function DiscoverLoading() {
             <div
               key={i}
               className="h-8 w-24 bg-slate-200 dark:bg-slate-700 rounded-full animate-pulse motion-reduce:animate-none flex-shrink-0"
+              aria-hidden="true"
             />
           ))}
         </div>
@@ -26,6 +27,7 @@ export default function DiscoverLoading() {
             <div
               key={i}
               className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden"
+              aria-hidden="true"
             >
               <div className="h-32 bg-slate-200 dark:bg-slate-700 animate-pulse motion-reduce:animate-none" />
               <div className="p-4 space-y-3">
@@ -37,6 +39,7 @@ export default function DiscoverLoading() {
           ))}
         </div>
       </div>
+      <span className="sr-only">Loading camps...</span>
     </div>
   );
 }
