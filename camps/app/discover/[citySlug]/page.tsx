@@ -236,6 +236,18 @@ export default function DiscoverPage() {
     selectedOrganizations.length > 0 ||
     selectedLocations.length > 0;
 
+  // Count active filters for the badge
+  const activeFilterCount =
+    (startDateAfter ? 1 : 0) +
+    (startDateBefore ? 1 : 0) +
+    selectedCategories.length +
+    (maxPrice !== undefined ? 1 : 0) +
+    (hideSoldOut ? 1 : 0) +
+    (childAge !== undefined ? 1 : 0) +
+    (childGrade !== undefined ? 1 : 0) +
+    selectedOrganizations.length +
+    selectedLocations.length;
+
   const handleOrganizationToggle = (orgId: string) => {
     setSelectedOrganizations((prev) =>
       prev.includes(orgId) ? prev.filter((id) => id !== orgId) : [...prev, orgId]
@@ -273,8 +285,10 @@ export default function DiscoverPage() {
               >
                 <FilterIcon />
                 Filters
-                {hasActiveFilters && (
-                  <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
+                {activeFilterCount > 0 && (
+                  <span className="min-w-5 h-5 px-1 bg-blue-600 text-white text-xs font-medium rounded-full flex items-center justify-center">
+                    {activeFilterCount}
+                  </span>
                 )}
               </button>
               <Link href="/settings" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
