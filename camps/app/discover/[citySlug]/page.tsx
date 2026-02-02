@@ -552,6 +552,7 @@ export default function DiscoverPage() {
                     <input
                       id="discover-child-age"
                       type="number"
+                      inputMode="numeric"
                       min={3}
                       max={18}
                       value={childAge ?? ''}
@@ -629,6 +630,7 @@ export default function DiscoverPage() {
                   <span className="text-slate-500">$</span>
                   <input
                     type="number"
+                    inputMode="numeric"
                     min={0}
                     step={50}
                     value={maxPrice ?? ''}
