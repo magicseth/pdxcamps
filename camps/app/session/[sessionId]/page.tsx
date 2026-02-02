@@ -7,6 +7,7 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Id } from '../../../convex/_generated/dataModel';
 import { OrgLogo } from '../../../components/shared/OrgLogo';
+import { BottomNav } from '../../../components/shared/BottomNav';
 
 // Grade mapping for display
 const GRADE_LABELS: Record<number, string> = {
@@ -670,6 +671,8 @@ export default function SessionDetailPage() {
           onClose={() => setShowWaitlistModal(false)}
         />
       )}
+
+      <BottomNav />
     </div>
   );
 }

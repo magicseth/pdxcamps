@@ -9,6 +9,7 @@ import { Id } from '../../../../convex/_generated/dataModel';
 import { Authenticated, Unauthenticated } from 'convex/react';
 import { ChildCoverageCard } from '../../../../components/planner/ChildCoverageCard';
 import { AddEventModal } from '../../../../components/planner/AddEventModal';
+import { BottomNav } from '../../../../components/shared/BottomNav';
 import { calculateAge, isAgeInRange, isGradeInRange, doDateRangesOverlap } from '../../../../convex/lib/helpers';
 
 export default function WeekDetailPage() {
@@ -43,6 +44,8 @@ export default function WeekDetailPage() {
           </div>
         </Unauthenticated>
       </main>
+
+      <BottomNav />
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Id } from '../../../convex/_generated/dataModel';
 import { OrgLogo } from '../../../components/shared/OrgLogo';
+import { BottomNav } from '../../../components/shared/BottomNav';
 
 // Categories for filtering
 const CATEGORIES = [
@@ -489,6 +490,8 @@ export default function DiscoverPage() {
           </main>
         </div>
       </div>
+
+      <BottomNav citySlug={citySlug} />
     </div>
   );
 }
