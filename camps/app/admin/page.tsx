@@ -43,14 +43,15 @@ function AdminContent() {
   if (isAdmin === undefined) {
     return (
       <div className="max-w-4xl mx-auto py-8">
-        <div className="animate-pulse motion-reduce:animate-none space-y-6">
-          <div className="h-8 w-48 bg-slate-200 dark:bg-slate-700 rounded"></div>
+        <div role="status" aria-live="polite" className="animate-pulse motion-reduce:animate-none space-y-6">
+          <div className="h-8 w-48 bg-slate-200 dark:bg-slate-700 rounded" aria-hidden="true"></div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-24 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+              <div key={i} className="h-24 bg-slate-200 dark:bg-slate-700 rounded-lg" aria-hidden="true"></div>
             ))}
           </div>
-          <div className="h-64 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+          <div className="h-64 bg-slate-200 dark:bg-slate-700 rounded-lg" aria-hidden="true"></div>
+          <span className="sr-only">Loading admin dashboard...</span>
         </div>
       </div>
     );
@@ -76,14 +77,15 @@ function AdminContent() {
   if (dashboard === undefined) {
     return (
       <div className="max-w-6xl mx-auto">
-        <div className="animate-pulse motion-reduce:animate-none space-y-4">
-          <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-48"></div>
+        <div role="status" aria-live="polite" className="animate-pulse motion-reduce:animate-none space-y-4">
+          <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-48" aria-hidden="true"></div>
           <div className="grid grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-24 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+              <div key={i} className="h-24 bg-slate-200 dark:bg-slate-700 rounded-lg" aria-hidden="true"></div>
             ))}
           </div>
-          <div className="h-96 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+          <div className="h-96 bg-slate-200 dark:bg-slate-700 rounded-lg" aria-hidden="true"></div>
+          <span className="sr-only">Loading dashboard data...</span>
         </div>
       </div>
     );
