@@ -1309,13 +1309,21 @@ function SessionCard({
 
   const categoryStyle = getCategoryStyle(camp?.categories);
 
+  // Urgency indicator class based on spots left
+  const getUrgencyClass = () => {
+    if (isSoldOut) return '';
+    if (spotsLeft <= 2) return 'ring-2 ring-red-400 dark:ring-red-500';
+    if (spotsLeft <= 5) return 'ring-2 ring-orange-400 dark:ring-orange-500';
+    return '';
+  };
+
   return (
     <>
       <div className={`bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden transition-all duration-200 ${
         isSoldOut
           ? 'opacity-60 grayscale-[30%]'
           : 'hover:shadow-lg hover:-translate-y-0.5'
-      }`}>
+      } ${getUrgencyClass()}`}>
         {/* Camp Image or Category Placeholder */}
         <div className="relative h-32 overflow-hidden group">
           {campImageUrl ? (
