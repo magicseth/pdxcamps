@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { CoverageChip, CoverageStatus } from './CoverageIndicator';
 import { Id } from '../../convex/_generated/dataModel';
@@ -40,6 +41,7 @@ interface WeekRowProps {
 
 export function WeekRow({ data, isFirstOfMonth = false }: WeekRowProps) {
   const { week, childCoverage, hasGap } = data;
+  const rowRef = useRef<HTMLDivElement>(null);
 
   // Find if there's a shared family event (same event for all children)
   const sharedEvent = findSharedEvent(childCoverage);
@@ -50,8 +52,22 @@ export function WeekRow({ data, isFirstOfMonth = false }: WeekRowProps) {
   const weekEnd = new Date(week.endDate + 'T23:59:59');
   const isCurrentWeek = today >= weekStart && today <= weekEnd;
 
+  // Auto-scroll to current week on mount
+  useEffect(() => {
+    if (isCurrentWeek && rowRef.current) {
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        rowRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      }, 100);
+    }
+  }, [isCurrentWeek]);
+
   return (
     <div
+      ref={rowRef}
       className={`flex items-center gap-4 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${
         isFirstOfMonth ? 'border-t border-slate-200 dark:border-slate-700' : ''
       } ${isCurrentWeek ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500' : ''}`}
