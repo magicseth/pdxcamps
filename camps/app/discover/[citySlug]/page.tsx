@@ -382,9 +382,11 @@ export default function DiscoverPage() {
                   {hasActiveFilters && (
                     <button
                       onClick={clearFilters}
-                      className="text-sm text-blue-600 hover:text-blue-700"
+                      className={`text-sm text-blue-600 hover:text-blue-700 ${
+                        activeFilterCount > 3 ? 'font-medium animate-pulse motion-reduce:animate-none' : ''
+                      }`}
                     >
-                      Clear all
+                      Clear all {activeFilterCount > 3 && `(${activeFilterCount})`}
                     </button>
                   )}
                 </div>
