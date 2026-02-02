@@ -498,7 +498,7 @@ function ShareCalendarModal({
                 <button
                   onClick={handleRevoke}
                   disabled={isSubmitting}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50"
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Stop Sharing
                 </button>
@@ -708,7 +708,7 @@ function CalendarSharingSettings() {
                 <button
                   onClick={() => handleRevoke(share.shareId, share.sharedWith?.displayName || 'this friend')}
                   disabled={processingId === share.shareId}
-                  className="px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 disabled:opacity-50"
+                  className="px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {processingId === share.shareId ? 'Revoking...' : 'Revoke Access'}
                 </button>
