@@ -353,6 +353,7 @@ export default function DiscoverPage() {
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className="md:hidden flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 rounded-lg text-sm"
+                title="Toggle filters (F key)"
               >
                 <FilterIcon />
                 <span>
