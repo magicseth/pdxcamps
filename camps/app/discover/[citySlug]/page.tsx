@@ -485,8 +485,9 @@ export default function DiscoverPage() {
                     Today: {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                   </div>
                   <div>
-                    <label className="text-xs text-slate-500 dark:text-slate-400">From</label>
+                    <label htmlFor="discover-date-from" className="text-xs text-slate-500 dark:text-slate-400">From</label>
                     <input
+                      id="discover-date-from"
                       type="date"
                       value={startDateAfter}
                       onChange={(e) => setStartDateAfter(e.target.value)}
@@ -495,8 +496,9 @@ export default function DiscoverPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-slate-500 dark:text-slate-400">To</label>
+                    <label htmlFor="discover-date-to" className="text-xs text-slate-500 dark:text-slate-400">To</label>
                     <input
+                      id="discover-date-to"
                       type="date"
                       value={startDateBefore}
                       onChange={(e) => setStartDateBefore(e.target.value)}
