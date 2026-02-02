@@ -16,7 +16,21 @@ export const listOrganizations = query({
       .collect();
 
     // Filter to organizations that operate in the specified city
-    return organizations.filter((org) => org.cityIds.includes(args.cityId));
+    const cityOrgs = organizations.filter((org) => org.cityIds.includes(args.cityId));
+
+    // Resolve logo URLs from storage
+    return Promise.all(
+      cityOrgs.map(async (org) => {
+        let resolvedLogoUrl: string | null = null;
+        if (org.logoStorageId) {
+          resolvedLogoUrl = await ctx.storage.getUrl(org.logoStorageId);
+        }
+        return {
+          ...org,
+          logoUrl: resolvedLogoUrl,
+        };
+      })
+    );
   },
 });
 
@@ -28,7 +42,19 @@ export const getOrganization = query({
     organizationId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.organizationId);
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) return null;
+
+    // Resolve logo URL from storage
+    let resolvedLogoUrl: string | null = null;
+    if (org.logoStorageId) {
+      resolvedLogoUrl = await ctx.storage.getUrl(org.logoStorageId);
+    }
+
+    return {
+      ...org,
+      logoUrl: resolvedLogoUrl,
+    };
   },
 });
 

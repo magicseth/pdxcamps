@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import Image from 'next/image';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Id } from '../../../convex/_generated/dataModel';
+import { OrgLogo } from '../../../components/shared/OrgLogo';
 
 // Categories for filtering
 const CATEGORIES = [
@@ -402,13 +402,7 @@ export default function DiscoverPage() {
                           : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
                       }`}
                     >
-                      {org.logoUrl && (
-                        <img
-                          src={org.logoUrl}
-                          alt=""
-                          className="w-4 h-4 rounded-full object-contain"
-                        />
-                      )}
+                      <OrgLogo url={org.logoUrl} name={org.name} size="xs" />
                       {org.name}
                       {selectedOrganizations.includes(org._id) && (
                         <span className="ml-1">✕</span>
@@ -678,15 +672,9 @@ function SessionCard({
             {statusBadge.label}
           </span>
           {/* Organization logo overlay */}
-          {organization?.logoUrl &&
-           organization.logoUrl !== '<UNKNOWN>' &&
-           organization.logoUrl.startsWith('http') && (
+          {organization?.logoUrl && (
             <div className="absolute bottom-2 left-2 w-10 h-10 rounded-lg bg-white dark:bg-slate-800 shadow-md flex items-center justify-center overflow-hidden">
-              <img
-                src={organization.logoUrl}
-                alt={organization.name}
-                className="w-8 h-8 object-contain"
-              />
+              <OrgLogo url={organization.logoUrl} name={organization.name} size="md" />
             </div>
           )}
         </div>

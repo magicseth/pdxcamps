@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Id } from '../../../convex/_generated/dataModel';
+import { OrgLogo } from '../../../components/shared/OrgLogo';
 
 // Grade mapping for display
 const GRADE_LABELS: Record<number, string> = {
@@ -299,11 +300,7 @@ export default function SessionDetailPage() {
               />
               {organization?.resolvedLogoUrl && (
                 <div className="absolute bottom-4 left-4 w-16 h-16 bg-white dark:bg-slate-800 rounded-lg shadow-lg p-2 flex items-center justify-center">
-                  <img
-                    src={organization.resolvedLogoUrl}
-                    alt={organization.name}
-                    className="w-full h-full object-contain"
-                  />
+                  <OrgLogo url={organization.resolvedLogoUrl} name={organization.name} size="lg" className="w-full h-full" />
                 </div>
               )}
             </div>
@@ -314,11 +311,7 @@ export default function SessionDetailPage() {
                 <div className="flex items-center gap-3">
                   {!camp?.resolvedImageUrl && organization?.resolvedLogoUrl && (
                     <div className="w-12 h-12 bg-slate-100 dark:bg-slate-700 rounded-lg p-1.5 flex items-center justify-center flex-shrink-0">
-                      <img
-                        src={organization.resolvedLogoUrl}
-                        alt={organization.name}
-                        className="w-full h-full object-contain"
-                      />
+                      <OrgLogo url={organization.resolvedLogoUrl} name={organization.name} size="lg" className="w-full h-full" />
                     </div>
                   )}
                   <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Id } from '../../convex/_generated/dataModel';
 import { CoverageStatus } from './CoverageIndicator';
+import { OrgLogo } from '../shared/OrgLogo';
 
 interface Registration {
   registrationId: Id<'registrations'>;
@@ -118,13 +119,7 @@ export function ChildCoverageCard({
         </div>
         {!hasGap && registeredCamps.length > 0 && (
           <span className="text-xs text-green-700 dark:text-green-300 font-medium flex items-center gap-1.5">
-            {registeredCamps[0].organization?.logoUrl && (
-              <img
-                src={registeredCamps[0].organization.logoUrl}
-                alt=""
-                className="w-4 h-4 object-contain rounded-sm"
-              />
-            )}
+            <OrgLogo url={registeredCamps[0].organization?.logoUrl} size="xs" />
             {registeredCamps[0].camp?.name}
           </span>
         )}
@@ -143,13 +138,7 @@ export function ChildCoverageCard({
             <div className="mb-2 pb-2 border-b border-slate-200 dark:border-slate-700 space-y-1">
               {tentativeCamps.map((reg) => (
                 <div key={reg.registrationId} className="flex items-center gap-2 text-xs py-1">
-                  {reg.organization?.logoUrl && (
-                    <img
-                      src={reg.organization.logoUrl}
-                      alt=""
-                      className="w-5 h-5 object-contain rounded-sm flex-shrink-0"
-                    />
-                  )}
+                  <OrgLogo url={reg.organization?.logoUrl} size="xs" />
                   <span className="text-slate-700 dark:text-slate-300 flex-1 truncate">{reg.camp?.name}</span>
                   <span className={`px-1.5 py-0.5 rounded text-xs flex-shrink-0 ${
                     reg.status === 'waitlisted' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'

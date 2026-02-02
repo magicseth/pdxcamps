@@ -1,5 +1,7 @@
 'use client';
 
+import { OrgLogo } from '../shared/OrgLogo';
+
 export type CoverageStatus = 'full' | 'partial' | 'gap' | 'tentative' | 'event';
 
 interface CoverageIndicatorProps {
@@ -99,19 +101,18 @@ export function CoverageChip({ status, childName, eventTitle, campName, organiza
     event: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
   };
 
+  const hasLogo = organizationLogoUrl && organizationLogoUrl.startsWith('http');
+
   return (
     <span
       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm ${bgColors[status]}`}
       title={campName ? `${childName}: ${campName}` : `${childName}: ${config.title}`}
     >
-      {organizationLogoUrl && (
-        <img
-          src={organizationLogoUrl}
-          alt=""
-          className="w-4 h-4 object-contain rounded-sm"
-        />
+      {hasLogo ? (
+        <OrgLogo url={organizationLogoUrl} size="xs" />
+      ) : (
+        <span>{config.icon}</span>
       )}
-      {!organizationLogoUrl && <span>{config.icon}</span>}
       <span className="font-medium">{childName}</span>
     </span>
   );
