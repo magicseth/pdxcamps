@@ -1802,10 +1802,13 @@ function SaveSessionModal({
           onClose();
         }
       }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="save-camp-modal-title"
     >
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+          <h3 id="save-camp-modal-title" className="text-lg font-semibold text-slate-900 dark:text-white">
             Save {campName}
           </h3>
           <button
