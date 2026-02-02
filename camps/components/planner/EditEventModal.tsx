@@ -357,6 +357,8 @@ export function EditEventModal({ isOpen, onClose, event }: EditEventModalProps) 
                         : ''
                     }`}
                     title={c.label}
+                    aria-label={`Select ${c.label.toLowerCase()} color`}
+                    aria-pressed={color === c.value}
                   />
                 ))}
               </div>
