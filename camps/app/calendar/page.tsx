@@ -424,8 +424,9 @@ function CalendarContent() {
         {/* Child Filter */}
         {children.length > 1 && (
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-slate-600 dark:text-slate-400">Child:</label>
+            <label htmlFor="calendar-child-filter" className="text-sm font-medium text-slate-600 dark:text-slate-400">Child:</label>
             <select
+              id="calendar-child-filter"
               value={selectedChildId}
               onChange={(e) => setSelectedChildId(e.target.value as Id<'children'> | 'all')}
               className="border rounded-md px-3 py-1.5 text-sm bg-white dark:bg-slate-800"
