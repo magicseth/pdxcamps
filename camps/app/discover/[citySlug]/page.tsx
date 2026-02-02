@@ -74,6 +74,7 @@ export default function DiscoverPage() {
   const [showFilters, setShowFilters] = useState(true);
   const [selectedOrganizations, setSelectedOrganizations] = useState<string[]>(() => getInitialState().selectedOrganizations);
   const [selectedLocations, setSelectedLocations] = useState<string[]>(() => getInitialState().selectedLocations);
+  const [sortBy, setSortBy] = useState<'date' | 'price-low' | 'price-high' | 'spots'>('date');
 
   // Update URL when filters change
   useEffect(() => {
@@ -136,13 +137,36 @@ export default function DiscoverPage() {
       : 'skip'
   );
 
-  // Filter sessions by selected organizations (client-side)
+  // Filter and sort sessions by selected organizations (client-side)
   // This useMemo must be called before any early returns to maintain hooks order
   const filteredSessions = useMemo(() => {
     if (!sessions) return [];
-    if (selectedOrganizations.length === 0) return sessions;
-    return sessions.filter((s) => selectedOrganizations.includes(s.organizationId));
-  }, [sessions, selectedOrganizations]);
+
+    // Filter by organizations
+    let result = selectedOrganizations.length === 0
+      ? [...sessions]
+      : sessions.filter((s) => selectedOrganizations.includes(s.organizationId));
+
+    // Sort results
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case 'date':
+          return a.startDate.localeCompare(b.startDate);
+        case 'price-low':
+          return a.price - b.price;
+        case 'price-high':
+          return b.price - a.price;
+        case 'spots':
+          const spotsA = a.capacity - a.enrolledCount;
+          const spotsB = b.capacity - b.enrolledCount;
+          return spotsB - spotsA; // Most spots first
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [sessions, selectedOrganizations, sortBy]);
 
   // Loading state
   if (city === undefined) {
@@ -652,7 +676,7 @@ export default function DiscoverPage() {
               </div>
             )}
 
-            {/* Results Summary */}
+            {/* Results Summary & Sort */}
             <div className="mb-4 flex items-center justify-between">
               <p className="text-sm text-slate-600 dark:text-slate-400">
                 {sessions === undefined ? (
@@ -663,6 +687,19 @@ export default function DiscoverPage() {
                   `${filteredSessions.length} session${filteredSessions.length === 1 ? '' : 's'} found`
                 )}
               </p>
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-slate-500 dark:text-slate-400">Sort:</label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as 'date' | 'price-low' | 'price-high' | 'spots')}
+                  className="text-sm px-2 py-1 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300"
+                >
+                  <option value="date">Start Date</option>
+                  <option value="price-low">Price: Low to High</option>
+                  <option value="price-high">Price: High to Low</option>
+                  <option value="spots">Most Spots Available</option>
+                </select>
+              </div>
             </div>
 
             {/* Loading State */}
