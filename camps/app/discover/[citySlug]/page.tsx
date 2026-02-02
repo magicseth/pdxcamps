@@ -1028,6 +1028,34 @@ function SessionCard({
     return `${weeks} weeks`;
   };
 
+  // Get summer week number(s) for a session
+  const getSummerWeeks = (startDateStr: string, endDateStr: string): string | null => {
+    const startDate = new Date(startDateStr + 'T00:00:00');
+    const endDate = new Date(endDateStr + 'T00:00:00');
+    const year = startDate.getFullYear();
+
+    // Find first Monday of June
+    const june1 = new Date(year, 5, 1);
+    const dayOfWeek = june1.getDay();
+    const daysUntilMonday = dayOfWeek === 0 ? 1 : dayOfWeek === 1 ? 0 : 8 - dayOfWeek;
+    const summerStart = new Date(year, 5, 1 + daysUntilMonday);
+
+    // Check if dates are within summer (June-August)
+    if (startDate.getMonth() < 5 || startDate.getMonth() > 7) return null;
+
+    // Calculate week numbers
+    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+    const startWeek = Math.floor((startDate.getTime() - summerStart.getTime()) / msPerWeek) + 1;
+    const endWeek = Math.floor((endDate.getTime() - summerStart.getTime()) / msPerWeek) + 1;
+
+    if (startWeek < 1 || startWeek > 13) return null;
+
+    if (startWeek === endWeek) {
+      return `Week ${startWeek}`;
+    }
+    return `Weeks ${startWeek}-${Math.min(endWeek, 13)}`;
+  };
+
   // Format time (12-hour format)
   const formatTime = (time: { hour: number; minute: number }): string => {
     const hour12 = time.hour % 12 || 12;
@@ -1348,6 +1376,15 @@ function SessionCard({
               <span className="text-slate-500 dark:text-slate-500 ml-1">
                 ({formatDuration(getCampDays(session.startDate, session.endDate))})
               </span>
+              {(() => {
+                const weekLabel = getSummerWeeks(session.startDate, session.endDate);
+                if (!weekLabel) return null;
+                return (
+                  <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                    {weekLabel}
+                  </span>
+                );
+              })()}
             </span>
           </div>
           <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
