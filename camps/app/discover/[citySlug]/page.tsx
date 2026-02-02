@@ -900,6 +900,15 @@ function SessionCard({
     return days;
   };
 
+  // Format duration nicely
+  const formatDuration = (days: number): string => {
+    if (days === 1) return '1 day';
+    if (days <= 5) return `${days} days`;
+    const weeks = Math.round(days / 5);
+    if (weeks === 1) return '1 week';
+    return `${weeks} weeks`;
+  };
+
   // Format age range
   const formatAgeRange = (requirements: typeof session.ageRequirements) => {
     const parts: string[] = [];
@@ -1173,7 +1182,12 @@ function SessionCard({
         <div className="space-y-2 mb-4">
           <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
             <CalendarIcon />
-            <span>{formatDateRange(session.startDate, session.endDate)}</span>
+            <span>
+              {formatDateRange(session.startDate, session.endDate)}
+              <span className="text-slate-500 dark:text-slate-500 ml-1">
+                ({formatDuration(getCampDays(session.startDate, session.endDate))})
+              </span>
+            </span>
           </div>
           <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
             <DollarIcon />
