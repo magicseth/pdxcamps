@@ -3,401 +3,398 @@
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import Link from 'next/link';
-import { useAuth } from '@workos-inc/authkit-nextjs/components';
+import { Authenticated, Unauthenticated } from 'convex/react';
 
-export default function AdminDashboard() {
-  const { user } = useAuth();
+export default function AdminPage() {
+  return (
+    <>
+      <header className="sticky top-0 z-10 bg-background p-4 border-b-2 border-slate-200 dark:border-slate-800 flex flex-row justify-between items-center">
+        <Link href="/" className="font-semibold hover:underline">
+          PDX Camps
+        </Link>
+        <h1 className="text-lg font-semibold">Admin Dashboard</h1>
+      </header>
+      <main className="p-4 md:p-8">
+        <Authenticated>
+          <AdminContent />
+        </Authenticated>
+        <Unauthenticated>
+          <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+            <p className="text-slate-600 dark:text-slate-400">
+              Please sign in to access the admin dashboard.
+            </p>
+            <a href="/sign-in">
+              <button className="bg-foreground text-background px-6 py-2 rounded-md">
+                Sign in
+              </button>
+            </a>
+          </div>
+        </Unauthenticated>
+      </main>
+    </>
+  );
+}
 
-  // Simple auth check - just verify user exists
-  if (!user) {
+function AdminContent() {
+  const isAdmin = useQuery(api.admin.queries.isAdmin);
+  const dashboard = useQuery(api.admin.queries.getScrapingDashboard);
+
+  if (isAdmin === undefined) {
+    return <div className="text-center py-8">Loading...</div>;
+  }
+
+  if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex items-center justify-center">
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-8 max-w-md text-center">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
-            Admin Access Required
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400 mb-6">
-            Please sign in to access the admin dashboard.
-          </p>
-          <a
-            href="/sign-in"
-            className="inline-block bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
-          >
-            Sign In
-          </a>
+      <div className="max-w-2xl mx-auto text-center py-16">
+        <h2 className="text-xl font-semibold mb-2 text-red-600">Access Denied</h2>
+        <p className="text-slate-600 dark:text-slate-400">
+          You don't have permission to access the admin dashboard.
+        </p>
+        <Link
+          href="/"
+          className="inline-block mt-4 text-blue-600 hover:underline"
+        >
+          Return to Home
+        </Link>
+      </div>
+    );
+  }
+
+  if (dashboard === undefined) {
+    return (
+      <div className="max-w-6xl mx-auto">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-48"></div>
+          <div className="grid grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-24 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+            ))}
+          </div>
+          <div className="h-96 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
         </div>
       </div>
     );
   }
 
-  return <AdminDashboardContent />;
-}
-
-function AdminDashboardContent() {
-  // Fetch scrape sources for stats
-  const scrapeSources = useQuery(api.scraping.queries.listScrapeSources, {});
-  const alerts = useQuery(api.scraping.queries.listUnacknowledgedAlerts, {});
-
-  // Calculate stats
-  const totalSources = scrapeSources?.length ?? 0;
-  const activeSources = scrapeSources?.filter((s) => s.isActive).length ?? 0;
-  const unhealthySources =
-    scrapeSources?.filter(
-      (s) => s.scraperHealth.consecutiveFailures >= 3 || s.scraperHealth.needsRegeneration
-    ).length ?? 0;
-
-  const alertCount = alerts?.length ?? 0;
-  const criticalAlerts = alerts?.filter((a) => a.severity === 'critical').length ?? 0;
-  const errorAlerts = alerts?.filter((a) => a.severity === 'error').length ?? 0;
-  const warningAlerts = alerts?.filter((a) => a.severity === 'warning').length ?? 0;
+  if (dashboard === null) {
+    return (
+      <div className="max-w-2xl mx-auto text-center py-16">
+        <h2 className="text-xl font-semibold mb-2 text-red-600">Access Denied</h2>
+        <p className="text-slate-600 dark:text-slate-400">
+          You don't have permission to access the admin dashboard.
+        </p>
+        <Link
+          href="/"
+          className="inline-block mt-4 text-blue-600 hover:underline"
+        >
+          Return to Home
+        </Link>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <Link href="/" className="text-sm text-blue-600 hover:text-blue-700 mb-1 block">
-                &larr; Back to Site
-              </Link>
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-                Admin Dashboard
-              </h1>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="max-w-6xl mx-auto space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+          Scraping Dashboard
+        </h2>
+        <span className="text-xs text-slate-500" title="Data updates in real-time via Convex">
+          Live data · Updated {new Date().toLocaleTimeString()}
+        </span>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatsCard
-            title="Scrape Sources"
-            value={totalSources}
-            subtitle={`${activeSources} active`}
-            icon={<DatabaseIcon />}
-            color="blue"
-          />
-          <StatsCard
-            title="Unhealthy Scrapers"
-            value={unhealthySources}
-            subtitle="Need attention"
-            icon={<AlertTriangleIcon />}
-            color={unhealthySources > 0 ? 'red' : 'green'}
-          />
-          <StatsCard
-            title="Active Alerts"
-            value={alertCount}
-            subtitle={`${criticalAlerts} critical, ${errorAlerts} errors`}
-            icon={<BellIcon />}
-            color={criticalAlerts > 0 ? 'red' : alertCount > 0 ? 'yellow' : 'green'}
-          />
-          <StatsCard
-            title="Warning Alerts"
-            value={warningAlerts}
-            subtitle="Warnings pending"
-            icon={<InfoIcon />}
-            color={warningAlerts > 0 ? 'yellow' : 'green'}
-          />
-        </div>
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <SummaryCard
+          label="Total Sources"
+          value={dashboard.summary.totalSources}
+          subtext={`${dashboard.summary.activeSources} active`}
+        />
+        <SummaryCard
+          label="Total Sessions"
+          value={dashboard.summary.totalSessions}
+          subtext="from all sources"
+        />
+        <SummaryCard
+          label="Healthy"
+          value={dashboard.summary.activeSources - dashboard.summary.sourcesWithErrors}
+          subtext="sources running"
+          variant="success"
+        />
+        <SummaryCard
+          label="With Errors"
+          value={dashboard.summary.sourcesWithErrors}
+          subtext="need attention"
+          variant={dashboard.summary.sourcesWithErrors > 0 ? 'error' : 'default'}
+        />
+      </div>
 
-        {/* Quick Links */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <QuickLink
-            href="/admin/discovery"
-            title="Discovery Queue"
-            description="Review and approve newly discovered camp sources"
-            icon={<SearchIcon />}
-          />
-          <QuickLink
-            href="/admin/sources"
-            title="Scrape Sources"
-            description="Manage scraping configurations and monitor health"
-            icon={<DatabaseIcon />}
-          />
-          <QuickLink
-            href="/admin/alerts"
-            title="Alerts"
-            description="View and acknowledge system alerts"
-            icon={<BellIcon />}
-          />
-        </div>
-
-        {/* Recent Alerts */}
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm">
-          <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-              Recent Alerts
-            </h2>
-            <Link
-              href="/admin/alerts"
-              className="text-sm text-blue-600 hover:text-blue-700"
-            >
-              View all &rarr;
-            </Link>
-          </div>
-
-          {alerts === undefined ? (
-            <div className="p-6">
-              <div className="animate-pulse space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-16 bg-slate-100 dark:bg-slate-700 rounded"></div>
-                ))}
-              </div>
-            </div>
-          ) : alerts.length === 0 ? (
-            <div className="p-12 text-center">
-              <div className="text-slate-400 mb-2">
-                <CheckCircleIcon />
-              </div>
-              <p className="text-slate-600 dark:text-slate-400">
-                No unacknowledged alerts
-              </p>
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-200 dark:divide-slate-700">
-              {alerts.slice(0, 5).map((alert) => (
-                <div
-                  key={alert._id}
-                  className="px-6 py-4 flex items-start gap-4"
-                >
-                  <div className={`flex-shrink-0 mt-0.5 ${getSeverityColor(alert.severity)}`}>
-                    {getSeverityIcon(alert.severity)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`text-xs font-medium uppercase ${getSeverityBadgeColor(alert.severity)}`}>
-                        {alert.severity}
-                      </span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400">
-                        {alert.alertType.replace(/_/g, ' ')}
-                      </span>
-                    </div>
-                    <p className="text-sm text-slate-900 dark:text-white">
-                      {alert.message}
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      {formatTimestamp(alert.createdAt)}
-                      {alert.source && ` - ${alert.source.name}`}
-                    </p>
-                  </div>
-                </div>
+      {/* Sources Table */}
+      <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 dark:bg-slate-900">
+              <tr>
+                <th className="text-left px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">
+                  Source
+                </th>
+                <th className="text-left px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">
+                  Sessions
+                </th>
+                <th className="text-left px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">
+                  Last Scrape
+                </th>
+                <th className="text-left px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">
+                  Status
+                </th>
+                <th className="text-left px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">
+                  Error
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+              {dashboard.sources.map((source) => (
+                <SourceRow key={source._id} source={source} />
               ))}
-            </div>
-          )}
+            </tbody>
+          </table>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
 
-// Stats Card Component
-function StatsCard({
-  title,
+function SummaryCard({
+  label,
   value,
-  subtitle,
-  icon,
-  color,
+  subtext,
+  variant = 'default',
 }: {
-  title: string;
+  label: string;
   value: number;
-  subtitle: string;
-  icon: React.ReactNode;
-  color: 'blue' | 'green' | 'yellow' | 'red';
+  subtext: string;
+  variant?: 'default' | 'success' | 'error';
 }) {
-  const colorClasses = {
-    blue: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
-    green: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',
-    yellow: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400',
-    red: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400',
+  const variantStyles = {
+    default: 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700',
+    success: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800',
+    error: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800',
+  };
+
+  const valueStyles = {
+    default: 'text-slate-900 dark:text-white',
+    success: 'text-green-700 dark:text-green-300',
+    error: 'text-red-700 dark:text-red-300',
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
-      <div className="flex items-center gap-4">
-        <div className={`p-3 rounded-lg ${colorClasses[color]}`}>{icon}</div>
-        <div>
-          <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{title}</p>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white">{value}</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>
-        </div>
-      </div>
+    <div className={`rounded-lg border p-4 ${variantStyles[variant]}`}>
+      <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
+      <p className={`text-3xl font-bold ${valueStyles[variant]}`}>{value}</p>
+      <p className="text-xs text-slate-500 dark:text-slate-400">{subtext}</p>
     </div>
   );
 }
 
-// Quick Link Component
-function QuickLink({
-  href,
-  title,
-  description,
-  icon,
-}: {
-  href: string;
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-}) {
+interface SourceData {
+  _id: string;
+  name: string;
+  url: string;
+  organizationName: string | null;
+  scraperModule: string | null | undefined;
+  isActive: boolean;
+  totalSessions: number;
+  activeSessions: number;
+  health: {
+    lastSuccessAt?: number;
+    lastFailureAt?: number;
+    consecutiveFailures: number;
+    totalRuns: number;
+    successRate: number;
+    lastError?: string;
+    needsRegeneration: boolean;
+  };
+  lastScrapedAt?: number;
+  lastJobStatus: string | null;
+  lastJobSessionsFound: number | null;
+  lastJobError: string | null;
+  lastJobCompletedAt: number | null;
+}
+
+function SourceRow({ source }: { source: SourceData }) {
+  const hasError = source.health.consecutiveFailures > 0;
+  const isHealthy = source.isActive && !hasError;
+
+  // Format last scrape time
+  const lastScrapeTime = source.lastScrapedAt
+    ? formatRelativeTime(source.lastScrapedAt)
+    : 'Never';
+
+  // Get status badge
+  const statusBadge = getStatusBadge(source);
+
   return (
-    <Link
-      href={href}
-      className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow block"
-    >
-      <div className="flex items-start gap-4">
-        <div className="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300">
-          {icon}
+    <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+      <td className="px-4 py-3">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-slate-900 dark:text-white">
+              {source.name}
+            </span>
+            {!source.isActive && (
+              <span className="px-1.5 py-0.5 text-xs bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 rounded">
+                Inactive
+              </span>
+            )}
+          </div>
+          {source.organizationName && (
+            <p className="text-xs text-slate-500">{source.organizationName}</p>
+          )}
+          <a
+            href={source.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+          >
+            {truncateUrl(source.url)}
+            <ExternalLinkIcon />
+          </a>
         </div>
-        <div>
-          <h3 className="font-semibold text-slate-900 dark:text-white mb-1">{title}</h3>
-          <p className="text-sm text-slate-600 dark:text-slate-400">{description}</p>
+      </td>
+      <td className="px-4 py-3">
+        <div className="space-y-1">
+          <p className="font-medium text-slate-900 dark:text-white">
+            {source.totalSessions}
+          </p>
+          <p className="text-xs text-slate-500">
+            {source.activeSessions} active
+          </p>
         </div>
-      </div>
-    </Link>
+      </td>
+      <td className="px-4 py-3">
+        <div className="space-y-1">
+          <p className="text-slate-900 dark:text-white">{lastScrapeTime}</p>
+          {source.lastJobSessionsFound !== null && (
+            <p className="text-xs text-slate-500">
+              Found {source.lastJobSessionsFound} sessions
+            </p>
+          )}
+        </div>
+      </td>
+      <td className="px-4 py-3">
+        <div className="space-y-1">
+          {statusBadge}
+          {source.health.totalRuns > 0 && (
+            <p className="text-xs text-slate-500" title={`${source.health.totalRuns} total runs`}>
+              {Math.round(source.health.successRate * 100)}% success
+            </p>
+          )}
+        </div>
+      </td>
+      <td className="px-4 py-3 max-w-xs">
+        {source.health.lastError ? (
+          <div className="group relative">
+            <p className="text-xs text-red-600 dark:text-red-400 truncate max-w-[200px]">
+              {source.health.lastError}
+            </p>
+            {/* Tooltip on hover */}
+            <div className="hidden group-hover:block absolute z-10 left-0 top-full mt-1 p-2 bg-slate-900 text-white text-xs rounded shadow-lg max-w-md whitespace-pre-wrap">
+              {source.health.lastError}
+            </div>
+          </div>
+        ) : (
+          <span className="text-xs text-slate-400">-</span>
+        )}
+      </td>
+    </tr>
   );
 }
 
-// Helper functions
-function formatTimestamp(timestamp: number): string {
-  const date = new Date(timestamp);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
+function getStatusBadge(source: SourceData) {
+  if (!source.isActive) {
+    return (
+      <span className="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 rounded-full">
+        Disabled
+      </span>
+    );
+  }
 
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
+  if (source.health.needsRegeneration) {
+    return (
+      <span className="px-2 py-1 text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full">
+        Needs Regen
+      </span>
+    );
+  }
+
+  if (source.health.consecutiveFailures > 2) {
+    return (
+      <span className="px-2 py-1 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-full">
+        Failing ({source.health.consecutiveFailures}x)
+      </span>
+    );
+  }
+
+  if (source.health.consecutiveFailures > 0) {
+    return (
+      <span className="px-2 py-1 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded-full">
+        Warning
+      </span>
+    );
+  }
+
+  if (source.health.totalRuns === 0) {
+    return (
+      <span className="px-2 py-1 text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-full">
+        Never Run
+      </span>
+    );
+  }
+
+  return (
+    <span className="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full">
+      Healthy
+    </span>
+  );
 }
 
-function getSeverityColor(severity: string): string {
-  switch (severity) {
-    case 'critical':
-      return 'text-red-600 dark:text-red-400';
-    case 'error':
-      return 'text-orange-600 dark:text-orange-400';
-    case 'warning':
-      return 'text-yellow-600 dark:text-yellow-400';
-    default:
-      return 'text-blue-600 dark:text-blue-400';
+function formatRelativeTime(timestamp: number): string {
+  const now = Date.now();
+  const diff = now - timestamp;
+
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 7) return `${days}d ago`;
+
+  return new Date(timestamp).toLocaleDateString();
+}
+
+function truncateUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    const path = parsed.pathname.length > 30
+      ? parsed.pathname.substring(0, 30) + '...'
+      : parsed.pathname;
+    return parsed.hostname + path;
+  } catch {
+    return url.length > 50 ? url.substring(0, 50) + '...' : url;
   }
 }
 
-function getSeverityBadgeColor(severity: string): string {
-  switch (severity) {
-    case 'critical':
-      return 'text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-900/50 px-2 py-0.5 rounded';
-    case 'error':
-      return 'text-orange-700 bg-orange-100 dark:text-orange-300 dark:bg-orange-900/50 px-2 py-0.5 rounded';
-    case 'warning':
-      return 'text-yellow-700 bg-yellow-100 dark:text-yellow-300 dark:bg-yellow-900/50 px-2 py-0.5 rounded';
-    default:
-      return 'text-blue-700 bg-blue-100 dark:text-blue-300 dark:bg-blue-900/50 px-2 py-0.5 rounded';
-  }
-}
-
-function getSeverityIcon(severity: string) {
-  switch (severity) {
-    case 'critical':
-    case 'error':
-      return <AlertCircleIcon />;
-    case 'warning':
-      return <AlertTriangleIcon />;
-    default:
-      return <InfoIcon />;
-  }
-}
-
-// Icons
-function DatabaseIcon() {
+function ExternalLinkIcon() {
   return (
-    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth={2}
-        d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"
-      />
-    </svg>
-  );
-}
-
-function AlertTriangleIcon() {
-  return (
-    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-      />
-    </svg>
-  );
-}
-
-function BellIcon() {
-  return (
-    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-      />
-    </svg>
-  );
-}
-
-function InfoIcon() {
-  return (
-    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-    </svg>
-  );
-}
-
-function SearchIcon() {
-  return (
-    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-      />
-    </svg>
-  );
-}
-
-function CheckCircleIcon() {
-  return (
-    <svg className="w-12 h-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-    </svg>
-  );
-}
-
-function AlertCircleIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
       />
     </svg>
   );
