@@ -327,13 +327,14 @@ function WeekDetailContent() {
   if (weekDetail === undefined || family === undefined) {
     return (
       <div className="max-w-4xl mx-auto">
-        <div className="animate-pulse motion-reduce:animate-none space-y-4">
-          <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-48"></div>
+        <div role="status" aria-live="polite" className="animate-pulse motion-reduce:animate-none space-y-4">
+          <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-48" aria-hidden="true"></div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[1, 2].map((i) => (
-              <div key={i} className="h-64 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+              <div key={i} className="h-64 bg-slate-200 dark:bg-slate-700 rounded-lg" aria-hidden="true"></div>
             ))}
           </div>
+          <span className="sr-only">Loading week details...</span>
         </div>
       </div>
     );
