@@ -472,12 +472,16 @@ export default function DiscoverPage() {
                   />
                 </div>
                 <div className="space-y-2">
+                  <div className="text-xs text-slate-400 dark:text-slate-500 mb-1">
+                    Today: {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                  </div>
                   <div>
                     <label className="text-xs text-slate-500 dark:text-slate-400">From</label>
                     <input
                       type="date"
                       value={startDateAfter}
                       onChange={(e) => setStartDateAfter(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
                       className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                     />
                   </div>
@@ -487,6 +491,7 @@ export default function DiscoverPage() {
                       type="date"
                       value={startDateBefore}
                       onChange={(e) => setStartDateBefore(e.target.value)}
+                      min={startDateAfter || new Date().toISOString().split('T')[0]}
                       className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                     />
                   </div>
