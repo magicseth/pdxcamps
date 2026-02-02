@@ -1603,7 +1603,7 @@ function SessionCard({
               />
               {/* Admin: Regenerate and Edit Style Buttons (shows on hover) */}
               {isAdmin && camp && (
-                <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute bottom-14 right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={(e) => {
                       e.preventDefault();
@@ -1674,7 +1674,7 @@ function SessionCard({
                     }
                   }}
                   disabled={isGenerating}
-                  className="absolute bottom-2 right-2 px-2 py-1 bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 text-xs font-medium rounded shadow hover:bg-white dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                  className="absolute bottom-14 right-2 z-10 px-2 py-1 bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 text-xs font-medium rounded shadow hover:bg-white dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                   title="Generate AI image for this camp"
                 >
                   {isGenerating ? (
