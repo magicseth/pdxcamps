@@ -724,23 +724,56 @@ export default function DiscoverPage() {
             {/* Empty State */}
             {sessions !== undefined && filteredSessions.length === 0 && (
               <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-12 text-center">
-                <div className="text-slate-400 mb-4">
-                  <EmptyIcon />
+                <div className="text-6xl mb-4">
+                  {hasActiveFilters ? '🔍' : '🏕️'}
                 </div>
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-                  No sessions found
+                  {hasActiveFilters ? 'No camps match your filters' : 'No camps available yet'}
                 </h3>
-                <p className="text-slate-600 dark:text-slate-400 mb-4">
-                  Try adjusting your filters or check back later for new camps.
+                <p className="text-slate-600 dark:text-slate-400 mb-6 max-w-md mx-auto">
+                  {hasActiveFilters
+                    ? 'Try removing some filters or broadening your date range to see more options.'
+                    : 'Check back soon! Camp providers are adding new sessions regularly.'}
                 </p>
-                {hasActiveFilters && (
-                  <button
-                    onClick={clearFilters}
-                    className="text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    Clear all filters
-                  </button>
-                )}
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                  {hasActiveFilters && (
+                    <>
+                      <button
+                        onClick={clearFilters}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+                      >
+                        Clear all filters
+                      </button>
+                      {(startDateAfter || startDateBefore) && (
+                        <button
+                          onClick={() => {
+                            setStartDateAfter('');
+                            setStartDateBefore('');
+                          }}
+                          className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-700"
+                        >
+                          Remove date filter
+                        </button>
+                      )}
+                      {childAge !== undefined && (
+                        <button
+                          onClick={() => setChildAge(undefined)}
+                          className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-700"
+                        >
+                          Remove age filter
+                        </button>
+                      )}
+                    </>
+                  )}
+                  {!hasActiveFilters && (
+                    <Link
+                      href="/"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+                    >
+                      Back to Planner
+                    </Link>
+                  )}
+                </div>
               </div>
             )}
 
