@@ -5,6 +5,7 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
 import Link from 'next/link';
+import { BottomNav } from '../../components/shared/BottomNav';
 
 export default function FriendsPage() {
   return (
@@ -20,7 +21,12 @@ export default function FriendsPage() {
             <h1 className="text-lg font-bold text-slate-900 dark:text-white">Friends</h1>
           </div>
           <div className="flex items-center gap-3">
-            <Link href="/settings" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+            <Link
+              href="/settings"
+              className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
+              title="Settings"
+              aria-label="Settings"
+            >
               <SettingsIcon />
             </Link>
             <Link href="/" className="flex items-center gap-2">
@@ -37,6 +43,8 @@ export default function FriendsPage() {
         <AddFriend />
         <CalendarSharingSettings />
       </main>
+
+      <BottomNav />
     </div>
   );
 }
