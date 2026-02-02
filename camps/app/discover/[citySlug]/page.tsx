@@ -857,7 +857,7 @@ export default function DiscoverPage() {
             {/* Empty State */}
             {sessions !== undefined && filteredSessions.length === 0 && (
               <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-12 text-center">
-                <div className="text-6xl mb-4 animate-bounce [animation-duration:2s]">
+                <div className="text-6xl mb-4 animate-bounce motion-reduce:animate-none [animation-duration:2s]">
                   {hasActiveFilters ? '🔍' : '🏕️'}
                 </div>
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
@@ -1374,13 +1374,13 @@ function SessionCard({
           {/* Status badges overlay */}
           <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
             <span
-              className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadge.className} ${statusBadge.urgent ? 'animate-pulse' : ''}`}
+              className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadge.className} ${statusBadge.urgent ? 'animate-pulse motion-reduce:animate-none' : ''}`}
             >
               {statusBadge.label}
             </span>
             {timingBadge && (
               <span
-                className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${timingBadge.className} ${timingBadge.urgent ? 'animate-pulse' : ''}`}
+                className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${timingBadge.className} ${timingBadge.urgent ? 'animate-pulse motion-reduce:animate-none' : ''}`}
               >
                 {timingBadge.label}
               </span>
