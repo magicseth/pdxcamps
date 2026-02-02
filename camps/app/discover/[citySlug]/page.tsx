@@ -1344,6 +1344,8 @@ function SessionCard({
               {generateError}
             </div>
           )}
+          {/* Gradient overlay for badge readability */}
+          <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/30 to-transparent pointer-events-none" />
           {/* Status badges overlay */}
           <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
             <span
