@@ -580,12 +580,18 @@ function AppHeader({ user, onSignOut }: { user: User | null; onSignOut: () => vo
               Admin
             </Link>
           )}
-          <Link href="/settings" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+          <Link
+            href="/settings"
+            className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            title="Settings - Manage children, preferences"
+            aria-label="Settings"
+          >
             <SettingsIcon />
           </Link>
           <button
             onClick={onSignOut}
-            className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            title="Sign out of your account"
           >
             Sign out
           </button>
