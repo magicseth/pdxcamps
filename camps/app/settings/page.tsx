@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
@@ -568,6 +568,25 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
 
   const addChild = useMutation(api.children.mutations.addChild);
 
+  // ESC key to close modal
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape' && !isSaving) {
+      onClose();
+    }
+  }, [onClose, isSaving]);
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
+
+  // Handle backdrop click
+  const handleBackdropClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget && !isSaving) {
+      onClose();
+    }
+  }, [onClose, isSaving]);
+
   const handleSave = async () => {
     if (!firstName.trim()) {
       setError('First name is required');
@@ -597,7 +616,10 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={handleBackdropClick}
+    >
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full p-6">
         <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
           Add Child
