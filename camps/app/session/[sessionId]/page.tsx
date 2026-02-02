@@ -52,6 +52,25 @@ export default function SessionDetailPage() {
     sessionId ? { sessionId: sessionId as Id<'sessions'> } : 'skip'
   );
 
+  // Fetch other sessions from the same camp
+  const otherSessions = useQuery(
+    api.sessions.queries.listSessionsByCamp,
+    session?.camp ? { campId: session.camp._id } : 'skip'
+  );
+
+  // Filter to only active sessions that aren't the current one
+  const otherAvailableSessions = useMemo(() => {
+    if (!otherSessions || !sessionId) return [];
+    return otherSessions
+      .filter((s) =>
+        s._id !== sessionId &&
+        s.status === 'active' &&
+        s.enrolledCount < s.capacity
+      )
+      .sort((a, b) => a.startDate.localeCompare(b.startDate))
+      .slice(0, 3);
+  }, [otherSessions, sessionId]);
+
   // Mutations
   const markInterested = useMutation(api.registrations.mutations.markInterested);
 
@@ -651,6 +670,45 @@ export default function SessionDetailPage() {
                       {organization.email}
                     </a>
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* Other Sessions from this Camp */}
+            {otherAvailableSessions.length > 0 && (
+              <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+                  Other Available Dates
+                </h3>
+                <div className="space-y-3">
+                  {otherAvailableSessions.map((otherSession) => {
+                    const spotsLeft = otherSession.capacity - otherSession.enrolledCount;
+                    return (
+                      <Link
+                        key={otherSession._id}
+                        href={`/session/${otherSession._id}`}
+                        className="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                      >
+                        <div>
+                          <div className="font-medium text-slate-900 dark:text-white">
+                            {new Date(otherSession.startDate + 'T00:00:00').toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                            })} - {new Date(otherSession.endDate + 'T00:00:00').toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                            })}
+                          </div>
+                          <div className="text-sm text-slate-500 dark:text-slate-400">
+                            {formatPrice(otherSession.price, otherSession.currency)} • {spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} left
+                          </div>
+                        </div>
+                        <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
             )}
