@@ -23,10 +23,11 @@ export default function AdminPage() {
             <p className="text-slate-600 dark:text-slate-400">
               Please sign in to access the admin dashboard.
             </p>
-            <a href="/sign-in">
-              <button className="bg-foreground text-background px-6 py-2 rounded-md">
-                Sign in
-              </button>
+            <a
+              href="/sign-in"
+              className="bg-foreground text-background px-6 py-2 rounded-md"
+            >
+              Sign in
             </a>
           </div>
         </Unauthenticated>

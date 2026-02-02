@@ -34,10 +34,11 @@ export default function SettingsPage() {
             <p className="text-slate-600 dark:text-slate-400">
               Please sign in to view settings.
             </p>
-            <a href="/sign-in">
-              <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
-                Sign in
-              </button>
+            <a
+              href="/sign-in"
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+            >
+              Sign in
             </a>
           </div>
         </Unauthenticated>
