@@ -513,6 +513,7 @@ function ShareCalendarModal({
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting || selectedChildren.length === 0}
+                aria-busy={isSubmitting}
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? 'Saving...' : existingShare ? 'Update Share' : 'Share Calendar'}

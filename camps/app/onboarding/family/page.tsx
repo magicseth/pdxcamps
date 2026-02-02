@@ -190,6 +190,7 @@ export default function FamilySetupPage() {
             <button
               type="submit"
               disabled={isSubmitting}
+              aria-busy={isSubmitting}
               className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-md transition-colors"
             >
               {isSubmitting ? 'Creating...' : 'Continue'}

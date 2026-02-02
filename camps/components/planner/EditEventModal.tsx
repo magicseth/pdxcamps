@@ -203,6 +203,7 @@ export function EditEventModal({ isOpen, onClose, event }: EditEventModalProps) 
               <button
                 onClick={handleDelete}
                 disabled={isSubmitting}
+                aria-busy={isSubmitting}
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? 'Deleting...' : 'Delete Event'}
@@ -412,6 +413,7 @@ export function EditEventModal({ isOpen, onClose, event }: EditEventModalProps) 
               <button
                 type="submit"
                 disabled={isSubmitting}
+                aria-busy={isSubmitting}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? 'Saving...' : 'Save Changes'}
