@@ -823,6 +823,7 @@ function SessionCard({
     endDate: string;
     dropOffTime: { hour: number; minute: number };
     pickUpTime: { hour: number; minute: number };
+    extendedCareAvailable: boolean;
     price: number;
     currency: string;
     capacity: number;
@@ -1205,6 +1206,11 @@ function SessionCard({
             <ClockIcon />
             <span>
               {formatTime(session.dropOffTime)} - {formatTime(session.pickUpTime)}
+              {session.extendedCareAvailable && (
+                <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                  +Extended care
+                </span>
+              )}
             </span>
           </div>
           <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
