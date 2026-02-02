@@ -206,7 +206,8 @@ function SourcesManagementContent() {
         {/* Sources List */}
         {scrapeSources !== undefined && scrapeSources.length > 0 && (
           <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden">
-            <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
               <thead className="bg-slate-50 dark:bg-slate-900">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -353,7 +354,8 @@ function SourcesManagementContent() {
                   );
                 })}
               </tbody>
-            </table>
+              </table>
+            </div>
           </div>
         )}
       </main>
