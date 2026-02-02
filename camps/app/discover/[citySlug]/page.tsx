@@ -1544,7 +1544,10 @@ function SessionCard({
 
         {/* Spots Left Bar */}
         {!isSoldOut && (
-          <div className="mb-4">
+          <div
+            className="mb-4 cursor-help"
+            title={`${spotsLeft <= 3 ? 'Very limited spots - register soon!' : spotsLeft <= 5 ? 'Limited spots remaining' : 'Good availability'}`}
+          >
             <div className="flex items-center justify-between text-xs mb-1">
               <span className="text-slate-600 dark:text-slate-400">
                 {spotsLeft} of {session.capacity} spots left
