@@ -6,6 +6,7 @@ import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
 import Link from 'next/link';
 import { Authenticated, Unauthenticated } from 'convex/react';
+import { BottomNav } from '../../components/shared/BottomNav';
 
 type ViewMode = 'month' | 'list';
 type RegistrationStatus = 'interested' | 'waitlisted' | 'registered' | 'cancelled';
@@ -136,6 +137,8 @@ export default function CalendarPage() {
           </div>
         </Unauthenticated>
       </main>
+
+      <BottomNav />
     </div>
   );
 }
