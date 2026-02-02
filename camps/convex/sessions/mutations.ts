@@ -63,7 +63,7 @@ export const createSession = mutation({
 
       ageRequirements: args.ageRequirements,
 
-      status: "draft",
+      status: "active", // Default to active so sessions show immediately
 
       waitlistEnabled: args.waitlistEnabled,
       waitlistCapacity: undefined,
