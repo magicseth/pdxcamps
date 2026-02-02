@@ -351,7 +351,9 @@ export default function DiscoverPage() {
             </div>
             <div className="flex items-center gap-3">
               <button
+                type="button"
                 onClick={() => setShowFilters(!showFilters)}
+                aria-expanded={showFilters}
                 className="md:hidden flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 rounded-lg text-sm"
                 title="Toggle filters (F key)"
               >
@@ -697,6 +699,7 @@ export default function DiscoverPage() {
                     <button
                       type="button"
                       onClick={() => setShowAllOrgs(!showAllOrgs)}
+                      aria-expanded={showAllOrgs}
                       className="text-xs text-blue-600 dark:text-blue-400 hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                     >
                       {showAllOrgs ? 'Show less' : `Show all ${allOrganizations.length}`}
