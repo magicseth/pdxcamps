@@ -631,8 +631,9 @@ export default function DiscoverPage() {
                   ))}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-slate-500">$</span>
+                  <label htmlFor="discover-max-price" className="text-slate-500">$</label>
                   <input
+                    id="discover-max-price"
                     type="number"
                     inputMode="numeric"
                     min={0}
@@ -653,6 +654,7 @@ export default function DiscoverPage() {
                     step={50}
                     value={maxPrice}
                     onChange={(e) => setMaxPrice(parseInt(e.target.value))}
+                    aria-label="Max price slider"
                     className="w-full mt-2"
                   />
                 )}
