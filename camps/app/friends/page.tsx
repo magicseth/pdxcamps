@@ -465,10 +465,11 @@ function ShareCalendarModal({
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="share-permission-level" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Permission Level
               </label>
               <select
+                id="share-permission-level"
                 value={permission}
                 onChange={(e) => setPermission(e.target.value as "view_sessions" | "view_details")}
                 className="w-full p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
