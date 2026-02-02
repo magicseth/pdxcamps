@@ -102,7 +102,8 @@ export const startScrapeWorkflow = mutation({
   args: {
     jobId: v.id("scrapeJobs"),
   },
-  handler: async (ctx, args) => {
+  returns: v.string(),
+  handler: async (ctx, args): Promise<string> => {
     const job = await ctx.db.get(args.jobId);
     if (!job) {
       throw new Error("Job not found");
@@ -112,18 +113,18 @@ export const startScrapeWorkflow = mutation({
     }
 
     // Start the workflow using workflow.start pattern
-    const workflowId = await workflow.start(
+    const workflowId: string = await workflow.start(
       ctx,
       internal.scraping.scrapeWorkflow.scrapeSourceWorkflow,
       {
         jobId: args.jobId,
         sourceId: job.sourceId,
       }
-    );
+    ) as string;
 
     // Store workflow ID on the job
     await ctx.db.patch(args.jobId, {
-      workflowId: workflowId as string,
+      workflowId,
     });
 
     return workflowId;

@@ -15,6 +15,7 @@ import { api, internal } from "../../_generated/api";
 import { v } from "convex/values";
 import { ScrapedSession, ScrapeResult, ScraperConfig, ScraperLogger } from "./types";
 import { Stagehand } from "@browserbasehq/stagehand";
+import ts from "typescript";
 
 // Built-in scrapers that are hardcoded (for bootstrapping)
 import { omsiScraper } from "./omsi";
@@ -259,32 +260,30 @@ async function executeStagehandScraperCode(
     // Wait for dynamic content
     await page.waitForTimeout(3000);
 
-    // Strip imports and TypeScript from the scraper code for execution
-    const cleanCode = code
+    // Strip imports and TypeScript from the scraper code using TypeScript's transpiler
+    // First remove imports, then transpile to strip all type annotations properly
+    const codeWithoutImports = code
       // Remove import statements
       .replace(/import\s+.*?from\s+['"][^'"]+['"];?\n?/g, "")
-      // Remove export interface blocks (single and multi-line)
-      .replace(/export\s+interface\s+\w+\s*\{[\s\S]*?\n\}/g, "")
-      // Remove interface blocks (without export)
-      .replace(/interface\s+\w+\s*\{[\s\S]*?\n\}/g, "")
-      // Remove type annotations on variables (e.g., `: Array<{ start: string; end: string }>`)
-      .replace(/:\s*Array<[^>]+>/g, "")
-      .replace(/:\s*\{[^}]+\}\[\]/g, "") // `: { ... }[]`
-      .replace(/:\s*\{[^}]+\}/g, "") // `: { ... }` on single lines
-      // Remove function return type annotations
-      .replace(/:\s*Promise<[^>]+>/g, "")
-      .replace(/:\s*ExtractedSession\[\]/g, "")
-      .replace(/:\s*Page/g, "")
-      // Remove simple type annotations (: string, : number, : boolean, : any, etc.)
-      .replace(/:\s*(string|number|boolean|any|void|null|undefined)\b/g, "")
-      // Remove type annotations like `: SomeType` but not object colons
-      .replace(/(?<![{,])\s*:\s*[A-Z][A-Za-z0-9]*(?:\[\])?(?=\s*[=;,)])/g, "")
-      // Remove `as Type` assertions
-      .replace(/\s+as\s+\w+(?:\[\])?/g, "")
       // Change export async function to just async function
       .replace(/export\s+async\s+function/g, "async function")
       // Remove other export keywords
       .replace(/export\s+/g, "");
+
+    // Use TypeScript's transpiler to properly strip all type annotations
+    const transpileResult = ts.transpileModule(codeWithoutImports, {
+      compilerOptions: {
+        target: ts.ScriptTarget.ES2020,
+        module: ts.ModuleKind.ESNext,
+        removeComments: false,
+        // These options help strip types while preserving code structure
+        declaration: false,
+        declarationMap: false,
+        sourceMap: false,
+      },
+    });
+
+    const cleanCode = transpileResult.outputText;
 
     // Create and execute the scraper function
     const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
