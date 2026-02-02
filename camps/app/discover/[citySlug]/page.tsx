@@ -56,6 +56,7 @@ export default function DiscoverPage() {
       selectedCategories: searchParams.get('categories')?.split(',').filter(Boolean) || [],
       maxPrice: searchParams.get('maxPrice') ? parseInt(searchParams.get('maxPrice')!) : undefined,
       hideSoldOut: searchParams.get('hideSoldOut') === 'true',
+      extendedCareOnly: searchParams.get('extendedCare') === 'true',
       childAge: searchParams.get('age') ? parseInt(searchParams.get('age')!) : undefined,
       childGrade: searchParams.get('grade') ? parseInt(searchParams.get('grade')!) : undefined,
       selectedOrganizations: searchParams.get('orgs')?.split(',').filter(Boolean) || [],
@@ -69,6 +70,7 @@ export default function DiscoverPage() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>(() => getInitialState().selectedCategories);
   const [maxPrice, setMaxPrice] = useState<number | undefined>(() => getInitialState().maxPrice);
   const [hideSoldOut, setHideSoldOut] = useState(() => getInitialState().hideSoldOut);
+  const [extendedCareOnly, setExtendedCareOnly] = useState(() => getInitialState().extendedCareOnly);
   const [childAge, setChildAge] = useState<number | undefined>(() => getInitialState().childAge);
   const [childGrade, setChildGrade] = useState<number | undefined>(() => getInitialState().childGrade);
   const [showFilters, setShowFilters] = useState(true);
@@ -84,6 +86,7 @@ export default function DiscoverPage() {
     if (selectedCategories.length > 0) params.set('categories', selectedCategories.join(','));
     if (maxPrice !== undefined) params.set('maxPrice', maxPrice.toString());
     if (hideSoldOut) params.set('hideSoldOut', 'true');
+    if (extendedCareOnly) params.set('extendedCare', 'true');
     if (childAge !== undefined) params.set('age', childAge.toString());
     if (childGrade !== undefined) params.set('grade', childGrade.toString());
     if (selectedOrganizations.length > 0) params.set('orgs', selectedOrganizations.join(','));
@@ -96,7 +99,7 @@ export default function DiscoverPage() {
     if (window.location.search !== newUrl) {
       router.replace(`/discover/${citySlug}${newUrl}`, { scroll: false });
     }
-  }, [startDateAfter, startDateBefore, selectedCategories, maxPrice, hideSoldOut, childAge, childGrade, selectedOrganizations, selectedLocations, citySlug, router]);
+  }, [startDateAfter, startDateBefore, selectedCategories, maxPrice, hideSoldOut, extendedCareOnly, childAge, childGrade, selectedOrganizations, selectedLocations, citySlug, router]);
 
   // Fetch city data
   const city = useQuery(api.cities.queries.getCityBySlug, { slug: citySlug });
@@ -147,6 +150,11 @@ export default function DiscoverPage() {
       ? [...sessions]
       : sessions.filter((s) => selectedOrganizations.includes(s.organizationId));
 
+    // Filter by extended care
+    if (extendedCareOnly) {
+      result = result.filter((s) => s.extendedCareAvailable);
+    }
+
     // Sort results
     result.sort((a, b) => {
       switch (sortBy) {
@@ -166,7 +174,7 @@ export default function DiscoverPage() {
     });
 
     return result;
-  }, [sessions, selectedOrganizations, sortBy]);
+  }, [sessions, selectedOrganizations, extendedCareOnly, sortBy]);
 
   // Loading state
   if (city === undefined) {
@@ -231,6 +239,7 @@ export default function DiscoverPage() {
     selectedCategories.length > 0 ||
     maxPrice !== undefined ||
     hideSoldOut ||
+    extendedCareOnly ||
     childAge !== undefined ||
     childGrade !== undefined ||
     selectedOrganizations.length > 0 ||
@@ -243,6 +252,7 @@ export default function DiscoverPage() {
     selectedCategories.length +
     (maxPrice !== undefined ? 1 : 0) +
     (hideSoldOut ? 1 : 0) +
+    (extendedCareOnly ? 1 : 0) +
     (childAge !== undefined ? 1 : 0) +
     (childGrade !== undefined ? 1 : 0) +
     selectedOrganizations.length +
@@ -536,7 +546,7 @@ export default function DiscoverPage() {
               </div>
 
               {/* Hide Sold Out */}
-              <div className="mb-4">
+              <div className="mb-2">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -545,6 +555,19 @@ export default function DiscoverPage() {
                     className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                   />
                   <span className="text-sm text-slate-700 dark:text-slate-300">Hide sold out</span>
+                </label>
+              </div>
+
+              {/* Extended Care Only */}
+              <div className="mb-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={extendedCareOnly}
+                    onChange={(e) => setExtendedCareOnly(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-slate-700 dark:text-slate-300">Extended care available</span>
                 </label>
               </div>
             </div>
@@ -664,6 +687,12 @@ export default function DiscoverPage() {
                     <FilterChip
                       label="Hide sold out"
                       onRemove={() => setHideSoldOut(false)}
+                    />
+                  )}
+                  {extendedCareOnly && (
+                    <FilterChip
+                      label="Extended care"
+                      onRemove={() => setExtendedCareOnly(false)}
                     />
                   )}
                   {selectedOrganizations.map((orgId) => {
