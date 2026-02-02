@@ -294,6 +294,14 @@ export default function SessionDetailPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 pb-20">
+      {/* Skip to main content link for keyboard users */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg focus:font-medium"
+      >
+        Skip to main content
+      </a>
+
       {/* Header */}
       <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-20">
         <div className="max-w-4xl mx-auto px-4 py-3">
@@ -326,7 +334,7 @@ export default function SessionDetailPage() {
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <main id="main-content" className="max-w-4xl mx-auto px-4 py-8">
         {/* Success/Error Messages */}
         {saveSuccess && (
           <div role="status" className="mb-6 p-4 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg flex items-center gap-2">
@@ -813,7 +821,7 @@ END:VCALENDAR`;
             )}
           </div>
         </div>
-      </div>
+      </main>
 
       {/* Register Modal */}
       {showRegisterModal && (
