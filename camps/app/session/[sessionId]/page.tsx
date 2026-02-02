@@ -323,6 +323,30 @@ export default function SessionDetailPage() {
           </div>
         )}
 
+        {/* Breadcrumb Navigation */}
+        <nav className="mb-4 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+          <Link href="/" className="hover:text-slate-700 dark:hover:text-slate-300">
+            Home
+          </Link>
+          <ChevronRightIcon className="w-4 h-4" />
+          <Link
+            href="/discover/portland"
+            className="hover:text-slate-700 dark:hover:text-slate-300"
+          >
+            Discover
+          </Link>
+          <ChevronRightIcon className="w-4 h-4" />
+          {organization && (
+            <>
+              <span className="truncate max-w-[150px]">{organization.name}</span>
+              <ChevronRightIcon className="w-4 h-4" />
+            </>
+          )}
+          <span className="text-slate-700 dark:text-slate-300 truncate max-w-[200px]">
+            {camp?.name || 'Session'}
+          </span>
+        </nav>
+
         {/* Camp Header */}
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden mb-6">
           {/* Camp Image */}
@@ -1160,6 +1184,14 @@ function ClockIcon({ className = 'w-5 h-5' }: { className?: string }) {
         strokeWidth={2}
         d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
       />
+    </svg>
+  );
+}
+
+function ChevronRightIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
     </svg>
   );
 }
