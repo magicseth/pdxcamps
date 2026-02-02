@@ -751,9 +751,11 @@ export default function DiscoverPage() {
                   'No sessions found'
                 ) : (
                   <span className="flex items-center gap-3 flex-wrap">
-                    <span>{filteredSessions.length} session{filteredSessions.length === 1 ? '' : 's'}</span>
+                    <span className="font-medium text-slate-900 dark:text-white">{filteredSessions.length} session{filteredSessions.length === 1 ? '' : 's'}</span>
                     <span className="text-slate-400 dark:text-slate-500">•</span>
                     <span>{new Set(filteredSessions.map(s => s.campId)).size} camp{new Set(filteredSessions.map(s => s.campId)).size === 1 ? '' : 's'}</span>
+                    <span className="text-slate-400 dark:text-slate-500">•</span>
+                    <span>{new Set(filteredSessions.map(s => s.organizationId)).size} org{new Set(filteredSessions.map(s => s.organizationId)).size === 1 ? '' : 's'}</span>
                     {filteredSessions.length > 0 && (
                       <>
                         <span className="text-slate-400 dark:text-slate-500">•</span>
