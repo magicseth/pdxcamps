@@ -496,8 +496,32 @@ function PlannerHub({
                 </div>
               ))}
               {filteredCoverage.length === 0 && (
-                <div className="p-8 text-center text-slate-500 dark:text-slate-400">
-                  No weeks found for summer {selectedYear}.
+                <div className="p-8 text-center">
+                  {showOnlyGaps && stats && stats.weeksWithGaps === 0 ? (
+                    <>
+                      <div className="text-4xl mb-3">🎉</div>
+                      <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">
+                        No gaps to show!
+                      </h3>
+                      <p className="text-slate-500 dark:text-slate-400">
+                        Amazing work! Every week is covered for summer {selectedYear}.
+                      </p>
+                    </>
+                  ) : showOnlyGaps ? (
+                    <>
+                      <div className="text-4xl mb-3">✨</div>
+                      <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">
+                        No gaps for {children.find(c => c._id === selectedChildId)?.firstName || 'this child'}!
+                      </h3>
+                      <p className="text-slate-500 dark:text-slate-400">
+                        This child is fully covered for the summer.
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-slate-500 dark:text-slate-400">
+                      No weeks found for summer {selectedYear}.
+                    </p>
+                  )}
                 </div>
               )}
             </div>
