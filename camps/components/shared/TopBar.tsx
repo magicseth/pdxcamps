@@ -18,6 +18,7 @@ export function TopBar({ title = 'PDX Camps' }: TopBarProps) {
           href="/settings"
           className="p-2 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
           title="Settings"
+          aria-label="Settings"
         >
           <SettingsIcon />
         </Link>
@@ -28,7 +29,7 @@ export function TopBar({ title = 'PDX Camps' }: TopBarProps) {
 
 function SettingsIcon() {
   return (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
