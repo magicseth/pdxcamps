@@ -11,6 +11,7 @@ import type { User } from '@workos-inc/node';
 import { WeekRow, MonthHeader } from '../components/planner/WeekRow';
 import { CoverageLegend } from '../components/planner/CoverageIndicator';
 import { AddEventModal } from '../components/planner/AddEventModal';
+import { BottomNav } from '../components/shared/BottomNav';
 
 export default function Home() {
   const { user, signOut } = useAuth();
@@ -550,7 +551,7 @@ function PlannerHub({
       </main>
 
       {/* Bottom Navigation */}
-      <BottomNav cities={cities} />
+      <BottomNav citySlug={defaultCity?.slug} />
 
       {/* Add Event Modal */}
       <AddEventModal
@@ -601,36 +602,6 @@ function AppHeader({ user, onSignOut }: { user: User | null; onSignOut: () => vo
   );
 }
 
-// Bottom Navigation Bar
-function BottomNav({ cities }: { cities: { slug: string; name: string }[] }) {
-  const defaultCity = cities.find(c => c.slug === 'portland') || cities[0];
-
-  return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 px-4 py-2 z-20">
-      <div className="max-w-4xl mx-auto flex items-center justify-around">
-        <Link href="/" className="flex flex-col items-center gap-1 py-2 px-4 text-blue-600">
-          <CalendarIcon />
-          <span className="text-xs font-medium">Planner</span>
-        </Link>
-        {defaultCity && (
-          <Link href={`/discover/${defaultCity.slug}`} className="flex flex-col items-center gap-1 py-2 px-4 text-slate-500 hover:text-slate-900 dark:hover:text-white">
-            <SearchIcon />
-            <span className="text-xs font-medium">Discover</span>
-          </Link>
-        )}
-        <Link href="/calendar" className="flex flex-col items-center gap-1 py-2 px-4 text-slate-500 hover:text-slate-900 dark:hover:text-white">
-          <ListIcon />
-          <span className="text-xs font-medium">My Camps</span>
-        </Link>
-        <Link href="/friends" className="flex flex-col items-center gap-1 py-2 px-4 text-slate-500 hover:text-slate-900 dark:hover:text-white">
-          <FriendsIcon />
-          <span className="text-xs font-medium">Friends</span>
-        </Link>
-      </div>
-    </nav>
-  );
-}
-
 // Icons
 function PlusIcon() {
   return (
@@ -640,34 +611,10 @@ function PlusIcon() {
   );
 }
 
-function CalendarIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-    </svg>
-  );
-}
-
 function SearchIcon() {
   return (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-    </svg>
-  );
-}
-
-function ListIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-    </svg>
-  );
-}
-
-function FriendsIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
     </svg>
   );
 }
