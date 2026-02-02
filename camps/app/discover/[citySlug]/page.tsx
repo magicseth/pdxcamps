@@ -95,6 +95,23 @@ export default function DiscoverPage() {
     }
   }, [startDateAfter, startDateBefore, selectedCategories, maxPrice, hideSoldOut, extendedCareOnly, childAge, childGrade, selectedOrganizations, selectedLocations]);
 
+  // Keyboard shortcut: press 'f' to toggle filters (when not typing)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if typing in an input, textarea, or select
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
+        return;
+      }
+      if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        setShowFilters((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // Update URL when filters change
   useEffect(() => {
     const params = new URLSearchParams();
