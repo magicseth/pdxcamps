@@ -602,7 +602,7 @@ function AppHeader({ user, onSignOut }: { user: User | null; onSignOut: () => vo
         </div>
         <div className="flex items-center gap-4">
           {isAdmin && (
-            <Link href="/admin" className="text-sm text-orange-600 hover:underline font-medium">
+            <Link href="/admin" className="text-sm text-orange-600 hover:underline font-medium rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">
               Admin
             </Link>
           )}
