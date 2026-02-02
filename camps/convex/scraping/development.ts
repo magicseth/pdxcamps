@@ -7,6 +7,8 @@
 
 import { mutation, query, internalMutation } from "../_generated/server";
 import { v } from "convex/values";
+import { internal } from "../_generated/api";
+import { workflow } from "./scrapeWorkflow";
 
 /**
  * Request scraper development for a new site
@@ -311,10 +313,32 @@ export const approveScraperCode = mutation({
       finalScraperCode: request.generatedScraperCode,
     });
 
-    // If linked to a source, update the source's scraper code
+    // If linked to a source, update the source's scraper code and trigger a scrape
     if (request.sourceId) {
       await ctx.db.patch(request.sourceId, {
         scraperCode: request.generatedScraperCode,
+      });
+
+      // Create a scrape job to run the newly approved scraper
+      const jobId = await ctx.db.insert("scrapeJobs", {
+        sourceId: request.sourceId,
+        status: "pending",
+        triggeredBy: "scraper-approval",
+        retryCount: 0,
+      });
+
+      // Start the scraping workflow
+      const workflowId = await workflow.start(
+        ctx,
+        internal.scraping.scrapeWorkflow.scrapeSourceWorkflow,
+        {
+          jobId,
+          sourceId: request.sourceId,
+        }
+      );
+
+      await ctx.db.patch(jobId, {
+        workflowId: workflowId as string,
       });
     }
 
