@@ -349,7 +349,7 @@ export default function SessionDetailPage() {
         )}
 
         {/* Breadcrumb Navigation */}
-        <nav className="mb-4 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+        <nav aria-label="Breadcrumb" className="mb-4 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
           <Link href="/" className="hover:text-slate-700 dark:hover:text-slate-300">
             Home
           </Link>
