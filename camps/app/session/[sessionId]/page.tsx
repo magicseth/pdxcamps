@@ -535,10 +535,12 @@ export default function SessionDetailPage() {
                         href={getMapUrl()!}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 mt-2 text-blue-600 hover:text-blue-700"
+                        className="inline-flex items-center gap-1 mt-2 text-blue-600 hover:text-blue-700 group"
+                        title="Opens in new tab"
                       >
                         <MapIcon className="w-4 h-4" />
                         View on Map
+                        <span className="text-blue-400 group-hover:text-blue-600">↗</span>
                       </a>
                     )}
                     {location.parkingNotes && (
@@ -626,9 +628,11 @@ export default function SessionDetailPage() {
                   href={session.externalRegistrationUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block w-full px-4 py-3 bg-blue-600 text-white text-center font-medium rounded-md hover:bg-blue-700"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700"
+                  title="Opens provider's registration page in new tab"
                 >
                   Register on Provider Site
+                  <span className="text-blue-200">↗</span>
                 </a>
               ) : sessionStatus.available ? (
                 <button
