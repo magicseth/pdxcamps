@@ -20,7 +20,7 @@ export default function Error({
         <div className="text-6xl mb-6" aria-hidden="true">
           <span role="img" aria-label="Warning">⚠️</span>
         </div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-4 text-balance">
           Something went wrong
         </h1>
         <p className="text-slate-600 dark:text-slate-400 mb-8">
