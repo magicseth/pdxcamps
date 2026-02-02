@@ -14,6 +14,7 @@ import { action } from "../../_generated/server";
 import { api } from "../../_generated/api";
 import { v } from "convex/values";
 import { ScrapedSession, ScrapeResult, ScraperConfig, ScraperLogger } from "./types";
+import { Stagehand } from "@browserbasehq/stagehand";
 
 // Built-in scrapers that are hardcoded (for bootstrapping)
 import { omsiScraper } from "./omsi";
@@ -299,5 +300,158 @@ export const saveScraperCode = action({
       sessionsFound: testResult.sessions.length,
       message: `Scraper saved and tested successfully. Found ${testResult.sessions.length} sessions.`,
     };
+  },
+});
+
+/**
+ * Execute a Stagehand-based scraper for JavaScript-heavy sites
+ * Uses Browserbase for headless browser execution
+ */
+export const executeStagehandScraper = action({
+  args: {
+    url: v.string(),
+    instruction: v.string(),
+    sourceId: v.optional(v.id("scrapeSources")),
+  },
+  handler: async (ctx, args): Promise<ScrapeResult> => {
+    const startTime = Date.now();
+    const logs: string[] = [];
+
+    const log: ScraperLogger = (level, message, data) => {
+      const logEntry = `[${level}] ${message}${data ? `: ${JSON.stringify(data)}` : ""}`;
+      console.log(`[Stagehand] ${logEntry}`);
+      logs.push(logEntry);
+    };
+
+    try {
+      log("INFO", "Starting Stagehand scrape", { url: args.url });
+
+      // Import zod for schema
+      const { z } = await import("zod");
+
+      // Initialize Stagehand with Browserbase
+      const stagehand = new Stagehand({
+        env: "BROWSERBASE",
+        apiKey: process.env.BROWSERBASE_API_KEY,
+        projectId: process.env.BROWSERBASE_PROJECT_ID!,
+        model: {
+          modelName: "anthropic/claude-sonnet-4-20250514",
+          apiKey: process.env.MODEL_API_KEY!,
+        },
+        disablePino: true,
+        verbose: 0,
+      });
+
+      await stagehand.init();
+      log("DEBUG", "Stagehand initialized");
+
+      // Get the page from context
+      const page = stagehand.context.pages()[0];
+      await page.goto(args.url, { waitUntil: "domcontentloaded", timeoutMs: 30000 });
+      log("DEBUG", "Page loaded");
+
+      // Wait for dynamic content to render
+      await page.waitForTimeout(5000);
+
+      // Extract camp information using Stagehand's AI extraction
+      const schema = z.object({
+        sessions: z.array(z.object({
+          name: z.string().describe("The name of the camp session"),
+          description: z.string().optional().describe("Description of the camp"),
+          dateRaw: z.string().optional().describe("Raw date text"),
+          startDate: z.string().optional().describe("Start date in YYYY-MM-DD format"),
+          endDate: z.string().optional().describe("End date in YYYY-MM-DD format"),
+          timeRaw: z.string().optional().describe("Raw time text like '9am-3pm'"),
+          priceRaw: z.string().optional().describe("Raw price text like '$350'"),
+          ageGradeRaw: z.string().optional().describe("Age or grade range like 'Ages 5-12'"),
+          location: z.string().optional().describe("Location name"),
+          registrationUrl: z.string().optional().describe("URL to register"),
+          isAvailable: z.boolean().optional().describe("Whether spots are available"),
+          category: z.string().optional().describe("Category like 'Sports', 'STEM', 'Arts'"),
+          imageUrls: z.array(z.string()).optional().describe("URLs of camp/session images"),
+        })),
+        organization: z.object({
+          name: z.string().optional(),
+          description: z.string().optional(),
+          website: z.string().optional(),
+          logoUrl: z.string().optional(),
+        }).optional(),
+      });
+
+      const extracted = await stagehand.extract(args.instruction, schema);
+
+      await stagehand.close();
+
+      const sessions: ScrapedSession[] = (extracted.sessions || []).map((s) => ({
+        name: s.name || "",
+        description: s.description,
+        dateRaw: s.dateRaw,
+        startDate: s.startDate,
+        endDate: s.endDate,
+        timeRaw: s.timeRaw,
+        priceRaw: s.priceRaw,
+        ageGradeRaw: s.ageGradeRaw,
+        location: s.location,
+        registrationUrl: s.registrationUrl,
+        isAvailable: s.isAvailable,
+        category: s.category,
+        imageUrls: s.imageUrls,
+      }));
+
+      log("INFO", "Stagehand extraction complete", { sessionsFound: sessions.length });
+
+      const result: ScrapeResult = {
+        success: true,
+        sessions,
+        organization: extracted.organization as ScrapeResult["organization"],
+        scrapedAt: Date.now(),
+        durationMs: Date.now() - startTime,
+        pagesScraped: 1,
+        rawDataSummary: `Extracted ${sessions.length} sessions via Stagehand`,
+      };
+
+      // If sourceId provided, create job and store results
+      if (args.sourceId) {
+        const jobId = await ctx.runMutation(api.scraping.mutations.createScrapeJob, {
+          sourceId: args.sourceId,
+          triggeredBy: "stagehand",
+        });
+
+        await ctx.runMutation(api.scraping.mutations.startScrapeJob, { jobId });
+
+        await ctx.runMutation(api.scraping.mutations.storeRawData, {
+          jobId,
+          rawJson: JSON.stringify({
+            result,
+            logs,
+            url: args.url,
+            instruction: args.instruction,
+          }),
+        });
+
+        await ctx.runMutation(api.scraping.mutations.completeScrapeJob, {
+          jobId,
+          sessionsFound: sessions.length,
+          sessionsCreated: 0,
+          sessionsUpdated: 0,
+        });
+
+        log("INFO", "Job created and saved", { jobId });
+      }
+
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      log("ERROR", "Stagehand scrape failed", { error: errorMessage });
+
+      return {
+        success: false,
+        sessions: [],
+        error: errorMessage,
+        scrapedAt: Date.now(),
+        durationMs: Date.now() - startTime,
+        pagesScraped: 0,
+      };
+    }
   },
 });

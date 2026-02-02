@@ -155,3 +155,147 @@ export function formatPrice(cents: number, currency: string = 'USD'): string {
     maximumFractionDigits: 2,
   }).format(dollars);
 }
+
+/**
+ * Represents a week in the summer planner
+ */
+export interface SummerWeek {
+  weekNumber: number;
+  startDate: string; // "2024-06-03" (Monday)
+  endDate: string; // "2024-06-07" (Friday)
+  monthName: string;
+  label: string; // "Jun 3-7"
+}
+
+/**
+ * Generate all Mon-Fri weeks for June through August of a given year.
+ * Each week starts on Monday and ends on Friday.
+ *
+ * @param year - The year to generate weeks for
+ * @returns Array of summer weeks
+ */
+export function generateSummerWeeks(year: number): SummerWeek[] {
+  const weeks: SummerWeek[] = [];
+
+  // Start from first Monday in June
+  const juneFirst = new Date(year, 5, 1); // June is month 5 (0-indexed)
+  let currentDate = new Date(juneFirst);
+
+  // Find the first Monday in June
+  const dayOfWeek = currentDate.getDay();
+  if (dayOfWeek === 0) {
+    // Sunday - move to next day (Monday)
+    currentDate.setDate(currentDate.getDate() + 1);
+  } else if (dayOfWeek > 1) {
+    // Tuesday-Saturday - move to next Monday
+    currentDate.setDate(currentDate.getDate() + (8 - dayOfWeek));
+  }
+  // If dayOfWeek === 1 (Monday), we're already on Monday
+
+  // End date is last day of August
+  const augustLast = new Date(year, 8, 0); // Last day of August
+
+  let weekNumber = 1;
+
+  while (currentDate <= augustLast) {
+    const monday = new Date(currentDate);
+    const friday = new Date(currentDate);
+    friday.setDate(friday.getDate() + 4);
+
+    // Format dates as ISO strings
+    const startDate = formatISODate(monday);
+    const endDate = formatISODate(friday);
+
+    // Get month name for the week's Monday
+    const monthName = monday.toLocaleDateString('en-US', { month: 'long' });
+
+    // Create label like "Jun 3-7"
+    const monthShort = monday.toLocaleDateString('en-US', { month: 'short' });
+    const label = `${monthShort} ${monday.getDate()}-${friday.getDate()}`;
+
+    weeks.push({
+      weekNumber,
+      startDate,
+      endDate,
+      monthName,
+      label,
+    });
+
+    // Move to next Monday
+    currentDate.setDate(currentDate.getDate() + 7);
+    weekNumber++;
+  }
+
+  return weeks;
+}
+
+/**
+ * Format a Date as ISO date string (YYYY-MM-DD)
+ */
+function formatISODate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Check if two date ranges overlap.
+ * Ranges are inclusive on both ends.
+ *
+ * @param start1 - Start date of first range (YYYY-MM-DD)
+ * @param end1 - End date of first range (YYYY-MM-DD)
+ * @param start2 - Start date of second range (YYYY-MM-DD)
+ * @param end2 - End date of second range (YYYY-MM-DD)
+ * @returns True if the ranges overlap
+ */
+export function doDateRangesOverlap(
+  start1: string,
+  end1: string,
+  start2: string,
+  end2: string
+): boolean {
+  // Two ranges [s1, e1] and [s2, e2] overlap if:
+  // s1 <= e2 AND s2 <= e1
+  return start1 <= end2 && start2 <= end1;
+}
+
+/**
+ * Calculate the number of weekdays (Mon-Fri) that overlap between two date ranges.
+ *
+ * @param rangeStart - Start of the range to check
+ * @param rangeEnd - End of the range to check
+ * @param weekStart - Start of the week (Monday)
+ * @param weekEnd - End of the week (Friday)
+ * @returns Number of overlapping weekdays (0-5)
+ */
+export function countOverlappingWeekdays(
+  rangeStart: string,
+  rangeEnd: string,
+  weekStart: string,
+  weekEnd: string
+): number {
+  if (!doDateRangesOverlap(rangeStart, rangeEnd, weekStart, weekEnd)) {
+    return 0;
+  }
+
+  // Find the actual overlap dates
+  const overlapStart = rangeStart > weekStart ? rangeStart : weekStart;
+  const overlapEnd = rangeEnd < weekEnd ? rangeEnd : weekEnd;
+
+  // Count weekdays in overlap
+  let count = 0;
+  const current = new Date(overlapStart + 'T00:00:00');
+  const end = new Date(overlapEnd + 'T00:00:00');
+
+  while (current <= end) {
+    const dayOfWeek = current.getDay();
+    // Monday=1, Tuesday=2, ..., Friday=5
+    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+      count++;
+    }
+    current.setDate(current.getDate() + 1);
+  }
+
+  return count;
+}

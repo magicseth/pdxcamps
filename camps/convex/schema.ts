@@ -161,6 +161,13 @@ export default defineSchema({
     organizationId: v.id("organizations"),
     cityId: v.id("cities"),
 
+    // Denormalized fields for search results
+    campName: v.optional(v.string()),
+    campCategories: v.optional(v.array(v.string())),
+    organizationName: v.optional(v.string()),
+    locationName: v.optional(v.string()),
+    locationAddress: v.optional(addressValidator),
+
     // Dates
     startDate: v.string(), // "2024-06-15"
     endDate: v.string(),
@@ -218,6 +225,31 @@ export default defineSchema({
     .index("by_organization_and_status", ["organizationId", "status"])
     .index("by_location", ["locationId"])
     .index("by_source", ["sourceId"]),
+
+  // ============ FAMILY EVENTS (Planner) ============
+
+  familyEvents: defineTable({
+    familyId: v.id("families"),
+    childIds: v.array(v.id("children")),
+    title: v.string(),
+    description: v.optional(v.string()),
+    startDate: v.string(), // "2024-06-15"
+    endDate: v.string(),
+    eventType: v.union(
+      v.literal("vacation"),
+      v.literal("family_visit"),
+      v.literal("day_camp"),
+      v.literal("summer_school"),
+      v.literal("other")
+    ),
+    location: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    color: v.optional(v.string()),
+    isActive: v.boolean(),
+  })
+    .index("by_family", ["familyId"])
+    .index("by_family_and_active", ["familyId", "isActive"])
+    .index("by_family_and_dates", ["familyId", "startDate", "endDate"]),
 
   // ============ REGISTRATIONS ============
 

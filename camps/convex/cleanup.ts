@@ -1,4 +1,5 @@
 import { mutation } from "./_generated/server";
+import { v } from "convex/values";
 
 /**
  * Remove fake seeded data from the database
@@ -175,6 +176,26 @@ export const resetCampData = mutation({
     }
 
     return { message: "All camp data reset", deleted };
+  },
+});
+
+/**
+ * Fix organization logo URL
+ */
+export const fixOrganizationLogo = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    logoUrl: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) {
+      throw new Error("Organization not found");
+    }
+    await ctx.db.patch(args.organizationId, {
+      logoUrl: args.logoUrl,
+    });
+    return { success: true, name: org.name };
   },
 });
 

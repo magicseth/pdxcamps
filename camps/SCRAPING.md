@@ -340,12 +340,104 @@ npx convex run scraping/mutations:activateScrapeSource '{"sourceId": "..."}'
 ## Current Status
 
 ### Working Scrapers
-- **OMSI** (omsi module) - Salesforce Visualforce API, 250+ sessions
-- **Trackers Earth** (dynamic code) - Directory API, 904 sessions
+- **OMSI** (omsi module) - Salesforce Visualforce API, 250 sessions imported
+- **Trackers Earth** (dynamic code) - Directory API, 904 sessions imported
+- **Northwest Children's Theater** (dynamic code) - Sawyer API, 39 sessions imported
+- **Oregon Children's Theatre** (dynamic code) - Sawyer API, 4 sessions imported
+- **Backbeat Music Academy** - Stagehand, 8 sessions imported
+- **Oregon JCC** - Stagehand, 1 session imported
+- **Portland Parks & Recreation** - Stagehand, 3 sessions imported
+- **THPRD** - Stagehand, 2 camps imported
 
-### Site Analysis Results
+### Sawyer Platform API
 
-We analyzed 65 camp providers from PDXParent.com. Most modern camp sites use JavaScript frameworks that require browser-based scraping (Stagehand) rather than simple HTML parsing.
+Many camp providers use the Sawyer registration platform (hisawyer.com). These can be scraped via their widget API:
+
+```
+https://www.hisawyer.com/api/v1/widget/scheduled_activities?slug={org_slug}&schedule_id={schedule}&widget_tags={tags}&page={page}
+```
+
+**Response includes:**
+- Full session details (name, dates, times, pricing)
+- Image URLs (via CDN)
+- Registration URLs (pdp_url)
+- Availability (open_spots_count)
+- Age ranges
+
+**Example scraper code for Sawyer sites:** See NWCTS scraper in database for template.
+
+### Stagehand Integration (Browser Automation)
+
+For JavaScript-heavy sites that don't have APIs, we have Stagehand integration available:
+
+```bash
+# Test Stagehand scraping on a URL
+npx convex run scraping/scrapers/executor:executeStagehandScraper '{
+  "url": "https://example.com/camps",
+  "instruction": "Extract all summer camp information including camp names, dates, times, ages, prices and descriptions"
+}'
+```
+
+**Requirements:**
+- `BROWSERBASE_API_KEY` - Browserbase API key
+- `BROWSERBASE_PROJECT_ID` - Browserbase project ID
+- `MODEL_API_KEY` - Anthropic API key for Claude
+
+**Limitations:**
+- Free tier has 1 concurrent session limit
+- Sessions may get stuck requiring manual cleanup in Browserbase dashboard
+- Pages with too much content (>200k tokens) will fail - try a more specific page URL
+
+**Best Practices for Stagehand Instructions:**
+- **Extract individual sessions, not overview info.** Many camps run weekly - extract each week as a separate session with specific dates, not just "June-August"
+- Be specific: "Extract each weekly camp session with its specific start and end dates"
+- If a site has multiple pages/tabs for different weeks, navigate to get all data
+- Example good instruction: "Extract all individual camp sessions. Each session should have its own specific week dates (e.g., June 15-19), not the overall summer date range."
+
+### Import Pipeline
+
+After scraping, import data to the database:
+
+```bash
+# Import from a source (uses latest scrape job)
+npx convex run scraping/import:importFromSource '{"sourceId": "..."}'
+
+# Import from a specific job
+npx convex run scraping/import:importFromJob '{"jobId": "..."}'
+```
+
+### Site Analysis Results (February 2026)
+
+We analyzed Portland camp providers. Here's what we found:
+
+#### Sites with APIs (Easiest to Scrape)
+| Site | API Type | Status |
+|------|----------|--------|
+| **OMSI** | Salesforce Visualforce | ✅ Working - 250 sessions |
+| **Trackers Earth** | Custom REST API | ✅ Working - 904 sessions |
+
+#### Sites with Registration Platforms (May Have APIs)
+| Site | Platform | Notes |
+|------|----------|-------|
+| **Oregon JCC** | Daxko | API requires business account |
+| **Oregon Children's Theatre** | Sawyer | No public API, uses embedded widgets |
+| **THPRD** | Custom (myTHPRD) | Custom registration system |
+| **Portland Parks** | ActiveCommunities | Uses external registration portal |
+
+#### Sites Requiring Stagehand (JavaScript-Heavy)
+| Site | Framework | Notes |
+|------|-----------|-------|
+| **World of Speed** | WordPress/Elementor | Content loaded via JavaScript |
+| **NW Children's Theater** | WordPress | Has PDF schedules, embedded widgets |
+| **Portland Art Museum** | WordPress | /learn/camps/ returns 404 |
+| **Oregon Zoo** | Drupal | /camps returns 404, needs URL update |
+
+#### Sites with Broken/Changed URLs
+- Oregon Zoo: `/camps` returns 404
+- Portland Art Museum: `/learn/camps/` returns 404
+- Camp Fire Columbia: Returns Wix 404
+- NW Children's Theater: `/camps` returns 404 (use `/summer-camp-26/`)
+- NCPRD: `/camps` returns 404
 
 #### Sites Requiring Stagehand (JavaScript-heavy)
 | Site | Technology | Notes |

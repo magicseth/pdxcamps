@@ -213,7 +213,7 @@ export function EditEventModal({ isOpen, onClose, event }: EditEventModalProps) 
           /* Form */
           <form onSubmit={handleSubmit} className="p-4 space-y-4">
             {error && (
-              <div className="p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm">
+              <div role="alert" className="p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm">
                 {error}
               </div>
             )}

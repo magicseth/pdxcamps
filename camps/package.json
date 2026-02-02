@@ -24,7 +24,10 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.72.1",
+    "@browserbasehq/stagehand": "^3.0.8",
     "@convex-dev/eslint-plugin": "^1.1.1",
+    "@convex-dev/workflow": "^0.3.4",
+    "@fal-ai/client": "^1.7.2",
     "@workos-inc/authkit-nextjs": "^2.13.0",
     "cheerio": "^1.2.0",
     "convex": "^1.31.7",

@@ -210,6 +210,74 @@ export const processTrackersImages = action({
 });
 
 /**
+ * Store all organization logos in Convex storage
+ * Downloads from external URLs and updates orgs to use Convex URLs
+ */
+export const storeAllLogos = action({
+  args: {},
+  handler: async (ctx): Promise<{
+    success: boolean;
+    results: Array<{ name: string; stored: boolean; error?: string }>;
+  }> => {
+    const results: Array<{ name: string; stored: boolean; error?: string }> = [];
+
+    // Logo URLs for each organization
+    const logos: Array<{ name: string; organizationId: string; url: string }> = [
+      {
+        name: "OMSI",
+        organizationId: "kh75v4zw4w3v6hc2m8y9jjze5h80dc22",
+        url: "https://omsi.edu/wp-content/uploads/2023/05/OMSI_FullLogo_RGB.png",
+      },
+      {
+        name: "Trackers Earth",
+        organizationId: "kh7f4thw13306rys338we33kqd80dkrm",
+        url: "https://trackerspdx.com/images/logo-trackers-brand.png",
+      },
+    ];
+
+    for (const logo of logos) {
+      try {
+        console.log(`[Logos] Processing ${logo.name}...`);
+
+        // Download and store the image
+        const storeResult = await downloadAndStoreImage(ctx, logo.url);
+
+        if (!storeResult.storageId) {
+          results.push({ name: logo.name, stored: false, error: storeResult.error });
+          continue;
+        }
+
+        // Get the Convex storage URL
+        const convexUrl = await ctx.storage.getUrl(storeResult.storageId);
+
+        if (!convexUrl) {
+          results.push({ name: logo.name, stored: false, error: "Failed to get storage URL" });
+          continue;
+        }
+
+        // Update the organization with the Convex URL
+        await ctx.runMutation(api.scraping.mutations.updateOrganizationLogo, {
+          organizationId: logo.organizationId as Id<"organizations">,
+          logoUrl: convexUrl,
+          logoStorageId: storeResult.storageId,
+        });
+
+        console.log(`[Logos] ${logo.name} stored: ${convexUrl}`);
+        results.push({ name: logo.name, stored: true });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown error";
+        results.push({ name: logo.name, stored: false, error: message });
+      }
+    }
+
+    return {
+      success: results.some((r) => r.stored),
+      results,
+    };
+  },
+});
+
+/**
  * Batch store multiple images
  */
 export const storeMultipleImages = action({
