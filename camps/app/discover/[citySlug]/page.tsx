@@ -472,7 +472,7 @@ export default function DiscoverPage() {
               showFilters ? 'block' : 'hidden'
             } md:block w-full md:w-72 flex-shrink-0`}
           >
-            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto">
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 sticky top-24 max-h-[calc(100vh-12rem)] overflow-y-auto">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                   Filters
