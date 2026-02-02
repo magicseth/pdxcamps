@@ -156,6 +156,57 @@ async function fetchLogoWithAI(
 }
 
 /**
+ * Try to extract favicon URL from website HTML
+ */
+async function extractFaviconFromHtml(website: string): Promise<string | null> {
+  try {
+    const response = await fetch(website, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; PDXCampsBot/1.0)",
+        Accept: "text/html",
+      },
+    });
+
+    if (!response.ok) return null;
+
+    const html = await response.text();
+    const url = new URL(website);
+
+    // Look for link tags with rel containing "icon"
+    // Patterns: <link rel="icon" href="..."> or <link rel="shortcut icon" href="...">
+    // or <link rel="apple-touch-icon" href="...">
+    const iconPatterns = [
+      /<link[^>]*rel=["'](?:apple-touch-icon|apple-touch-icon-precomposed)["'][^>]*href=["']([^"']+)["']/i,
+      /<link[^>]*href=["']([^"']+)["'][^>]*rel=["'](?:apple-touch-icon|apple-touch-icon-precomposed)["']/i,
+      /<link[^>]*rel=["'](?:shortcut )?icon["'][^>]*href=["']([^"']+)["']/i,
+      /<link[^>]*href=["']([^"']+)["'][^>]*rel=["'](?:shortcut )?icon["']/i,
+    ];
+
+    for (const pattern of iconPatterns) {
+      const match = html.match(pattern);
+      if (match && match[1]) {
+        let faviconUrl = match[1];
+        // Make absolute URL
+        if (faviconUrl.startsWith("//")) {
+          faviconUrl = `https:${faviconUrl}`;
+        } else if (faviconUrl.startsWith("/")) {
+          faviconUrl = `${url.origin}${faviconUrl}`;
+        } else if (!faviconUrl.startsWith("http")) {
+          faviconUrl = `${url.origin}/${faviconUrl}`;
+        }
+        console.log(`[Logos] Found favicon in HTML: ${faviconUrl}`);
+        return faviconUrl;
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.log(`[Logos] Failed to extract favicon from HTML:`, error);
+    return null;
+  }
+}
+
+/**
  * Try to fetch a favicon or logo from a website using traditional methods
  */
 async function fetchLogoFromWebsite(
@@ -173,16 +224,33 @@ async function fetchLogoFromWebsite(
     const url = new URL(website);
     const origin = url.origin;
 
-    // Try common logo/favicon locations
+    // First try to extract favicon from the actual HTML (most reliable)
+    const htmlFavicon = await extractFaviconFromHtml(website);
+    if (htmlFavicon) {
+      const result = await downloadAndStoreImage(ctx, htmlFavicon);
+      if (result.storageId) {
+        return result.storageId;
+      }
+    }
+
+    // Try various favicon/logo APIs and common paths
     const logoUrls = [
-      // Clearbit logo API (usually works well)
+      // Clearbit logo API (high-quality company logos)
       `https://logo.clearbit.com/${url.hostname}`,
-      // Google favicon service
-      `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=128`,
-      // Common favicon paths
-      `${origin}/favicon.ico`,
-      `${origin}/favicon.png`,
+      // Icon Horse - good favicon aggregator
+      `https://icon.horse/icon/${url.hostname}`,
+      // DuckDuckGo favicon service
+      `https://icons.duckduckgo.com/ip3/${url.hostname}.ico`,
+      // Google favicon service (larger size)
+      `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=256`,
+      // Common high-quality icon paths
       `${origin}/apple-touch-icon.png`,
+      `${origin}/apple-touch-icon-180x180.png`,
+      `${origin}/apple-touch-icon-152x152.png`,
+      `${origin}/favicon-196x196.png`,
+      `${origin}/favicon-128.png`,
+      `${origin}/favicon.png`,
+      `${origin}/favicon.ico`,
     ];
 
     for (const logoUrl of logoUrls) {
@@ -371,5 +439,69 @@ export const fetchOrgLogoForSource = internalAction({
     }
 
     return { success: false, message: `Failed to fetch logo for ${org.name}` };
+  },
+});
+
+/**
+ * Refresh logos for all organizations - tries to get real logos, skipping placeholders
+ * Use this to replace placeholder logos with real ones
+ */
+export const refreshOrgLogos = action({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args): Promise<{
+    success: boolean;
+    processed: number;
+    updated: number;
+    skipped: number;
+    errors: string[];
+  }> => {
+    const limit = args.limit ?? 100;
+    const errors: string[] = [];
+    let processed = 0;
+    let updated = 0;
+    let skipped = 0;
+
+    // Get all organizations with websites
+    const organizations = await ctx.runQuery(api.organizations.queries.listAllOrganizations, {});
+    const orgsWithWebsites = organizations.filter((org) => org.website && isValidUrl(org.website));
+
+    console.log(`[Logos] Refreshing logos for ${Math.min(orgsWithWebsites.length, limit)} organizations`);
+
+    for (const org of orgsWithWebsites.slice(0, limit)) {
+      processed++;
+
+      if (!org.website) {
+        skipped++;
+        continue;
+      }
+
+      console.log(`[Logos] Trying to fetch real logo for ${org.name} from ${org.website}`);
+
+      // Try to fetch a real logo (no AI, just traditional methods which are more reliable)
+      const logoStorageId = await fetchLogoFromWebsite(ctx, org.website);
+
+      if (logoStorageId) {
+        // Update with real logo
+        await ctx.runMutation(internal.organizations.mutations.updateOrgLogo, {
+          orgId: org._id,
+          logoStorageId,
+        });
+        updated++;
+        console.log(`[Logos] ✓ Updated ${org.name} with real logo`);
+      } else {
+        skipped++;
+        console.log(`[Logos] ✗ No real logo found for ${org.name}`);
+      }
+    }
+
+    return {
+      success: updated > 0,
+      processed,
+      updated,
+      skipped,
+      errors: errors.slice(0, 20),
+    };
   },
 });
