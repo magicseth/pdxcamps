@@ -345,7 +345,7 @@ function getSeverityIcon(severity: string) {
 // Icons
 function AlertCircleIcon() {
   return (
-    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -358,7 +358,7 @@ function AlertCircleIcon() {
 
 function AlertTriangleIcon() {
   return (
-    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -371,7 +371,7 @@ function AlertTriangleIcon() {
 
 function InfoIcon() {
   return (
-    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -384,7 +384,7 @@ function InfoIcon() {
 
 function CheckCircleIcon() {
   return (
-    <svg className="w-16 h-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className="w-16 h-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -397,7 +397,7 @@ function CheckCircleIcon() {
 
 function CheckIcon() {
   return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
     </svg>
   );
@@ -405,7 +405,7 @@ function CheckIcon() {
 
 function ClockIcon() {
   return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -418,7 +418,7 @@ function ClockIcon() {
 
 function DatabaseIcon() {
   return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -431,7 +431,7 @@ function DatabaseIcon() {
 
 function SpinnerIcon() {
   return (
-    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24" aria-hidden="true">
       <circle
         className="opacity-25"
         cx="12"

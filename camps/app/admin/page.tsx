@@ -401,7 +401,7 @@ function truncateUrl(url: string): string {
 
 function ExternalLinkIcon() {
   return (
-    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
       <path
         strokeLinecap="round"
         strokeLinejoin="round"

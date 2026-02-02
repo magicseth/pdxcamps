@@ -380,7 +380,7 @@ function formatTimestamp(timestamp: number): string {
 // Icons
 function EmptyIcon() {
   return (
-    <svg className="w-16 h-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className="w-16 h-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -393,7 +393,7 @@ function EmptyIcon() {
 
 function SpinnerIcon() {
   return (
-    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24" aria-hidden="true">
       <circle
         className="opacity-25"
         cx="12"
