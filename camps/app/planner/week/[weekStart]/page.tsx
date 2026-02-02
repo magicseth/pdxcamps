@@ -16,6 +16,14 @@ import { calculateAge, isAgeInRange, isGradeInRange, doDateRangesOverlap } from 
 export default function WeekDetailPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+      {/* Skip to main content link for keyboard users */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg focus:font-medium"
+      >
+        Skip to main content
+      </a>
+
       <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3 sticky top-0 z-20">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
@@ -38,7 +46,7 @@ export default function WeekDetailPage() {
           </div>
         </div>
       </header>
-      <main className="p-4 md:p-8 pb-24">
+      <main id="main-content" className="p-4 md:p-8 pb-24">
         <Authenticated>
           <WeekDetailContent />
         </Authenticated>
