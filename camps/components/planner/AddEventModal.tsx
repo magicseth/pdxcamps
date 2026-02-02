@@ -162,7 +162,7 @@ export function AddEventModal({
           </h2>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"
             aria-label="Close"
             title="Close (Esc)"
           >

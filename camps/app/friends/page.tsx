@@ -31,7 +31,7 @@ export default function FriendsPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/settings"
-              className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
+              className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"
               title="Settings"
               aria-label="Settings"
             >
@@ -434,7 +434,7 @@ function ShareCalendarModal({
           </h3>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
             aria-label="Close"
             title="Close (Esc)"
           >

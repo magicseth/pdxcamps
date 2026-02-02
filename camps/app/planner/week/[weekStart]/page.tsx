@@ -33,7 +33,7 @@ export default function WeekDetailPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/settings"
-              className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700"
+              className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
               aria-label="Settings"
               title="Settings"
             >
