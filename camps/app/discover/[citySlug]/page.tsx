@@ -692,15 +692,29 @@ export default function DiscoverPage() {
 
             {/* Results Summary & Sort */}
             <div className="mb-4 flex items-center justify-between">
-              <p className="text-sm text-slate-600 dark:text-slate-400">
+              <div className="text-sm text-slate-600 dark:text-slate-400">
                 {sessions === undefined ? (
                   'Loading...'
                 ) : filteredSessions.length === 0 ? (
                   'No sessions found'
                 ) : (
-                  `${filteredSessions.length} session${filteredSessions.length === 1 ? '' : 's'} found`
+                  <span className="flex items-center gap-3 flex-wrap">
+                    <span>{filteredSessions.length} session{filteredSessions.length === 1 ? '' : 's'}</span>
+                    <span className="text-slate-400 dark:text-slate-500">•</span>
+                    <span>{new Set(filteredSessions.map(s => s.campId)).size} camp{new Set(filteredSessions.map(s => s.campId)).size === 1 ? '' : 's'}</span>
+                    {filteredSessions.length > 0 && (
+                      <>
+                        <span className="text-slate-400 dark:text-slate-500">•</span>
+                        <span>
+                          ${Math.round(Math.min(...filteredSessions.map(s => s.price)) / 100)}
+                          {' - '}
+                          ${Math.round(Math.max(...filteredSessions.map(s => s.price)) / 100)}
+                        </span>
+                      </>
+                    )}
+                  </span>
                 )}
-              </p>
+              </div>
               <div className="flex items-center gap-2">
                 <label className="text-xs text-slate-500 dark:text-slate-400">Sort:</label>
                 <select
