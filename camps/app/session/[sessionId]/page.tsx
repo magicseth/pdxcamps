@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery, useMutation } from 'convex/react';
@@ -70,6 +70,18 @@ export default function SessionDetailPage() {
       .sort((a, b) => a.startDate.localeCompare(b.startDate))
       .slice(0, 3);
   }, [otherSessions, sessionId]);
+
+  // Update document title with camp name
+  useEffect(() => {
+    if (session?.camp?.name) {
+      document.title = `${session.camp.name} | PDX Camps`;
+    } else {
+      document.title = 'Camp Session | PDX Camps';
+    }
+    return () => {
+      document.title = 'PDX Camps';
+    };
+  }, [session?.camp?.name]);
 
   // Mutations
   const markInterested = useMutation(api.registrations.mutations.markInterested);
