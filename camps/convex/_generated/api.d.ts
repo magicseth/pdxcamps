@@ -34,6 +34,7 @@ import type * as scraping_internal from "../scraping/internal.js";
 import type * as scraping_mutations from "../scraping/mutations.js";
 import type * as scraping_omsi from "../scraping/omsi.js";
 import type * as scraping_queries from "../scraping/queries.js";
+import type * as scraping_seedSources from "../scraping/seedSources.js";
 import type * as seed from "../seed.js";
 import type * as sessions_mutations from "../sessions/mutations.js";
 import type * as sessions_queries from "../sessions/queries.js";
@@ -73,6 +74,7 @@ declare const fullApi: ApiFromModules<{
   "scraping/mutations": typeof scraping_mutations;
   "scraping/omsi": typeof scraping_omsi;
   "scraping/queries": typeof scraping_queries;
+  "scraping/seedSources": typeof scraping_seedSources;
   seed: typeof seed;
   "sessions/mutations": typeof sessions_mutations;
   "sessions/queries": typeof sessions_queries;

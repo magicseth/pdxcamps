@@ -13,6 +13,8 @@ export const createCamp = mutation({
     description: v.string(),
     categories: v.array(v.string()),
     ageRequirements: ageRangeValidator,
+    website: v.optional(v.string()),
+    imageUrls: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     // Verify organization exists
@@ -49,6 +51,8 @@ export const createCamp = mutation({
       categories: args.categories,
       ageRequirements: args.ageRequirements,
       typicalPriceRange: undefined,
+      website: args.website,
+      imageUrls: args.imageUrls,
       imageStorageIds: [],
       isActive: true,
     });
@@ -67,6 +71,8 @@ export const updateCamp = mutation({
     description: v.optional(v.string()),
     categories: v.optional(v.array(v.string())),
     ageRequirements: v.optional(ageRangeValidator),
+    website: v.optional(v.string()),
+    imageUrls: v.optional(v.array(v.string())),
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -110,6 +116,12 @@ export const updateCamp = mutation({
     }
     if (updates.ageRequirements !== undefined) {
       updateFields.ageRequirements = updates.ageRequirements;
+    }
+    if (updates.website !== undefined) {
+      updateFields.website = updates.website;
+    }
+    if (updates.imageUrls !== undefined) {
+      updateFields.imageUrls = updates.imageUrls;
     }
     if (updates.isActive !== undefined) {
       updateFields.isActive = updates.isActive;

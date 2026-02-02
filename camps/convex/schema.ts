@@ -98,6 +98,8 @@ export default defineSchema({
     email: v.optional(v.string()),
     phone: v.optional(v.string()),
     description: v.optional(v.string()),
+    // Logo - source URL from scraping and stored file
+    logoUrl: v.optional(v.string()),
     logoStorageId: v.optional(v.id("_storage")),
     cityIds: v.array(v.id("cities")),
     isVerified: v.boolean(),
@@ -120,6 +122,10 @@ export default defineSchema({
         currency: v.string(),
       })
     ),
+    // Website URL for camp info/registration
+    website: v.optional(v.string()),
+    // Images - source URLs from scraping and stored files
+    imageUrls: v.optional(v.array(v.string())),
     imageStorageIds: v.array(v.id("_storage")),
     isActive: v.boolean(),
   })
