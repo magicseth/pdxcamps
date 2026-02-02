@@ -272,6 +272,14 @@ export default function DiscoverPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 pb-20">
+      {/* Skip to main content link for keyboard users */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg focus:font-medium"
+      >
+        Skip to main content
+      </a>
+
       {/* Header */}
       <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 py-3">
@@ -597,7 +605,7 @@ export default function DiscoverPage() {
           </aside>
 
           {/* Sessions Grid */}
-          <main className="flex-1">
+          <main id="main-content" className="flex-1">
             {/* Organization Filter Chips */}
             {allOrganizations && allOrganizations.length > 0 && (
               <div className="mb-4">
