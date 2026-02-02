@@ -414,20 +414,54 @@ async function processRequest(request: DevelopmentRequest, verbose: boolean = fa
 function getSiteSpecificGuidance(url: string): string {
   const guidance: string[] = [];
 
-  // ActiveCommunities detection
-  if (url.includes('activecommunities.com') || url.includes('apm.activecommunities.com') ||
-      url.includes('portland.gov/parks')) {
+  // Portland Parks & Rec - LOCATION-BASED organization
+  if (url.includes('portland.gov/parks')) {
+    guidance.push('\n## ⚠️ CRITICAL: Portland Parks & Recreation - LOCATION-BASED CAMPS\n');
+    guidance.push('**Camps are organized by COMMUNITY CENTER. You MUST scrape each location separately.**\n\n');
+    guidance.push('### Discovery Steps:\n');
+    guidance.push('1. Go to the main camps page and find the list of community center locations\n');
+    guidance.push('2. Each location links to ActiveCommunities with a different `site_ids` parameter\n');
+    guidance.push('3. You MUST iterate through ALL locations to get all camps\n\n');
+    guidance.push('### Known Community Center site_ids:\n');
+    guidance.push('```typescript\n');
+    guidance.push('const COMMUNITY_CENTERS = [\n');
+    guidance.push('  { name: "Charles Jordan Community Center", siteId: 15 },\n');
+    guidance.push('  { name: "East Portland Community Center", siteId: 23 },\n');
+    guidance.push('  { name: "Matt Dishman Community Center", siteId: 21 },\n');
+    guidance.push('  { name: "Montavilla Community Center", siteId: 43 },\n');
+    guidance.push('  { name: "Mt. Scott Community Center", siteId: 44 },\n');
+    guidance.push('  { name: "Multnomah Arts Center", siteId: 22 },\n');
+    guidance.push('  { name: "Peninsula Park Community Center", siteId: 45 },\n');
+    guidance.push('  { name: "Southwest Community Center", siteId: 46 },\n');
+    guidance.push('  { name: "St. Johns Community Center", siteId: 47 },\n');
+    guidance.push('];\n');
+    guidance.push('```\n\n');
+    guidance.push('### URL Pattern:\n');
+    guidance.push('```\n');
+    guidance.push('https://anc.apm.activecommunities.com/portlandparks/activity/search\n');
+    guidance.push('  ?onlineSiteId=0\n');
+    guidance.push('  &activity_select_param=2\n');
+    guidance.push('  &activity_category_ids=83&activity_category_ids=50&activity_category_ids=68\n');
+    guidance.push('  &site_ids=XX  <-- VARIES BY LOCATION\n');
+    guidance.push('  &activity_other_category_ids=4\n');
+    guidance.push('  &viewMode=list\n');
+    guidance.push('```\n\n');
+    guidance.push('### Expected Result Format:\n');
+    guidance.push('Camp - Spring Break Thrills: Week of 3/23 (Grades 1-5)\n');
+    guidance.push('#1189692 / Grade 1st - 5th / Openings 0\n');
+    guidance.push('Mon,Tue,Wed,Thu,Fri 9:00 AM - 5:00 PM\n\n');
+    guidance.push('**Expect 50-200+ camps total across all locations.**\n\n');
+  }
+
+  // Generic ActiveCommunities detection (other cities)
+  else if (url.includes('activecommunities.com') || url.includes('apm.activecommunities.com')) {
     guidance.push('\n## ⚠️ CRITICAL: ActiveCommunities React SPA Detected\n');
-    guidance.push('This site uses ActiveCommunities which is a React Single Page Application.\n');
-    guidance.push('**DO NOT use querySelector/querySelectorAll - they WILL FAIL.**\n\n');
-    guidance.push('### Required Approach:\n');
-    guidance.push('1. Navigate to the activity search URL: `https://anc.apm.activecommunities.com/portlandparks/activity/search`\n');
-    guidance.push('2. Add category filters: `?activity_category_ids=50` (Day Camps), `83` (Specialty), `68` (Sports)\n');
-    guidance.push("3. Wait with `networkidle` AND `page.waitForTimeout(5000)`\n");
-    guidance.push('4. Use `page.extract()` with Stagehand AI to read the visible camp cards\n');
-    guidance.push('5. Extract: name, dates, times, price, ages, location from VISIBLE content\n');
-    guidance.push('6. Handle pagination - look for Load More buttons\n');
-    guidance.push('7. Expect 100+ camps across all categories\n\n');
+    guidance.push('This is a React SPA that loads content dynamically.\n');
+    guidance.push('**DO NOT use querySelector - use page.extract() with Stagehand AI.**\n\n');
+    guidance.push('### Check for Location-Based Organization:\n');
+    guidance.push('Many Parks & Rec sites organize camps by facility/location.\n');
+    guidance.push('Look for `site_ids` parameters in URLs - you may need to iterate through multiple.\n\n');
+    guidance.push("Wait with `networkidle` AND `page.waitForTimeout(5000)` for React to render.\n\n");
   }
 
   // OMSI/secure sites
@@ -446,6 +480,17 @@ function getSiteSpecificGuidance(url: string): string {
     guidance.push('- Multiple camp categories (by age, theme, dates)\n');
     guidance.push('- Detailed program pages with registration links\n');
     guidance.push('- Check for a dedicated camps/classes section\n\n');
+  }
+
+  // Parks & Recreation general pattern
+  if (url.includes('parks') && url.includes('recreation') || url.includes('parksandrec')) {
+    guidance.push('\n## Parks & Recreation Site Pattern\n');
+    guidance.push('**WARNING: These sites often organize camps by LOCATION.**\n');
+    guidance.push('Look for:\n');
+    guidance.push('- List of community centers, parks, or facilities\n');
+    guidance.push('- Each location may have its own camp listings\n');
+    guidance.push('- Registration system may use `site_ids` or `location_id` parameters\n');
+    guidance.push('- You MUST iterate through all locations to get complete data\n\n');
   }
 
   return guidance.join('');

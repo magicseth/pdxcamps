@@ -33,11 +33,82 @@ The scraper should export a function that:
 
 ## Steps
 1. First, use WebFetch to explore the target URL and understand the page structure
-2. Identify where camp information is displayed
-3. Look for JavaScript-rendered content, week pickers, calendars, or date selectors
-4. Check if there are multiple weeks/sessions that need to be extracted individually
-5. Write the extraction code
-6. Save the code to the output file
+2. **CRITICAL: Discover the site's navigation structure** (see below)
+3. Identify where camp information is displayed
+4. Look for JavaScript-rendered content, week pickers, calendars, or date selectors
+5. Check if there are multiple weeks/sessions that need to be extracted individually
+6. Write the extraction code
+7. Save the code to the output file
+
+## CRITICAL: Site Navigation Discovery
+
+**Many camp sites organize camps by LOCATION, CATEGORY, or AGE GROUP.** You MUST discover and iterate through ALL entry points to find all camps.
+
+### Common Patterns to Look For:
+
+1. **Location-based organization** (Parks & Rec, Community Centers)
+   - Look for lists of: "Community Centers", "Park Locations", "Facilities", "Sites"
+   - Example: Portland Parks lists camps at each community center separately
+   - Each location may have a different `site_id` or URL parameter
+   - **You MUST scrape each location separately**
+
+2. **Category-based organization**
+   - Camp types: Day Camps, Specialty Camps, Sports Camps, Arts Camps
+   - Age groups: Preschool, Elementary, Middle School, Teen
+   - Check for category filters or separate pages per category
+
+3. **External registration systems**
+   - Many orgs link to: ActiveCommunities, CampBrain, UltraCamp, RegFox
+   - The main website may just have links - follow them to the actual registration system
+   - Look for URL parameters like: `site_ids=`, `category_ids=`, `location_id=`
+
+### Discovery Process:
+
+1. **Read the main page carefully** - look for:
+   - "View camps at:" followed by location links
+   - "Camp Locations:" with a list of places
+   - "Find camps by:" with category options
+   - Navigation menus with multiple camp sections
+
+2. **Extract ALL entry point URLs** before writing any scraper
+   - If you see 10 locations listed, you need 10 different URLs
+   - Note the URL pattern and varying parameters (e.g., `site_ids=43`, `site_ids=44`)
+
+3. **Your scraper MUST iterate through all entry points**
+   - Create an array of location/category objects with their IDs
+   - Loop through and scrape each one
+   - Combine results and deduplicate
+
+### Example Pattern for Location-Based Sites:
+
+```typescript
+const LOCATIONS = [
+  { name: "Downtown Center", siteId: 15 },
+  { name: "East Side Center", siteId: 23 },
+  { name: "West Park Center", siteId: 44 },
+  // ... discover ALL locations from the main page
+];
+
+export async function scrape(page: Page): Promise<ExtractedSession[]> {
+  const allSessions: ExtractedSession[] = [];
+
+  for (const location of LOCATIONS) {
+    const url = `https://registration.example.com/search?site_ids=${location.siteId}&category=camps`;
+    await page.goto(url, { waitUntil: 'networkidle' });
+    // ... extract camps from this location
+    // ... add to allSessions with location.name
+  }
+
+  return allSessions;
+}
+```
+
+### Red Flags That You're Missing Camps:
+
+- Finding only 0-5 camps when the site advertises "dozens of options"
+- Only seeing camps at one location when the site lists multiple facilities
+- The main page shows categories but you're not filtering by them
+- Registration system has URL parameters you're not varying
 
 {{#NOTES}}
 ## Additional Notes from Requester
