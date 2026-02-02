@@ -714,6 +714,9 @@ END:VCALENDAR`;
                 <CalendarPlusIcon className="w-5 h-5" />
                 Add to Calendar
               </button>
+
+              {/* Share Button */}
+              <ShareButtonLarge title={camp?.name ?? 'Check out this camp!'} />
             </div>
 
             {/* Organization Info */}
@@ -1442,6 +1445,47 @@ function ShareButton({ title }: { title: string }) {
           Copied!
         </span>
       )}
+    </button>
+  );
+}
+
+// Large share button for action area
+function ShareButtonLarge({ title }: { title: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = async () => {
+    const url = window.location.href;
+
+    // Try Web Share API first (mobile)
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title,
+          url,
+        });
+        return;
+      } catch (err) {
+        // User cancelled or error - fall back to copy
+      }
+    }
+
+    // Fall back to clipboard copy
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleShare}
+      className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 font-medium rounded-md hover:bg-slate-50 dark:hover:bg-slate-600 flex items-center justify-center gap-2"
+    >
+      <ShareIcon />
+      {copied ? 'Link Copied!' : 'Share with Partner'}
     </button>
   );
 }
