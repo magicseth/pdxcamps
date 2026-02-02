@@ -1112,11 +1112,12 @@ function SessionCard({
     const dropOffMinutes = dropOff.hour * 60 + dropOff.minute;
     const pickUpMinutes = pickUp.hour * 60 + pickUp.minute;
     const durationHours = (pickUpMinutes - dropOffMinutes) / 60;
+    const hours = Math.round(durationHours);
     // Half-day is typically less than 5 hours
     if (durationHours < 5) {
-      return { label: 'Half day', isHalfDay: true };
+      return { label: `${hours}h`, isHalfDay: true };
     }
-    return { label: 'Full day', isHalfDay: false };
+    return { label: `${hours}h`, isHalfDay: false };
   };
 
   // Format age range
