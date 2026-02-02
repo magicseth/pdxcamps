@@ -543,6 +543,7 @@ function AddFriend() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter friend's email address"
+            autoComplete="email"
             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             required
           />
