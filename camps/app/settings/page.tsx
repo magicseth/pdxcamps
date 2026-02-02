@@ -210,10 +210,11 @@ function FamilyProfileSection({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label htmlFor="settings-primary-city" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Primary City
             </label>
             <select
+              id="settings-primary-city"
               value={primaryCityId}
               onChange={(e) => setPrimaryCityId(e.target.value as Id<'cities'>)}
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
@@ -518,8 +519,9 @@ function EditChildForm({
           />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Grade</label>
+          <label htmlFor={`edit-child-grade-${child._id}`} className="block text-xs text-slate-500 mb-1">Grade</label>
           <select
+            id={`edit-child-grade-${child._id}`}
             value={currentGrade ?? ''}
             onChange={(e) =>
               setCurrentGrade(e.target.value ? parseInt(e.target.value) : undefined)
@@ -691,10 +693,11 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
               />
             </div>
             <div>
-              <label className="block text-sm text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="add-child-grade" className="block text-sm text-slate-700 dark:text-slate-300 mb-1">
                 Grade
               </label>
               <select
+                id="add-child-grade"
                 value={currentGrade ?? ''}
                 onChange={(e) =>
                   setCurrentGrade(
