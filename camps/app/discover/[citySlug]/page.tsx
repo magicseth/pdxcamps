@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Id } from '../../../convex/_generated/dataModel';
 import { OrgLogo } from '../../../components/shared/OrgLogo';
@@ -111,6 +111,9 @@ export default function DiscoverPage() {
     api.locations.queries.listLocations,
     city ? { cityId: city._id } : 'skip'
   );
+
+  // Check if user is admin (for generate image button)
+  const isAdmin = useQuery(api.admin.queries.isAdmin);
 
   // Fetch sessions with filters
   const sessions = useQuery(
@@ -247,6 +250,9 @@ export default function DiscoverPage() {
                   <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
                 )}
               </button>
+              <Link href="/settings" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                <SettingsIcon />
+              </Link>
               <Link href="/" className="flex items-center gap-2">
                 <span className="text-xl">☀️</span>
                 <span className="font-bold hidden sm:inline">PDX Camps</span>
@@ -529,7 +535,7 @@ export default function DiscoverPage() {
             {sessions !== undefined && filteredSessions.length > 0 && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {filteredSessions.map((session) => (
-                  <SessionCard key={session._id} session={session} cityId={city._id} />
+                  <SessionCard key={session._id} session={session} cityId={city._id} isAdmin={isAdmin ?? false} />
                 ))}
               </div>
             )}
@@ -546,6 +552,7 @@ export default function DiscoverPage() {
 function SessionCard({
   session,
   cityId,
+  isAdmin,
 }: {
   session: {
     _id: Id<'sessions'>;
@@ -569,8 +576,12 @@ function SessionCard({
     };
   };
   cityId: Id<'cities'>;
+  isAdmin?: boolean;
 }) {
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
+  const generateImage = useAction(api.scraping.generateImages.generateCampImage);
 
   // Fetch related data
   const camp = useQuery(api.camps.queries.getCamp, { campId: session.campId });
@@ -708,20 +719,99 @@ function SessionCard({
     <>
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
         {/* Camp Image or Category Placeholder */}
-        <div className="relative h-32 overflow-hidden">
+        <div className="relative h-32 overflow-hidden group">
           {campImageUrl ? (
-            <img
-              src={campImageUrl}
-              alt={camp?.name || 'Camp'}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                // On error, hide image and show placeholder
-                e.currentTarget.style.display = 'none';
-              }}
-            />
+            <>
+              <img
+                src={campImageUrl}
+                alt={camp?.name || 'Camp'}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  // On error, hide image and show placeholder
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+              {/* Admin: Regenerate Button (shows on hover) */}
+              {isAdmin && camp && (
+                <button
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsGenerating(true);
+                    setGenerateError(null);
+                    try {
+                      const result = await generateImage({ campId: camp._id });
+                      if (!result.success) {
+                        setGenerateError(result.error || 'Failed to generate image');
+                      }
+                    } catch (err) {
+                      setGenerateError(err instanceof Error ? err.message : 'Unknown error');
+                    } finally {
+                      setIsGenerating(false);
+                    }
+                  }}
+                  disabled={isGenerating}
+                  className="absolute bottom-2 right-2 px-2 py-1 bg-black/70 text-white text-xs font-medium rounded shadow hover:bg-black/90 disabled:opacity-50 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="Regenerate AI image for this camp"
+                >
+                  {isGenerating ? (
+                    <>
+                      <SpinnerIcon />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <SparklesIcon />
+                      Regenerate
+                    </>
+                  )}
+                </button>
+              )}
+            </>
           ) : (
             <div className={`w-full h-full bg-gradient-to-br ${categoryStyle.bg} flex items-center justify-center`}>
               <span className="text-4xl opacity-50">{categoryStyle.icon}</span>
+              {/* Admin: Generate Image Button */}
+              {isAdmin && camp && (
+                <button
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsGenerating(true);
+                    setGenerateError(null);
+                    try {
+                      const result = await generateImage({ campId: camp._id });
+                      if (!result.success) {
+                        setGenerateError(result.error || 'Failed to generate image');
+                      }
+                    } catch (err) {
+                      setGenerateError(err instanceof Error ? err.message : 'Unknown error');
+                    } finally {
+                      setIsGenerating(false);
+                    }
+                  }}
+                  disabled={isGenerating}
+                  className="absolute bottom-2 right-2 px-2 py-1 bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 text-xs font-medium rounded shadow hover:bg-white dark:hover:bg-slate-700 disabled:opacity-50 flex items-center gap-1"
+                  title="Generate AI image for this camp"
+                >
+                  {isGenerating ? (
+                    <>
+                      <SpinnerIcon />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <SparklesIcon />
+                      Generate
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          )}
+          {generateError && (
+            <div className="absolute bottom-2 left-2 right-14 px-2 py-1 bg-red-500/90 text-white text-xs rounded truncate">
+              {generateError}
             </div>
           )}
           {/* Status badge overlay */}
@@ -1010,6 +1100,25 @@ function calculateDisplayAge(birthdate: string): string {
 }
 
 // Icons
+function SettingsIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+      />
+    </svg>
+  );
+}
+
 function FilterIcon() {
   return (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1123,6 +1232,39 @@ function CheckIcon() {
         strokeLinejoin="round"
         strokeWidth={2}
         d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+      />
+    </svg>
+  );
+}
+
+function SparklesIcon() {
+  return (
+    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+      />
+    </svg>
+  );
+}
+
+function SpinnerIcon() {
+  return (
+    <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
       />
     </svg>
   );
