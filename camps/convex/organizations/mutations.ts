@@ -157,6 +157,53 @@ export const updateOrgWebsiteAndLogo = internalMutation({
 });
 
 /**
+ * Clear logo from organization (for re-fetching)
+ */
+export const clearOrgLogo = internalMutation({
+  args: {
+    orgId: v.id("organizations"),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.orgId, {
+      logoStorageId: undefined,
+    });
+  },
+});
+
+/**
+ * Clear all organization logos (for mass re-fetch)
+ */
+export const clearAllOrgLogos = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const orgs = await ctx.db.query("organizations").collect();
+    let cleared = 0;
+    for (const org of orgs) {
+      if (org.logoStorageId) {
+        await ctx.db.patch(org._id, { logoStorageId: undefined });
+        cleared++;
+      }
+    }
+    return { cleared };
+  },
+});
+
+/**
+ * Fix organization website URL (add https:// if missing)
+ */
+export const fixOrgWebsite = internalMutation({
+  args: {
+    orgId: v.id("organizations"),
+    website: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.orgId, {
+      website: args.website,
+    });
+  },
+});
+
+/**
  * Update organization website only (internal)
  */
 export const updateOrgWebsite = internalMutation({

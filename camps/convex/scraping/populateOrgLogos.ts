@@ -443,6 +443,107 @@ export const fetchOrgLogoForSource = internalAction({
 });
 
 /**
+ * Reset and re-fetch all organization logos
+ * Fixes website URLs, clears existing logos, then fetches fresh ones
+ */
+export const resetAndRefetchAllLogos = action({
+  args: {
+    usePlaceholders: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args): Promise<{
+    success: boolean;
+    processed: number;
+    updated: number;
+    websitesFixed: number;
+    errors: string[];
+  }> => {
+    const usePlaceholders = args.usePlaceholders ?? false;
+    const errors: string[] = [];
+    let processed = 0;
+    let updated = 0;
+    let websitesFixed = 0;
+
+    // Get all organizations
+    const organizations = await ctx.runQuery(api.organizations.queries.listAllOrganizations, {});
+
+    console.log(`[Logos] Resetting and re-fetching logos for ${organizations.length} organizations`);
+
+    // Clear all existing logos first
+    await ctx.runMutation(internal.organizations.mutations.clearAllOrgLogos, {});
+    console.log(`[Logos] Cleared all existing logos`);
+
+    for (const org of organizations) {
+      processed++;
+
+      // Fix website URL if needed
+      let website = org.website;
+      if (website && website !== "<UNKNOWN>" && !website.startsWith("http")) {
+        website = `https://${website}`;
+        await ctx.runMutation(internal.organizations.mutations.fixOrgWebsite, {
+          orgId: org._id,
+          website,
+        });
+        websitesFixed++;
+        console.log(`[Logos] Fixed website for ${org.name}: ${website}`);
+      }
+
+      // Skip if no valid website
+      if (!website || !isValidUrl(website)) {
+        if (usePlaceholders) {
+          const placeholderUrl = getPlaceholderLogoUrl(org.name);
+          const result = await downloadAndStoreImage(ctx, placeholderUrl);
+          if (result.storageId) {
+            await ctx.runMutation(internal.organizations.mutations.updateOrgLogo, {
+              orgId: org._id,
+              logoStorageId: result.storageId,
+            });
+            updated++;
+            console.log(`[Logos] ✓ Added placeholder for ${org.name}`);
+          }
+        }
+        continue;
+      }
+
+      console.log(`[Logos] Fetching logo for ${org.name} from ${website}`);
+
+      // Try to fetch a real logo
+      const logoStorageId = await fetchLogoFromWebsite(ctx, website);
+
+      if (logoStorageId) {
+        await ctx.runMutation(internal.organizations.mutations.updateOrgLogo, {
+          orgId: org._id,
+          logoStorageId,
+        });
+        updated++;
+        console.log(`[Logos] ✓ Updated ${org.name} with real logo`);
+      } else if (usePlaceholders) {
+        // Fall back to placeholder
+        const placeholderUrl = getPlaceholderLogoUrl(org.name);
+        const result = await downloadAndStoreImage(ctx, placeholderUrl);
+        if (result.storageId) {
+          await ctx.runMutation(internal.organizations.mutations.updateOrgLogo, {
+            orgId: org._id,
+            logoStorageId: result.storageId,
+          });
+          updated++;
+          console.log(`[Logos] ✓ Added placeholder for ${org.name}`);
+        }
+      } else {
+        console.log(`[Logos] ✗ No logo found for ${org.name}`);
+      }
+    }
+
+    return {
+      success: updated > 0,
+      processed,
+      updated,
+      websitesFixed,
+      errors: errors.slice(0, 20),
+    };
+  },
+});
+
+/**
  * Refresh logos for all organizations - tries to get real logos, skipping placeholders
  * Use this to replace placeholder logos with real ones
  */
