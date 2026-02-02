@@ -316,7 +316,7 @@ export default function DiscoverPage() {
                   </span>
                 )}
               </button>
-              <Link href="/settings" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+              <Link href="/settings" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white" aria-label="Settings">
                 <SettingsIcon />
               </Link>
               <Link href="/" className="flex items-center gap-2">
@@ -1549,6 +1549,7 @@ function SessionCard({
             onClick={() => setShowSaveModal(true)}
             className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
             title="Save for later"
+            aria-label="Save for later"
           >
             <HeartIcon />
           </button>
