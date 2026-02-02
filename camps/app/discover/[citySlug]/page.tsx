@@ -294,7 +294,14 @@ export default function DiscoverPage() {
                 className="md:hidden flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 rounded-lg text-sm"
               >
                 <FilterIcon />
-                Filters
+                <span>
+                  Filters
+                  {sessions !== undefined && (
+                    <span className="text-slate-500 dark:text-slate-400 ml-1">
+                      ({filteredSessions.length})
+                    </span>
+                  )}
+                </span>
                 {activeFilterCount > 0 && (
                   <span className="min-w-5 h-5 px-1 bg-blue-600 text-white text-xs font-medium rounded-full flex items-center justify-center">
                     {activeFilterCount}
