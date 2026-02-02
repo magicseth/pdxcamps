@@ -39,15 +39,17 @@ function LandingPage() {
             <span className="font-bold text-xl">PDX Camps</span>
           </div>
           <div className="flex gap-3">
-            <a href="/sign-in">
-              <button className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900">
-                Sign in
-              </button>
+            <a
+              href="/sign-in"
+              className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900"
+            >
+              Sign in
             </a>
-            <a href="/sign-up">
-              <button className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                Get Started
-              </button>
+            <a
+              href="/sign-up"
+              className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Get Started
             </a>
           </div>
         </div>
@@ -62,15 +64,17 @@ function LandingPage() {
             Discover camps, track coverage week-by-week, coordinate with friends, and never worry about gaps in your summer schedule again.
           </p>
           <div className="flex gap-4 justify-center">
-            <a href="/sign-up">
-              <button className="px-8 py-3 text-lg font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-lg shadow-blue-600/25">
-                Start Planning Free
-              </button>
+            <a
+              href="/sign-up"
+              className="px-8 py-3 text-lg font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-lg shadow-blue-600/25"
+            >
+              Start Planning Free
             </a>
-            <a href="/discover/portland">
-              <button className="px-8 py-3 text-lg font-medium border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
-                Browse Camps
-              </button>
+            <a
+              href="/discover/portland"
+              className="px-8 py-3 text-lg font-medium border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
+              Browse Camps
             </a>
           </div>
         </div>
