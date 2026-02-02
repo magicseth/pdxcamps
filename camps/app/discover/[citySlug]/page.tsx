@@ -1408,6 +1408,7 @@ function SessionCard({
               {camp?.name ?? 'Loading...'}
             </Link>
             <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-1">
+              <span className="text-slate-400 dark:text-slate-500">by </span>
               {organization?.name ?? 'Loading...'}
             </p>
             {camp?.categories && camp.categories.length > 0 && (
