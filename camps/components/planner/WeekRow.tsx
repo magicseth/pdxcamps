@@ -44,16 +44,27 @@ export function WeekRow({ data, isFirstOfMonth = false }: WeekRowProps) {
   // Find if there's a shared family event (same event for all children)
   const sharedEvent = findSharedEvent(childCoverage);
 
+  // Check if this is the current week
+  const today = new Date();
+  const weekStart = new Date(week.startDate + 'T00:00:00');
+  const weekEnd = new Date(week.endDate + 'T23:59:59');
+  const isCurrentWeek = today >= weekStart && today <= weekEnd;
+
   return (
     <div
       className={`flex items-center gap-4 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${
         isFirstOfMonth ? 'border-t border-slate-200 dark:border-slate-700' : ''
-      }`}
+      } ${isCurrentWeek ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500' : ''}`}
     >
       {/* Week info */}
       <div className="w-20 flex-shrink-0">
-        <div className="text-sm font-medium text-slate-900 dark:text-white">
+        <div className="text-sm font-medium text-slate-900 dark:text-white flex items-center gap-1">
           Week {week.weekNumber}
+          {isCurrentWeek && (
+            <span className="px-1.5 py-0.5 text-[10px] font-bold bg-blue-600 text-white rounded">
+              NOW
+            </span>
+          )}
         </div>
         <div className="text-xs text-slate-500 dark:text-slate-400">{week.label}</div>
       </div>
