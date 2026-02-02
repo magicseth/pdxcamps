@@ -184,6 +184,7 @@ function PlannerHub({
     const childParam = searchParams.get('child');
     return childParam && childParam !== 'all' ? childParam as Id<'children'> : 'all';
   });
+  const [showOnlyGaps, setShowOnlyGaps] = useState(false);
   const [showAddEventModal, setShowAddEventModal] = useState(false);
 
   // Update URL when filters change
@@ -200,18 +201,29 @@ function PlannerHub({
     year: selectedYear,
   });
 
-  // Filter coverage by selected child
+  // Filter coverage by selected child and gaps filter
   const filteredCoverage = useMemo(() => {
     if (!coverage) return [];
-    if (selectedChildId === 'all') return coverage;
-    return coverage.map((week) => ({
-      ...week,
-      childCoverage: week.childCoverage.filter((c) => c.childId === selectedChildId),
-      hasGap: week.childCoverage
-        .filter((c) => c.childId === selectedChildId)
-        .some((c) => c.status === 'gap'),
-    }));
-  }, [coverage, selectedChildId]);
+    let result = coverage;
+
+    // Filter by child
+    if (selectedChildId !== 'all') {
+      result = result.map((week) => ({
+        ...week,
+        childCoverage: week.childCoverage.filter((c) => c.childId === selectedChildId),
+        hasGap: week.childCoverage
+          .filter((c) => c.childId === selectedChildId)
+          .some((c) => c.status === 'gap'),
+      }));
+    }
+
+    // Filter to only show weeks with gaps
+    if (showOnlyGaps) {
+      result = result.filter((week) => week.hasGap);
+    }
+
+    return result;
+  }, [coverage, selectedChildId, showOnlyGaps]);
 
   // Group coverage by month
   const coverageByMonth = useMemo(() => {
@@ -336,9 +348,22 @@ function PlannerHub({
             </button>
           </div>
 
-          {/* Legend */}
-          <div className="mb-4">
+          {/* Legend + Gap Filter */}
+          <div className="mb-4 flex items-center justify-between flex-wrap gap-3">
             <CoverageLegend />
+            {stats && stats.weeksWithGaps > 0 && (
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={showOnlyGaps}
+                  onChange={(e) => setShowOnlyGaps(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-slate-600 dark:text-slate-400">
+                  Show only gaps ({stats.weeksWithGaps})
+                </span>
+              </label>
+            )}
           </div>
 
           {/* Coverage Grid */}
