@@ -67,8 +67,8 @@ function FriendRequests() {
 
   if (pendingRequests === undefined) {
     return (
-      <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">Friend Requests</h2>
+      <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" aria-labelledby="friend-requests-loading-heading">
+        <h2 id="friend-requests-loading-heading" className="text-lg font-semibold mb-4">Friend Requests</h2>
         <div className="animate-pulse motion-reduce:animate-none space-y-3">
           <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
           <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
@@ -109,8 +109,8 @@ function FriendRequests() {
   };
 
   return (
-    <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-      <h2 className="text-lg font-semibold mb-4">Friend Requests</h2>
+    <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" aria-labelledby="friend-requests-heading">
+      <h2 id="friend-requests-heading" className="text-lg font-semibold mb-4">Friend Requests</h2>
 
       {received.length > 0 && (
         <div className="mb-6">
@@ -197,8 +197,8 @@ function MyFriends() {
 
   if (friends === undefined) {
     return (
-      <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">My Friends</h2>
+      <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" aria-labelledby="my-friends-loading-heading">
+        <h2 id="my-friends-loading-heading" className="text-lg font-semibold mb-4">My Friends</h2>
         <div className="animate-pulse motion-reduce:animate-none space-y-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex items-center gap-3 p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
@@ -236,8 +236,8 @@ function MyFriends() {
 
   return (
     <>
-      <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">My Friends ({friends.length})</h2>
+      <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" aria-labelledby="my-friends-heading">
+        <h2 id="my-friends-heading" className="text-lg font-semibold mb-4">My Friends ({friends.length})</h2>
 
         {friends.length === 0 ? (
           <div className="text-center py-8 px-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
@@ -561,8 +561,8 @@ function AddFriend() {
   };
 
   return (
-    <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-      <h2 className="text-lg font-semibold mb-4">Add Friend</h2>
+    <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" aria-labelledby="add-friend-heading">
+      <h2 id="add-friend-heading" className="text-lg font-semibold mb-4">Add Friend</h2>
       <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
         <div className="flex-1">
           <input
