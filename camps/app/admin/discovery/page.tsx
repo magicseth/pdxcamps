@@ -102,7 +102,7 @@ function DiscoveryQueueContent() {
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <Link href="/admin" className="text-sm text-blue-600 hover:text-blue-700 mb-1 block">
+              <Link href="/admin" className="text-sm text-blue-600 hover:text-blue-700 mb-1 block rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
                 &larr; Back to Admin
               </Link>
               <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
