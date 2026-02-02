@@ -299,7 +299,10 @@ function PlannerHub({
               <>
                 <div className="grid grid-cols-3 gap-4 mb-4">
                   <div>
-                    <div className="text-3xl font-bold">{stats.coverage}%</div>
+                    <div className={`text-3xl font-bold ${stats.coverage === 100 ? 'text-green-300 animate-bounce motion-reduce:animate-none' : ''}`}>
+                      {stats.coverage === 100 && '🎉 '}
+                      {stats.coverage}%
+                    </div>
                     <div className="text-sm text-blue-100">Planned</div>
                   </div>
                   <div>
