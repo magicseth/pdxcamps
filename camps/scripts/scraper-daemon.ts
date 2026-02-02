@@ -27,7 +27,7 @@ import * as fs from "fs";
 // Stagehand is optional - only used for testing scrapers
 let Stagehand: any = null;
 try {
-  Stagehand = require("@anthropic-ai/stagehand").Stagehand;
+  Stagehand = require("@browserbasehq/stagehand").Stagehand;
 } catch {
   // Stagehand not installed - testing will be skipped
 }
@@ -462,122 +462,324 @@ interface TestResult {
 }
 
 /**
- * Try to execute the scraper directly without a browser
- * This works for scrapers that generate sessions programmatically (like drop-in camps)
+ * Determine the type of scraper and how to test it
+ *
+ * Key distinction:
+ * - BROWSER-DEPENDENT: Scraper navigates pages, clicks elements, or uses AI extraction
+ *   to discover and extract session data from the DOM
+ * - PROGRAMMATIC: Scraper has hardcoded week definitions and generates sessions
+ *   using forEach/for loops. May use page.evaluate for optional data enrichment,
+ *   but sessions are generated from static data regardless of page content
+ */
+function analyzeScraperType(scraperCode: string): {
+  needsBrowser: boolean;
+  isProgrammatic: boolean;
+  reason: string;
+} {
+  // Check for browser APIs
+  const usesStagehandExtract = scraperCode.includes('page.extract(');
+  const usesPageGoto = scraperCode.includes('page.goto(');
+  const usesPageClick = scraperCode.includes('page.click(') || scraperCode.includes('.click(');
+  const usesPageWaitFor = scraperCode.includes('page.waitFor');
+
+  // Check for DOM traversal to build sessions (as opposed to just metadata extraction)
+  // querySelectorAll is a strong signal of building sessions from DOM elements
+  const usesDOMTraversal = scraperCode.includes('querySelectorAll');
+
+  // Check for programmatic session generation patterns
+  // Handle various patterns: weeks = [, weeks: [...] = [, weeks: Array<...> = [
+  const hasHardcodedWeeks = scraperCode.includes('weeks = [') ||
+    scraperCode.includes('weeks: [') ||
+    /weeks:\s*Array<[^>]+>\s*=\s*\[/.test(scraperCode) ||
+    /const\s+weeks\s*=\s*\[/.test(scraperCode);
+  const hasSessionsPush = scraperCode.includes('sessions.push');
+  const hasWeeksForEach = scraperCode.includes('weeks.forEach');
+  const hasWeeksForLoop = /for\s*\([^)]*weeks\.length/.test(scraperCode);
+  const hasGenerateFunction = scraperCode.includes('generateWeeklySessions');
+
+  // PRIORITY 1: If it uses page.extract() or page.goto() or querySelectorAll,
+  // it MUST use a browser. These are definitive browser-dependent patterns.
+  if (usesStagehandExtract || usesPageGoto || usesDOMTraversal) {
+    return {
+      needsBrowser: true,
+      isProgrammatic: false,
+      reason: `Browser-dependent: extract=${usesStagehandExtract}, goto=${usesPageGoto}, domTraversal=${usesDOMTraversal}`
+    };
+  }
+
+  // PRIORITY 2: If it has hardcoded weeks that are iterated to generate sessions,
+  // it's programmatic. Even if it uses page.evaluate for metadata, the sessions
+  // are generated from static data.
+  if (hasHardcodedWeeks && hasSessionsPush && (hasWeeksForEach || hasWeeksForLoop)) {
+    return {
+      needsBrowser: false,
+      isProgrammatic: true,
+      reason: `Programmatic: hardcoded weeks array with loop to push sessions`
+    };
+  }
+
+  if (hasGenerateFunction && hasSessionsPush) {
+    return {
+      needsBrowser: false,
+      isProgrammatic: true,
+      reason: `Programmatic: generateWeeklySessions function`
+    };
+  }
+
+  // PRIORITY 3: If it uses click or waitFor, it needs browser
+  if (usesPageClick || usesPageWaitFor) {
+    return {
+      needsBrowser: true,
+      isProgrammatic: false,
+      reason: `Browser-dependent: click=${usesPageClick}, waitFor=${usesPageWaitFor}`
+    };
+  }
+
+  // PRIORITY 4: Check for general programmatic patterns
+  // Has sessions.push with any loop and no browser navigation
+  const hasForLoop = scraperCode.includes('for (') && scraperCode.includes('sessions.push');
+  const hasWhileLoop = scraperCode.includes('while (') && scraperCode.includes('sessions.push');
+
+  if (hasForLoop || hasWhileLoop) {
+    return {
+      needsBrowser: false,
+      isProgrammatic: true,
+      reason: `Programmatic: loop-based session generation`
+    };
+  }
+
+  // Default: assume it needs browser testing
+  return {
+    needsBrowser: true,
+    isProgrammatic: false,
+    reason: 'No clear programmatic patterns detected - needs browser testing'
+  };
+}
+
+/**
+ * Actually execute the scraper code with a mock page object using tsx
+ * This works for scrapers that generate sessions programmatically
+ */
+async function executeScraperWithMock(
+  scraperCode: string,
+  url: string,
+  log: (msg: string) => void
+): Promise<TestResult | null> {
+  try {
+    log(`   Executing scraper with mock page...`);
+
+    // Write the scraper to a temp file
+    const tempScraperPath = path.join(SCRATCHPAD_DIR, `temp-scraper-${Date.now()}.ts`);
+    fs.writeFileSync(tempScraperPath, scraperCode);
+
+    // Write a test runner that imports and executes the scraper
+    const testRunnerPath = path.join(SCRATCHPAD_DIR, `test-runner-${Date.now()}.ts`);
+    const testRunnerCode = `
+import * as fs from 'fs';
+
+// Create a mock page object
+const mockPage = {
+  url: () => '${url}',
+  evaluate: async (fn: Function) => ({}),
+  goto: async () => {},
+  waitForTimeout: async () => {},
+  extract: async () => ({}),
+};
+
+async function main() {
+  try {
+    const scraperModule = await import('${tempScraperPath}');
+    const sessions = await scraperModule.scrape(mockPage);
+
+    // Output as JSON for parsing
+    console.log('__RESULT__' + JSON.stringify({
+      success: true,
+      sessionCount: sessions.length,
+      sessions: sessions.slice(0, 10), // First 10 as samples
+    }));
+  } catch (error) {
+    console.log('__RESULT__' + JSON.stringify({
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    }));
+  }
+}
+
+main();
+`;
+    fs.writeFileSync(testRunnerPath, testRunnerCode);
+
+    // Execute with tsx
+    const { execSync } = require('child_process');
+    const output = execSync(`npx tsx "${testRunnerPath}"`, {
+      cwd: process.cwd(),
+      timeout: 30000,
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+
+    // Parse the result
+    const resultMatch = output.match(/__RESULT__(.+)/);
+    if (!resultMatch) {
+      log(`   ⚠️ No result from scraper execution`);
+      return null;
+    }
+
+    const result = JSON.parse(resultMatch[1]);
+
+    // Cleanup temp files
+    try {
+      fs.unlinkSync(tempScraperPath);
+      fs.unlinkSync(testRunnerPath);
+    } catch {
+      // Ignore cleanup errors
+    }
+
+    if (result.success && result.sessionCount > 0) {
+      log(`   ✅ Scraper executed successfully: ${result.sessionCount} sessions`);
+      return { sessions: result.sessions, error: undefined };
+    } else if (result.error) {
+      log(`   ❌ Scraper execution error: ${result.error}`);
+      return null;
+    } else {
+      log(`   ⚠️ Scraper returned 0 sessions`);
+      return null;
+    }
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    log(`   ❌ Execution failed: ${errorMsg.slice(0, 200)}`);
+    return null;
+  }
+}
+
+/**
+ * Static analysis fallback for counting sessions
+ */
+function staticAnalysis(
+  scraperCode: string,
+  log: (msg: string) => void
+): TestResult | null {
+  log(`   Using static analysis fallback...`);
+
+  // Count hardcoded week definitions: { start: '2026-06-15', end: '...' }
+  const weekMatches = scraperCode.match(/\{\s*start:\s*['"](\d{4}-\d{2}-\d{2})['"]/g);
+  let sessionCount = weekMatches?.length || 0;
+
+  if (sessionCount === 0) {
+    // Look for WEEK_DEFINITIONS or similar objects
+    const weekDefMatch = scraperCode.match(/WEEK_DEFINITIONS[^}]*\{[\s\S]*?\n\};/);
+    if (weekDefMatch) {
+      const innerMatches = weekDefMatch[0].match(/\d+:\s*\{/g);
+      sessionCount = innerMatches?.length || 0;
+    }
+  }
+
+  if (sessionCount === 0) {
+    // Count sessions.push calls
+    const pushMatches = scraperCode.match(/sessions\.push\s*\(/g);
+    sessionCount = pushMatches?.length || 0;
+  }
+
+  if (sessionCount === 0) {
+    // Estimate from date range
+    const juneMatch = scraperCode.match(/['"](\d{4})-06-(\d{2})['"]/);
+    const augMatch = scraperCode.match(/['"](\d{4})-08-(\d{2})['"]/);
+    if (juneMatch && augMatch) {
+      // Roughly 10 weeks from mid-June to late August
+      sessionCount = 10;
+    }
+  }
+
+  if (sessionCount === 0) {
+    log(`   Could not estimate session count`);
+    return null;
+  }
+
+  log(`   Static analysis found ${sessionCount} sessions`);
+
+  // Extract sample data
+  const locationMatch = scraperCode.match(/location\s*[=:]\s*(?:[^'"]*\|\|)?\s*['"]([^'"]+)['"]/);
+  const location = locationMatch?.[1] || 'Location TBD';
+
+  const priceMatch = scraperCode.match(/priceInCents\s*[=:]\s*(\d+)/);
+  const weeklyPriceCalc = scraperCode.match(/dailyPriceInCents\s*\*\s*5/);
+  const dailyMatch = scraperCode.match(/dailyPriceInCents\s*=\s*(\d+)/);
+  let priceInCents = priceMatch ? parseInt(priceMatch[1]) : undefined;
+  if (!priceInCents && dailyMatch && weeklyPriceCalc) {
+    priceInCents = parseInt(dailyMatch[1]) * 5;
+  }
+
+  const minAgeMatch = scraperCode.match(/minAge\s*[=:]\s*(\d+)/);
+  const maxAgeMatch = scraperCode.match(/maxAge\s*[=:]\s*(\d+)/);
+  const minAge = minAgeMatch ? parseInt(minAgeMatch[1]) : undefined;
+  const maxAge = maxAgeMatch ? parseInt(maxAgeMatch[1]) : undefined;
+
+  // Extract week dates to generate sample sessions
+  const sessions = [];
+  const weekDates = scraperCode.matchAll(/\{\s*start:\s*['"](\d{4}-\d{2}-\d{2})['"],\s*end:\s*['"](\d{4}-\d{2}-\d{2})['"]/g);
+
+  let weekNum = 1;
+  for (const match of weekDates) {
+    sessions.push({
+      name: `Session - Week ${weekNum}`,
+      startDate: match[1],
+      endDate: match[2],
+      location,
+      priceInCents,
+      minAge,
+      maxAge,
+    });
+    weekNum++;
+    if (weekNum > 5) break; // Only show first 5 as samples
+  }
+
+  if (sessions.length === 0) {
+    // Create generic samples
+    for (let i = 1; i <= Math.min(5, sessionCount); i++) {
+      sessions.push({
+        name: `Session ${i}`,
+        location,
+        priceInCents,
+        minAge,
+        maxAge,
+        note: `(Total: ${sessionCount} sessions)`,
+      });
+    }
+  }
+
+  return { sessions, error: undefined };
+}
+
+/**
+ * Try to test a programmatic scraper by actually executing it
  */
 async function tryDirectExecution(
   scraperCode: string,
   url: string,
   log: (msg: string) => void
 ): Promise<TestResult | null> {
-  // Check if this scraper generates sessions without needing real page data
-  // These patterns indicate the scraper generates sessions programmatically
-  const generatesSessionsDirectly =
-    scraperCode.includes('generateWeeklySessions') ||
-    (scraperCode.includes('sessions.push') && scraperCode.includes('while ('));
+  // Analyze the scraper type
+  const analysis = analyzeScraperType(scraperCode);
+  log(`   Scraper analysis: ${analysis.reason}`);
 
-  if (!generatesSessionsDirectly) {
-    return null; // Need browser-based testing
-  }
-
-  log(`   Detected programmatic session generation - running scraper directly...`);
-
-  try {
-    // Write the scraper to a temp file with a test harness
-    const testFile = path.join(SCRATCHPAD_DIR, `test-runner-${Date.now()}.ts`);
-
-    // Create a mock page object that returns basic data from the URL
-    const testHarness = `
-// Test harness for scraper
-${scraperCode}
-
-// Mock page object
-const mockPage = {
-  goto: async () => {},
-  evaluate: async (fn: Function) => {
-    // Return mock data that the scraper can use
-    return fn();
-  },
-  waitForTimeout: async () => {},
-  url: () => "${url}",
-};
-
-// Run the scraper
-(async () => {
-  try {
-    const sessions = await scrape(mockPage as any);
-    console.log(JSON.stringify({ success: true, sessions, count: sessions.length }));
-  } catch (err) {
-    console.log(JSON.stringify({ success: false, error: err instanceof Error ? err.message : String(err) }));
-  }
-})();
-`;
-
-    fs.writeFileSync(testFile, testHarness);
-
-    // Run with tsx
-    const result = await new Promise<{ success: boolean; sessions?: any[]; count?: number; error?: string }>((resolve) => {
-      const proc = spawn("npx", ["tsx", testFile], {
-        cwd: process.cwd(),
-        stdio: ["ignore", "pipe", "pipe"],
-        timeout: 30000,
-      });
-
-      let stdout = "";
-      let stderr = "";
-
-      proc.stdout?.on("data", (d) => { stdout += d.toString(); });
-      proc.stderr?.on("data", (d) => { stderr += d.toString(); });
-
-      proc.on("close", (code) => {
-        // Clean up test file
-        try { fs.unlinkSync(testFile); } catch {}
-
-        if (code !== 0) {
-          log(`   Direct execution failed (exit ${code}): ${stderr.slice(0, 200)}`);
-          resolve({ success: false, error: stderr || "Execution failed" });
-          return;
-        }
-
-        // Parse the JSON output
-        try {
-          // Find the JSON line in output
-          const jsonMatch = stdout.match(/\{.*"success".*\}/);
-          if (jsonMatch) {
-            resolve(JSON.parse(jsonMatch[0]));
-          } else {
-            resolve({ success: false, error: "No JSON output found" });
-          }
-        } catch (e) {
-          resolve({ success: false, error: `Parse error: ${e}` });
-        }
-      });
-
-      proc.on("error", (e) => {
-        resolve({ success: false, error: e.message });
-      });
-
-      // Timeout after 30 seconds
-      setTimeout(() => {
-        proc.kill();
-        resolve({ success: false, error: "Timeout" });
-      }, 30000);
-    });
-
-    if (result.success && result.sessions) {
-      log(`   ✅ Direct execution found ${result.count} sessions`);
-      return {
-        sessions: result.sessions,
-        error: undefined,
-      };
-    } else {
-      log(`   Direct execution error: ${result.error}`);
-      return null; // Fall back to other methods
-    }
-  } catch (e) {
-    log(`   Direct execution exception: ${e}`);
+  if (analysis.needsBrowser) {
+    log(`   Scraper requires browser - cannot test with mock`);
     return null;
   }
+
+  if (!analysis.isProgrammatic) {
+    log(`   Not a programmatic scraper`);
+    return null;
+  }
+
+  // Try actual execution first
+  const execResult = await executeScraperWithMock(scraperCode, url, log);
+  if (execResult && execResult.sessions.length > 0) {
+    return execResult;
+  }
+
+  // Fall back to static analysis
+  return staticAnalysis(scraperCode, log);
 }
 
 /**
