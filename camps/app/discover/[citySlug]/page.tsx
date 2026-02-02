@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery, useMutation } from 'convex/react';
@@ -53,9 +54,16 @@ export default function DiscoverPage() {
   const [childAge, setChildAge] = useState<number | undefined>(undefined);
   const [childGrade, setChildGrade] = useState<number | undefined>(undefined);
   const [showFilters, setShowFilters] = useState(true);
+  const [selectedOrganizations, setSelectedOrganizations] = useState<string[]>([]);
 
   // Fetch city data
   const city = useQuery(api.cities.queries.getCityBySlug, { slug: citySlug });
+
+  // Fetch all organizations for filter chips
+  const allOrganizations = useQuery(
+    api.organizations.queries.listOrganizations,
+    city ? { cityId: city._id } : 'skip'
+  );
 
   // Fetch sessions with filters
   const sessions = useQuery(
@@ -127,6 +135,7 @@ export default function DiscoverPage() {
     setHideSoldOut(false);
     setChildAge(undefined);
     setChildGrade(undefined);
+    setSelectedOrganizations([]);
   };
 
   const hasActiveFilters =
@@ -136,7 +145,21 @@ export default function DiscoverPage() {
     maxPrice !== undefined ||
     hideSoldOut ||
     childAge !== undefined ||
-    childGrade !== undefined;
+    childGrade !== undefined ||
+    selectedOrganizations.length > 0;
+
+  // Filter sessions by selected organizations (client-side)
+  const filteredSessions = useMemo(() => {
+    if (!sessions) return [];
+    if (selectedOrganizations.length === 0) return sessions;
+    return sessions.filter((s) => selectedOrganizations.includes(s.organizationId));
+  }, [sessions, selectedOrganizations]);
+
+  const handleOrganizationToggle = (orgId: string) => {
+    setSelectedOrganizations((prev) =>
+      prev.includes(orgId) ? prev.filter((id) => id !== orgId) : [...prev, orgId]
+    );
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
@@ -324,15 +347,49 @@ export default function DiscoverPage() {
 
           {/* Sessions Grid */}
           <main className="flex-1">
+            {/* Organization Filter Chips */}
+            {allOrganizations && allOrganizations.length > 0 && (
+              <div className="mb-4">
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">
+                  Filter by Organization
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {allOrganizations.map((org) => (
+                    <button
+                      key={org._id}
+                      onClick={() => handleOrganizationToggle(org._id)}
+                      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                        selectedOrganizations.includes(org._id)
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      {org.logoUrl && (
+                        <img
+                          src={org.logoUrl}
+                          alt=""
+                          className="w-4 h-4 rounded-full object-contain"
+                        />
+                      )}
+                      {org.name}
+                      {selectedOrganizations.includes(org._id) && (
+                        <span className="ml-1">✕</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Results Summary */}
             <div className="mb-4 flex items-center justify-between">
               <p className="text-sm text-slate-600 dark:text-slate-400">
                 {sessions === undefined ? (
                   'Loading...'
-                ) : sessions.length === 0 ? (
+                ) : filteredSessions.length === 0 ? (
                   'No sessions found'
                 ) : (
-                  `${sessions.length} session${sessions.length === 1 ? '' : 's'} found`
+                  `${filteredSessions.length} session${filteredSessions.length === 1 ? '' : 's'} found`
                 )}
               </p>
             </div>
@@ -357,7 +414,7 @@ export default function DiscoverPage() {
             )}
 
             {/* Empty State */}
-            {sessions !== undefined && sessions.length === 0 && (
+            {sessions !== undefined && filteredSessions.length === 0 && (
               <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-12 text-center">
                 <div className="text-slate-400 mb-4">
                   <EmptyIcon />
@@ -380,9 +437,9 @@ export default function DiscoverPage() {
             )}
 
             {/* Sessions List */}
-            {sessions !== undefined && sessions.length > 0 && (
+            {sessions !== undefined && filteredSessions.length > 0 && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {sessions.map((session) => (
+                {filteredSessions.map((session) => (
                   <SessionCard key={session._id} session={session} cityId={city._id} />
                 ))}
               </div>
@@ -528,10 +585,25 @@ function SessionCard({
 
   const statusBadge = getStatusBadge();
 
+  // Calculate spots left
+  const spotsLeft = session.capacity - session.enrolledCount;
+  const isSoldOut = session.status === 'sold_out' || spotsLeft <= 0;
+
   return (
     <>
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
-        <div className="flex items-start justify-between gap-4 mb-3">
+        {/* Header with Logo */}
+        <div className="flex items-start gap-3 mb-3">
+          {/* Organization Logo */}
+          {organization?.logoUrl && (
+            <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center overflow-hidden">
+              <img
+                src={organization.logoUrl}
+                alt={organization.name}
+                className="w-10 h-10 object-contain"
+              />
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <Link
               href={`/session/${session._id}`}
@@ -549,6 +621,32 @@ function SessionCard({
             {statusBadge.label}
           </span>
         </div>
+
+        {/* Spots Left Bar */}
+        {!isSoldOut && (
+          <div className="mb-4">
+            <div className="flex items-center justify-between text-xs mb-1">
+              <span className="text-slate-600 dark:text-slate-400">
+                {spotsLeft} of {session.capacity} spots left
+              </span>
+              <span className="text-slate-500 dark:text-slate-500">
+                {Math.round((session.enrolledCount / session.capacity) * 100)}% full
+              </span>
+            </div>
+            <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${
+                  spotsLeft <= 3
+                    ? 'bg-red-500'
+                    : spotsLeft <= 5
+                    ? 'bg-yellow-500'
+                    : 'bg-green-500'
+                }`}
+                style={{ width: `${(session.enrolledCount / session.capacity) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
 
         <div className="space-y-2 mb-4">
           <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
