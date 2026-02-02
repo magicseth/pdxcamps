@@ -1269,6 +1269,11 @@ function SessionCard({
                 ))}
               </div>
             )}
+            {camp?.description && (
+              <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mt-2">
+                {camp.description}
+              </p>
+            )}
           </div>
 
         {/* Spots Left Bar */}
