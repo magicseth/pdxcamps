@@ -54,6 +54,9 @@ export function WeekRow({ data, isFirstOfMonth = false }: WeekRowProps) {
   const isCurrentWeek = today >= weekStart && today <= weekEnd;
   const isPastWeek = today > weekEnd;
 
+  // Count children with gaps
+  const childrenWithGaps = childCoverage.filter((c) => c.status === 'gap').length;
+
   // Auto-scroll to current week on mount
   useEffect(() => {
     if (isCurrentWeek && rowRef.current) {
@@ -132,7 +135,7 @@ export function WeekRow({ data, isFirstOfMonth = false }: WeekRowProps) {
           className="flex-shrink-0 text-xs text-blue-600 dark:text-blue-400 font-medium hover:underline animate-pulse motion-reduce:animate-none"
           title={`Find camps for ${week.label} (${week.startDate} to ${week.endDate})`}
         >
-          Find camps →
+          {childrenWithGaps > 1 ? `${childrenWithGaps} need camps` : 'Find camps'} →
         </Link>
       ) : (
         <Link
