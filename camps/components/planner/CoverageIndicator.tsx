@@ -96,14 +96,14 @@ export function CoverageChip({ status, childName, eventTitle, campName, organiza
   const bgColors: Record<CoverageStatus, string> = {
     full: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
     partial: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-    gap: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+    gap: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 ring-1 ring-red-300 dark:ring-red-700',
     tentative: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
     event: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
   };
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm ${bgColors[status]}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm ${bgColors[status]} ${status === 'gap' ? 'animate-pulse motion-reduce:animate-none' : ''}`}
       title={campName ? `${childName}: ${campName}` : `${childName}: ${config.title}`}
     >
       <OrgLogo
