@@ -947,6 +947,7 @@ function SessionCard({
     waitlistEnabled: boolean;
     waitlistCount: number;
     status: 'draft' | 'active' | 'sold_out' | 'cancelled' | 'completed';
+    externalRegistrationUrl?: string;
     ageRequirements: {
       minAge?: number;
       maxAge?: number;
@@ -1460,12 +1461,33 @@ function SessionCard({
         </div>
 
         <div className="flex items-center gap-2">
-          <Link
-            href={`/session/${session._id}`}
-            className="flex-1 px-4 py-2 bg-blue-600 text-white text-center text-sm font-medium rounded-md hover:bg-blue-700"
-          >
-            View Details
-          </Link>
+          {session.externalRegistrationUrl ? (
+            <>
+              <a
+                href={session.externalRegistrationUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 px-4 py-2 bg-green-600 text-white text-center text-sm font-medium rounded-md hover:bg-green-700 flex items-center justify-center gap-1"
+              >
+                Register
+                <ExternalLinkIcon className="w-3.5 h-3.5" />
+              </a>
+              <Link
+                href={`/session/${session._id}`}
+                className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-md hover:bg-slate-50 dark:hover:bg-slate-700"
+                title="View details"
+              >
+                <InfoIcon />
+              </Link>
+            </>
+          ) : (
+            <Link
+              href={`/session/${session._id}`}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white text-center text-sm font-medium rounded-md hover:bg-blue-700"
+            >
+              View Details
+            </Link>
+          )}
           <button
             onClick={() => setShowSaveModal(true)}
             className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-md hover:bg-slate-50 dark:hover:bg-slate-700"
@@ -1949,6 +1971,32 @@ function SparklesIcon() {
         strokeLinejoin="round"
         strokeWidth={2}
         d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+      />
+    </svg>
+  );
+}
+
+function ExternalLinkIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+      />
+    </svg>
+  );
+}
+
+function InfoIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
       />
     </svg>
   );
