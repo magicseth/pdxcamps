@@ -44,6 +44,8 @@ The scraper should export a function that:
 {{NOTES}}
 {{/NOTES}}
 
+{{SITE_GUIDANCE}}
+
 {{#FEEDBACK}}
 ## Previous Version Feedback
 The previous scraper (version {{FEEDBACK_VERSION}}) received this feedback:

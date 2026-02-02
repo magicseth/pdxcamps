@@ -363,9 +363,30 @@ async function processRequest(request: DevelopmentRequest, verbose: boolean = fa
       if (testResult.error) {
         console.log(`   ❌ Test failed: ${testResult.error.slice(0, 100)}`);
         writeLog(`Test FAILED: ${testResult.error}`);
+
+        // Generate intelligent auto-feedback for errors
+        const autoFeedback = generateAutoFeedback(request.sourceUrl, scraperCode, testResult.error);
+        log(`   🤖 Auto-generating feedback for error...`);
+        await client.mutation(api.scraping.development.submitFeedback, {
+          requestId: requestId as any,
+          feedback: autoFeedback,
+          feedbackBy: "auto-diagnosis",
+        });
       } else if (testResult.sessions.length === 0) {
-        console.log(`   ⚠️  Test found 0 sessions - will retry`);
-        writeLog(`Test found 0 sessions - will retry`);
+        console.log(`   ⚠️  Test found 0 sessions - analyzing and auto-retrying`);
+        writeLog(`Test found 0 sessions - analyzing site characteristics`);
+
+        // Generate intelligent auto-feedback
+        const autoFeedback = generateAutoFeedback(request.sourceUrl, scraperCode);
+        log(`   🤖 Auto-generating feedback based on site analysis...`);
+
+        await client.mutation(api.scraping.development.submitFeedback, {
+          requestId: requestId as any,
+          feedback: autoFeedback,
+          feedbackBy: "auto-diagnosis",
+        });
+
+        console.log(`   📝 Submitted auto-feedback - will retry with better guidance`);
       } else {
         console.log(`   ✅ Found ${testResult.sessions.length} sessions - ready for review`);
         writeLog(`Test PASSED: Found ${testResult.sessions.length} sessions`);
@@ -387,6 +408,49 @@ async function processRequest(request: DevelopmentRequest, verbose: boolean = fa
   }
 }
 
+/**
+ * Generate site-specific guidance based on URL patterns
+ */
+function getSiteSpecificGuidance(url: string): string {
+  const guidance: string[] = [];
+
+  // ActiveCommunities detection
+  if (url.includes('activecommunities.com') || url.includes('apm.activecommunities.com') ||
+      url.includes('portland.gov/parks')) {
+    guidance.push('\n## ⚠️ CRITICAL: ActiveCommunities React SPA Detected\n');
+    guidance.push('This site uses ActiveCommunities which is a React Single Page Application.\n');
+    guidance.push('**DO NOT use querySelector/querySelectorAll - they WILL FAIL.**\n\n');
+    guidance.push('### Required Approach:\n');
+    guidance.push('1. Navigate to the activity search URL: `https://anc.apm.activecommunities.com/portlandparks/activity/search`\n');
+    guidance.push('2. Add category filters: `?activity_category_ids=50` (Day Camps), `83` (Specialty), `68` (Sports)\n');
+    guidance.push("3. Wait with `networkidle` AND `page.waitForTimeout(5000)`\n");
+    guidance.push('4. Use `page.extract()` with Stagehand AI to read the visible camp cards\n');
+    guidance.push('5. Extract: name, dates, times, price, ages, location from VISIBLE content\n');
+    guidance.push('6. Handle pagination - look for Load More buttons\n');
+    guidance.push('7. Expect 100+ camps across all categories\n\n');
+  }
+
+  // OMSI/secure sites
+  if (url.includes('secure.omsi.edu') || url.includes('simpletix.com')) {
+    guidance.push('\n## Site Type: Secure Registration Portal\n');
+    guidance.push('This is a ticketing/registration system. Look for:\n');
+    guidance.push('- Program/event listings in a grid or list view\n');
+    guidance.push('- Category filters or navigation\n');
+    guidance.push('- Date ranges and pricing in each listing\n\n');
+  }
+
+  // Museum sites often have complex structures
+  if (url.includes('museum') || url.includes('evergreenmuseum') || url.includes('omsi')) {
+    guidance.push('\n## Museum/Science Center Site\n');
+    guidance.push('These typically have:\n');
+    guidance.push('- Multiple camp categories (by age, theme, dates)\n');
+    guidance.push('- Detailed program pages with registration links\n');
+    guidance.push('- Check for a dedicated camps/classes section\n\n');
+  }
+
+  return guidance.join('');
+}
+
 function buildClaudePrompt(request: DevelopmentRequest): string {
   const templatePath = path.join(process.cwd(), "scripts", "scraper-prompt-template.md");
   let template: string;
@@ -405,16 +469,21 @@ Write a scraper that extracts summer camp sessions and save it to: {{OUTPUT_FILE
 {{#NOTES}}
 Notes: {{NOTES}}
 {{/NOTES}}
+{{SITE_GUIDANCE}}
 `;
   }
 
   const outputFile = `${SCRATCHPAD_DIR}/scraper-${request._id}.ts`;
 
+  // Get site-specific guidance
+  const siteGuidance = getSiteSpecificGuidance(request.sourceUrl);
+
   // Replace basic placeholders
   let prompt = template
     .replace(/\{\{SOURCE_NAME\}\}/g, request.sourceName)
     .replace(/\{\{SOURCE_URL\}\}/g, request.sourceUrl)
-    .replace(/\{\{OUTPUT_FILE\}\}/g, outputFile);
+    .replace(/\{\{OUTPUT_FILE\}\}/g, outputFile)
+    .replace(/\{\{SITE_GUIDANCE\}\}/g, siteGuidance);
 
   // Handle conditional sections
   // Notes section
@@ -459,6 +528,132 @@ Notes: {{NOTES}}
 interface TestResult {
   sessions: any[];
   error?: string;
+  diagnostics?: ScraperDiagnostics;
+}
+
+interface ScraperDiagnostics {
+  siteType: 'static' | 'react_spa' | 'active_communities' | 'api_driven' | 'unknown';
+  possibleIssues: string[];
+  suggestedFixes: string[];
+  detectedPatterns: string[];
+}
+
+/**
+ * Analyze the URL and page characteristics to diagnose why scraping might fail
+ */
+function diagnoseSiteCharacteristics(url: string, scraperCode: string): ScraperDiagnostics {
+  const diagnostics: ScraperDiagnostics = {
+    siteType: 'unknown',
+    possibleIssues: [],
+    suggestedFixes: [],
+    detectedPatterns: [],
+  };
+
+  // Detect ActiveCommunities sites (very common for parks & rec)
+  if (url.includes('activecommunities.com') || url.includes('apm.activecommunities.com')) {
+    diagnostics.siteType = 'active_communities';
+    diagnostics.possibleIssues.push('ActiveCommunities is a React SPA that loads content dynamically');
+    diagnostics.possibleIssues.push('DOM selectors will fail - content renders after JavaScript executes');
+    diagnostics.suggestedFixes.push('Use page.extract() with Stagehand AI instead of querySelector');
+    diagnostics.suggestedFixes.push('Wait for networkidle + additional 5-10 seconds for React hydration');
+    diagnostics.suggestedFixes.push('Extract from visible rendered content, not DOM structure');
+    diagnostics.detectedPatterns.push('activecommunities.com detected');
+  }
+
+  // Detect other React/SPA patterns
+  if (url.includes('secure.') || url.includes('portal.') || url.includes('app.')) {
+    diagnostics.detectedPatterns.push('URL pattern suggests web app/portal');
+    if (diagnostics.siteType === 'unknown') {
+      diagnostics.siteType = 'react_spa';
+      diagnostics.possibleIssues.push('Likely a Single Page Application (SPA)');
+      diagnostics.suggestedFixes.push('Wait longer for JavaScript to render content');
+      diagnostics.suggestedFixes.push('Use page.extract() for AI-based extraction');
+    }
+  }
+
+  // Check scraper code for common issues
+  if (scraperCode.includes('querySelectorAll') && !scraperCode.includes('page.extract')) {
+    diagnostics.possibleIssues.push('Scraper relies on DOM selectors which may fail on SPAs');
+    diagnostics.suggestedFixes.push('Add fallback using page.extract() for AI extraction');
+  }
+
+  if (scraperCode.includes("waitUntil: 'domcontentloaded'") && !scraperCode.includes('waitForTimeout')) {
+    diagnostics.possibleIssues.push('May not wait long enough for dynamic content');
+    diagnostics.suggestedFixes.push('Add page.waitForTimeout(5000) after navigation');
+  }
+
+  if (!scraperCode.includes('networkidle') && diagnostics.siteType === 'react_spa') {
+    diagnostics.suggestedFixes.push("Use waitUntil: 'networkidle' for SPA sites");
+  }
+
+  // Detect pagination issues
+  if (scraperCode.includes('category_ids') || scraperCode.includes('page=')) {
+    diagnostics.detectedPatterns.push('Multi-page or multi-category scraping');
+    if (!scraperCode.includes('hasMorePages') && !scraperCode.includes('pagination')) {
+      diagnostics.possibleIssues.push('May not handle pagination correctly');
+      diagnostics.suggestedFixes.push('Implement pagination handling with Load More or Next button clicks');
+    }
+  }
+
+  return diagnostics;
+}
+
+/**
+ * Generate intelligent auto-feedback when scraper finds 0 sessions
+ */
+function generateAutoFeedback(
+  url: string,
+  scraperCode: string,
+  testError?: string
+): string {
+  const diagnostics = diagnoseSiteCharacteristics(url, scraperCode);
+
+  const feedback: string[] = ['Automatic diagnosis based on test results:\n'];
+
+  // Site type specific guidance
+  if (diagnostics.siteType === 'active_communities') {
+    feedback.push('⚠️ CRITICAL: This is an ActiveCommunities site (React SPA).\n');
+    feedback.push('The current approach using DOM selectors WILL NOT WORK.\n\n');
+    feedback.push('REQUIRED CHANGES:\n');
+    feedback.push('1. Navigate directly to the activity search URL with category filters\n');
+    feedback.push('2. Wait with networkidle AND page.waitForTimeout(5000) minimum\n');
+    feedback.push('3. Use page.extract() with Stagehand AI to extract visible content\n');
+    feedback.push('4. DO NOT use querySelector/querySelectorAll - they will fail\n');
+    feedback.push('5. The camps render as cards - extract name, dates, price, ages from what you SEE\n\n');
+    feedback.push('Example category URLs:\n');
+    feedback.push('- Day Camps: ?activity_category_ids=50\n');
+    feedback.push('- Specialty Camps: ?activity_category_ids=83\n');
+    feedback.push('- Sports Camps: ?activity_category_ids=68\n');
+  } else if (diagnostics.siteType === 'react_spa') {
+    feedback.push('⚠️ This appears to be a Single Page Application (SPA).\n\n');
+    feedback.push('SUGGESTED CHANGES:\n');
+    feedback.push('1. Add longer wait times after navigation (5-10 seconds)\n');
+    feedback.push('2. Use page.extract() for AI-based content extraction\n');
+    feedback.push('3. Check if the site has an API you can call directly\n');
+  }
+
+  // Add specific issues
+  if (diagnostics.possibleIssues.length > 0) {
+    feedback.push('\nDETECTED ISSUES:\n');
+    for (const issue of diagnostics.possibleIssues) {
+      feedback.push(`- ${issue}\n`);
+    }
+  }
+
+  // Add suggested fixes
+  if (diagnostics.suggestedFixes.length > 0) {
+    feedback.push('\nSUGGESTED FIXES:\n');
+    for (const fix of diagnostics.suggestedFixes) {
+      feedback.push(`- ${fix}\n`);
+    }
+  }
+
+  // Add error context if available
+  if (testError) {
+    feedback.push(`\nTEST ERROR: ${testError.slice(0, 500)}\n`);
+  }
+
+  return feedback.join('');
 }
 
 /**
