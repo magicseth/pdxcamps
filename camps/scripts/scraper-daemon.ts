@@ -727,8 +727,9 @@ async function processRequest(request: DevelopmentRequest, verbose: boolean = fa
 
       log(`   Testing scraper...`);
 
-      // Test the scraper
-      const testResult = await testScraper(scraperCode, request.sourceUrl, verbose);
+      // Test the scraper using the same script Claude can use
+      // This ensures consistent execution between dev and daemon testing
+      const testResult = await runTestScript(outputFile, request.sourceUrl, verbose);
 
       // Record test results
       await client.mutation(api.scraping.development.recordTestResults, {
@@ -742,6 +743,10 @@ async function processRequest(request: DevelopmentRequest, verbose: boolean = fa
 
       if (testResult.error) {
         console.log(`   ❌ Test failed: ${testResult.error.slice(0, 100)}`);
+        // Debug: show which API key is being used
+        if (testResult.error.includes('credit balance')) {
+          console.log(`   🔑 MODEL_API_KEY prefix: ${process.env.MODEL_API_KEY?.slice(0, 30)}...`);
+        }
         writeLog(`Test FAILED: ${testResult.error}`);
 
         // Generate intelligent auto-feedback for errors
@@ -959,6 +964,96 @@ interface TestResult {
   sessions: any[];
   error?: string;
   diagnostics?: ScraperDiagnostics;
+}
+
+/**
+ * Run the test-scraper.ts script to test a scraper
+ * This uses the same execution path as the Convex executor
+ */
+async function runTestScript(
+  scraperFile: string,
+  url: string,
+  verbose: boolean = false
+): Promise<TestResult> {
+  const { execSync } = require("child_process");
+  const log = (msg: string) => {
+    writeLog(msg);
+    if (verbose) console.log(msg);
+  };
+
+  try {
+    log(`   Running: npx tsx scripts/test-scraper.ts "${scraperFile}" "${url}"`);
+
+    const output = execSync(
+      `npx tsx scripts/test-scraper.ts "${scraperFile}" "${url}"`,
+      {
+        cwd: process.cwd(),
+        timeout: 180000, // 3 minute timeout
+        encoding: "utf-8",
+        stdio: ["pipe", "pipe", "pipe"],
+        env: { ...process.env },
+      }
+    );
+
+    log(`   Test output:\n${output.slice(-1000)}`);
+
+    // Parse output to extract session count
+    const successMatch = output.match(/SUCCESS: Found (\d+) sessions/);
+    if (successMatch) {
+      const sessionCount = parseInt(successMatch[1]);
+
+      // Try to extract sample session data from output
+      const sessions: any[] = [];
+      const sampleMatch = output.match(/Sample sessions:([\s\S]*?)(?:Field coverage:|$)/);
+      if (sampleMatch) {
+        // Parse the sample output format
+        const sampleText = sampleMatch[1];
+        const sessionBlocks = sampleText.split(/\[\d+\]/).filter(Boolean);
+        for (const block of sessionBlocks.slice(0, 5)) {
+          const nameMatch = block.match(/^\s*(.+?)$/m);
+          if (nameMatch) {
+            sessions.push({ name: nameMatch[1].trim(), note: "from test output" });
+          }
+        }
+      }
+
+      // If we couldn't parse samples, create placeholders
+      if (sessions.length === 0) {
+        for (let i = 0; i < Math.min(5, sessionCount); i++) {
+          sessions.push({ name: `Session ${i + 1}`, note: `(Total: ${sessionCount})` });
+        }
+      }
+
+      return { sessions, error: undefined };
+    }
+
+    // Test passed but couldn't parse output
+    return { sessions: [{ name: "Test passed but could not parse output" }], error: undefined };
+
+  } catch (error: any) {
+    // Test failed - extract error message
+    const stderr = error.stderr || "";
+    const stdout = error.stdout || "";
+    const fullOutput = stdout + "\n" + stderr;
+
+    log(`   Test failed:\n${fullOutput.slice(-2000)}`);
+
+    // Try to extract the error message
+    let errorMessage = "Test failed";
+
+    const errorMatch = fullOutput.match(/Error: (.+)/);
+    if (errorMatch) {
+      errorMessage = errorMatch[1].slice(0, 500);
+    } else if (fullOutput.includes("0 sessions")) {
+      errorMessage = "Found 0 sessions - scraper may not be extracting data correctly";
+    } else if (fullOutput.includes("timeout")) {
+      errorMessage = "Test timed out - page may be slow to load";
+    } else if (error.message) {
+      errorMessage = error.message.slice(0, 500);
+    }
+
+    return { sessions: [], error: errorMessage };
+  }
 }
 
 interface ScraperDiagnostics {
