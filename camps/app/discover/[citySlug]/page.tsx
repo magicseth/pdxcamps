@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery, useMutation, useAction } from 'convex/react';
@@ -78,6 +78,22 @@ export default function DiscoverPage() {
   const [selectedLocations, setSelectedLocations] = useState<string[]>(() => getInitialState().selectedLocations);
   const [sortBy, setSortBy] = useState<'date' | 'price-low' | 'price-high' | 'spots'>('date');
   const [showAllOrgs, setShowAllOrgs] = useState(false);
+
+  // Ref for results section and initial render tracking
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const isInitialRender = useRef(true);
+
+  // Scroll to results when filters change (but not on initial load)
+  useEffect(() => {
+    if (isInitialRender.current) {
+      isInitialRender.current = false;
+      return;
+    }
+    // Only scroll on mobile/tablet where filters might overlap content
+    if (window.innerWidth < 768 && resultsRef.current) {
+      resultsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [startDateAfter, startDateBefore, selectedCategories, maxPrice, hideSoldOut, extendedCareOnly, childAge, childGrade, selectedOrganizations, selectedLocations]);
 
   // Update URL when filters change
   useEffect(() => {
@@ -796,7 +812,7 @@ export default function DiscoverPage() {
             )}
 
             {/* Results Summary & Sort */}
-            <div className="mb-4 flex items-center justify-between">
+            <div ref={resultsRef} className="mb-4 flex items-center justify-between scroll-mt-20">
               <div className="text-sm text-slate-600 dark:text-slate-400">
                 {sessions === undefined ? (
                   'Loading...'
