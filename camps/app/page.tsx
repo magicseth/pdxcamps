@@ -424,12 +424,20 @@ function PlannerHub({
                     <button
                       key={child._id}
                       onClick={() => setSelectedChildId(child._id)}
-                      className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                      title={child.lastName ? `${child.firstName} ${child.lastName}` : child.firstName}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                         selectedChildId === child._id
                           ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
                           : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                       }`}
                     >
+                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
+                        selectedChildId === child._id
+                          ? 'bg-white/30 dark:bg-slate-900/30'
+                          : 'bg-slate-200 dark:bg-slate-600'
+                      }`}>
+                        {child.firstName[0]}
+                      </span>
                       {child.firstName}
                     </button>
                   ))}
