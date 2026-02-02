@@ -391,9 +391,11 @@ function WeekDetailContent() {
         <button
           onClick={() => setShowAddEventModal(true)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+          title="Add family event (E key)"
         >
           <PlusIcon />
           Add Event
+          <kbd className="hidden sm:inline ml-1 px-1.5 py-0.5 bg-blue-700 rounded text-[10px]">E</kbd>
         </button>
       </div>
 
