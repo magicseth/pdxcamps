@@ -469,9 +469,11 @@ function PlannerHub({
             <button
               onClick={() => setShowAddEventModal(true)}
               className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+              title="Add family event (E key)"
             >
               <PlusIcon />
               Add Event
+              <kbd className="hidden sm:inline ml-1 px-1.5 py-0.5 bg-slate-100 dark:bg-slate-600 text-slate-500 dark:text-slate-400 rounded text-[10px]">E</kbd>
             </button>
           </div>
 
@@ -479,11 +481,14 @@ function PlannerHub({
           <div className="mb-4 flex items-center justify-between flex-wrap gap-3">
             <CoverageLegend />
             {stats && stats.weeksWithGaps > 0 && (
-              <label className={`flex items-center gap-2 cursor-pointer select-none px-3 py-1.5 rounded-lg transition-colors ${
-                showOnlyGaps
-                  ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-                  : 'hover:bg-slate-100 dark:hover:bg-slate-700'
-              }`}>
+              <label
+                className={`flex items-center gap-2 cursor-pointer select-none px-3 py-1.5 rounded-lg transition-colors ${
+                  showOnlyGaps
+                    ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                    : 'hover:bg-slate-100 dark:hover:bg-slate-700'
+                }`}
+                title="Toggle gaps filter (G key)"
+              >
                 <input
                   type="checkbox"
                   checked={showOnlyGaps}
@@ -493,6 +498,7 @@ function PlannerHub({
                 <span className={`text-sm ${showOnlyGaps ? 'font-medium' : 'text-slate-600 dark:text-slate-400'}`}>
                   Show only gaps ({stats.weeksWithGaps})
                 </span>
+                <kbd className="hidden sm:inline px-1.5 py-0.5 bg-slate-100 dark:bg-slate-600 text-slate-500 dark:text-slate-400 rounded text-[10px]">G</kbd>
               </label>
             )}
           </div>
