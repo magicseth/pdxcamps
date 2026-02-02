@@ -467,8 +467,8 @@ function CalendarContent() {
               : 'You haven\'t registered for any camps yet. Discover amazing summer camps for your kids!'}
           </p>
           <Link
-            href="/"
-            className="inline-block bg-foreground text-background px-6 py-2 rounded-md font-medium hover:opacity-90"
+            href="/discover/portland"
+            className="inline-block bg-blue-600 text-white px-6 py-2 rounded-md font-medium hover:bg-blue-700"
           >
             Discover Camps
           </Link>
