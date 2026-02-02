@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery, useMutation } from 'convex/react';
@@ -854,6 +854,25 @@ function RegisterModal({
   const children = useQuery(api.children.queries.listChildren);
   const register = useMutation(api.registrations.mutations.register);
 
+  // ESC key to close modal
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape' && !isSubmitting && !success) {
+      onClose();
+    }
+  }, [onClose, isSubmitting, success]);
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
+
+  // Backdrop click to close
+  const handleBackdropClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget && !isSubmitting && !success) {
+      onClose();
+    }
+  }, [onClose, isSubmitting, success]);
+
   // Check if child meets age requirements
   const checkAgeEligibility = (birthdate: string): { eligible: boolean; reason?: string } => {
     const birth = new Date(birthdate);
@@ -899,7 +918,10 @@ function RegisterModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={handleBackdropClick}
+    >
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
@@ -908,6 +930,7 @@ function RegisterModal({
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+            title="Close (Esc)"
           >
             <CloseIcon />
           </button>
@@ -1044,6 +1067,25 @@ function WaitlistModal({
   const children = useQuery(api.children.queries.listChildren);
   const joinWaitlist = useMutation(api.registrations.mutations.joinWaitlist);
 
+  // ESC key to close modal
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape' && !isSubmitting && !success) {
+      onClose();
+    }
+  }, [onClose, isSubmitting, success]);
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
+
+  // Backdrop click to close
+  const handleBackdropClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget && !isSubmitting && !success) {
+      onClose();
+    }
+  }, [onClose, isSubmitting, success]);
+
   // Check if child meets age requirements
   const checkAgeEligibility = (birthdate: string): { eligible: boolean; reason?: string } => {
     const birth = new Date(birthdate);
@@ -1089,7 +1131,10 @@ function WaitlistModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={handleBackdropClick}
+    >
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
@@ -1098,6 +1143,7 @@ function WaitlistModal({
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+            title="Close (Esc)"
           >
             <CloseIcon />
           </button>
