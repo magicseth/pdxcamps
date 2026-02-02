@@ -657,6 +657,7 @@ function CalendarSharingSettings() {
                         )
                       }
                       disabled={processingId === share.shareId}
+                      aria-label="Change permission level"
                       className="text-sm border rounded px-2 py-1 dark:bg-gray-700 dark:border-gray-600"
                     >
                       <option value="view_sessions">View Sessions</option>
