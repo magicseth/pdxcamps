@@ -46,11 +46,13 @@ export function WeekRow({ data, isFirstOfMonth = false }: WeekRowProps) {
   // Find if there's a shared family event (same event for all children)
   const sharedEvent = findSharedEvent(childCoverage);
 
-  // Check if this is the current week
+  // Check if this is the current week or a past week
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const weekStart = new Date(week.startDate + 'T00:00:00');
   const weekEnd = new Date(week.endDate + 'T23:59:59');
   const isCurrentWeek = today >= weekStart && today <= weekEnd;
+  const isPastWeek = today > weekEnd;
 
   // Auto-scroll to current week on mount
   useEffect(() => {
@@ -70,7 +72,9 @@ export function WeekRow({ data, isFirstOfMonth = false }: WeekRowProps) {
       ref={rowRef}
       className={`flex items-center gap-4 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${
         isFirstOfMonth ? 'border-t border-slate-200 dark:border-slate-700' : ''
-      } ${isCurrentWeek ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500' : ''}`}
+      } ${isCurrentWeek ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500' : ''} ${
+        isPastWeek ? 'opacity-50' : ''
+      }`}
     >
       {/* Week info */}
       <div className="w-20 flex-shrink-0">
