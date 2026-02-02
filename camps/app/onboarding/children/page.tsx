@@ -229,6 +229,8 @@ export default function ChildrenSetupPage() {
                     value={childForm.firstName}
                     onChange={(e) => setChildForm({ ...childForm, firstName: e.target.value })}
                     autoComplete="given-name"
+                    required
+                    aria-required="true"
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white text-sm"
                     disabled={isAddingChild}
                     autoFocus
@@ -261,6 +263,8 @@ export default function ChildrenSetupPage() {
                     value={childForm.birthdate}
                     onChange={(e) => setChildForm({ ...childForm, birthdate: e.target.value })}
                     max={new Date().toISOString().split('T')[0]}
+                    required
+                    aria-required="true"
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white text-sm"
                     disabled={isAddingChild}
                   />

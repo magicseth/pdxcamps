@@ -195,16 +195,18 @@ function FamilyProfileSection({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label htmlFor="settings-email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Email
             </label>
             <input
+              id="settings-email"
               type="email"
               value={family.email}
               disabled
+              aria-describedby="email-help"
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-slate-100 dark:bg-slate-600 text-slate-500 dark:text-slate-400"
             />
-            <p className="text-xs text-slate-500 mt-1">
+            <p id="email-help" className="text-xs text-slate-500 mt-1">
               Email cannot be changed
             </p>
           </div>
@@ -490,6 +492,8 @@ function EditChildForm({
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
             autoComplete="given-name"
+            required
+            aria-required="true"
             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
           />
         </div>
@@ -515,6 +519,8 @@ function EditChildForm({
             value={birthdate}
             onChange={(e) => setBirthdate(e.target.value)}
             max={new Date().toISOString().split('T')[0]}
+            required
+            aria-required="true"
             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
           />
         </div>
@@ -661,6 +667,8 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 autoComplete="given-name"
+                required
+                aria-required="true"
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                 autoFocus
               />
@@ -689,6 +697,8 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
                 value={birthdate}
                 onChange={(e) => setBirthdate(e.target.value)}
                 max={new Date().toISOString().split('T')[0]}
+                required
+                aria-required="true"
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
               />
             </div>
