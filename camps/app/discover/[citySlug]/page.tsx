@@ -105,6 +105,15 @@ export default function DiscoverPage() {
   // Fetch city data
   const city = useQuery(api.cities.queries.getCityBySlug, { slug: citySlug });
 
+  // Update document title
+  useEffect(() => {
+    const cityName = city?.name || 'Discover';
+    document.title = `${cityName} Summer Camps | PDX Camps`;
+    return () => {
+      document.title = 'PDX Camps';
+    };
+  }, [city?.name]);
+
   // Fetch all organizations for filter chips
   const allOrganizations = useQuery(
     api.organizations.queries.listOrganizations,
