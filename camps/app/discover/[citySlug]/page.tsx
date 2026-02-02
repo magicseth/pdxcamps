@@ -369,7 +369,12 @@ export default function DiscoverPage() {
                   </span>
                 )}
               </button>
-              <Link href="/settings" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white" aria-label="Settings">
+              <Link
+                href="/settings"
+                className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700"
+                aria-label="Settings"
+                title="Settings"
+              >
                 <SettingsIcon />
               </Link>
               <Link href="/" className="flex items-center gap-2">
