@@ -119,6 +119,19 @@ export function ChildCoverageCard({
           </div>
           <span className="font-semibold text-slate-900 dark:text-white">{child.firstName}</span>
           <span className="text-xs text-slate-500">({age})</span>
+          {/* Coverage days indicator */}
+          <span
+            className={`text-xs px-1.5 py-0.5 rounded ${
+              coveredDays === 5
+                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                : coveredDays > 0
+                ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+            }`}
+            title={`${coveredDays} out of 5 weekdays covered`}
+          >
+            {coveredDays}/5
+          </span>
         </div>
         {!hasGap && registeredCamps.length > 0 && (
           <span className="text-xs text-green-700 dark:text-green-300 font-medium flex items-center gap-1.5">
