@@ -228,6 +228,7 @@ export default function ChildrenSetupPage() {
                     id="firstName"
                     value={childForm.firstName}
                     onChange={(e) => setChildForm({ ...childForm, firstName: e.target.value })}
+                    autoComplete="given-name"
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white text-sm"
                     disabled={isAddingChild}
                     autoFocus
@@ -242,6 +243,7 @@ export default function ChildrenSetupPage() {
                     id="lastName"
                     value={childForm.lastName}
                     onChange={(e) => setChildForm({ ...childForm, lastName: e.target.value })}
+                    autoComplete="family-name"
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white text-sm"
                     disabled={isAddingChild}
                   />
