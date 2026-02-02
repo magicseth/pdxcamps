@@ -132,3 +132,25 @@ export const updateCamp = mutation({
     return campId;
   },
 });
+
+/**
+ * Update camp images (used by image processing pipeline)
+ */
+export const updateCampImages = mutation({
+  args: {
+    campId: v.id("camps"),
+    imageStorageIds: v.array(v.id("_storage")),
+  },
+  handler: async (ctx, args) => {
+    const camp = await ctx.db.get(args.campId);
+    if (!camp) {
+      throw new Error("Camp not found");
+    }
+
+    await ctx.db.patch(args.campId, {
+      imageStorageIds: args.imageStorageIds,
+    });
+
+    return args.campId;
+  },
+});

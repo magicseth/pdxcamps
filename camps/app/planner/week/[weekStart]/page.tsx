@@ -1,0 +1,515 @@
+'use client';
+
+import { useState, useMemo } from 'react';
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '../../../../convex/_generated/api';
+import { Id } from '../../../../convex/_generated/dataModel';
+import { Authenticated, Unauthenticated } from 'convex/react';
+import { ChildCoverageCard } from '../../../../components/planner/ChildCoverageCard';
+import { AddEventModal } from '../../../../components/planner/AddEventModal';
+import { calculateAge, isAgeInRange, isGradeInRange, doDateRangesOverlap } from '../../../../convex/lib/helpers';
+
+export default function WeekDetailPage() {
+  return (
+    <>
+      <header className="sticky top-0 z-10 bg-background p-4 border-b-2 border-slate-200 dark:border-slate-800 flex flex-row justify-between items-center">
+        <Link href="/planner" className="font-semibold hover:underline flex items-center gap-2">
+          <BackIcon />
+          Summer Planner
+        </Link>
+        <h1 className="text-lg font-semibold">Week Details</h1>
+      </header>
+      <main className="p-4 md:p-8">
+        <Authenticated>
+          <WeekDetailContent />
+        </Authenticated>
+        <Unauthenticated>
+          <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+            <p className="text-slate-600 dark:text-slate-400">
+              Please sign in to view week details.
+            </p>
+            <a href="/sign-in">
+              <button className="bg-foreground text-background px-6 py-2 rounded-md">
+                Sign in
+              </button>
+            </a>
+          </div>
+        </Unauthenticated>
+      </main>
+    </>
+  );
+}
+
+function WeekDetailContent() {
+  const params = useParams();
+  const weekStart = params.weekStart as string;
+
+  const [showAddEventModal, setShowAddEventModal] = useState(false);
+  const [selectedOrganizations, setSelectedOrganizations] = useState<string[]>([]);
+  const [savingForChild, setSavingForChild] = useState<{
+    childId: Id<'children'>;
+    childName: string;
+    sessionId: Id<'sessions'>;
+  } | null>(null);
+
+  // Get family's primary city
+  const family = useQuery(api.families.queries.getCurrentFamily);
+
+  // Calculate week end for the search query
+  const weekEnd = useMemo(() => {
+    const start = new Date(weekStart + 'T00:00:00');
+    start.setDate(start.getDate() + 4);
+    return start.toISOString().split('T')[0];
+  }, [weekStart]);
+
+  // Fetch week detail
+  const weekDetail = useQuery(
+    api.planner.queries.getWeekDetail,
+    family?.primaryCityId
+      ? { weekStartDate: weekStart, cityId: family.primaryCityId }
+      : 'skip'
+  );
+
+  // Fetch all available sessions for this week (for filter chips and camp suggestions)
+  const allAvailableSessions = useQuery(
+    api.planner.queries.searchSessionsByWeek,
+    family?.primaryCityId
+      ? { cityId: family.primaryCityId, weekStartDate: weekStart, weekEndDate: weekEnd }
+      : 'skip'
+  );
+
+  // Children query for the add event modal
+  const children = useQuery(api.children.queries.listChildren);
+
+  // Registration mutations
+  const markInterested = useMutation(api.registrations.mutations.markInterested);
+  const registerMutation = useMutation(api.registrations.mutations.register);
+
+  // Extract unique organizations from available sessions
+  const organizations = useMemo(() => {
+    if (!allAvailableSessions) return [];
+    const orgMap = new Map<string, { id: string; name: string }>();
+    for (const session of allAvailableSessions) {
+      if (session.organization && !orgMap.has(session.organization._id)) {
+        orgMap.set(session.organization._id, {
+          id: session.organization._id,
+          name: session.organization.name,
+        });
+      }
+    }
+    return Array.from(orgMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [allAvailableSessions]);
+
+  // Build available camps per child, filtered by selected organizations
+  // NOTE: This must be before early returns to maintain hooks order
+  type SessionType = NonNullable<typeof allAvailableSessions>[number];
+  const availableCampsPerChild = useMemo(() => {
+    if (!allAvailableSessions || !weekDetail) return new Map<string, SessionType[]>();
+
+    const result = new Map<string, SessionType[]>();
+
+    for (const childData of weekDetail.children) {
+      const childAge = childData.age;
+      const childGrade = childData.child.currentGrade;
+
+      // Get sessions the child is already registered for
+      const registeredSessionIds = new Set(
+        childData.registrations.map((r) => r.session._id)
+      );
+
+      // Collect all covered date ranges for this child (from registrations and events)
+      const coveredDateRanges: { start: string; end: string }[] = [];
+
+      // Add date ranges from registrations (registered, interested, waitlisted)
+      for (const reg of childData.registrations) {
+        if (reg.status !== 'cancelled') {
+          coveredDateRanges.push({
+            start: reg.session.startDate,
+            end: reg.session.endDate,
+          });
+        }
+      }
+
+      // Add date ranges from family events
+      for (const event of childData.events) {
+        coveredDateRanges.push({
+          start: event.startDate,
+          end: event.endDate,
+        });
+      }
+
+      // Filter sessions for this child
+      let eligibleSessions = allAvailableSessions.filter((session) => {
+        // Skip already registered sessions
+        if (registeredSessionIds.has(session._id)) return false;
+
+        // Skip sessions that overlap with already-covered dates
+        for (const range of coveredDateRanges) {
+          if (doDateRangesOverlap(session.startDate, session.endDate, range.start, range.end)) {
+            return false;
+          }
+        }
+
+        // Check age requirements
+        if (!isAgeInRange(childAge, session.ageRequirements)) return false;
+
+        // Check grade requirements if child has a grade
+        if (childGrade !== undefined && childGrade !== null) {
+          if (!isGradeInRange(childGrade, session.ageRequirements)) return false;
+        }
+
+        // Check spots available
+        if (session.spotsLeft <= 0) return false;
+
+        return true;
+      });
+
+      // Apply organization filter if any selected
+      if (selectedOrganizations.length > 0) {
+        eligibleSessions = eligibleSessions.filter(
+          (s) => s.organization && selectedOrganizations.includes(s.organization._id)
+        );
+      }
+
+      result.set(childData.child._id, eligibleSessions);
+    }
+
+    return result;
+  }, [allAvailableSessions, weekDetail, selectedOrganizations]);
+
+  const totalCamps = useMemo(() => {
+    return Array.from(availableCampsPerChild.values()).reduce(
+      (sum, camps) => sum + camps.length,
+      0
+    );
+  }, [availableCampsPerChild]);
+
+  // Toggle organization filter
+  const handleOrganizationToggle = (orgId: string) => {
+    setSelectedOrganizations((prev) =>
+      prev.includes(orgId) ? prev.filter((id) => id !== orgId) : [...prev, orgId]
+    );
+  };
+
+  // Handle save for child
+  const handleSaveForChild = async (childId: Id<'children'>, sessionId: Id<'sessions'>) => {
+    try {
+      await markInterested({ childId, sessionId });
+      setSavingForChild(null);
+    } catch (error) {
+      console.error('Failed to save session:', error);
+      alert('Failed to save session. Please try again.');
+    }
+  };
+
+  // Handle marking as registered
+  const handleMarkRegistered = async (childId: Id<'children'>, sessionId: Id<'sessions'>) => {
+    try {
+      await registerMutation({ childId, sessionId });
+    } catch (error) {
+      console.error('Failed to register:', error);
+      alert('Failed to register. Please try again.');
+    }
+  };
+
+  // Loading state
+  if (weekDetail === undefined || family === undefined) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-48"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[1, 2].map((i) => (
+              <div key={i} className="h-64 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!weekDetail) {
+    return (
+      <div className="max-w-4xl mx-auto text-center py-16">
+        <h2 className="text-xl font-semibold mb-2">Week not found</h2>
+        <p className="text-slate-600 dark:text-slate-400 mb-6">
+          Could not load details for this week.
+        </p>
+        <Link
+          href="/planner"
+          className="inline-block bg-foreground text-background px-6 py-2 rounded-md font-medium hover:opacity-90"
+        >
+          Back to Planner
+        </Link>
+      </div>
+    );
+  }
+
+  // Format week date range
+  const weekStartDate = new Date(weekDetail.weekStartDate + 'T00:00:00');
+  const weekEndDate = new Date(weekDetail.weekEndDate + 'T00:00:00');
+  const dateRangeStr = `${weekStartDate.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+  })} - ${weekEndDate.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  })}`;
+
+  // Calculate summary
+  const childrenWithGaps = weekDetail.children.filter((c) => c.hasGap);
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+            {dateRangeStr}
+          </h2>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            {weekDetail.children.length} child{weekDetail.children.length === 1 ? '' : 'ren'}
+            {childrenWithGaps.length > 0 ? (
+              <span className="text-red-600 dark:text-red-400">
+                {' '}&bull; {childrenWithGaps.length} need{childrenWithGaps.length === 1 ? 's' : ''} coverage
+              </span>
+            ) : (
+              <span className="text-green-600 dark:text-green-400">
+                {' '}&bull; All covered
+              </span>
+            )}
+            {allAvailableSessions && (
+              <span className="text-slate-500">
+                {' '}&bull; {allAvailableSessions.length} camp{allAvailableSessions.length === 1 ? '' : 's'} available
+              </span>
+            )}
+          </p>
+        </div>
+        <button
+          onClick={() => setShowAddEventModal(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+        >
+          <PlusIcon />
+          Add Event
+        </button>
+      </div>
+
+      {/* Week Navigation */}
+      <div className="flex items-center justify-between">
+        <Link
+          href={`/planner/week/${getPreviousMonday(weekDetail.weekStartDate)}`}
+          className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
+        >
+          <ChevronLeftIcon />
+          Previous Week
+        </Link>
+        <Link
+          href={`/planner/week/${getNextMonday(weekDetail.weekStartDate)}`}
+          className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
+        >
+          Next Week
+          <ChevronRightIcon />
+        </Link>
+      </div>
+
+      {/* Organization Filter Chips - only show when there are gaps to fill */}
+      {childrenWithGaps.length > 0 && organizations.length > 0 && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                Find camps to fill gaps
+              </p>
+              <p className="text-xs text-blue-700 dark:text-blue-300">
+                {childrenWithGaps.map(c => c.child.firstName).join(', ')} need{childrenWithGaps.length === 1 ? 's' : ''} coverage
+              </p>
+            </div>
+            {selectedOrganizations.length > 0 && (
+              <button
+                onClick={() => setSelectedOrganizations([])}
+                className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400"
+              >
+                Show all
+              </button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {organizations.map((org) => (
+              <button
+                key={org.id}
+                onClick={() => handleOrganizationToggle(org.id)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                  selectedOrganizations.includes(org.id)
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
+                }`}
+              >
+                {org.name}
+                {selectedOrganizations.includes(org.id) && <span className="ml-1">✕</span>}
+              </button>
+            ))}
+          </div>
+          {selectedOrganizations.length > 0 && (
+            <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
+              Showing {totalCamps} camp{totalCamps === 1 ? '' : 's'} from selected organizations
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Message when there are gaps but no camps available */}
+      {childrenWithGaps.length > 0 && organizations.length === 0 && allAvailableSessions !== undefined && (
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800 p-4">
+          <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100">
+            {childrenWithGaps.map(c => c.child.firstName).join(', ')} need{childrenWithGaps.length === 1 ? 's' : ''} coverage
+          </p>
+          <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
+            No camps found for this week. Try browsing all camps or add a family event.
+          </p>
+        </div>
+      )}
+
+      {/* Child Coverage Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {weekDetail.children.map((childData) => {
+          // Get filtered available camps for this child
+          const filteredCamps = availableCampsPerChild.get(childData.child._id) ?? [];
+          const availableCampsForCard = filteredCamps.slice(0, 25).map((s) => ({
+            sessionId: s._id,
+            campName: s.camp?.name ?? 'Unknown Camp',
+            organizationName: s.organization?.name ?? 'Unknown',
+            startDate: s.startDate,
+            endDate: s.endDate,
+            dropOffTime: s.dropOffTime,
+            pickUpTime: s.pickUpTime,
+            price: s.price,
+            currency: s.currency,
+            spotsLeft: s.spotsLeft,
+            locationName: s.location?.name ?? 'Unknown Location',
+          }));
+
+          return (
+            <ChildCoverageCard
+              key={childData.child._id}
+              child={childData.child}
+              age={childData.age}
+              registrations={childData.registrations}
+              events={childData.events}
+              coveredDays={childData.coveredDays}
+              hasGap={childData.hasGap}
+              availableCamps={availableCampsForCard}
+              onSaveForChild={(sessionId) => {
+                handleSaveForChild(childData.child._id, sessionId);
+              }}
+              onMarkRegistered={(registrationId, sessionId) => {
+                handleMarkRegistered(childData.child._id, sessionId);
+              }}
+            />
+          );
+        })}
+      </div>
+
+      {/* Quick Links */}
+      <div className="flex flex-wrap gap-3 border-t border-slate-200 dark:border-slate-700 pt-4">
+        <Link
+          href="/planner"
+          className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1"
+        >
+          <GridIcon />
+          Back to Overview
+        </Link>
+        <Link
+          href="/discover/portland"
+          className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1"
+        >
+          <SearchIcon />
+          Browse All Camps
+        </Link>
+      </div>
+
+      {/* Add Event Modal */}
+      <AddEventModal
+        isOpen={showAddEventModal}
+        onClose={() => setShowAddEventModal(false)}
+        defaultStartDate={weekDetail.weekStartDate}
+        defaultEndDate={weekDetail.weekEndDate}
+        defaultChildIds={children?.map((c) => c._id) ?? []}
+      />
+    </div>
+  );
+}
+
+// Helper functions
+function getPreviousMonday(dateStr: string): string {
+  const date = new Date(dateStr + 'T00:00:00');
+  date.setDate(date.getDate() - 7);
+  return date.toISOString().split('T')[0];
+}
+
+function getNextMonday(dateStr: string): string {
+  const date = new Date(dateStr + 'T00:00:00');
+  date.setDate(date.getDate() + 7);
+  return date.toISOString().split('T')[0];
+}
+
+// Icons
+function BackIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+    </svg>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+    </svg>
+  );
+}
+
+function ChevronLeftIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+    </svg>
+  );
+}
+
+function ChevronRightIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+    </svg>
+  );
+}
+
+function GridIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+      />
+    </svg>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+      />
+    </svg>
+  );
+}

@@ -17,14 +17,37 @@ export const listCamps = query({
 });
 
 /**
- * Get a camp by ID
+ * Get a camp by ID with resolved image URLs
  */
 export const getCamp = query({
   args: {
     campId: v.id("camps"),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.campId);
+    const camp = await ctx.db.get(args.campId);
+    if (!camp) return null;
+
+    // Resolve storage IDs to URLs
+    const resolvedImageUrls: string[] = [];
+    for (const storageId of camp.imageStorageIds || []) {
+      const url = await ctx.storage.getUrl(storageId);
+      if (url) resolvedImageUrls.push(url);
+    }
+
+    return {
+      ...camp,
+      resolvedImageUrls,
+    };
+  },
+});
+
+/**
+ * List all camps (for admin/image processing)
+ */
+export const listAllCamps = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("camps").collect();
   },
 });
 

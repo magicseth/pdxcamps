@@ -94,11 +94,23 @@ export const getSession = query({
       ctx.db.get(session.organizationId),
     ]);
 
+    // Resolve camp image URLs
+    let campImageUrl: string | null = null;
+    if (camp?.imageStorageIds && camp.imageStorageIds.length > 0) {
+      campImageUrl = await ctx.storage.getUrl(camp.imageStorageIds[0]);
+    }
+
+    // Resolve organization logo URL
+    let orgLogoUrl: string | null = null;
+    if (organization?.logoStorageId) {
+      orgLogoUrl = await ctx.storage.getUrl(organization.logoStorageId);
+    }
+
     return {
       ...session,
-      camp,
+      camp: camp ? { ...camp, resolvedImageUrl: campImageUrl } : null,
       location,
-      organization,
+      organization: organization ? { ...organization, resolvedLogoUrl: orgLogoUrl } : null,
     };
   },
 });

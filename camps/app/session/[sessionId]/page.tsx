@@ -288,34 +288,66 @@ export default function SessionDetailPage() {
         )}
 
         {/* Camp Header */}
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-            <div className="flex-1">
-              <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-2">
-                {camp?.name ?? 'Camp Session'}
-              </h1>
-              {organization && (
-                <p className="text-lg text-slate-600 dark:text-slate-400">
-                  by{' '}
-                  <Link
-                    href={`/organization/${organization.slug}`}
-                    className="text-blue-600 hover:text-blue-700 hover:underline"
-                  >
-                    {organization.name}
-                  </Link>
-                </p>
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden mb-6">
+          {/* Camp Image */}
+          {camp?.resolvedImageUrl && (
+            <div className="relative h-48 md:h-64 bg-slate-200 dark:bg-slate-700">
+              <img
+                src={camp.resolvedImageUrl}
+                alt={camp.name}
+                className="w-full h-full object-cover"
+              />
+              {organization?.resolvedLogoUrl && (
+                <div className="absolute bottom-4 left-4 w-16 h-16 bg-white dark:bg-slate-800 rounded-lg shadow-lg p-2 flex items-center justify-center">
+                  <img
+                    src={organization.resolvedLogoUrl}
+                    alt={organization.name}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
               )}
-              <div className="mt-4">
-                <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${sessionStatus.className}`}>
-                  {sessionStatus.label}
-                </span>
-              </div>
             </div>
-            <div className="text-right">
-              <div className="text-3xl font-bold text-slate-900 dark:text-white">
-                {formatPrice(session.price, session.currency)}
+          )}
+          <div className="p-6">
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-3">
+                  {!camp?.resolvedImageUrl && organization?.resolvedLogoUrl && (
+                    <div className="w-12 h-12 bg-slate-100 dark:bg-slate-700 rounded-lg p-1.5 flex items-center justify-center flex-shrink-0">
+                      <img
+                        src={organization.resolvedLogoUrl}
+                        alt={organization.name}
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                  )}
+                  <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
+                    {camp?.name ?? 'Camp Session'}
+                  </h1>
+                </div>
+                {organization && (
+                  <p className="text-lg text-slate-600 dark:text-slate-400 mt-2">
+                    by{' '}
+                    <Link
+                      href={`/organization/${organization.slug}`}
+                      className="text-blue-600 hover:text-blue-700 hover:underline"
+                    >
+                      {organization.name}
+                    </Link>
+                  </p>
+                )}
+                <div className="mt-4">
+                  <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${sessionStatus.className}`}>
+                    {sessionStatus.label}
+                  </span>
+                </div>
               </div>
-              <div className="text-sm text-slate-500 dark:text-slate-400">per session</div>
+              <div className="text-right">
+                <div className="text-3xl font-bold text-slate-900 dark:text-white">
+                  {formatPrice(session.price, session.currency)}
+                </div>
+                <div className="text-sm text-slate-500 dark:text-slate-400">per session</div>
+              </div>
             </div>
           </div>
         </div>
