@@ -322,6 +322,7 @@ function PlannerHub({
                 <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                  aria-label="Select year"
                   className="px-3 py-1.5 bg-white/20 border border-white/30 rounded-lg text-white text-sm backdrop-blur-sm"
                 >
                   {[currentYear - 1, currentYear, currentYear + 1].map((year) => (
