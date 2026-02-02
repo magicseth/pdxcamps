@@ -241,6 +241,7 @@ export default function ChildrenSetupPage() {
                     onChange={(e) => setChildForm({ ...childForm, firstName: e.target.value })}
                     autoComplete="given-name"
                     autoCapitalize="words"
+                    enterKeyHint="next"
                     spellCheck="false"
                     required
                     aria-required="true"
@@ -260,6 +261,7 @@ export default function ChildrenSetupPage() {
                     onChange={(e) => setChildForm({ ...childForm, lastName: e.target.value })}
                     autoComplete="family-name"
                     autoCapitalize="words"
+                    enterKeyHint="done"
                     spellCheck="false"
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white text-sm"
                     disabled={isAddingChild}

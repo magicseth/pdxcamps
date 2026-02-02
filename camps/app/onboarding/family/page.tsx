@@ -127,6 +127,7 @@ export default function FamilySetupPage() {
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="The Smith Family"
                 autoCapitalize="words"
+                enterKeyHint="done"
                 aria-describedby="displayName-help"
                 className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white"
                 disabled={isSubmitting}
