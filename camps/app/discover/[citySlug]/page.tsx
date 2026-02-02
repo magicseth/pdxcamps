@@ -1585,7 +1585,7 @@ function SessionCard({
           : 'hover:shadow-lg hover:-translate-y-0.5'
       } ${getUrgencyClass()}`}>
         {/* Camp Image or Category Placeholder */}
-        <div className="relative h-32 overflow-hidden group">
+        <div className="relative h-48 overflow-hidden group">
           {campImageUrl ? (
             <>
               {/* Shimmer background shows through while image loads */}
@@ -1724,27 +1724,34 @@ function SessionCard({
               </span>
             )}
           </div>
-          {/* Organization logo overlay */}
-          {organization?.logoUrl && (
-            <div className="absolute bottom-2 left-2 w-10 h-10 rounded-lg bg-white dark:bg-slate-800 shadow-md flex items-center justify-center overflow-hidden">
-              <OrgLogo url={organization.logoUrl} name={organization.name} size="md" />
+          {/* Bottom gradient overlay for camp name */}
+          <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
+          {/* Camp name and org logo overlay */}
+          <div className="absolute bottom-0 left-0 right-0 p-3">
+            <div className="flex items-end gap-2">
+              {organization?.logoUrl && (
+                <div className="w-10 h-10 rounded-lg bg-white dark:bg-slate-800 shadow-md flex items-center justify-center overflow-hidden flex-shrink-0">
+                  <OrgLogo url={organization.logoUrl} name={organization.name} size="md" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <Link
+                  href={`/session/${session._id}`}
+                  className="text-base font-semibold text-white hover:text-blue-200 hover:underline line-clamp-1 drop-shadow-md"
+                >
+                  {camp?.name ?? 'Loading...'}
+                </Link>
+                <p className="text-xs text-white/80 line-clamp-1 drop-shadow-sm">
+                  {organization?.name ?? 'Loading...'}
+                </p>
+              </div>
             </div>
-          )}
+          </div>
         </div>
 
         <div className="p-4">
-          {/* Header */}
+          {/* Categories and description */}
           <div className="mb-3">
-            <Link
-              href={`/session/${session._id}`}
-              className="text-lg font-semibold text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 hover:underline line-clamp-1"
-            >
-              {camp?.name ?? 'Loading...'}
-            </Link>
-            <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-1">
-              <span className="text-slate-400 dark:text-slate-500">by </span>
-              {organization?.name ?? 'Loading...'}
-            </p>
             {camp?.categories && camp.categories.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-1">
                 {camp.categories.slice(0, 3).map((cat) => {
