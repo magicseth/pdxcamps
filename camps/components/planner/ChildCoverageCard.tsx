@@ -43,12 +43,13 @@ interface Registration {
 interface FamilyEvent {
   _id: Id<'familyEvents'>;
   title: string;
-  eventType: string;
+  eventType: 'vacation' | 'family_visit' | 'day_camp' | 'summer_school' | 'other';
   startDate: string;
   endDate: string;
   location?: string;
   notes?: string;
   color?: string;
+  childIds: Id<'children'>[];
 }
 
 interface AvailableCamp {
@@ -80,6 +81,7 @@ interface ChildCoverageCardProps {
   availableCamps: AvailableCamp[];
   onSaveForChild?: (sessionId: Id<'sessions'>) => void;
   onMarkRegistered?: (registrationId: Id<'registrations'>, sessionId: Id<'sessions'>) => void;
+  onEditEvent?: (event: FamilyEvent) => void;
 }
 
 export function ChildCoverageCard({
@@ -92,6 +94,7 @@ export function ChildCoverageCard({
   availableCamps,
   onSaveForChild,
   onMarkRegistered,
+  onEditEvent,
 }: ChildCoverageCardProps) {
   const status: CoverageStatus = hasGap ? 'gap' : events.length > 0 ? 'event' : 'full';
 
@@ -124,9 +127,14 @@ export function ChildCoverageCard({
           </span>
         )}
         {events.length > 0 && (
-          <span className="text-xs text-purple-700 dark:text-purple-300 font-medium flex items-center gap-1">
+          <button
+            onClick={() => onEditEvent?.(events[0])}
+            className="text-xs text-purple-700 dark:text-purple-300 font-medium flex items-center gap-1 hover:text-purple-900 dark:hover:text-purple-100 group"
+            title="Click to edit event"
+          >
             <span>✈</span> {events[0].title}
-          </span>
+            <span className="opacity-0 group-hover:opacity-100 text-purple-500">✎</span>
+          </button>
         )}
       </div>
 

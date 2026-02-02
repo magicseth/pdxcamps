@@ -9,6 +9,7 @@ import { Id } from '../../../../convex/_generated/dataModel';
 import { Authenticated, Unauthenticated } from 'convex/react';
 import { ChildCoverageCard } from '../../../../components/planner/ChildCoverageCard';
 import { AddEventModal } from '../../../../components/planner/AddEventModal';
+import { EditEventModal } from '../../../../components/planner/EditEventModal';
 import { BottomNav } from '../../../../components/shared/BottomNav';
 import { calculateAge, isAgeInRange, isGradeInRange, doDateRangesOverlap } from '../../../../convex/lib/helpers';
 
@@ -55,7 +56,20 @@ function WeekDetailContent() {
   const weekStart = params.weekStart as string;
 
   const [showAddEventModal, setShowAddEventModal] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<{
+    _id: Id<'familyEvents'>;
+    title: string;
+    description?: string;
+    startDate: string;
+    endDate: string;
+    eventType: 'vacation' | 'family_visit' | 'day_camp' | 'summer_school' | 'other';
+    location?: string;
+    notes?: string;
+    color?: string;
+    childIds: Id<'children'>[];
+  } | null>(null);
   const [selectedOrganizations, setSelectedOrganizations] = useState<string[]>([]);
+  const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [savingForChild, setSavingForChild] = useState<{
     childId: Id<'children'>;
     childName: string;
@@ -109,6 +123,30 @@ function WeekDetailContent() {
     }
     return Array.from(orgMap.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [allAvailableSessions]);
+
+  // Extract unique locations from sessions (filtered by organization if selected)
+  const locations = useMemo(() => {
+    if (!allAvailableSessions) return [];
+
+    // First filter by selected organizations if any
+    let sessionsForLocations = allAvailableSessions;
+    if (selectedOrganizations.length > 0) {
+      sessionsForLocations = allAvailableSessions.filter(
+        (s) => s.organization && selectedOrganizations.includes(s.organization._id)
+      );
+    }
+
+    const locationMap = new Map<string, { id: string; name: string }>();
+    for (const session of sessionsForLocations) {
+      if (session.location && !locationMap.has(session.location._id)) {
+        locationMap.set(session.location._id, {
+          id: session.location._id,
+          name: session.location.name,
+        });
+      }
+    }
+    return Array.from(locationMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [allAvailableSessions, selectedOrganizations]);
 
   // Build available camps per child, filtered by selected organizations
   // NOTE: This must be before early returns to maintain hooks order
@@ -181,11 +219,18 @@ function WeekDetailContent() {
         );
       }
 
+      // Apply location filter if any selected
+      if (selectedLocations.length > 0) {
+        eligibleSessions = eligibleSessions.filter(
+          (s) => s.location && selectedLocations.includes(s.location._id)
+        );
+      }
+
       result.set(childData.child._id, eligibleSessions);
     }
 
     return result;
-  }, [allAvailableSessions, weekDetail, selectedOrganizations]);
+  }, [allAvailableSessions, weekDetail, selectedOrganizations, selectedLocations]);
 
   const totalCamps = useMemo(() => {
     return Array.from(availableCampsPerChild.values()).reduce(
@@ -194,10 +239,20 @@ function WeekDetailContent() {
     );
   }, [availableCampsPerChild]);
 
-  // Toggle organization filter
+  // Toggle organization filter (and clear locations when orgs change)
   const handleOrganizationToggle = (orgId: string) => {
-    setSelectedOrganizations((prev) =>
-      prev.includes(orgId) ? prev.filter((id) => id !== orgId) : [...prev, orgId]
+    setSelectedOrganizations((prev) => {
+      const newOrgs = prev.includes(orgId) ? prev.filter((id) => id !== orgId) : [...prev, orgId];
+      // Clear location selection when organization filter changes
+      setSelectedLocations([]);
+      return newOrgs;
+    });
+  };
+
+  // Toggle location filter
+  const handleLocationToggle = (locationId: string) => {
+    setSelectedLocations((prev) =>
+      prev.includes(locationId) ? prev.filter((id) => id !== locationId) : [...prev, locationId]
     );
   };
 
@@ -325,8 +380,8 @@ function WeekDetailContent() {
 
       {/* Organization Filter Chips - only show when there are gaps to fill */}
       {childrenWithGaps.length > 0 && organizations.length > 0 && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 p-4">
-          <div className="flex items-center justify-between mb-3">
+        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 p-4 space-y-4">
+          <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
                 Find camps to fill gaps
@@ -335,34 +390,68 @@ function WeekDetailContent() {
                 {childrenWithGaps.map(c => c.child.firstName).join(', ')} need{childrenWithGaps.length === 1 ? 's' : ''} coverage
               </p>
             </div>
-            {selectedOrganizations.length > 0 && (
+            {(selectedOrganizations.length > 0 || selectedLocations.length > 0) && (
               <button
-                onClick={() => setSelectedOrganizations([])}
+                onClick={() => {
+                  setSelectedOrganizations([]);
+                  setSelectedLocations([]);
+                }}
                 className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400"
               >
-                Show all
+                Clear filters
               </button>
             )}
           </div>
-          <div className="flex flex-wrap gap-2">
-            {organizations.map((org) => (
-              <button
-                key={org.id}
-                onClick={() => handleOrganizationToggle(org.id)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                  selectedOrganizations.includes(org.id)
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
-                }`}
-              >
-                {org.name}
-                {selectedOrganizations.includes(org.id) && <span className="ml-1">✕</span>}
-              </button>
-            ))}
+
+          {/* Organization chips */}
+          <div>
+            <p className="text-xs font-medium text-blue-800 dark:text-blue-200 mb-2">Organizations</p>
+            <div className="flex flex-wrap gap-2">
+              {organizations.map((org) => (
+                <button
+                  key={org.id}
+                  onClick={() => handleOrganizationToggle(org.id)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                    selectedOrganizations.includes(org.id)
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {org.name}
+                  {selectedOrganizations.includes(org.id) && <span className="ml-1">✕</span>}
+                </button>
+              ))}
+            </div>
           </div>
-          {selectedOrganizations.length > 0 && (
-            <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
-              Showing {totalCamps} camp{totalCamps === 1 ? '' : 's'} from selected organizations
+
+          {/* Location chips - only show when organizations are selected and there are multiple locations */}
+          {selectedOrganizations.length > 0 && locations.length > 1 && (
+            <div>
+              <p className="text-xs font-medium text-blue-800 dark:text-blue-200 mb-2">Locations</p>
+              <div className="flex flex-wrap gap-2">
+                {locations.map((location) => (
+                  <button
+                    key={location.id}
+                    onClick={() => handleLocationToggle(location.id)}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                      selectedLocations.includes(location.id)
+                        ? 'bg-green-600 text-white'
+                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    {location.name}
+                    {selectedLocations.includes(location.id) && <span className="ml-1">✕</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(selectedOrganizations.length > 0 || selectedLocations.length > 0) && (
+            <p className="text-xs text-blue-700 dark:text-blue-300">
+              Showing {totalCamps} camp{totalCamps === 1 ? '' : 's'}
+              {selectedOrganizations.length > 0 && ` from ${selectedOrganizations.length} organization${selectedOrganizations.length > 1 ? 's' : ''}`}
+              {selectedLocations.length > 0 && ` at ${selectedLocations.length} location${selectedLocations.length > 1 ? 's' : ''}`}
             </p>
           )}
         </div>
@@ -399,13 +488,21 @@ function WeekDetailContent() {
             locationName: s.location?.name ?? 'Unknown Location',
           }));
 
+          // Enrich events with childIds for the edit modal
+          const enrichedEvents = childData.events.map(e => ({
+            ...e,
+            childIds: weekDetail.children
+              .filter(c => c.events.some(ev => ev._id === e._id))
+              .map(c => c.child._id),
+          }));
+
           return (
             <ChildCoverageCard
               key={childData.child._id}
               child={childData.child}
               age={childData.age}
               registrations={childData.registrations}
-              events={childData.events}
+              events={enrichedEvents}
               coveredDays={childData.coveredDays}
               hasGap={childData.hasGap}
               availableCamps={availableCampsForCard}
@@ -415,6 +512,7 @@ function WeekDetailContent() {
               onMarkRegistered={(registrationId, sessionId) => {
                 handleMarkRegistered(childData.child._id, sessionId);
               }}
+              onEditEvent={(event) => setEditingEvent(event)}
             />
           );
         })}
@@ -446,6 +544,15 @@ function WeekDetailContent() {
         defaultEndDate={weekDetail.weekEndDate}
         defaultChildIds={children?.map((c) => c._id) ?? []}
       />
+
+      {/* Edit Event Modal */}
+      {editingEvent && (
+        <EditEventModal
+          isOpen={true}
+          onClose={() => setEditingEvent(null)}
+          event={editingEvent}
+        />
+      )}
     </div>
   );
 }
