@@ -570,6 +570,88 @@ export default function DiscoverPage() {
               </div>
             )}
 
+            {/* Active Filters Summary */}
+            {hasActiveFilters && (
+              <div className="mb-4 p-3 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                    Active Filters
+                  </p>
+                  <button
+                    onClick={clearFilters}
+                    className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Clear all
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {startDateAfter && (
+                    <FilterChip
+                      label={`From: ${formatDateShort(startDateAfter)}`}
+                      onRemove={() => setStartDateAfter('')}
+                    />
+                  )}
+                  {startDateBefore && (
+                    <FilterChip
+                      label={`To: ${formatDateShort(startDateBefore)}`}
+                      onRemove={() => setStartDateBefore('')}
+                    />
+                  )}
+                  {childAge !== undefined && (
+                    <FilterChip
+                      label={`Age: ${childAge}`}
+                      onRemove={() => setChildAge(undefined)}
+                    />
+                  )}
+                  {childGrade !== undefined && (
+                    <FilterChip
+                      label={`Grade: ${GRADE_LABELS[childGrade] || `Grade ${childGrade}`}`}
+                      onRemove={() => setChildGrade(undefined)}
+                    />
+                  )}
+                  {selectedCategories.map((cat) => (
+                    <FilterChip
+                      key={cat}
+                      label={cat}
+                      onRemove={() => handleCategoryToggle(cat)}
+                    />
+                  ))}
+                  {maxPrice !== undefined && (
+                    <FilterChip
+                      label={`Max: $${maxPrice}`}
+                      onRemove={() => setMaxPrice(undefined)}
+                    />
+                  )}
+                  {hideSoldOut && (
+                    <FilterChip
+                      label="Hide sold out"
+                      onRemove={() => setHideSoldOut(false)}
+                    />
+                  )}
+                  {selectedOrganizations.map((orgId) => {
+                    const org = allOrganizations?.find((o) => o._id === orgId);
+                    return (
+                      <FilterChip
+                        key={orgId}
+                        label={org?.name || 'Organization'}
+                        onRemove={() => handleOrganizationToggle(orgId)}
+                      />
+                    );
+                  })}
+                  {selectedLocations.map((locId) => {
+                    const loc = allLocations?.find((l) => l._id === locId);
+                    return (
+                      <FilterChip
+                        key={locId}
+                        label={loc?.name || 'Location'}
+                        onRemove={() => handleLocationToggle(locId)}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Results Summary */}
             <div className="mb-4 flex items-center justify-between">
               <p className="text-sm text-slate-600 dark:text-slate-400">
@@ -1265,6 +1347,34 @@ function QuickDateButton({
       {label}
     </button>
   );
+}
+
+// Filter chip component for active filters display
+function FilterChip({
+  label,
+  onRemove,
+}: {
+  label: string;
+  onRemove: () => void;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
+      {label}
+      <button
+        onClick={onRemove}
+        className="ml-0.5 hover:text-blue-900 dark:hover:text-blue-100"
+        title="Remove filter"
+      >
+        ×
+      </button>
+    </span>
+  );
+}
+
+// Format date for display in filter chips
+function formatDateShort(dateStr: string): string {
+  const date = new Date(dateStr + 'T00:00:00');
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 // Icons
