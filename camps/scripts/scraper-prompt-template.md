@@ -242,8 +242,35 @@ function generateWeeklySessions(
 - Make the scraper robust to minor HTML changes
 - Add comments explaining your extraction logic
 
+## CRITICAL: Test Your Scraper Before Finishing
+
+After writing the scraper to `{{OUTPUT_FILE}}`, you MUST test it using this command:
+
+```bash
+npx tsx scripts/test-scraper.ts {{OUTPUT_FILE}} "{{SOURCE_URL}}"
+```
+
+This will:
+1. Run your scraper against the actual website
+2. Show you how many sessions were found
+3. Show sample session data or error messages
+
+**If the test fails:**
+1. Read the error message carefully
+2. Fix the scraper code based on the actual error
+3. Save the updated code to `{{OUTPUT_FILE}}`
+4. Run the test again
+5. Repeat until the test passes or you run out of time
+
+**Common test failures and fixes:**
+- `0 sessions found` → Your selectors aren't matching anything. Use page.evaluate() to debug what's on the page.
+- `page.extract is not a function` → Use `stagehand.extract()` not `page.extract()` - stagehand and z (zod) are available in scope.
+- `Timeout` → The page is slow to load. Add longer waits or use 'networkidle'.
+- `Cannot read property` → Check for null/undefined values in your extraction logic.
+- API rate limits (429) → Add delays between requests with `await page.waitForTimeout(2000)`.
+
 ## Time Management
 1. Minutes 0-2: Explore the page structure with WebFetch
-2. Minutes 2-6: Write the scraper code
-3. Minutes 6-8: Test and refine
+2. Minutes 2-5: Write the initial scraper code
+3. Minutes 5-8: **TEST the scraper and fix errors** (this is the most important step!)
 4. Minute 9: STOP - save whatever you have to {{OUTPUT_FILE}}
