@@ -39,3 +39,31 @@ body {
 :target {
   scroll-margin-top: 4rem;
 }
+
+/* Print styles */
+@media print {
+  /* Hide navigation elements */
+  nav,
+  header,
+  footer,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Remove backgrounds and shadows for ink-saving */
+  * {
+    background: white !important;
+    box-shadow: none !important;
+  }
+
+  /* Ensure text is readable */
+  body {
+    color: black !important;
+    font-size: 12pt;
+  }
+
+  /* Prevent page breaks inside cards */
+  .print-break-inside-avoid {
+    break-inside: avoid;
+  }
+}
