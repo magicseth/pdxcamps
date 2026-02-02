@@ -128,9 +128,10 @@ function AuthenticatedHub({ user, onSignOut }: { user: User | null; onSignOut: (
 function LoadingState() {
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-pulse motion-reduce:animate-none flex flex-col items-center gap-4">
-        <div className="w-12 h-12 bg-blue-200 dark:bg-blue-800 rounded-full"></div>
-        <div className="h-4 w-32 bg-slate-200 dark:bg-slate-700 rounded"></div>
+      <div role="status" aria-live="polite" className="animate-pulse motion-reduce:animate-none flex flex-col items-center gap-4">
+        <div className="w-12 h-12 bg-blue-200 dark:bg-blue-800 rounded-full" aria-hidden="true"></div>
+        <div className="h-4 w-32 bg-slate-200 dark:bg-slate-700 rounded" aria-hidden="true"></div>
+        <span className="sr-only">Loading...</span>
       </div>
     </div>
   );
