@@ -313,6 +313,28 @@ function PlannerHub({
                     <div className="text-sm text-blue-100">Gaps to Fill</div>
                   </div>
                 </div>
+                {/* Visual progress bar */}
+                <div className="mb-4">
+                  <div className="h-3 bg-blue-900/50 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        stats.coverage === 100
+                          ? 'bg-green-400'
+                          : stats.coverage >= 75
+                          ? 'bg-blue-300'
+                          : stats.coverage >= 50
+                          ? 'bg-yellow-400'
+                          : 'bg-orange-400'
+                      }`}
+                      style={{ width: `${stats.coverage}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-xs text-blue-200 mt-1">
+                    <span>June</span>
+                    <span>July</span>
+                    <span>August</span>
+                  </div>
+                </div>
                 <div className="flex items-center gap-4 text-sm text-blue-100 border-t border-blue-500/30 pt-3">
                   <span>{stats.registeredCount} camp{stats.registeredCount !== 1 ? 's' : ''} registered</span>
                   {stats.savedCount > 0 && (
