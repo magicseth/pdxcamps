@@ -1171,6 +1171,28 @@ function SessionCard({
 
   const statusBadge = getStatusBadge();
 
+  // Get timing badge for sessions starting soon
+  const getTimingBadge = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const startDate = new Date(session.startDate + 'T00:00:00');
+    const daysUntilStart = Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (daysUntilStart < 0) return null; // Already started
+    if (daysUntilStart === 0) {
+      return { label: 'Starts today!', className: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' };
+    }
+    if (daysUntilStart <= 3) {
+      return { label: `Starts in ${daysUntilStart} day${daysUntilStart === 1 ? '' : 's'}`, className: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' };
+    }
+    if (daysUntilStart <= 14) {
+      return { label: 'Starting soon', className: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200' };
+    }
+    return null;
+  };
+
+  const timingBadge = getTimingBadge();
+
   // Calculate spots left
   const spotsLeft = session.capacity - session.enrolledCount;
   const isSoldOut = session.status === 'sold_out' || spotsLeft <= 0;
@@ -1298,12 +1320,21 @@ function SessionCard({
               {generateError}
             </div>
           )}
-          {/* Status badge overlay */}
-          <span
-            className={`absolute top-2 right-2 px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadge.className} ${statusBadge.urgent ? 'animate-pulse' : ''}`}
-          >
-            {statusBadge.label}
-          </span>
+          {/* Status badges overlay */}
+          <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
+            <span
+              className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadge.className} ${statusBadge.urgent ? 'animate-pulse' : ''}`}
+            >
+              {statusBadge.label}
+            </span>
+            {timingBadge && (
+              <span
+                className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${timingBadge.className}`}
+              >
+                {timingBadge.label}
+              </span>
+            )}
+          </div>
           {/* Organization logo overlay */}
           {organization?.logoUrl && (
             <div className="absolute bottom-2 left-2 w-10 h-10 rounded-lg bg-white dark:bg-slate-800 shadow-md flex items-center justify-center overflow-hidden">
