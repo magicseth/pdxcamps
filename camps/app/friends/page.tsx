@@ -238,9 +238,15 @@ function MyFriends() {
         <h2 className="text-lg font-semibold mb-4">My Friends ({friends.length})</h2>
 
         {friends.length === 0 ? (
-          <p className="text-gray-500 dark:text-gray-400">
-            You haven&apos;t added any friends yet. Use the form below to send a friend request.
-          </p>
+          <div className="text-center py-8 px-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+            <div className="text-4xl mb-3">🤝</div>
+            <p className="text-gray-600 dark:text-gray-400 mb-2 font-medium">
+              No friends yet
+            </p>
+            <p className="text-gray-500 dark:text-gray-500 text-sm">
+              Connect with other families to share calendars and coordinate camp schedules. Use the form below to send a friend request.
+            </p>
+          </div>
         ) : (
           <div className="space-y-4">
             {friends.map((friendship) => {
@@ -639,10 +645,13 @@ function CalendarSharingSettings() {
       </p>
 
       {myShares.length === 0 ? (
-        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-          <p>You haven&apos;t shared your calendar with anyone yet.</p>
-          <p className="text-sm mt-1">
-            Click &quot;Share My Calendar&quot; next to a friend&apos;s name above to get started.
+        <div className="text-center py-8 px-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+          <div className="text-4xl mb-3">📅</div>
+          <p className="text-gray-600 dark:text-gray-400 mb-2 font-medium">
+            No calendar shares yet
+          </p>
+          <p className="text-gray-500 dark:text-gray-500 text-sm">
+            Click &quot;Share My Calendar&quot; next to a friend&apos;s name above to let them see your camp schedule.
           </p>
         </div>
       ) : (

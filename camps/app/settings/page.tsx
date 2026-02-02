@@ -319,9 +319,22 @@ function ChildrenSection({
       </div>
 
       {children.length === 0 ? (
-        <p className="text-slate-600 dark:text-slate-400">
-          No children added yet.
-        </p>
+        <div className="text-center py-8 px-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+          <div className="text-4xl mb-3">👨‍👩‍👧‍👦</div>
+          <p className="text-slate-600 dark:text-slate-400 mb-4">
+            No children added yet. Add your children to start planning camps!
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowAddChild(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add Your First Child
+          </button>
+        </div>
       ) : (
         <div className="space-y-4">
           {children.map((child) =>
