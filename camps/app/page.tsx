@@ -344,6 +344,18 @@ function PlannerHub({
                     </>
                   )}
                 </div>
+                {/* Motivational message */}
+                <p className="mt-3 text-sm text-blue-200 italic">
+                  {stats.coverage === 100
+                    ? "🎉 Amazing! Summer is fully planned!"
+                    : stats.coverage >= 75
+                    ? "🚀 Almost there! Just a few more weeks to fill."
+                    : stats.coverage >= 50
+                    ? "💪 Great progress! Keep filling those gaps."
+                    : stats.coverage > 0
+                    ? "🌱 Good start! Lots of camps to explore."
+                    : "👋 Welcome! Let's plan an awesome summer."}
+                </p>
               </>
             )}
 
