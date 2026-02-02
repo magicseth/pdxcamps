@@ -142,14 +142,15 @@ function DiscoveryQueueContent() {
         {/* Loading State */}
         {discoveryQueue === undefined && (
           <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm">
-            <div className="p-6 animate-pulse motion-reduce:animate-none space-y-4">
+            <div role="status" aria-live="polite" className="p-6 animate-pulse motion-reduce:animate-none space-y-4">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4">
+                <div key={i} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4" aria-hidden="true">
                   <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-1/3 mb-2"></div>
                   <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-2/3 mb-3"></div>
                   <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
                 </div>
               ))}
+              <span className="sr-only">Loading discovery queue...</span>
             </div>
           </div>
         )}
