@@ -458,14 +458,18 @@ function PlannerHub({
           <div className="mb-4 flex items-center justify-between flex-wrap gap-3">
             <CoverageLegend />
             {stats && stats.weeksWithGaps > 0 && (
-              <label className="flex items-center gap-2 cursor-pointer select-none">
+              <label className={`flex items-center gap-2 cursor-pointer select-none px-3 py-1.5 rounded-lg transition-colors ${
+                showOnlyGaps
+                  ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                  : 'hover:bg-slate-100 dark:hover:bg-slate-700'
+              }`}>
                 <input
                   type="checkbox"
                   checked={showOnlyGaps}
                   onChange={(e) => setShowOnlyGaps(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  className="w-4 h-4 rounded border-slate-300 text-red-600 focus:ring-red-500"
                 />
-                <span className="text-sm text-slate-600 dark:text-slate-400">
+                <span className={`text-sm ${showOnlyGaps ? 'font-medium' : 'text-slate-600 dark:text-slate-400'}`}>
                   Show only gaps ({stats.weeksWithGaps})
                 </span>
               </label>
