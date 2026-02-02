@@ -115,6 +115,9 @@ export default function DiscoverPage() {
   // Check if user is admin (for generate image button)
   const isAdmin = useQuery(api.admin.queries.isAdmin);
 
+  // Fetch user's children for quick filter
+  const myChildren = useQuery(api.children.queries.listChildren);
+
   // Fetch sessions with filters
   const sessions = useQuery(
     api.sessions.queries.searchSessions,
@@ -372,6 +375,40 @@ export default function DiscoverPage() {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Child Age or Grade
                 </label>
+                {/* Quick child filter buttons */}
+                {myChildren && myChildren.length > 0 && (
+                  <div className="mb-3">
+                    <label className="text-xs text-slate-500 dark:text-slate-400 mb-1.5 block">My Kids</label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {myChildren.map((child) => {
+                        const age = getChildAge(child.birthdate);
+                        const grade = child.currentGrade;
+                        return (
+                          <button
+                            key={child._id}
+                            type="button"
+                            onClick={() => {
+                              if (grade !== undefined) {
+                                setChildGrade(grade);
+                                setChildAge(undefined);
+                              } else if (age !== null) {
+                                setChildAge(age);
+                                setChildGrade(undefined);
+                              }
+                            }}
+                            className={`px-2 py-1 text-xs rounded-md font-medium transition-colors ${
+                              (age !== null && childAge === age) || (grade !== undefined && childGrade === grade)
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                            }`}
+                          >
+                            {child.firstName} ({age}y)
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <div>
                     <label className="text-xs text-slate-500 dark:text-slate-400">Age (years)</label>
@@ -1145,6 +1182,18 @@ function SaveSessionModal({
 }
 
 // Helper function
+function getChildAge(birthdate: string): number | null {
+  if (!birthdate) return null;
+  const birth = new Date(birthdate);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age;
+}
+
 function calculateDisplayAge(birthdate: string): string {
   const birth = new Date(birthdate);
   const today = new Date();
