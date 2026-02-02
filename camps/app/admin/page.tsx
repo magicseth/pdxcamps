@@ -149,19 +149,19 @@ function AdminContent() {
           <table className="w-full text-sm">
             <thead className="bg-slate-50 dark:bg-slate-900">
               <tr>
-                <th className="text-left px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">
+                <th scope="col" className="text-left px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">
                   Source
                 </th>
-                <th className="text-left px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">
+                <th scope="col" className="text-left px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">
                   Sessions
                 </th>
-                <th className="text-left px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">
+                <th scope="col" className="text-left px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">
                   Last Scrape
                 </th>
-                <th className="text-left px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">
+                <th scope="col" className="text-left px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">
                   Status
                 </th>
-                <th className="text-left px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">
+                <th scope="col" className="text-left px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">
                   Error
                 </th>
               </tr>
