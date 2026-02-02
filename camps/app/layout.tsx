@@ -20,7 +20,8 @@ export const metadata: Metadata = {
   },
   description: 'Discover and organize summer camps for your kids in Portland',
   icons: {
-    icon: '/convex.svg',
+    icon: '/icon.svg',
+    apple: '/icon.svg',
   },
   openGraph: {
     title: 'PDX Camps',
