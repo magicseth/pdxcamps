@@ -46,3 +46,13 @@ export const getOrganizationBySlug = query({
       .unique();
   },
 });
+
+/**
+ * List all organizations (for admin/logo processing)
+ */
+export const listAllOrganizations = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("organizations").collect();
+  },
+});

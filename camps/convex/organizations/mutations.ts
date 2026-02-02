@@ -1,4 +1,4 @@
-import { mutation } from "../_generated/server";
+import { mutation, internalMutation } from "../_generated/server";
 import { v } from "convex/values";
 import { slugify } from "../lib/helpers";
 
@@ -121,5 +121,20 @@ export const updateOrganization = mutation({
     await ctx.db.patch(organizationId, updateFields);
 
     return organizationId;
+  },
+});
+
+/**
+ * Update organization logo storage ID (internal - used by logo population action)
+ */
+export const updateOrgLogo = internalMutation({
+  args: {
+    orgId: v.id("organizations"),
+    logoStorageId: v.id("_storage"),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.orgId, {
+      logoStorageId: args.logoStorageId,
+    });
   },
 });
