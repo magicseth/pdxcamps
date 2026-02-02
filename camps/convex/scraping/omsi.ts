@@ -12,9 +12,297 @@ function log(level: "INFO" | "DEBUG" | "WARN" | "ERROR", message: string, data?:
   console.log(`[${timestamp}] [${level}] ${message}${dataStr}`);
 }
 
+// OMSI API response types
+interface OmsiSession {
+  startDate: string;
+  pricing: string;
+  location: string;
+  activityTime: string;
+  isPreview?: boolean;
+  campClassProductId: string;
+  available: boolean;
+}
+
+interface OmsiCampProduct {
+  name: string;
+  subject: string;
+  shortDescription: string;
+  sessionList: OmsiSession[];
+  safeURL: string;
+  productId: string;
+  imageName?: string;
+  gradeLevel?: string;
+}
+
+interface OmsiApiResponse {
+  dateResults: OmsiCampProduct[];
+  alphaResults: OmsiCampProduct[];
+}
+
+// Helper to parse camp data from Visualforce API response
+function parseCampData(
+  data: unknown,
+  addLog: (level: "INFO" | "DEBUG" | "WARN" | "ERROR", msg: string, data?: unknown) => void
+): ScrapedCamp[] {
+  const camps: ScrapedCamp[] = [];
+
+  try {
+    // The data could be in various formats - let's explore
+    if (typeof data === 'string') {
+      addLog("DEBUG", "Data is string, attempting to parse as JSON");
+      data = JSON.parse(data);
+    }
+
+    if (typeof data === 'object' && data !== null) {
+      const obj = data as Record<string, unknown>;
+      addLog("DEBUG", "Data is object", { keys: Object.keys(obj) });
+
+      // OMSI-specific: Check for dateResults/alphaResults structure
+      if (Array.isArray(obj.dateResults)) {
+        addLog("INFO", "Found OMSI dateResults", { count: obj.dateResults.length });
+        const omsiData = obj as unknown as OmsiApiResponse;
+
+        for (const product of omsiData.dateResults) {
+          addLog("DEBUG", "Processing product", {
+            name: product.name,
+            sessionCount: product.sessionList?.length
+          });
+
+          // Each product can have multiple sessions (dates)
+          if (product.sessionList && product.sessionList.length > 0) {
+            for (const session of product.sessionList) {
+              const camp = extractOmsiCamp(product, session, addLog);
+              if (camp) {
+                camps.push(camp);
+              }
+            }
+          } else {
+            // Product without sessions - still record it
+            const camp = extractOmsiCamp(product, null, addLog);
+            if (camp) {
+              camps.push(camp);
+            }
+          }
+        }
+      }
+
+      // Fallback: Check common field names for camp lists
+      if (camps.length === 0) {
+        const listFields = ['camps', 'classes', 'products', 'items', 'programs', 'sessions', 'results', 'data'];
+        for (const field of listFields) {
+          if (Array.isArray(obj[field])) {
+            addLog("DEBUG", `Found array in field "${field}"`, { length: (obj[field] as unknown[]).length });
+            for (const item of obj[field] as unknown[]) {
+              const camp = extractCampFromItem(item, addLog);
+              if (camp) {
+                camps.push(camp);
+              }
+            }
+          }
+        }
+      }
+
+      // If still no list found, try to extract from the object itself
+      if (camps.length === 0) {
+        const camp = extractCampFromItem(obj, addLog);
+        if (camp) {
+          camps.push(camp);
+        }
+      }
+    } else if (Array.isArray(data)) {
+      addLog("DEBUG", "Data is array", { length: data.length });
+      for (const item of data) {
+        const camp = extractCampFromItem(item, addLog);
+        if (camp) {
+          camps.push(camp);
+        }
+      }
+    }
+  } catch (error) {
+    addLog("ERROR", "Failed to parse camp data", { error: String(error) });
+  }
+
+  return camps;
+}
+
+// Extract a camp from OMSI-specific data structure
+function extractOmsiCamp(
+  product: OmsiCampProduct,
+  session: OmsiSession | null,
+  addLog: (level: "INFO" | "DEBUG" | "WARN" | "ERROR", msg: string, data?: unknown) => void
+): ScrapedCamp | null {
+  const name = product.name || '';
+  if (!name) return null;
+
+  const camp: ScrapedCamp = {
+    name,
+    description: product.shortDescription || '',
+    category: product.subject || 'STEM',
+    grades: product.gradeLevel || '',
+    dates: session?.startDate || '',
+    times: session?.activityTime || '',
+    price: session?.pricing || '',
+    location: session?.location || 'OMSI',
+    availability: session?.available ? 'Available' : 'Sold Out',
+    registrationUrl: `https://secure.omsi.edu/camps-and-classes?product=${product.safeURL}`,
+    productId: product.productId,
+    sessionProductId: session?.campClassProductId,
+  };
+
+  // Parse price - OMSI format: "$495.00/$550.00" (member/non-member)
+  if (camp.price) {
+    const prices = camp.price.match(/\$?([\d,]+(?:\.\d{2})?)/g);
+    if (prices && prices.length >= 1) {
+      const memberPrice = parseFloat(prices[0].replace(/[$,]/g, ''));
+      camp.memberPriceInCents = Math.round(memberPrice * 100);
+      if (prices.length >= 2) {
+        const regularPrice = parseFloat(prices[1].replace(/[$,]/g, ''));
+        camp.priceInCents = Math.round(regularPrice * 100);
+      } else {
+        camp.priceInCents = camp.memberPriceInCents;
+      }
+    }
+  }
+
+  // Parse dates - OMSI format: "Mar 23, 2026" or "Jun 16 - 20, 2026"
+  if (camp.dates) {
+    const dateRange = camp.dates.match(/(\w+\s+\d+)(?:\s*-\s*(\d+))?,?\s*(\d{4})/);
+    if (dateRange) {
+      const year = dateRange[3];
+      const monthDay = dateRange[1]; // "Mar 23" or "Jun 16"
+      const endDay = dateRange[2]; // "20" if range, undefined if single day
+
+      const startDate = new Date(`${monthDay}, ${year}`);
+      if (!isNaN(startDate.getTime())) {
+        camp.startDate = startDate.toISOString().split('T')[0];
+
+        if (endDay) {
+          // Same month range
+          const endDate = new Date(`${monthDay.split(' ')[0]} ${endDay}, ${year}`);
+          if (!isNaN(endDate.getTime())) {
+            camp.endDate = endDate.toISOString().split('T')[0];
+          }
+        } else {
+          // Single day or need to infer end (assume 1 week for camps)
+          const endDate = new Date(startDate);
+          endDate.setDate(endDate.getDate() + 4); // Mon-Fri = 5 days
+          camp.endDate = endDate.toISOString().split('T')[0];
+        }
+      }
+    }
+  }
+
+  // Parse times - OMSI format: "9am-4pm Mon-Fri"
+  if (camp.times) {
+    const timeMatch = camp.times.match(/(\d+)(am|pm)\s*-\s*(\d+)(am|pm)/i);
+    if (timeMatch) {
+      let dropOffHour = parseInt(timeMatch[1]);
+      if (timeMatch[2].toLowerCase() === 'pm' && dropOffHour !== 12) dropOffHour += 12;
+      if (timeMatch[2].toLowerCase() === 'am' && dropOffHour === 12) dropOffHour = 0;
+
+      let pickUpHour = parseInt(timeMatch[3]);
+      if (timeMatch[4].toLowerCase() === 'pm' && pickUpHour !== 12) pickUpHour += 12;
+      if (timeMatch[4].toLowerCase() === 'am' && pickUpHour === 12) pickUpHour = 0;
+
+      camp.dropOffHour = dropOffHour;
+      camp.dropOffMinute = 0;
+      camp.pickUpHour = pickUpHour;
+      camp.pickUpMinute = 0;
+    }
+  }
+
+  // Parse grades - OMSI might have "Grades 3-5" or similar
+  if (camp.grades) {
+    const gradeMatch = camp.grades.match(/grades?\s*(\d+)\s*-\s*(\d+)/i);
+    if (gradeMatch) {
+      camp.minGrade = parseInt(gradeMatch[1]);
+      camp.maxGrade = parseInt(gradeMatch[2]);
+    }
+  }
+
+  addLog("DEBUG", "Extracted OMSI camp", {
+    name: camp.name,
+    startDate: camp.startDate,
+    price: camp.priceInCents,
+    available: camp.availability,
+  });
+
+  return camp;
+}
+
+// Extract a single camp from an item
+function extractCampFromItem(
+  item: unknown,
+  addLog: (level: "INFO" | "DEBUG" | "WARN" | "ERROR", msg: string, data?: unknown) => void
+): ScrapedCamp | null {
+  if (typeof item !== 'object' || item === null) {
+    return null;
+  }
+
+  const obj = item as Record<string, unknown>;
+
+  // Log the item structure for debugging
+  addLog("DEBUG", "Examining item", {
+    keys: Object.keys(obj),
+    sample: JSON.stringify(obj).substring(0, 500),
+  });
+
+  // Try to extract common camp fields
+  const name = String(obj.name || obj.Name || obj.title || obj.Title || obj.productName || obj.ProductName || '');
+  const description = String(obj.description || obj.Description || obj.details || obj.Details || '');
+  const dates = String(obj.dates || obj.Dates || obj.dateRange || obj.DateRange || obj.sessionDates || '');
+  const times = String(obj.times || obj.Times || obj.schedule || obj.Schedule || '');
+  const price = String(obj.price || obj.Price || obj.cost || obj.Cost || obj.fee || obj.Fee || '');
+  const grades = String(obj.grades || obj.Grades || obj.gradeRange || obj.GradeRange || obj.gradeLevel || '');
+  const ages = String(obj.ages || obj.Ages || obj.ageRange || obj.AgeRange || '');
+  const location = String(obj.location || obj.Location || obj.site || obj.Site || obj.venue || '');
+  const availability = String(obj.availability || obj.Availability || obj.status || obj.Status || obj.spotsAvailable || '');
+
+  if (!name) {
+    return null;
+  }
+
+  const camp: ScrapedCamp = {
+    name,
+    description,
+    dates,
+    times,
+    price,
+    grades,
+    ages,
+    location,
+    availability,
+  };
+
+  // Try to parse numeric values
+  const priceMatch = price.match(/\$?([\d,]+(?:\.\d{2})?)/);
+  if (priceMatch) {
+    camp.priceInCents = Math.round(parseFloat(priceMatch[1].replace(',', '')) * 100);
+  }
+
+  // Parse grades
+  const gradeMatch = grades.match(/(\d+)(?:\s*-\s*|\s+to\s+)(\d+)/i);
+  if (gradeMatch) {
+    camp.minGrade = parseInt(gradeMatch[1]);
+    camp.maxGrade = parseInt(gradeMatch[2]);
+  }
+
+  // Parse ages
+  const ageMatch = ages.match(/(\d+)(?:\s*-\s*|\s+to\s+)(\d+)/i);
+  if (ageMatch) {
+    camp.minAge = parseInt(ageMatch[1]);
+    camp.maxAge = parseInt(ageMatch[2]);
+  }
+
+  addLog("DEBUG", "Extracted camp", { name: camp.name, price: camp.price, grades: camp.grades });
+
+  return camp;
+}
+
 interface ScrapedCamp {
   name: string;
   description: string;
+  category?: string;
   dates: string;
   startDate?: string;
   endDate?: string;
@@ -36,6 +324,8 @@ interface ScrapedCamp {
   location: string;
   availability: string;
   registrationUrl?: string;
+  productId?: string;
+  sessionProductId?: string;
   rawHtml?: string;
 }
 
@@ -69,32 +359,114 @@ export const scrapeOmsi = action({
 
     addLog("INFO", "Starting OMSI scrape");
 
-    // Method 1: Try the secure.omsi.edu API directly
+    // Method 1: Try the Salesforce Visualforce Remoting API
     try {
-      addLog("INFO", "Method 1: Attempting to fetch OMSI API");
+      addLog("INFO", "Method 1: Fetching OMSI Visualforce Remoting API");
 
-      const apiUrl = "https://secure.omsi.edu/api/camps-classes";
-      addLog("DEBUG", "Fetching", { url: apiUrl });
+      // First, get the page to extract CSRF token
+      const pageResponse = await fetch("https://secure.omsi.edu/camps-and-classes", {
+        headers: {
+          "Accept": "text/html,application/xhtml+xml",
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
+        },
+      });
+
+      const pageHtml = await pageResponse.text();
+      addLog("DEBUG", "Got catalog page", { length: pageHtml.length });
+
+      // Extract CSRF token and other context from the page
+      const csrfMatch = pageHtml.match(/"csrf":"([^"]+)"/);
+      const vidMatch = pageHtml.match(/"vid":"([^"]+)"/);
+      const verMatch = pageHtml.match(/"ver":(\d+)/);
+
+      if (!csrfMatch) {
+        addLog("WARN", "Could not find CSRF token in page");
+      }
+
+      const csrf = csrfMatch?.[1] || "";
+      const vid = vidMatch?.[1] || "066f40000026br6";
+      const ver = verMatch?.[1] ? parseInt(verMatch[1]) : 65;
+
+      addLog("DEBUG", "Extracted context", { csrf: csrf.substring(0, 20) + "...", vid, ver });
+
+      // Now call the API
+      const apiUrl = "https://secure.omsi.edu/apexremote";
+      const requestBody = {
+        action: "ecomm_CampsClassesCatalogController",
+        method: "getCampsClasses",
+        data: [
+          JSON.stringify({
+            typeFormatList: [],
+            gradeList: [],
+            dateList: [],
+            locationList: [],
+            siteList: [],
+            showSoldOutProducts: false,
+          }),
+          "",
+        ],
+        type: "rpc",
+        tid: 2,
+        ctx: {
+          csrf,
+          vid,
+          ns: "",
+          ver,
+        },
+      };
+
+      addLog("DEBUG", "Calling Visualforce API", { url: apiUrl });
 
       const apiResponse = await fetch(apiUrl, {
+        method: "POST",
         headers: {
-          "Accept": "application/json",
-          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+          "Accept": "*/*",
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+          "X-User-Agent": "Visualforce-Remoting",
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
+          "Referer": "https://secure.omsi.edu/camps-and-classes",
         },
+        body: JSON.stringify(requestBody),
       });
 
       addLog("DEBUG", "API Response", { status: apiResponse.status, statusText: apiResponse.statusText });
 
       if (apiResponse.ok) {
         const data = await apiResponse.json();
-        addLog("INFO", "Got API response", { type: typeof data, keys: Object.keys(data) });
-        results.method = "api";
-        results.success = true;
-        results.rawResponse = JSON.stringify(data).substring(0, 5000);
-        // Parse the API response...
+        addLog("INFO", "Got Visualforce API response", {
+          type: typeof data,
+          isArray: Array.isArray(data),
+          length: Array.isArray(data) ? data.length : undefined,
+        });
+
+        if (debug) {
+          results.rawResponse = JSON.stringify(data, null, 2).substring(0, 20000);
+        }
+
+        // Parse the Visualforce response
+        // Response format is typically: [{ result: {...}, ... }]
+        if (Array.isArray(data) && data.length > 0 && data[0].result) {
+          const campData = data[0].result;
+          addLog("INFO", "Parsing camp data", {
+            type: typeof campData,
+            keys: typeof campData === 'object' ? Object.keys(campData) : undefined,
+          });
+
+          // Try to extract camps from the result
+          const camps = parseCampData(campData, addLog);
+          if (camps.length > 0) {
+            results.camps = camps;
+            results.success = true;
+            results.method = "visualforce_api";
+            addLog("INFO", "Successfully parsed camps", { count: camps.length });
+          }
+        } else {
+          addLog("WARN", "Unexpected API response format", { data: JSON.stringify(data).substring(0, 1000) });
+        }
       }
     } catch (apiError) {
-      addLog("WARN", "API method failed", { error: String(apiError) });
+      addLog("ERROR", "Visualforce API method failed", { error: String(apiError) });
     }
 
     // Method 2: Scrape the main camps page
