@@ -288,6 +288,55 @@ export const getSharedCalendars = query({
 });
 
 /**
+ * Get the current family's outgoing calendar shares (shares they've created).
+ * Returns list of shares with recipient family info, children, and permission level.
+ */
+export const getMyCalendarShares = query({
+  args: {},
+  handler: async (ctx) => {
+    const family = await getFamily(ctx);
+    if (!family) {
+      return [];
+    }
+
+    const calendarShares = await ctx.db
+      .query("calendarShares")
+      .withIndex("by_owner", (q) => q.eq("ownerFamilyId", family._id))
+      .collect();
+
+    // Filter to active shares
+    const activeShares = calendarShares.filter((share) => share.isActive);
+
+    // Fetch recipient family info and children details
+    const results = await Promise.all(
+      activeShares.map(async (share) => {
+        const sharedWithFamily = await ctx.db.get(share.sharedWithFamilyId);
+        const children = await Promise.all(
+          share.childIds.map((childId) => ctx.db.get(childId))
+        );
+
+        return {
+          shareId: share._id,
+          permission: share.permission,
+          sharedWith: sharedWithFamily
+            ? {
+                _id: sharedWithFamily._id,
+                displayName: sharedWithFamily.displayName,
+              }
+            : null,
+          children: children.filter(Boolean).map((child) => ({
+            _id: child!._id,
+            firstName: child!.firstName,
+          })),
+        };
+      })
+    );
+
+    return results;
+  },
+});
+
+/**
  * Get a friend's calendar if they've shared it with the current family.
  * Returns registrations for the shared children based on permission level.
  */

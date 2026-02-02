@@ -1,0 +1,900 @@
+'use client';
+
+import { useState, useMemo } from 'react';
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '../../../convex/_generated/api';
+import { Id } from '../../../convex/_generated/dataModel';
+
+// Categories for filtering
+const CATEGORIES = [
+  'Sports',
+  'Arts',
+  'STEM',
+  'Nature',
+  'Music',
+  'Academic',
+  'Drama',
+  'Adventure',
+  'Cooking',
+  'Dance',
+];
+
+// Grade mapping for display
+const GRADE_LABELS: Record<number, string> = {
+  [-2]: 'Preschool',
+  [-1]: 'Pre-K',
+  [0]: 'Kindergarten',
+  [1]: '1st Grade',
+  [2]: '2nd Grade',
+  [3]: '3rd Grade',
+  [4]: '4th Grade',
+  [5]: '5th Grade',
+  [6]: '6th Grade',
+  [7]: '7th Grade',
+  [8]: '8th Grade',
+  [9]: '9th Grade',
+  [10]: '10th Grade',
+  [11]: '11th Grade',
+  [12]: '12th Grade',
+};
+
+export default function DiscoverPage() {
+  const params = useParams();
+  const citySlug = params.citySlug as string;
+
+  // Filter state
+  const [startDateAfter, setStartDateAfter] = useState<string>('');
+  const [startDateBefore, setStartDateBefore] = useState<string>('');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [maxPrice, setMaxPrice] = useState<number | undefined>(undefined);
+  const [hideSoldOut, setHideSoldOut] = useState(false);
+  const [childAge, setChildAge] = useState<number | undefined>(undefined);
+  const [childGrade, setChildGrade] = useState<number | undefined>(undefined);
+  const [showFilters, setShowFilters] = useState(true);
+
+  // Fetch city data
+  const city = useQuery(api.cities.queries.getCityBySlug, { slug: citySlug });
+
+  // Fetch sessions with filters
+  const sessions = useQuery(
+    api.sessions.queries.searchSessions,
+    city
+      ? {
+          cityId: city._id,
+          startDateAfter: startDateAfter || undefined,
+          startDateBefore: startDateBefore || undefined,
+          categories: selectedCategories.length > 0 ? selectedCategories : undefined,
+          maxPrice: maxPrice !== undefined ? maxPrice * 100 : undefined, // Convert to cents
+          excludeSoldOut: hideSoldOut || undefined,
+          childAge: childAge,
+          childGrade: childGrade,
+        }
+      : 'skip'
+  );
+
+  // Loading state
+  if (city === undefined) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-48 mb-4"></div>
+            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-96 mb-8"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="h-64 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // City not found
+  if (city === null) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">City Not Found</h1>
+          <p className="text-slate-600 dark:text-slate-400 mb-6">
+            We couldn&apos;t find a city with the slug &quot;{citySlug}&quot;.
+          </p>
+          <Link
+            href="/"
+            className="inline-block bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
+          >
+            Back to Home
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const handleCategoryToggle = (category: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]
+    );
+  };
+
+  const clearFilters = () => {
+    setStartDateAfter('');
+    setStartDateBefore('');
+    setSelectedCategories([]);
+    setMaxPrice(undefined);
+    setHideSoldOut(false);
+    setChildAge(undefined);
+    setChildGrade(undefined);
+  };
+
+  const hasActiveFilters =
+    startDateAfter ||
+    startDateBefore ||
+    selectedCategories.length > 0 ||
+    maxPrice !== undefined ||
+    hideSoldOut ||
+    childAge !== undefined ||
+    childGrade !== undefined;
+
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+      {/* Header */}
+      <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <Link href="/" className="text-sm text-blue-600 hover:text-blue-700 mb-1 block">
+                &larr; Back to Home
+              </Link>
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+                Camps in {city.name}, {city.state}
+              </h1>
+            </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="md:hidden flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 rounded-md"
+            >
+              <FilterIcon />
+              Filters
+              {hasActiveFilters && (
+                <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
+              )}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* Filters Sidebar */}
+          <aside
+            className={`${
+              showFilters ? 'block' : 'hidden'
+            } md:block w-full md:w-72 flex-shrink-0`}
+          >
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 sticky top-24">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Filters</h2>
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearFilters}
+                    className="text-sm text-blue-600 hover:text-blue-700"
+                  >
+                    Clear all
+                  </button>
+                )}
+              </div>
+
+              {/* Date Range */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Date Range
+                </label>
+                <div className="space-y-2">
+                  <div>
+                    <label className="text-xs text-slate-500 dark:text-slate-400">From</label>
+                    <input
+                      type="date"
+                      value={startDateAfter}
+                      onChange={(e) => setStartDateAfter(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-500 dark:text-slate-400">To</label>
+                    <input
+                      type="date"
+                      value={startDateBefore}
+                      onChange={(e) => setStartDateBefore(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Age/Grade */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Child Age or Grade
+                </label>
+                <div className="space-y-2">
+                  <div>
+                    <label className="text-xs text-slate-500 dark:text-slate-400">Age (years)</label>
+                    <input
+                      type="number"
+                      min={3}
+                      max={18}
+                      value={childAge ?? ''}
+                      onChange={(e) =>
+                        setChildAge(e.target.value ? parseInt(e.target.value) : undefined)
+                      }
+                      placeholder="e.g., 8"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                    />
+                  </div>
+                  <div className="text-center text-xs text-slate-400">or</div>
+                  <div>
+                    <label className="text-xs text-slate-500 dark:text-slate-400">Grade</label>
+                    <select
+                      value={childGrade ?? ''}
+                      onChange={(e) =>
+                        setChildGrade(e.target.value ? parseInt(e.target.value) : undefined)
+                      }
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                    >
+                      <option value="">Any grade</option>
+                      {Object.entries(GRADE_LABELS).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Categories */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Categories
+                </label>
+                <div className="space-y-2">
+                  {CATEGORIES.map((category) => (
+                    <label key={category} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedCategories.includes(category)}
+                        onChange={() => handleCategoryToggle(category)}
+                        className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-slate-700 dark:text-slate-300">{category}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Max Price */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Max Price
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-500">$</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={50}
+                    value={maxPrice ?? ''}
+                    onChange={(e) =>
+                      setMaxPrice(e.target.value ? parseInt(e.target.value) : undefined)
+                    }
+                    placeholder="Any price"
+                    className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                  />
+                </div>
+                {maxPrice !== undefined && (
+                  <input
+                    type="range"
+                    min={0}
+                    max={2000}
+                    step={50}
+                    value={maxPrice}
+                    onChange={(e) => setMaxPrice(parseInt(e.target.value))}
+                    className="w-full mt-2"
+                  />
+                )}
+              </div>
+
+              {/* Hide Sold Out */}
+              <div className="mb-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={hideSoldOut}
+                    onChange={(e) => setHideSoldOut(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-slate-700 dark:text-slate-300">Hide sold out</span>
+                </label>
+              </div>
+            </div>
+          </aside>
+
+          {/* Sessions Grid */}
+          <main className="flex-1">
+            {/* Results Summary */}
+            <div className="mb-4 flex items-center justify-between">
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                {sessions === undefined ? (
+                  'Loading...'
+                ) : sessions.length === 0 ? (
+                  'No sessions found'
+                ) : (
+                  `${sessions.length} session${sessions.length === 1 ? '' : 's'} found`
+                )}
+              </p>
+            </div>
+
+            {/* Loading State */}
+            {sessions === undefined && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 animate-pulse"
+                  >
+                    <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded w-3/4 mb-3"></div>
+                    <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2 mb-4"></div>
+                    <div className="space-y-2">
+                      <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
+                      <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-2/3"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Empty State */}
+            {sessions !== undefined && sessions.length === 0 && (
+              <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-12 text-center">
+                <div className="text-slate-400 mb-4">
+                  <EmptyIcon />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+                  No sessions found
+                </h3>
+                <p className="text-slate-600 dark:text-slate-400 mb-4">
+                  Try adjusting your filters or check back later for new camps.
+                </p>
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearFilters}
+                    className="text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Clear all filters
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Sessions List */}
+            {sessions !== undefined && sessions.length > 0 && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {sessions.map((session) => (
+                  <SessionCard key={session._id} session={session} cityId={city._id} />
+                ))}
+              </div>
+            )}
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Session Card Component
+function SessionCard({
+  session,
+  cityId,
+}: {
+  session: {
+    _id: Id<'sessions'>;
+    campId: Id<'camps'>;
+    locationId: Id<'locations'>;
+    organizationId: Id<'organizations'>;
+    startDate: string;
+    endDate: string;
+    price: number;
+    currency: string;
+    capacity: number;
+    enrolledCount: number;
+    waitlistEnabled: boolean;
+    waitlistCount: number;
+    status: 'draft' | 'active' | 'sold_out' | 'cancelled' | 'completed';
+    ageRequirements: {
+      minAge?: number;
+      maxAge?: number;
+      minGrade?: number;
+      maxGrade?: number;
+    };
+  };
+  cityId: Id<'cities'>;
+}) {
+  const [showSaveModal, setShowSaveModal] = useState(false);
+
+  // Fetch related data
+  const camp = useQuery(api.camps.queries.getCamp, { campId: session.campId });
+  const organization = useQuery(api.organizations.queries.getOrganization, {
+    organizationId: session.organizationId,
+  });
+  const location = useQuery(api.locations.queries.getLocation, {
+    locationId: session.locationId,
+  });
+
+  // Format dates
+  const formatDateRange = (start: string, end: string) => {
+    const startDate = new Date(start + 'T00:00:00');
+    const endDate = new Date(end + 'T00:00:00');
+    const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+
+    if (start === end) {
+      return startDate.toLocaleDateString('en-US', { ...options, year: 'numeric' });
+    }
+
+    const startYear = startDate.getFullYear();
+    const endYear = endDate.getFullYear();
+
+    if (startYear === endYear) {
+      return `${startDate.toLocaleDateString('en-US', options)} - ${endDate.toLocaleDateString('en-US', { ...options, year: 'numeric' })}`;
+    }
+
+    return `${startDate.toLocaleDateString('en-US', { ...options, year: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { ...options, year: 'numeric' })}`;
+  };
+
+  // Format price
+  const formatPrice = (cents: number, currency: string) => {
+    const amount = cents / 100;
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  // Format age range
+  const formatAgeRange = (requirements: typeof session.ageRequirements) => {
+    const parts: string[] = [];
+
+    if (requirements.minAge !== undefined || requirements.maxAge !== undefined) {
+      if (requirements.minAge !== undefined && requirements.maxAge !== undefined) {
+        parts.push(`Ages ${requirements.minAge}-${requirements.maxAge}`);
+      } else if (requirements.minAge !== undefined) {
+        parts.push(`Ages ${requirements.minAge}+`);
+      } else if (requirements.maxAge !== undefined) {
+        parts.push(`Ages up to ${requirements.maxAge}`);
+      }
+    }
+
+    if (requirements.minGrade !== undefined || requirements.maxGrade !== undefined) {
+      const gradeLabel = (grade: number) => {
+        if (grade === -1) return 'Pre-K';
+        if (grade === 0) return 'K';
+        return `${grade}`;
+      };
+
+      if (requirements.minGrade !== undefined && requirements.maxGrade !== undefined) {
+        parts.push(`Grades ${gradeLabel(requirements.minGrade)}-${gradeLabel(requirements.maxGrade)}`);
+      } else if (requirements.minGrade !== undefined) {
+        parts.push(`Grades ${gradeLabel(requirements.minGrade)}+`);
+      } else if (requirements.maxGrade !== undefined) {
+        parts.push(`Grades up to ${gradeLabel(requirements.maxGrade)}`);
+      }
+    }
+
+    return parts.join(' / ') || 'All ages';
+  };
+
+  // Get status info
+  const getStatusBadge = () => {
+    if (session.status === 'sold_out' || session.enrolledCount >= session.capacity) {
+      if (session.waitlistEnabled) {
+        return {
+          label: `Waitlist (${session.waitlistCount})`,
+          className: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+        };
+      }
+      return {
+        label: 'Sold Out',
+        className: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+      };
+    }
+
+    const spotsLeft = session.capacity - session.enrolledCount;
+    if (spotsLeft <= 5) {
+      return {
+        label: `${spotsLeft} spots left`,
+        className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+      };
+    }
+
+    return {
+      label: 'Available',
+      className: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+    };
+  };
+
+  const statusBadge = getStatusBadge();
+
+  return (
+    <>
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
+        <div className="flex items-start justify-between gap-4 mb-3">
+          <div className="flex-1 min-w-0">
+            <Link
+              href={`/session/${session._id}`}
+              className="text-lg font-semibold text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 line-clamp-1"
+            >
+              {camp?.name ?? 'Loading...'}
+            </Link>
+            <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-1">
+              {organization?.name ?? 'Loading...'}
+            </p>
+          </div>
+          <span
+            className={`flex-shrink-0 px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadge.className}`}
+          >
+            {statusBadge.label}
+          </span>
+        </div>
+
+        <div className="space-y-2 mb-4">
+          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+            <CalendarIcon />
+            <span>{formatDateRange(session.startDate, session.endDate)}</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+            <DollarIcon />
+            <span>{formatPrice(session.price, session.currency)}</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+            <UsersIcon />
+            <span>{formatAgeRange(session.ageRequirements)}</span>
+          </div>
+          {location && (
+            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+              <LocationIcon />
+              <span className="line-clamp-1">
+                {location.name}
+                {location.address?.city && ` - ${location.address.city}`}
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/session/${session._id}`}
+            className="flex-1 px-4 py-2 bg-blue-600 text-white text-center text-sm font-medium rounded-md hover:bg-blue-700"
+          >
+            View Details
+          </Link>
+          <button
+            onClick={() => setShowSaveModal(true)}
+            className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-md hover:bg-slate-50 dark:hover:bg-slate-700"
+            title="Save for later"
+          >
+            <HeartIcon />
+          </button>
+        </div>
+      </div>
+
+      {/* Save Modal */}
+      {showSaveModal && (
+        <SaveSessionModal
+          sessionId={session._id}
+          campName={camp?.name ?? 'Camp'}
+          onClose={() => setShowSaveModal(false)}
+        />
+      )}
+    </>
+  );
+}
+
+// Save Session Modal
+function SaveSessionModal({
+  sessionId,
+  campName,
+  onClose,
+}: {
+  sessionId: Id<'sessions'>;
+  campName: string;
+  onClose: () => void;
+}) {
+  const [selectedChildId, setSelectedChildId] = useState<Id<'children'> | null>(null);
+  const [notes, setNotes] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  const children = useQuery(api.children.queries.listChildren);
+  const markInterested = useMutation(api.registrations.mutations.markInterested);
+
+  const handleSave = async () => {
+    if (!selectedChildId) {
+      setError('Please select a child');
+      return;
+    }
+
+    try {
+      setError(null);
+      await markInterested({
+        childId: selectedChildId,
+        sessionId,
+        notes: notes || undefined,
+      });
+      setSuccess(true);
+      setTimeout(() => {
+        onClose();
+      }, 1500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save session');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+            Save {campName}
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+          >
+            <CloseIcon />
+          </button>
+        </div>
+
+        {success ? (
+          <div className="text-center py-8">
+            <div className="text-green-500 mb-2">
+              <CheckIcon />
+            </div>
+            <p className="text-lg font-medium text-slate-900 dark:text-white">Saved!</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              This session has been added to your list.
+            </p>
+          </div>
+        ) : (
+          <>
+            {error && (
+              <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm">
+                {error}
+              </div>
+            )}
+
+            {children === undefined ? (
+              <div className="py-8 text-center text-slate-500">Loading children...</div>
+            ) : children.length === 0 ? (
+              <div className="py-8 text-center">
+                <p className="text-slate-600 dark:text-slate-400 mb-4">
+                  You need to add a child to your family first.
+                </p>
+                <Link
+                  href="/onboarding"
+                  className="text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  Add a child
+                </Link>
+              </div>
+            ) : (
+              <>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Select Child
+                  </label>
+                  <div className="space-y-2">
+                    {children.map((child) => (
+                      <label
+                        key={child._id}
+                        className={`flex items-center gap-3 p-3 rounded-md border cursor-pointer ${
+                          selectedChildId === child._id
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                            : 'border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="child"
+                          value={child._id}
+                          checked={selectedChildId === child._id}
+                          onChange={() => setSelectedChildId(child._id)}
+                          className="sr-only"
+                        />
+                        <div className="w-10 h-10 bg-slate-200 dark:bg-slate-600 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 font-medium">
+                          {child.firstName[0]}
+                        </div>
+                        <div>
+                          <p className="font-medium text-slate-900 dark:text-white">
+                            {child.firstName} {child.lastName}
+                          </p>
+                          {child.birthdate && (
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                              {calculateDisplayAge(child.birthdate)}
+                            </p>
+                          )}
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Notes (optional)
+                  </label>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Add any notes..."
+                    rows={2}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={onClose}
+                    className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    Save
+                  </button>
+                </div>
+              </>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Helper function
+function calculateDisplayAge(birthdate: string): string {
+  const birth = new Date(birthdate);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  return `${age} years old`;
+}
+
+// Icons
+function FilterIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+      />
+    </svg>
+  );
+}
+
+function EmptyIcon() {
+  return (
+    <svg className="w-16 h-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.5}
+        d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+      />
+    </svg>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+      />
+    </svg>
+  );
+}
+
+function DollarIcon() {
+  return (
+    <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+      />
+    </svg>
+  );
+}
+
+function UsersIcon() {
+  return (
+    <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+      />
+    </svg>
+  );
+}
+
+function LocationIcon() {
+  return (
+    <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+      />
+    </svg>
+  );
+}
+
+function HeartIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+      />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg className="w-12 h-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+      />
+    </svg>
+  );
+}
