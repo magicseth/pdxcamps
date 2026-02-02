@@ -621,9 +621,19 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
       onClick={handleBackdropClick}
     >
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full p-6">
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-          Add Child
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+            Add Child
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
+            aria-label="Close"
+            title="Close (Esc)"
+          >
+            <CloseIcon />
+          </button>
+        </div>
 
         {error && (
           <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm">
@@ -642,6 +652,7 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                autoFocus
               />
             </div>
             <div>
@@ -761,6 +772,14 @@ function PlusIcon() {
   return (
     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg className="w-5 h-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
     </svg>
   );
 }
