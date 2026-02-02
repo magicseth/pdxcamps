@@ -4,14 +4,32 @@
  * Populate Organization Logos
  *
  * Fetches logos for organizations that don't have them stored.
- * Uses Unsplash for fallback placeholder logos if website scraping fails.
+ * Uses AI-powered extraction via Stagehand, then falls back to
+ * Clearbit/Google favicon APIs, then UI Avatars for placeholders.
  */
 
-import { action } from "../_generated/server";
+import { action, internalAction } from "../_generated/server";
 import { internal, api } from "../_generated/api";
 import { v } from "convex/values";
 import { Id } from "../_generated/dataModel";
 import { ActionCtx } from "../_generated/server";
+import { Stagehand } from "@browserbasehq/stagehand";
+import { z } from "zod";
+
+/**
+ * Check if a URL is valid
+ */
+function isValidUrl(urlString: string): boolean {
+  if (!urlString || urlString.includes("<UNKNOWN>") || urlString === "UNKNOWN") {
+    return false;
+  }
+  try {
+    new URL(urlString);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Download and store an image from a URL
@@ -51,12 +69,105 @@ async function downloadAndStoreImage(
 }
 
 /**
- * Try to fetch a favicon or logo from a website
+ * Use AI (Stagehand) to find and extract the main logo from a website
+ */
+async function fetchLogoWithAI(
+  ctx: ActionCtx,
+  website: string,
+  orgName: string
+): Promise<Id<"_storage"> | null> {
+  // Validate URL before attempting
+  if (!isValidUrl(website)) {
+    console.log(`[Logos] Skipping AI extraction for ${orgName}: invalid URL "${website}"`);
+    return null;
+  }
+
+  let stagehand: Stagehand | null = null;
+
+  try {
+    console.log(`[Logos] AI extraction for ${orgName}: ${website}`);
+
+    stagehand = new Stagehand({
+      env: "BROWSERBASE",
+      apiKey: process.env.BROWSERBASE_API_KEY,
+      projectId: process.env.BROWSERBASE_PROJECT_ID!,
+      disablePino: true, // Avoid pino-pretty transport errors in Convex runtime
+      verbose: 0, // Minimal logging
+      model: {
+        modelName: "anthropic/claude-sonnet-4-20250514",
+        apiKey: process.env.ANTHROPIC_API_KEY!,
+      },
+    });
+
+    await stagehand.init();
+    const page = stagehand.context.pages()[0];
+
+    // Navigate to the website
+    await page.goto(website, { waitUntil: "domcontentloaded", timeoutMs: 30000 });
+    await page.waitForTimeout(2000);
+
+    // Use AI to find the main logo by extracting structured data
+    const instruction = `Find the main logo or brand image for this organization (${orgName}).
+      Look for:
+      1. A logo in the header/navigation area
+      2. An image with "logo" in its class, id, alt text, or src
+      3. The primary brand image that represents this organization
+
+      Return the absolute URL of the logo image. Prefer PNG or SVG over ICO.
+      If multiple logos exist, choose the highest quality/largest one.`;
+
+    const schema = z.object({
+      logoUrl: z.string().optional().describe("The absolute URL of the logo image"),
+      confidence: z.enum(["high", "medium", "low"]).describe("How confident you are this is the main logo"),
+    });
+
+    const logoData = await stagehand.extract(instruction, schema);
+
+    await stagehand.close();
+    stagehand = null;
+
+    if (logoData?.logoUrl && logoData.confidence !== "low") {
+      console.log(`[Logos] AI found logo for ${orgName}: ${logoData.logoUrl} (${logoData.confidence} confidence)`);
+
+      // Make URL absolute if needed
+      let logoUrl = logoData.logoUrl;
+      if (logoUrl.startsWith("/")) {
+        const url = new URL(website);
+        logoUrl = `${url.origin}${logoUrl}`;
+      }
+
+      const result = await downloadAndStoreImage(ctx, logoUrl);
+      if (result.storageId) {
+        return result.storageId;
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.log(`[Logos] AI extraction failed for ${orgName}:`, error);
+    return null;
+  } finally {
+    if (stagehand) {
+      try {
+        await stagehand.close();
+      } catch {}
+    }
+  }
+}
+
+/**
+ * Try to fetch a favicon or logo from a website using traditional methods
  */
 async function fetchLogoFromWebsite(
   ctx: ActionCtx,
   website: string
 ): Promise<Id<"_storage"> | null> {
+  // Validate URL before attempting
+  if (!isValidUrl(website)) {
+    console.log(`[Logos] Skipping traditional fetch: invalid URL "${website}"`);
+    return null;
+  }
+
   try {
     // Parse the website URL
     const url = new URL(website);
@@ -155,12 +266,17 @@ export const populateOrgLogos = action({
 
       let logoStorageId: Id<"_storage"> | null = null;
 
-      // First, try to fetch from the organization's website
       if (org.website) {
-        logoStorageId = await fetchLogoFromWebsite(ctx, org.website);
+        // First, try AI-powered logo extraction (most accurate)
+        logoStorageId = await fetchLogoWithAI(ctx, org.website, org.name);
+
+        // If AI fails, fall back to traditional methods
+        if (!logoStorageId) {
+          logoStorageId = await fetchLogoFromWebsite(ctx, org.website);
+        }
       }
 
-      // If that fails and we're using placeholders, generate one
+      // If all else fails and we're using placeholders, generate one
       if (!logoStorageId && usePlaceholders) {
         const placeholderUrl = getPlaceholderLogoUrl(org.name);
         const result = await downloadAndStoreImage(ctx, placeholderUrl);
@@ -188,5 +304,72 @@ export const populateOrgLogos = action({
       stored,
       errors: errors.slice(0, 20),
     };
+  },
+});
+
+/**
+ * Fetch logo for a specific organization if missing
+ * Called by the scraping workflow after importing sessions
+ */
+export const fetchOrgLogoForSource = internalAction({
+  args: {
+    sourceId: v.id("scrapeSources"),
+  },
+  handler: async (ctx, args): Promise<{ success: boolean; message: string }> => {
+    // Get the source to find its organization
+    const source = await ctx.runQuery(api.scraping.queries.getScrapeSource, {
+      sourceId: args.sourceId,
+    });
+
+    if (!source || !source.organizationId) {
+      return { success: false, message: "Source or organization not found" };
+    }
+
+    // Get the organization
+    const org = await ctx.runQuery(api.organizations.queries.getOrganization, {
+      organizationId: source.organizationId,
+    });
+
+    if (!org) {
+      return { success: false, message: "Organization not found" };
+    }
+
+    // Skip if already has a logo
+    if (org.logoStorageId) {
+      return { success: true, message: "Logo already exists" };
+    }
+
+    console.log(`[Logos] Fetching logo for ${org.name}`);
+
+    let logoStorageId: Id<"_storage"> | null = null;
+
+    if (org.website) {
+      // First try AI-powered extraction (most accurate)
+      logoStorageId = await fetchLogoWithAI(ctx, org.website, org.name);
+
+      // Fall back to traditional methods
+      if (!logoStorageId) {
+        logoStorageId = await fetchLogoFromWebsite(ctx, org.website);
+      }
+    }
+
+    // If all else fails, generate a placeholder
+    if (!logoStorageId) {
+      const placeholderUrl = getPlaceholderLogoUrl(org.name);
+      const result = await downloadAndStoreImage(ctx, placeholderUrl);
+      logoStorageId = result.storageId;
+    }
+
+    // Update the organization with the logo
+    if (logoStorageId) {
+      await ctx.runMutation(internal.organizations.mutations.updateOrgLogo, {
+        orgId: org._id,
+        logoStorageId,
+      });
+      console.log(`[Logos] Updated ${org.name} with logo`);
+      return { success: true, message: `Logo added for ${org.name}` };
+    }
+
+    return { success: false, message: `Failed to fetch logo for ${org.name}` };
   },
 });
