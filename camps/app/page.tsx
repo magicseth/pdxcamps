@@ -523,10 +523,11 @@ function PlannerHub({
 
           {/* Coverage Grid */}
           {coverage === undefined ? (
-            <div className="space-y-2">
+            <div role="status" aria-live="polite" className="space-y-2">
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-16 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse motion-reduce:animate-none"></div>
+                <div key={i} className="h-16 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse motion-reduce:animate-none" aria-hidden="true"></div>
               ))}
+              <span className="sr-only">Loading coverage data...</span>
             </div>
           ) : (
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
