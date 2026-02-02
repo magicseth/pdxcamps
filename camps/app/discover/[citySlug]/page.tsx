@@ -817,6 +817,21 @@ export default function DiscoverPage() {
                           {' - '}
                           ${Math.round(Math.max(...filteredSessions.map(s => s.price)) / 100)}
                         </span>
+                        {(() => {
+                          const available = filteredSessions.filter(s => s.capacity > s.enrolledCount).length;
+                          const soldOut = filteredSessions.length - available;
+                          if (soldOut > 0) {
+                            return (
+                              <>
+                                <span className="text-slate-400 dark:text-slate-500">•</span>
+                                <span className="text-green-600 dark:text-green-400">{available} available</span>
+                                <span className="text-slate-300 dark:text-slate-600">/</span>
+                                <span className="text-red-500 dark:text-red-400">{soldOut} sold out</span>
+                              </>
+                            );
+                          }
+                          return null;
+                        })()}
                       </>
                     )}
                   </span>
