@@ -10,8 +10,8 @@
  *   async function scrape(config, log, fetch) => ScrapeResult
  */
 
-import { action } from "../../_generated/server";
-import { api } from "../../_generated/api";
+import { action, internalAction } from "../../_generated/server";
+import { api, internal } from "../../_generated/api";
 import { v } from "convex/values";
 import { ScrapedSession, ScrapeResult, ScraperConfig, ScraperLogger } from "./types";
 import { Stagehand } from "@browserbasehq/stagehand";
@@ -812,6 +812,132 @@ export const scrapeSource = action({
       totalSessions,
       urlsScraped: results.filter(r => r.success).length,
       results,
+    };
+  },
+});
+
+/**
+ * Internal action for workflow-based scraping
+ * Called by the scraping workflow to execute a scraper for a specific job
+ */
+export const executeScraperForJob = internalAction({
+  args: {
+    jobId: v.id("scrapeJobs"),
+    sourceId: v.id("scrapeSources"),
+  },
+  handler: async (ctx, args): Promise<{
+    sessionsFound: number;
+    sessionsCreated: number;
+    sessionsUpdated: number;
+  }> => {
+    const startTime = Date.now();
+    const logs: string[] = [];
+
+    const log: ScraperLogger = (level, message, data) => {
+      const logEntry = `[${level}] ${message}${data ? `: ${JSON.stringify(data)}` : ""}`;
+      console.log(`[Scraper] ${logEntry}`);
+      logs.push(logEntry);
+    };
+
+    // Get the source configuration
+    const source = await ctx.runQuery(api.scraping.queries.getScrapeSource, {
+      sourceId: args.sourceId,
+    });
+
+    if (!source) {
+      throw new Error("Scrape source not found");
+    }
+
+    log("INFO", "Starting scrape for job", {
+      jobId: args.jobId,
+      name: source.name,
+      url: source.url
+    });
+
+    const config: ScraperConfig = {
+      sourceId: args.sourceId,
+      url: source.url,
+      name: source.name,
+      organizationId: source.organizationId,
+    };
+
+    let result: ScrapeResult;
+
+    // Check for built-in scraper first
+    if (source.scraperModule && BUILTIN_SCRAPERS[source.scraperModule]) {
+      log("DEBUG", "Using built-in scraper", { module: source.scraperModule });
+      result = await BUILTIN_SCRAPERS[source.scraperModule].scrape(config, log);
+    }
+    // Check for dynamic scraper code in DB
+    else if (source.scraperCode) {
+      // Detect if this is a Stagehand-based scraper
+      const isStagehandScraper =
+        source.scraperCode.includes('from "@anthropic-ai/stagehand"') ||
+        source.scraperCode.includes('from "@browserbasehq/stagehand"') ||
+        source.scraperCode.includes("page.extract(") ||
+        source.scraperCode.includes("page.goto(") ||
+        (source.scraperCode.includes("scrape(page") && source.scraperCode.includes("page.evaluate"));
+
+      if (isStagehandScraper) {
+        log("DEBUG", "Executing Stagehand-based scraper code");
+        result = await executeStagehandScraperCode(source.scraperCode, config, log);
+      } else {
+        log("DEBUG", "Executing dynamic scraper code");
+        result = await executeDynamicScraper(source.scraperCode, config, log);
+      }
+    }
+    // Fall back to Stagehand generic extraction
+    else {
+      log("DEBUG", "No custom scraper, using Stagehand extraction");
+      result = await ctx.runAction(api.scraping.scrapers.executor.executeStagehandScraper, {
+        url: config.url,
+        instruction: "Extract all summer camp sessions with names, dates, times, prices, ages, and registration URLs",
+        sourceId: args.sourceId,
+      });
+    }
+
+    // Store raw data
+    await ctx.runMutation(api.scraping.mutations.storeRawData, {
+      jobId: args.jobId,
+      rawJson: JSON.stringify({
+        result,
+        logs,
+        config,
+      }),
+    });
+
+    // Import sessions using the importFromJob action
+    let sessionsCreated = 0;
+    let sessionsUpdated = 0;
+
+    if (result.success && result.sessions.length > 0) {
+      log("INFO", "Importing sessions via importFromJob", { count: result.sessions.length });
+
+      try {
+        const importResult = await ctx.runAction(api.scraping.import.importFromJob, {
+          jobId: args.jobId,
+        });
+        sessionsCreated = importResult.sessionsCreated;
+        sessionsUpdated = importResult.duplicatesSkipped; // Treat duplicates as "updated"
+      } catch (error) {
+        log("ERROR", "Failed to import sessions", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    log("INFO", "Scrape complete", {
+      success: result.success,
+      sessionsFound: result.sessions.length,
+      sessionsCreated,
+      sessionsUpdated,
+      durationMs: Date.now() - startTime,
+    });
+
+    return {
+      sessionsFound: result.sessions.length,
+      sessionsCreated,
+      sessionsUpdated,
     };
   },
 });

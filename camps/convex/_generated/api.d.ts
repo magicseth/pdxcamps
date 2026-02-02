@@ -52,6 +52,7 @@ import type * as scraping_populateCampImages from "../scraping/populateCampImage
 import type * as scraping_populateOrgLogos from "../scraping/populateOrgLogos.js";
 import type * as scraping_queries from "../scraping/queries.js";
 import type * as scraping_refreshTrackersImages from "../scraping/refreshTrackersImages.js";
+import type * as scraping_scrapeWorkflow from "../scraping/scrapeWorkflow.js";
 import type * as scraping_scrapers_executor from "../scraping/scrapers/executor.js";
 import type * as scraping_scrapers_omsi from "../scraping/scrapers/omsi.js";
 import type * as scraping_scrapers_types from "../scraping/scrapers/types.js";
@@ -116,6 +117,7 @@ declare const fullApi: ApiFromModules<{
   "scraping/populateOrgLogos": typeof scraping_populateOrgLogos;
   "scraping/queries": typeof scraping_queries;
   "scraping/refreshTrackersImages": typeof scraping_refreshTrackersImages;
+  "scraping/scrapeWorkflow": typeof scraping_scrapeWorkflow;
   "scraping/scrapers/executor": typeof scraping_scrapers_executor;
   "scraping/scrapers/omsi": typeof scraping_scrapers_omsi;
   "scraping/scrapers/types": typeof scraping_scrapers_types;

@@ -648,6 +648,8 @@ export default defineSchema({
     sessionsUpdated: v.optional(v.number()),
     retryCount: v.optional(v.number()),
     errorMessage: v.optional(v.string()),
+    error: v.optional(v.string()), // Error message for workflow failures
+    workflowId: v.optional(v.string()), // Workflow ID for tracking
   })
     .index("by_source", ["sourceId"])
     .index("by_source_and_status", ["sourceId", "status"])

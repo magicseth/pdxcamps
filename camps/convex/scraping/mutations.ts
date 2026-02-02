@@ -1,5 +1,7 @@
 import { mutation } from "../_generated/server";
 import { v } from "convex/values";
+import { internal } from "../_generated/api";
+import { workflow } from "./scrapeWorkflow";
 
 // Validators for scraper config matching schema.ts
 const scraperConfigValidator = v.object({
@@ -216,6 +218,21 @@ export const createScrapeJob = mutation({
       sessionsUpdated: undefined,
       retryCount: 0,
       errorMessage: undefined,
+    });
+
+    // Automatically start the scraping workflow
+    const workflowId = await workflow.start(
+      ctx,
+      internal.scraping.scrapeWorkflow.scrapeSourceWorkflow,
+      {
+        jobId,
+        sourceId: args.sourceId,
+      }
+    );
+
+    // Store workflow ID on the job
+    await ctx.db.patch(jobId, {
+      workflowId: workflowId as string,
     });
 
     return jobId;
