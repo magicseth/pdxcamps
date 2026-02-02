@@ -10,6 +10,14 @@ import { BottomNav } from '../../components/shared/BottomNav';
 export default function FriendsPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 pb-20">
+      {/* Skip to main content link for keyboard users */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg focus:font-medium"
+      >
+        Skip to main content
+      </a>
+
       <header className="sticky top-0 z-20 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -37,7 +45,7 @@ export default function FriendsPage() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto p-6 space-y-8 pb-24">
+      <main id="main-content" className="max-w-4xl mx-auto p-6 space-y-8 pb-24">
         <FriendRequests />
         <MyFriends />
         <AddFriend />

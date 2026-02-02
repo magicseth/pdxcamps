@@ -11,6 +11,14 @@ import { BottomNav } from '../../components/shared/BottomNav';
 export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 pb-20">
+      {/* Skip to main content link for keyboard users */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg focus:font-medium"
+      >
+        Skip to main content
+      </a>
+
       <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3 sticky top-0 z-20">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <Link
@@ -25,7 +33,7 @@ export default function SettingsPage() {
         </div>
       </header>
 
-      <main className="p-4 md:p-8">
+      <main id="main-content" className="p-4 md:p-8">
         <Authenticated>
           <SettingsContent />
         </Authenticated>
