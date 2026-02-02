@@ -252,10 +252,96 @@ npm install @anthropic-ai/stagehand puppeteer
 2. School of Rock (dynamic inventory)
 3. Coding With Kids (dynamic filters)
 
+## Real Example: Trackers Earth Scraper
+
+This is a step-by-step walkthrough of how the Trackers Earth scraper was created.
+
+### Step 1: Discover the API
+
+1. Opened https://trackerspdx.com/youth/camps/summer-camp/ in browser
+2. Viewed page source, found `ng-app="trackersApp"` - Angular app
+3. Found JavaScript files: `app.js`, `directoryWidget.js`, `listingWidget.js`
+4. Fetched `directoryWidget.js` and found the API endpoint pattern:
+   ```
+   /api/directory/sessions/{directoryId}
+   ```
+5. Found `directory-id="242"` in the HTML
+
+### Step 2: Explore the API
+
+```bash
+# Test the API endpoint
+curl -s "https://trackerspdx.com/api/directory/sessions/242" | head -c 1000
+
+# Count entries across directories
+for id in 240 241 242 243 244 245 246 247 248; do
+  count=$(curl -s "https://trackerspdx.com/api/directory/sessions/$id" | \
+    python3 -c "import sys,json; d=json.load(sys.stdin); print(sum(len(c.get('entries',[]))for loc in d for c in loc.get('containers',[])))")
+  echo "Directory $id: $count entries"
+done
+```
+
+**Results:**
+- Directory 242: 1207 entries (Portland summer camps, June start)
+- Directory 243: 1207 entries (Portland summer, August continuation)
+- Directory 248: 237 entries (Portland spring break)
+- Other directories: Seattle, Bay Area, etc.
+
+### Step 3: Understand the Data Structure
+
+```json
+{
+  "location_id": 2,
+  "location_name": "SE Portland",
+  "containers": [{
+    "title": "Week 1",
+    "display_date": "June 15-19, 2026",
+    "entries": [{
+      "theme_name": "Rangers: Stealth, Archery & Wilderness Survival",
+      "path": "/youth/camps/summer-camp/rangers/",
+      "open_grades": [3, 4, 5],
+      "grade_range_displays": ["3-5"],
+      "time_start": "9:00 am",
+      "time_end": "3:30 pm",
+      "theme_id": 123,
+      "tag": "Rangers"
+    }]
+  }]
+}
+```
+
+### Step 4: Write and Test the Scraper Code
+
+```bash
+# Test the scraper code
+npx convex run scraping/scrapers/executor:testScraperCode '{
+  "url": "https://trackerspdx.com/youth/camps/summer-camp/",
+  "code": "const response = await fetch(\"https://trackerspdx.com/api/directory/sessions/242\"); ..."
+}'
+```
+
+### Step 5: Save and Activate
+
+```bash
+# Save the scraper code to the source
+npx convex run scraping/scrapers/executor:saveScraperCode '{
+  "sourceId": "m57f2h2hprdrpahsspn0k6nq0980cqf8",
+  "code": "..."
+}'
+
+# Activate the source
+npx convex run scraping/mutations:activateScrapeSource '{"sourceId": "..."}'
+```
+
+**Result:** 904 Portland camp sessions scraped successfully.
+
+---
+
 ## Current Status
 
 ### Working Scrapers
 - **OMSI** (omsi module) - Salesforce Visualforce API, 250+ sessions
+- **Trackers Earth** (dynamic code) - Directory API, 904 sessions
 
 ### Site Analysis Results
 
