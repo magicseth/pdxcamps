@@ -515,6 +515,7 @@ function EditChildForm({
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
             autoComplete="given-name"
+            spellCheck="false"
             required
             aria-required="true"
             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
@@ -528,6 +529,7 @@ function EditChildForm({
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
             autoComplete="family-name"
+            spellCheck="false"
             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
           />
         </div>
@@ -693,6 +695,7 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 autoComplete="given-name"
+                spellCheck="false"
                 required
                 aria-required="true"
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
@@ -709,6 +712,7 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 autoComplete="family-name"
+                spellCheck="false"
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
               />
             </div>
