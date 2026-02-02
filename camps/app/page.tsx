@@ -606,7 +606,7 @@ function AppHeader({ user, onSignOut }: { user: User | null; onSignOut: () => vo
           )}
           <Link
             href="/settings"
-            className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             title="Settings - Manage children, preferences"
             aria-label="Settings"
           >

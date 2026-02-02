@@ -124,7 +124,7 @@ export default function CalendarPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/settings"
-              className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+              className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               aria-label="Settings"
               title="Settings"
             >
@@ -366,7 +366,7 @@ function CalendarContent() {
         <div className="flex items-center gap-2">
           <button
             onClick={handlePrevMonth}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md"
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             aria-label="Previous month"
             title="Previous month (← arrow key)"
           >
@@ -377,7 +377,7 @@ function CalendarContent() {
           <h2 className="text-xl font-semibold min-w-[180px] text-center">{monthName}</h2>
           <button
             onClick={handleNextMonth}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md"
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             aria-label="Next month"
             title="Next month (→ arrow key)"
           >
@@ -387,7 +387,7 @@ function CalendarContent() {
           </button>
           <button
             onClick={handleToday}
-            className="ml-2 px-3 py-1.5 text-sm font-medium border border-slate-300 dark:border-slate-600 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700"
+            className="ml-2 px-3 py-1.5 text-sm font-medium border border-slate-300 dark:border-slate-600 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             title="Jump to today (T key)"
           >
             Today
