@@ -187,6 +187,7 @@ export function AddEventModal({
               placeholder="e.g., San Diego Trip"
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
               required
+              autoFocus
             />
           </div>
 
@@ -421,7 +422,7 @@ export function AddEventModal({
 
 function CloseIcon() {
   return (
-    <svg className="w-5 h-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className="w-5 h-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
     </svg>
   );
