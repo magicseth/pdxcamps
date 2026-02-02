@@ -1002,26 +1002,30 @@ async function runTestScript(
     if (successMatch) {
       const sessionCount = parseInt(successMatch[1]);
 
-      // Try to extract sample session data from output
+      // Create placeholder sessions with the ACTUAL count
+      // The sampleData will contain actual session info from the output
       const sessions: any[] = [];
+
+      // Try to extract sample session names from output for sampleData
       const sampleMatch = output.match(/Sample sessions:([\s\S]*?)(?:Field coverage:|$)/);
       if (sampleMatch) {
-        // Parse the sample output format
         const sampleText = sampleMatch[1];
         const sessionBlocks = sampleText.split(/\[\d+\]/).filter(Boolean);
         for (const block of sessionBlocks.slice(0, 5)) {
           const nameMatch = block.match(/^\s*(.+?)$/m);
           if (nameMatch) {
-            sessions.push({ name: nameMatch[1].trim(), note: "from test output" });
+            sessions.push({ name: nameMatch[1].trim(), note: "sample from test output" });
           }
         }
       }
 
-      // If we couldn't parse samples, create placeholders
-      if (sessions.length === 0) {
-        for (let i = 0; i < Math.min(5, sessionCount); i++) {
-          sessions.push({ name: `Session ${i + 1}`, note: `(Total: ${sessionCount})` });
-        }
+      // Ensure we return the correct count by padding if needed
+      // This is important because sessions.length is what gets recorded
+      while (sessions.length < sessionCount) {
+        sessions.push({
+          name: `Session ${sessions.length + 1}`,
+          note: `(placeholder - total: ${sessionCount})`
+        });
       }
 
       return { sessions, error: undefined };
