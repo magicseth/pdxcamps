@@ -84,21 +84,21 @@ function LandingPage() {
             <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center mx-auto mb-4">
               <span className="text-2xl">📅</span>
             </div>
-            <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Week-by-Week Planning</h3>
+            <h2 className="font-semibold text-slate-900 dark:text-white mb-2">Week-by-Week Planning</h2>
             <p className="text-sm text-slate-600 dark:text-slate-400">See your whole summer at a glance. Instantly spot coverage gaps.</p>
           </div>
           <div className="text-center">
             <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center mx-auto mb-4">
               <span className="text-2xl">🔍</span>
             </div>
-            <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Smart Discovery</h3>
+            <h2 className="font-semibold text-slate-900 dark:text-white mb-2">Smart Discovery</h2>
             <p className="text-sm text-slate-600 dark:text-slate-400">Filter by age, category, price, and dates. Find the perfect camp.</p>
           </div>
           <div className="text-center">
             <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center mx-auto mb-4">
               <span className="text-2xl">👨‍👩‍👧‍👦</span>
             </div>
-            <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Family Coordination</h3>
+            <h2 className="font-semibold text-slate-900 dark:text-white mb-2">Family Coordination</h2>
             <p className="text-sm text-slate-600 dark:text-slate-400">Add vacations, track multiple kids, share plans with friends.</p>
           </div>
         </div>
