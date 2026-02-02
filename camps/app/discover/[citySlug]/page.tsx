@@ -186,6 +186,16 @@ export default function DiscoverPage() {
     return result;
   }, [sessions, selectedOrganizations, extendedCareOnly, sortBy]);
 
+  // Count sessions per organization (from raw sessions, not filtered)
+  const sessionCountsByOrg = useMemo(() => {
+    if (!sessions) return new Map<string, number>();
+    const counts = new Map<string, number>();
+    sessions.forEach((s) => {
+      counts.set(s.organizationId, (counts.get(s.organizationId) || 0) + 1);
+    });
+    return counts;
+  }, [sessions]);
+
   // Loading state
   if (city === undefined) {
     return (
@@ -633,23 +643,33 @@ export default function DiscoverPage() {
                   )}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {(showAllOrgs ? allOrganizations : allOrganizations.slice(0, 6)).map((org) => (
-                    <button
-                      key={org._id}
-                      onClick={() => handleOrganizationToggle(org._id)}
-                      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                        selectedOrganizations.includes(org._id)
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
-                      }`}
-                    >
-                      <OrgLogo url={org.logoUrl} name={org.name} size="xs" />
-                      {org.name}
-                      {selectedOrganizations.includes(org._id) && (
-                        <span className="ml-1">✕</span>
-                      )}
-                    </button>
-                  ))}
+                  {(showAllOrgs ? allOrganizations : allOrganizations.slice(0, 6)).map((org) => {
+                    const sessionCount = sessionCountsByOrg.get(org._id) || 0;
+                    return (
+                      <button
+                        key={org._id}
+                        onClick={() => handleOrganizationToggle(org._id)}
+                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                          selectedOrganizations.includes(org._id)
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
+                        }`}
+                      >
+                        <OrgLogo url={org.logoUrl} name={org.name} size="xs" />
+                        {org.name}
+                        <span className={`text-xs ${
+                          selectedOrganizations.includes(org._id)
+                            ? 'text-blue-200'
+                            : 'text-slate-400 dark:text-slate-500'
+                        }`}>
+                          {sessionCount}
+                        </span>
+                        {selectedOrganizations.includes(org._id) && (
+                          <span className="ml-1">✕</span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
