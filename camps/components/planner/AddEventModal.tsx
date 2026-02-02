@@ -191,6 +191,7 @@ export function AddEventModal({
               placeholder="e.g., San Diego Trip"
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
               required
+              aria-required="true"
               autoFocus
             />
           </div>
@@ -284,6 +285,7 @@ export function AddEventModal({
                 }}
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                 required
+                aria-required="true"
               />
             </div>
             <div>
@@ -298,6 +300,7 @@ export function AddEventModal({
                 min={startDate}
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                 required
+                aria-required="true"
               />
             </div>
           </div>
