@@ -547,8 +547,9 @@ export default function DiscoverPage() {
                 )}
                 <div className="space-y-2">
                   <div>
-                    <label className="text-xs text-slate-500 dark:text-slate-400">Age (years)</label>
+                    <label htmlFor="discover-child-age" className="text-xs text-slate-500 dark:text-slate-400">Age (years)</label>
                     <input
+                      id="discover-child-age"
                       type="number"
                       min={3}
                       max={18}
@@ -562,8 +563,9 @@ export default function DiscoverPage() {
                   </div>
                   <div className="text-center text-xs text-slate-400">or</div>
                   <div>
-                    <label className="text-xs text-slate-500 dark:text-slate-400">Grade</label>
+                    <label htmlFor="discover-child-grade" className="text-xs text-slate-500 dark:text-slate-400">Grade</label>
                     <select
+                      id="discover-child-grade"
                       value={childGrade ?? ''}
                       onChange={(e) =>
                         setChildGrade(e.target.value ? parseInt(e.target.value) : undefined)
@@ -892,8 +894,9 @@ export default function DiscoverPage() {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-xs text-slate-500 dark:text-slate-400">Sort:</label>
+                <label htmlFor="discover-sort" className="text-xs text-slate-500 dark:text-slate-400">Sort:</label>
                 <select
+                  id="discover-sort"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as 'date' | 'price-low' | 'price-high' | 'spots')}
                   className="text-sm px-2 py-1 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300"
