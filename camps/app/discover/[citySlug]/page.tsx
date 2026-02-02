@@ -1413,14 +1413,30 @@ function SessionCard({
             </p>
             {camp?.categories && camp.categories.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-1">
-                {camp.categories.slice(0, 3).map((cat) => (
-                  <span
-                    key={cat}
-                    className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
-                  >
-                    {cat}
-                  </span>
-                ))}
+                {camp.categories.slice(0, 3).map((cat) => {
+                  const icons: Record<string, string> = {
+                    sports: '⚽',
+                    arts: '🎨',
+                    stem: '🔬',
+                    nature: '🌲',
+                    music: '🎵',
+                    academic: '📚',
+                    drama: '🎭',
+                    adventure: '🏔️',
+                    cooking: '🍳',
+                    dance: '💃',
+                  };
+                  const icon = icons[cat.toLowerCase()] || '';
+                  return (
+                    <span
+                      key={cat}
+                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
+                    >
+                      {icon && <span className="text-[10px]">{icon}</span>}
+                      {cat}
+                    </span>
+                  );
+                })}
               </div>
             )}
             {camp?.description && (
