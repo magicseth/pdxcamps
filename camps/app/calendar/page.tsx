@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
@@ -251,13 +251,40 @@ function CalendarContent() {
     return map;
   }, [filteredRegistrations]);
 
-  const handlePrevMonth = () => {
+  const handlePrevMonth = useCallback(() => {
     setCurrentDate(new Date(year, month - 1, 1));
-  };
+  }, [year, month]);
 
-  const handleNextMonth = () => {
+  const handleNextMonth = useCallback(() => {
     setCurrentDate(new Date(year, month + 1, 1));
-  };
+  }, [year, month]);
+
+  const handleToday = useCallback(() => {
+    setCurrentDate(new Date());
+  }, []);
+
+  // Keyboard shortcuts: left/right arrows for month navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      // Don't trigger in form inputs
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') return;
+
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handlePrevMonth();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleNextMonth();
+      } else if (e.key === 't' || e.key === 'T') {
+        e.preventDefault();
+        handleToday();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handlePrevMonth, handleNextMonth, handleToday]);
 
   const handleCancelRegistration = async (registrationId: Id<'registrations'>) => {
     if (!confirm('Are you sure you want to cancel this registration?')) return;
@@ -302,11 +329,12 @@ function CalendarContent() {
       {/* Controls */}
       <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
         {/* Month Navigation */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           <button
             onClick={handlePrevMonth}
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md"
             aria-label="Previous month"
+            title="Previous month (← arrow key)"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -317,10 +345,18 @@ function CalendarContent() {
             onClick={handleNextMonth}
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md"
             aria-label="Next month"
+            title="Next month (→ arrow key)"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
+          </button>
+          <button
+            onClick={handleToday}
+            className="ml-2 px-3 py-1.5 text-sm font-medium border border-slate-300 dark:border-slate-600 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700"
+            title="Jump to today (T key)"
+          >
+            Today
           </button>
         </div>
 
