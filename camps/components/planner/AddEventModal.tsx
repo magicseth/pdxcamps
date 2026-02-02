@@ -221,7 +221,14 @@ export function AddEventModal({
               <input
                 type="date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={(e) => {
+                  const newStartDate = e.target.value;
+                  setStartDate(newStartDate);
+                  // Auto-set end date if empty or before new start date
+                  if (!endDate || endDate < newStartDate) {
+                    setEndDate(newStartDate);
+                  }
+                }}
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                 required
               />
