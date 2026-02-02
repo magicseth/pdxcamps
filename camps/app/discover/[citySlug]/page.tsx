@@ -1134,7 +1134,7 @@ function SessionCard({
 
   return (
     <>
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
         {/* Camp Image or Category Placeholder */}
         <div className="relative h-32 overflow-hidden group">
           {campImageUrl ? (
