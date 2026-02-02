@@ -138,3 +138,35 @@ export const updateOrgLogo = internalMutation({
     });
   },
 });
+
+/**
+ * Update organization website and logo (internal - used by fix action)
+ */
+export const updateOrgWebsiteAndLogo = internalMutation({
+  args: {
+    orgId: v.id("organizations"),
+    website: v.string(),
+    logoStorageId: v.id("_storage"),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.orgId, {
+      website: args.website,
+      logoStorageId: args.logoStorageId,
+    });
+  },
+});
+
+/**
+ * Update organization website only (internal)
+ */
+export const updateOrgWebsite = internalMutation({
+  args: {
+    orgId: v.id("organizations"),
+    website: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.orgId, {
+      website: args.website,
+    });
+  },
+});
