@@ -1234,6 +1234,10 @@ function SessionCard({
   const spotsLeft = session.capacity - session.enrolledCount;
   const isSoldOut = session.status === 'sold_out' || spotsLeft <= 0;
 
+  // Check if popular (75%+ enrolled but not sold out)
+  const enrollmentPercent = session.enrolledCount / session.capacity;
+  const isPopular = !isSoldOut && enrollmentPercent >= 0.75 && spotsLeft > 2;
+
   // Get camp image URL (from Convex storage or fallback)
   const campImageUrl = camp?.resolvedImageUrls?.[0] || null;
 
@@ -1378,6 +1382,11 @@ function SessionCard({
                 className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${timingBadge.className} ${timingBadge.urgent ? 'animate-pulse' : ''}`}
               >
                 {timingBadge.label}
+              </span>
+            )}
+            {isPopular && (
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200">
+                🔥 Popular
               </span>
             )}
           </div>
