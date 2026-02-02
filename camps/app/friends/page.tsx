@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
@@ -313,6 +313,25 @@ function ShareCalendarModal({
   const [permission, setPermission] = useState<"view_sessions" | "view_details">("view_sessions");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // ESC key to close modal
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape' && !isSubmitting) {
+      onClose();
+    }
+  }, [onClose, isSubmitting]);
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
+
+  // Backdrop click to close modal
+  const handleBackdropClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget && !isSubmitting) {
+      onClose();
+    }
+  }, [onClose, isSubmitting]);
+
   // Find existing share with this friend
   const existingShare = myShares?.find((share) => share.sharedWith?._id === friendId);
 
@@ -380,7 +399,10 @@ function ShareCalendarModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={handleBackdropClick}
+    >
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
         <h3 className="text-lg font-semibold mb-4">
           Share Calendar with {friendDisplayName}
