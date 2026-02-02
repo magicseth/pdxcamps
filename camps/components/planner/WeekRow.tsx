@@ -61,7 +61,7 @@ export function WeekRow({ data, isFirstOfMonth = false }: WeekRowProps) {
         <div className="text-sm font-medium text-slate-900 dark:text-white flex items-center gap-1">
           Week {week.weekNumber}
           {isCurrentWeek && (
-            <span className="px-1.5 py-0.5 text-[10px] font-bold bg-blue-600 text-white rounded">
+            <span className="px-1.5 py-0.5 text-[10px] font-bold bg-blue-600 text-white rounded animate-pulse">
               NOW
             </span>
           )}
