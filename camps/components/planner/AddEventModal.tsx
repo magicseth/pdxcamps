@@ -377,12 +377,17 @@ export function AddEventModal({
 
           {/* Notes (optional) */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Notes (optional)
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Notes (optional)
+              </label>
+              <span className={`text-xs ${notes.length > 450 ? 'text-orange-500' : 'text-slate-400'}`}>
+                {notes.length}/500
+              </span>
+            </div>
             <textarea
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={(e) => setNotes(e.target.value.slice(0, 500))}
               placeholder="Any additional details..."
               rows={2}
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white resize-none"
