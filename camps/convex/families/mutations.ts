@@ -48,6 +48,7 @@ export const createFamily = mutation({
 export const updateFamily = mutation({
   args: {
     displayName: v.optional(v.string()),
+    primaryCityId: v.optional(v.id("cities")),
     homeNeighborhoodId: v.optional(v.id("neighborhoods")),
     homeAddress: v.optional(addressValidator),
     maxDriveTimeMinutes: v.optional(v.number()),
@@ -61,6 +62,15 @@ export const updateFamily = mutation({
 
     if (args.displayName !== undefined) {
       updates.displayName = args.displayName;
+    }
+
+    if (args.primaryCityId !== undefined) {
+      // Verify the city exists
+      const city = await ctx.db.get(args.primaryCityId);
+      if (!city) {
+        throw new Error("City not found");
+      }
+      updates.primaryCityId = args.primaryCityId;
     }
 
     if (args.homeNeighborhoodId !== undefined) {
