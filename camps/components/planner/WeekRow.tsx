@@ -77,7 +77,10 @@ export function WeekRow({ data, isFirstOfMonth = false }: WeekRowProps) {
       }`}
     >
       {/* Week info */}
-      <div className="w-20 flex-shrink-0">
+      <div
+        className="w-20 flex-shrink-0"
+        title={`${week.startDate} to ${week.endDate}`}
+      >
         <div className="text-sm font-medium text-slate-900 dark:text-white flex items-center gap-1">
           Week {week.weekNumber}
           {isCurrentWeek && (
