@@ -827,7 +827,7 @@ export default function DiscoverPage() {
             {/* Empty State */}
             {sessions !== undefined && filteredSessions.length === 0 && (
               <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-12 text-center">
-                <div className="text-6xl mb-4">
+                <div className="text-6xl mb-4 animate-bounce [animation-duration:2s]">
                   {hasActiveFilters ? '🔍' : '🏕️'}
                 </div>
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
