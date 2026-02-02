@@ -821,6 +821,8 @@ function SessionCard({
     organizationId: Id<'organizations'>;
     startDate: string;
     endDate: string;
+    dropOffTime: { hour: number; minute: number };
+    pickUpTime: { hour: number; minute: number };
     price: number;
     currency: string;
     capacity: number;
@@ -907,6 +909,16 @@ function SessionCard({
     const weeks = Math.round(days / 5);
     if (weeks === 1) return '1 week';
     return `${weeks} weeks`;
+  };
+
+  // Format time (12-hour format)
+  const formatTime = (time: { hour: number; minute: number }): string => {
+    const hour12 = time.hour % 12 || 12;
+    const ampm = time.hour < 12 ? 'am' : 'pm';
+    if (time.minute === 0) {
+      return `${hour12}${ampm}`;
+    }
+    return `${hour12}:${time.minute.toString().padStart(2, '0')}${ampm}`;
   };
 
   // Format age range
@@ -1187,6 +1199,12 @@ function SessionCard({
               <span className="text-slate-500 dark:text-slate-500 ml-1">
                 ({formatDuration(getCampDays(session.startDate, session.endDate))})
               </span>
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+            <ClockIcon />
+            <span>
+              {formatTime(session.dropOffTime)} - {formatTime(session.pickUpTime)}
             </span>
           </div>
           <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
@@ -1585,6 +1603,19 @@ function CalendarIcon() {
         strokeLinejoin="round"
         strokeWidth={2}
         d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+      />
+    </svg>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
       />
     </svg>
   );
