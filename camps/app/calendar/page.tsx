@@ -339,17 +339,18 @@ function CalendarContent() {
   if (registrations === undefined || children === undefined) {
     return (
       <div className="max-w-6xl mx-auto space-y-6">
-        <div className="animate-pulse motion-reduce:animate-none">
+        <div role="status" aria-live="polite" className="animate-pulse motion-reduce:animate-none">
           <div className="flex items-center gap-2 mb-6">
-            <div className="h-10 w-10 bg-slate-200 dark:bg-slate-700 rounded"></div>
-            <div className="h-8 w-40 bg-slate-200 dark:bg-slate-700 rounded"></div>
-            <div className="h-10 w-10 bg-slate-200 dark:bg-slate-700 rounded"></div>
+            <div className="h-10 w-10 bg-slate-200 dark:bg-slate-700 rounded" aria-hidden="true"></div>
+            <div className="h-8 w-40 bg-slate-200 dark:bg-slate-700 rounded" aria-hidden="true"></div>
+            <div className="h-10 w-10 bg-slate-200 dark:bg-slate-700 rounded" aria-hidden="true"></div>
           </div>
           <div className="space-y-3">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-20 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+              <div key={i} className="h-20 bg-slate-200 dark:bg-slate-700 rounded-lg" aria-hidden="true"></div>
             ))}
           </div>
+          <span className="sr-only">Loading calendar...</span>
         </div>
       </div>
     );
