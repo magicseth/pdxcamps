@@ -363,11 +363,11 @@ export default function SessionDetailPage() {
           <ChevronRightIcon className="w-4 h-4" />
           {organization && (
             <>
-              <span className="truncate max-w-[150px]">{organization.name}</span>
+              <span className="truncate max-w-[150px]" title={organization.name}>{organization.name}</span>
               <ChevronRightIcon className="w-4 h-4" />
             </>
           )}
-          <span className="text-slate-700 dark:text-slate-300 truncate max-w-[200px]">
+          <span className="text-slate-700 dark:text-slate-300 truncate max-w-[200px]" title={camp?.name || 'Session'}>
             {camp?.name || 'Session'}
           </span>
         </nav>
