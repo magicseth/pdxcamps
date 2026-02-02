@@ -518,6 +518,22 @@ export default function DiscoverPage() {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Max Price
                 </label>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {[200, 300, 500, 1000].map((price) => (
+                    <button
+                      key={price}
+                      type="button"
+                      onClick={() => setMaxPrice(maxPrice === price ? undefined : price)}
+                      className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+                        maxPrice === price
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      Under ${price}
+                    </button>
+                  ))}
+                </div>
                 <div className="flex items-center gap-2">
                   <span className="text-slate-500">$</span>
                   <input
@@ -528,7 +544,7 @@ export default function DiscoverPage() {
                     onChange={(e) =>
                       setMaxPrice(e.target.value ? parseInt(e.target.value) : undefined)
                     }
-                    placeholder="Any price"
+                    placeholder="Custom amount"
                     className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                   />
                 </div>
