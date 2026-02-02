@@ -610,8 +610,8 @@ function CalendarSharingSettings() {
 
   if (myShares === undefined) {
     return (
-      <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">Calendar Sharing Settings</h2>
+      <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" aria-labelledby="calendar-sharing-loading-heading">
+        <h2 id="calendar-sharing-loading-heading" className="text-lg font-semibold mb-4">Calendar Sharing Settings</h2>
         <div className="animate-pulse motion-reduce:animate-none space-y-4">
           <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-64"></div>
           <div className="h-24 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
@@ -648,8 +648,8 @@ function CalendarSharingSettings() {
   };
 
   return (
-    <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-      <h2 className="text-lg font-semibold mb-4">Calendar Sharing Settings</h2>
+    <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" aria-labelledby="calendar-sharing-heading">
+      <h2 id="calendar-sharing-heading" className="text-lg font-semibold mb-4">Calendar Sharing Settings</h2>
       <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
         Manage who can see your family&apos;s camp calendar.
       </p>
