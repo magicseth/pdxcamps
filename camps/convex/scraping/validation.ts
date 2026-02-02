@@ -89,8 +89,15 @@ export function validateSession(session: ScrapedSession): ValidationResult {
   const missing: string[] = [];
   const errors: ValidationError[] = [];
 
+  // Helper to check for placeholder values
+  const isPlaceholder = (value: string | undefined): boolean => {
+    if (!value) return false;
+    const placeholders = ["<UNKNOWN>", "UNKNOWN", "TBD", "N/A", "null", "undefined"];
+    return placeholders.some(p => value.toUpperCase().includes(p.toUpperCase()));
+  };
+
   // Check each required field
-  if (!session.startDate) {
+  if (!session.startDate || isPlaceholder(session.startDate)) {
     missing.push("startDate");
     if (session.dateRaw) {
       errors.push({
@@ -107,7 +114,7 @@ export function validateSession(session: ScrapedSession): ValidationResult {
     });
   }
 
-  if (!session.endDate) {
+  if (!session.endDate || isPlaceholder(session.endDate)) {
     missing.push("endDate");
   } else if (!isValidDateFormat(session.endDate)) {
     errors.push({
@@ -146,6 +153,23 @@ export function validateSession(session: ScrapedSession): ValidationResult {
 
   if (!session.location) {
     missing.push("location");
+  } else {
+    // Validate location is meaningful (not just a generic placeholder)
+    const genericLocations = ["Main Location", "TBD", "Unknown", "N/A", "Online", "Various"];
+    const isGeneric = genericLocations.some(
+      gen => session.location!.toLowerCase() === gen.toLowerCase()
+    );
+
+    // Check if location has any address-like content (street number + name)
+    const hasAddressContent = /\d+\s+[A-Za-z]/.test(session.location!);
+
+    if (isGeneric || (!hasAddressContent && session.location!.length < 20)) {
+      errors.push({
+        field: "location",
+        error: "Location appears incomplete or generic - should include street address",
+        attemptedValue: session.location,
+      });
+    }
   }
 
   // Age requirements: need either age range OR grade range

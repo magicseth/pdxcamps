@@ -375,9 +375,9 @@ export default function SessionDetailPage() {
 
         {/* Camp Header */}
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden mb-6">
-          {/* Camp Image */}
-          {camp?.resolvedImageUrl && (
-            <div className="relative h-48 md:h-64 bg-slate-200 dark:bg-slate-700">
+          {/* Hero Image with Camp Name Overlay */}
+          {camp?.resolvedImageUrl ? (
+            <div className="relative h-64 md:h-80 bg-slate-200 dark:bg-slate-700">
               <img
                 src={camp.resolvedImageUrl}
                 alt={camp.name}
@@ -385,38 +385,69 @@ export default function SessionDetailPage() {
                 decoding="async"
                 className="w-full h-full object-cover"
               />
-              {organization?.resolvedLogoUrl && (
-                <div className="absolute bottom-4 left-4 w-16 h-16 bg-white dark:bg-slate-800 rounded-lg shadow-lg p-2 flex items-center justify-center">
-                  <OrgLogo url={organization.resolvedLogoUrl} name={organization.name} size="lg" className="w-full h-full" />
+              {/* Gradient overlay for text legibility */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              {/* Camp name and org over the image */}
+              <div className="absolute bottom-0 left-0 right-0 p-6">
+                <div className="flex items-end gap-4">
+                  {organization?.resolvedLogoUrl && (
+                    <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-lg shadow-lg p-2 flex items-center justify-center flex-shrink-0">
+                      <OrgLogo url={organization.resolvedLogoUrl} name={organization.name} size="lg" className="w-full h-full" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <h1 className="text-2xl md:text-3xl font-bold text-white drop-shadow-lg">
+                      {camp?.name ?? 'Camp Session'}
+                    </h1>
+                    {organization && (
+                      <p className="text-lg text-white/90 mt-1">
+                        by{' '}
+                        <Link
+                          href={`/organization/${organization.slug}`}
+                          className="text-white hover:text-white/80 underline underline-offset-2 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                        >
+                          {organization.name}
+                        </Link>
+                      </p>
+                    )}
+                  </div>
                 </div>
-              )}
+              </div>
+            </div>
+          ) : (
+            /* Fallback when no image - show colored header */
+            <div className="relative h-32 md:h-40 bg-gradient-to-r from-blue-600 to-blue-700">
+              <div className="absolute bottom-0 left-0 right-0 p-6">
+                <div className="flex items-end gap-4">
+                  {organization?.resolvedLogoUrl && (
+                    <div className="w-14 h-14 bg-white dark:bg-slate-800 rounded-lg shadow-lg p-2 flex items-center justify-center flex-shrink-0">
+                      <OrgLogo url={organization.resolvedLogoUrl} name={organization.name} size="lg" className="w-full h-full" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <h1 className="text-2xl md:text-3xl font-bold text-white">
+                      {camp?.name ?? 'Camp Session'}
+                    </h1>
+                    {organization && (
+                      <p className="text-lg text-white/90 mt-1">
+                        by{' '}
+                        <Link
+                          href={`/organization/${organization.slug}`}
+                          className="text-white hover:text-white/80 underline underline-offset-2 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                        >
+                          {organization.name}
+                        </Link>
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
           <div className="p-6">
             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
               <div className="flex-1">
-                <div className="flex items-center gap-3">
-                  {!camp?.resolvedImageUrl && organization?.resolvedLogoUrl && (
-                    <div className="w-12 h-12 bg-slate-100 dark:bg-slate-700 rounded-lg p-1.5 flex items-center justify-center flex-shrink-0">
-                      <OrgLogo url={organization.resolvedLogoUrl} name={organization.name} size="lg" className="w-full h-full" />
-                    </div>
-                  )}
-                  <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
-                    {camp?.name ?? 'Camp Session'}
-                  </h1>
-                </div>
-                {organization && (
-                  <p className="text-lg text-slate-600 dark:text-slate-400 mt-2">
-                    by{' '}
-                    <Link
-                      href={`/organization/${organization.slug}`}
-                      className="text-blue-600 hover:text-blue-700 hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                    >
-                      {organization.name}
-                    </Link>
-                  </p>
-                )}
-                <div className="mt-4">
+                <div className="mt-2">
                   <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${sessionStatus.className}`}>
                     {sessionStatus.label}
                   </span>

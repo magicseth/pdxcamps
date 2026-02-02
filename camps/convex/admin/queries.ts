@@ -60,6 +60,11 @@ export const getScrapingDashboard = query({
           ? await ctx.db.get(source.organizationId)
           : null;
 
+        // Resolve organization logo URL
+        const orgLogoUrl = organization?.logoStorageId
+          ? await ctx.storage.getUrl(organization.logoStorageId)
+          : null;
+
         // Get most recent job
         const recentJob = await ctx.db
           .query("scrapeJobs")
@@ -80,8 +85,11 @@ export const getScrapingDashboard = query({
           _id: source._id,
           name: source.name,
           url: source.url,
+          organizationId: source.organizationId ?? null,
           organizationName: organization?.name ?? null,
           organizationSlug: organization?.slug ?? null,
+          organizationLogoUrl: orgLogoUrl,
+          organizationWebsite: organization?.website ?? null,
           scraperModule: source.scraperModule,
           isActive: source.isActive,
 

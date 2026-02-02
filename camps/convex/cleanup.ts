@@ -200,6 +200,56 @@ export const fixOrganizationLogo = mutation({
 });
 
 /**
+ * Delete sessions by source ID (for cleaning up bad scrapes)
+ */
+export const deleteSessionsBySource = mutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+  },
+  handler: async (ctx, args) => {
+    const sessions = await ctx.db
+      .query("sessions")
+      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .collect();
+
+    let deleted = 0;
+    for (const session of sessions) {
+      await ctx.db.delete(session._id);
+      deleted++;
+    }
+
+    return { deleted, sourceId: args.sourceId };
+  },
+});
+
+/**
+ * Delete sessions with invalid data (placeholder values like <UNKNOWN>)
+ */
+export const deleteInvalidSessions = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const sessions = await ctx.db.query("sessions").collect();
+    let deleted = 0;
+
+    for (const session of sessions) {
+      // Check for placeholder values
+      const hasInvalidDate =
+        session.startDate?.includes("<UNKNOWN>") ||
+        session.endDate?.includes("<UNKNOWN>") ||
+        session.startDate?.includes("UNKNOWN") ||
+        session.endDate?.includes("UNKNOWN");
+
+      if (hasInvalidDate) {
+        await ctx.db.delete(session._id);
+        deleted++;
+      }
+    }
+
+    return { deleted };
+  },
+});
+
+/**
  * Count all records in main tables
  */
 export const countRecords = mutation({

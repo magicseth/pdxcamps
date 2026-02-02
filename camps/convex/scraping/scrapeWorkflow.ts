@@ -68,6 +68,13 @@ export const scrapeSourceWorkflow = workflow.define({
         sessionsUpdated: result.sessionsUpdated,
       });
 
+      // Fetch logo for the organization if missing
+      await step.runAction(
+        internal.scraping.populateOrgLogos.fetchOrgLogoForSource,
+        { sourceId: args.sourceId },
+        { retry: false }
+      );
+
       return {
         success: true,
         sessionsFound: result.sessionsFound,

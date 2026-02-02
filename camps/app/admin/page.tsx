@@ -316,7 +316,10 @@ interface SourceData {
   _id: string;
   name: string;
   url: string;
+  organizationId: string | null;
   organizationName: string | null;
+  organizationLogoUrl: string | null;
+  organizationWebsite: string | null;
   scraperModule: string | null | undefined;
   isActive: boolean;
   totalSessions: number;
@@ -359,33 +362,49 @@ function SourceRow({ source }: { source: SourceData }) {
   return (
     <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
       <td className="px-4 py-3">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Link
-              href={`/admin/sources/${source._id}`}
-              className="font-medium text-slate-900 dark:text-white hover:text-blue-600 hover:underline"
-            >
-              {source.name}
-            </Link>
-            {qualityBadge}
-            {!source.isActive && (
-              <span className="px-1.5 py-0.5 text-xs bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 rounded">
-                Inactive
+        <div className="flex items-start gap-3">
+          {/* Organization Logo */}
+          {source.organizationLogoUrl ? (
+            <img
+              src={source.organizationLogoUrl}
+              alt={source.organizationName || source.name}
+              className="w-10 h-10 rounded-lg object-contain bg-white border border-slate-200 dark:border-slate-600 flex-shrink-0"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
+              <span className="text-xs font-medium text-slate-400">
+                {(source.organizationName || source.name).slice(0, 2).toUpperCase()}
               </span>
-            )}
-          </div>
-          {source.organizationName && (
-            <p className="text-xs text-slate-500">{source.organizationName}</p>
+            </div>
           )}
-          <a
-            href={source.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-blue-600 hover:underline flex items-center gap-1"
-          >
-            {truncateUrl(source.url)}
-            <ExternalLinkIcon />
-          </a>
+          <div className="space-y-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Link
+                href={`/admin/sources/${source._id}`}
+                className="font-medium text-slate-900 dark:text-white hover:text-blue-600 hover:underline"
+              >
+                {source.name}
+              </Link>
+              {qualityBadge}
+              {!source.isActive && (
+                <span className="px-1.5 py-0.5 text-xs bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 rounded">
+                  Inactive
+                </span>
+              )}
+            </div>
+            {source.organizationName && (
+              <p className="text-xs text-slate-500">{source.organizationName}</p>
+            )}
+            <a
+              href={source.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+            >
+              {truncateUrl(source.url)}
+              <ExternalLinkIcon />
+            </a>
+          </div>
         </div>
       </td>
       <td className="px-4 py-3">

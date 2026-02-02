@@ -68,7 +68,7 @@ function writeLog(message: string) {
 }
 
 const POLL_INTERVAL_MS = 5000; // Check every 5 seconds
-const CLAUDE_TIMEOUT_MS = 10 * 60 * 1000; // 10 minute timeout for Claude
+const CLAUDE_TIMEOUT_MS = 20 * 60 * 1000; // 20 minute timeout for Claude (needs time to explore, write, test, iterate)
 
 interface DevelopmentRequest {
   _id: string;
@@ -1010,11 +1010,13 @@ async function runTestScript(
       const sampleMatch = output.match(/Sample sessions:([\s\S]*?)(?:Field coverage:|$)/);
       if (sampleMatch) {
         const sampleText = sampleMatch[1];
-        const sessionBlocks = sampleText.split(/\[\d+\]/).filter(Boolean);
+        // Split by [1], [2], etc. - first element is content BEFORE [1] (separator), so skip it
+        const sessionBlocks = sampleText.split(/\[\d+\]/).slice(1).filter(Boolean);
         for (const block of sessionBlocks.slice(0, 5)) {
-          const nameMatch = block.match(/^\s*(.+?)$/m);
-          if (nameMatch) {
-            sessions.push({ name: nameMatch[1].trim(), note: "sample from test output" });
+          // Get first line that isn't just dashes or whitespace
+          const lines = block.split('\n').map((l: string) => l.trim()).filter((l: string) => l && !/^-+$/.test(l));
+          if (lines[0]) {
+            sessions.push({ name: lines[0], note: "sample from test output" });
           }
         }
       }

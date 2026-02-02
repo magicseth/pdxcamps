@@ -26,6 +26,49 @@ import {
   parseAgeRange,
 } from "./validation";
 
+// ============ ADDRESS PARSING ============
+
+/**
+ * Parse a location string into structured address components.
+ * Handles formats like:
+ * - "8911 SE Stark St, Portland, OR 97216"
+ * - "My Voice Music, 8911 SE Stark, Portland, OR 97216"
+ * - "123 Main Street Portland OR"
+ */
+function parseLocationString(location: string): {
+  street?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+} {
+  if (!location) return {};
+
+  // Common Oregon zip code pattern at the end
+  const zipMatch = location.match(/\b(97\d{3})\b/);
+  const zip = zipMatch?.[1];
+
+  // State pattern - look for OR, Oregon
+  const stateMatch = location.match(/\b(OR|Oregon)\b/i);
+  const state = stateMatch ? "OR" : undefined;
+
+  // City pattern - look for Portland or common PDX cities
+  const cityPattern = /\b(Portland|Beaverton|Lake Oswego|Tigard|Tualatin|Gresham|Hillsboro|Vancouver|Milwaukie|Clackamas|Oregon City|West Linn|Wilsonville)\b/i;
+  const cityMatch = location.match(cityPattern);
+  const city = cityMatch?.[1];
+
+  // Street pattern - look for street number followed by street name
+  // Common patterns: "123 Main St", "8911 SE Stark"
+  const streetMatch = location.match(/\b(\d+\s+(?:[NSEW]\s+)?[A-Za-z]+(?:\s+[A-Za-z]+)*(?:\s+(?:St|Street|Ave|Avenue|Rd|Road|Blvd|Boulevard|Way|Dr|Drive|Ln|Lane|Ct|Court|Pl|Place))?)\b/i);
+  let street = streetMatch?.[1];
+
+  // Clean up street if it accidentally captured city/state
+  if (street && city) {
+    street = street.replace(new RegExp(`\\s*,?\\s*${city}.*$`, 'i'), '').trim();
+  }
+
+  return { street, city, state, zip };
+}
+
 // ============ TYPES ============
 
 interface ScrapedSession {
@@ -339,12 +382,21 @@ export const importFromJob = action({
               cityId: portland._id,
             };
 
-            // Use structured address if available
+            // Use structured address if available from session
             if (session.locationAddress) {
               locationData.street = session.locationAddress.street;
               locationData.city = session.locationAddress.city;
               locationData.state = session.locationAddress.state;
               locationData.zip = session.locationAddress.zip;
+            }
+
+            // If no structured address, try to parse from location string
+            if (!locationData.street && locationName && locationName !== "Main Location") {
+              const parsed = parseLocationString(locationName);
+              if (parsed.street) locationData.street = parsed.street;
+              if (parsed.city) locationData.city = parsed.city;
+              if (parsed.state) locationData.state = parsed.state;
+              if (parsed.zip) locationData.zip = parsed.zip;
             }
 
             // Use pre-geocoded coordinates if available

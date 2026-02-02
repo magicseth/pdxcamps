@@ -237,18 +237,37 @@ function SourcesManagementContent() {
                   return (
                     <tr key={source._id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
                       <td className="px-6 py-4">
-                        <div>
-                          <p className="font-medium text-slate-900 dark:text-white">
-                            {source.name}
-                          </p>
-                          <a
-                            href={source.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-blue-600 hover:text-blue-700 line-clamp-1"
-                          >
-                            {source.url}
-                          </a>
+                        <div className="flex items-center gap-3">
+                          {/* Organization Logo */}
+                          {source.organizationLogoUrl ? (
+                            <img
+                              src={source.organizationLogoUrl}
+                              alt={source.organizationName || source.name}
+                              className="w-10 h-10 rounded-lg object-contain bg-white border border-slate-200 dark:border-slate-600 flex-shrink-0"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
+                              <span className="text-xs font-medium text-slate-400">
+                                {(source.organizationName || source.name).slice(0, 2).toUpperCase()}
+                              </span>
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="font-medium text-slate-900 dark:text-white">
+                              {source.name}
+                            </p>
+                            {source.organizationName && source.organizationName !== source.name && (
+                              <p className="text-xs text-slate-500">{source.organizationName}</p>
+                            )}
+                            <a
+                              href={source.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-blue-600 hover:text-blue-700 line-clamp-1"
+                            >
+                              {source.url}
+                            </a>
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">

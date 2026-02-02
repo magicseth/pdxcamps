@@ -34,7 +34,27 @@ export const listScrapeSources = query({
       sources = sources.filter((source) => source.isActive === args.isActive);
     }
 
-    return sources;
+    // Enrich with organization data including logos
+    const enrichedSources = await Promise.all(
+      sources.map(async (source) => {
+        const organization = source.organizationId
+          ? await ctx.db.get(source.organizationId)
+          : null;
+
+        const orgLogoUrl = organization?.logoStorageId
+          ? await ctx.storage.getUrl(organization.logoStorageId)
+          : null;
+
+        return {
+          ...source,
+          organizationName: organization?.name ?? null,
+          organizationLogoUrl: orgLogoUrl,
+          organizationWebsite: organization?.website ?? null,
+        };
+      })
+    );
+
+    return enrichedSources;
   },
 });
 
