@@ -665,6 +665,22 @@ export const updateOrganizationLogo = mutation({
 });
 
 /**
+ * Link an organization to a scrape source
+ */
+export const linkOrganizationToSource = mutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+    organizationId: v.id("organizations"),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.sourceId, {
+      organizationId: args.organizationId,
+    });
+    return args.sourceId;
+  },
+});
+
+/**
  * Store image map for a job (URL -> storage ID mapping)
  */
 export const storeImageMap = mutation({
