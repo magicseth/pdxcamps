@@ -183,11 +183,12 @@ function FamilyProfileSection({
       {isEditing ? (
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label htmlFor="settings-display-name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Display Name
             </label>
             <input
               type="text"
+              id="settings-display-name"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
@@ -484,11 +485,12 @@ function EditChildForm({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">
+          <label htmlFor={`edit-child-firstName-${child._id}`} className="block text-xs text-slate-500 mb-1">
             First Name *
           </label>
           <input
             type="text"
+            id={`edit-child-firstName-${child._id}`}
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
             autoComplete="given-name"
@@ -498,9 +500,10 @@ function EditChildForm({
           />
         </div>
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Last Name</label>
+          <label htmlFor={`edit-child-lastName-${child._id}`} className="block text-xs text-slate-500 mb-1">Last Name</label>
           <input
             type="text"
+            id={`edit-child-lastName-${child._id}`}
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
             autoComplete="family-name"
@@ -511,11 +514,12 @@ function EditChildForm({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs text-slate-500 mb-1">
+          <label htmlFor={`edit-child-birthdate-${child._id}`} className="block text-xs text-slate-500 mb-1">
             Birthdate *
           </label>
           <input
             type="date"
+            id={`edit-child-birthdate-${child._id}`}
             value={birthdate}
             onChange={(e) => setBirthdate(e.target.value)}
             max={new Date().toISOString().split('T')[0]}
@@ -659,11 +663,12 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="add-child-firstName" className="block text-sm text-slate-700 dark:text-slate-300 mb-1">
                 First Name *
               </label>
               <input
                 type="text"
+                id="add-child-firstName"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 autoComplete="given-name"
@@ -674,11 +679,12 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
               />
             </div>
             <div>
-              <label className="block text-sm text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="add-child-lastName" className="block text-sm text-slate-700 dark:text-slate-300 mb-1">
                 Last Name
               </label>
               <input
                 type="text"
+                id="add-child-lastName"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 autoComplete="family-name"
@@ -689,11 +695,12 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="add-child-birthdate" className="block text-sm text-slate-700 dark:text-slate-300 mb-1">
                 Birthdate *
               </label>
               <input
                 type="date"
+                id="add-child-birthdate"
                 value={birthdate}
                 onChange={(e) => setBirthdate(e.target.value)}
                 max={new Date().toISOString().split('T')[0]}
