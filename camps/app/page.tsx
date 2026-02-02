@@ -196,6 +196,26 @@ function PlannerHub({
     router.replace(`/${queryString ? `?${queryString}` : ''}`, { scroll: false });
   }, [selectedYear, selectedChildId, currentYear, router]);
 
+  // Keyboard shortcut: 'e' to add event, 'g' to toggle gaps filter
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
+        return;
+      }
+      if ((e.key === 'e' || e.key === 'E') && !showAddEventModal) {
+        e.preventDefault();
+        setShowAddEventModal(true);
+      }
+      if (e.key === 'g' || e.key === 'G') {
+        e.preventDefault();
+        setShowOnlyGaps((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showAddEventModal]);
+
   // Fetch summer coverage
   const coverage = useQuery(api.planner.queries.getSummerCoverage, {
     year: selectedYear,
