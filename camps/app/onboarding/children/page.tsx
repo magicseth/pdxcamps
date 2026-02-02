@@ -260,6 +260,7 @@ export default function ChildrenSetupPage() {
                     id="birthdate"
                     value={childForm.birthdate}
                     onChange={(e) => setChildForm({ ...childForm, birthdate: e.target.value })}
+                    max={new Date().toISOString().split('T')[0]}
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white text-sm"
                     disabled={isAddingChild}
                   />

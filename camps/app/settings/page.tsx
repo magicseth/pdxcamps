@@ -512,6 +512,7 @@ function EditChildForm({
             type="date"
             value={birthdate}
             onChange={(e) => setBirthdate(e.target.value)}
+            max={new Date().toISOString().split('T')[0]}
             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
           />
         </div>
@@ -681,6 +682,7 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
                 type="date"
                 value={birthdate}
                 onChange={(e) => setBirthdate(e.target.value)}
+                max={new Date().toISOString().split('T')[0]}
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
               />
             </div>
