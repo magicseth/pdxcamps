@@ -172,6 +172,7 @@ export function EditEventModal({ isOpen, onClose, event }: EditEventModalProps) 
             Edit Family Event
           </h2>
           <button
+            type="button"
             onClick={onClose}
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             aria-label="Close"
@@ -195,12 +196,14 @@ export function EditEventModal({ isOpen, onClose, event }: EditEventModalProps) 
             </div>
             <div className="flex gap-3">
               <button
+                type="button"
                 onClick={() => setShowDeleteConfirm(false)}
                 className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={handleDelete}
                 disabled={isSubmitting}
                 aria-busy={isSubmitting}

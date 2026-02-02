@@ -161,6 +161,7 @@ export function AddEventModal({
             Add Family Event
           </h2>
           <button
+            type="button"
             onClick={onClose}
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             aria-label="Close"

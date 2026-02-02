@@ -174,6 +174,7 @@ function FamilyProfileSection({
         </h2>
         {!isEditing && (
           <button
+            type="button"
             onClick={() => setIsEditing(true)}
             className="text-sm text-blue-600 hover:text-blue-700"
           >
@@ -241,12 +242,14 @@ function FamilyProfileSection({
 
           <div className="flex gap-3 pt-2">
             <button
+              type="button"
               onClick={handleCancel}
               className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700"
             >
               Cancel
             </button>
             <button
+              type="button"
               onClick={handleSave}
               disabled={isSaving}
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -310,6 +313,7 @@ function ChildrenSection({
           Children
         </h2>
         <button
+          type="button"
           onClick={() => setShowAddChild(true)}
           className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
         >
@@ -395,6 +399,7 @@ function ChildCard({
         </div>
       </div>
       <button
+        type="button"
         onClick={onEdit}
         className="text-sm text-blue-600 hover:text-blue-700"
       >
@@ -479,12 +484,14 @@ function EditChildForm({
         </p>
         <div className="flex gap-3">
           <button
+            type="button"
             onClick={() => setShowDeleteConfirm(false)}
             className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-md hover:bg-white dark:hover:bg-slate-700"
           >
             Cancel
           </button>
           <button
+            type="button"
             onClick={handleDelete}
             disabled={isSaving}
             className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -575,6 +582,7 @@ function EditChildForm({
 
       <div className="flex gap-3 pt-2">
         <button
+          type="button"
           onClick={() => setShowDeleteConfirm(true)}
           className="px-4 py-2 text-red-600 border border-red-300 dark:border-red-700 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-sm"
         >
@@ -582,12 +590,14 @@ function EditChildForm({
         </button>
         <div className="flex-1" />
         <button
+          type="button"
           onClick={onClose}
           className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 text-sm"
         >
           Cancel
         </button>
         <button
+          type="button"
           onClick={handleSave}
           disabled={isSaving}
           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
@@ -670,6 +680,7 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
             Add Child
           </h3>
           <button
+            type="button"
             onClick={onClose}
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             aria-label="Close"
@@ -765,12 +776,14 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
 
         <div className="flex gap-3 mt-6">
           <button
+            type="button"
             onClick={onClose}
             className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700"
           >
             Cancel
           </button>
           <button
+            type="button"
             onClick={handleSave}
             disabled={isSaving}
             className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"

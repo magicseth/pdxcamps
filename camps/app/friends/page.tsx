@@ -131,6 +131,7 @@ function FriendRequests() {
                 </div>
                 <div className="flex gap-2">
                   <button
+                    type="button"
                     onClick={() => handleAccept(request.friendshipId)}
                     disabled={processingId === request.friendshipId}
                     className="px-3 py-1.5 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -138,6 +139,7 @@ function FriendRequests() {
                     {processingId === request.friendshipId ? 'Processing...' : 'Accept'}
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleDecline(request.friendshipId)}
                     disabled={processingId === request.friendshipId}
                     className="px-3 py-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -282,6 +284,7 @@ function MyFriends() {
                     )}
                     {friendship.friend && (
                       <button
+                        type="button"
                         onClick={() => setSharingFriend({
                           friendshipId: friendship.friendshipId,
                           friendId: friendship.friend!._id,
@@ -293,6 +296,7 @@ function MyFriends() {
                       </button>
                     )}
                     <button
+                      type="button"
                       onClick={() => handleRemove(friendship.friendshipId, friendship.friend?.displayName || 'this friend')}
                       disabled={removingId === friendship.friendshipId}
                       className="px-3 py-1.5 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-md text-sm font-medium hover:bg-red-200 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -439,6 +443,7 @@ function ShareCalendarModal({
             Share Calendar with {friendDisplayName}
           </h3>
           <button
+            type="button"
             onClick={onClose}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
             aria-label="Close"
@@ -496,6 +501,7 @@ function ShareCalendarModal({
             <div className="flex gap-3">
               {existingShare && (
                 <button
+                  type="button"
                   onClick={handleRevoke}
                   disabled={isSubmitting}
                   className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -504,6 +510,7 @@ function ShareCalendarModal({
                 </button>
               )}
               <button
+                type="button"
                 onClick={onClose}
                 disabled={isSubmitting}
                 className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-500"
@@ -511,6 +518,7 @@ function ShareCalendarModal({
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={handleSubmit}
                 disabled={isSubmitting || selectedChildren.length === 0}
                 aria-busy={isSubmitting}
@@ -702,12 +710,14 @@ function CalendarSharingSettings() {
               </div>
               <div className="flex gap-2">
                 <button
+                  type="button"
                   onClick={() => setEditingShare(editingShare === share.shareId ? null : share.shareId)}
                   className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
                 >
                   {editingShare === share.shareId ? 'Cancel' : 'Edit Permission'}
                 </button>
                 <button
+                  type="button"
                   onClick={() => handleRevoke(share.shareId, share.sharedWith?.displayName || 'this friend')}
                   disabled={processingId === share.shareId}
                   className="px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"

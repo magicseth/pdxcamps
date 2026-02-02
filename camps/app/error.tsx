@@ -28,6 +28,7 @@ export default function Error({
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button
+            type="button"
             onClick={reset}
             className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
           >
