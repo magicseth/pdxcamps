@@ -326,6 +326,7 @@ export function AddEventModal({
                     key={child._id}
                     type="button"
                     onClick={() => toggleChild(child._id)}
+                    aria-pressed={selectedChildIds.includes(child._id)}
                     className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm border ${
                       selectedChildIds.includes(child._id)
                         ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'

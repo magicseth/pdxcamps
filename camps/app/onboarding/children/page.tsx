@@ -297,6 +297,7 @@ export default function ChildrenSetupPage() {
                       type="button"
                       onClick={() => handleInterestToggle(interest)}
                       disabled={isAddingChild}
+                      aria-pressed={childForm.interests.includes(interest)}
                       className={`px-3 py-1 text-sm rounded-full border transition-colors ${
                         childForm.interests.includes(interest)
                           ? 'bg-blue-600 text-white border-blue-600'
