@@ -287,17 +287,39 @@ function PlannerHub({
           <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 mb-6 text-white">
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-2xl font-bold">Summer {selectedYear}</h1>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                className="px-3 py-1.5 bg-white/20 border border-white/30 rounded-lg text-white text-sm backdrop-blur-sm"
-              >
-                {[currentYear - 1, currentYear, currentYear + 1].map((year) => (
-                  <option key={year} value={year} className="text-slate-900">
-                    {year}
-                  </option>
-                ))}
-              </select>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setSelectedYear((y) => y - 1)}
+                  disabled={selectedYear <= currentYear - 1}
+                  className="p-1.5 bg-white/20 border border-white/30 rounded-lg text-white hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Previous year"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                  className="px-3 py-1.5 bg-white/20 border border-white/30 rounded-lg text-white text-sm backdrop-blur-sm"
+                >
+                  {[currentYear - 1, currentYear, currentYear + 1].map((year) => (
+                    <option key={year} value={year} className="text-slate-900">
+                      {year}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => setSelectedYear((y) => y + 1)}
+                  disabled={selectedYear >= currentYear + 1}
+                  className="p-1.5 bg-white/20 border border-white/30 rounded-lg text-white hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Next year"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
             </div>
 
             {stats && (
