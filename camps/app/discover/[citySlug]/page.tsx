@@ -391,7 +391,10 @@ export default function DiscoverPage() {
           >
             <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 sticky top-24">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Filters</h2>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                  Filters
+                  <kbd className="hidden lg:inline px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-400 rounded text-[10px]" title="Press F to toggle filters">F</kbd>
+                </h2>
                 <div className="flex items-center gap-3">
                   {hasActiveFilters && (
                     <ShareSearchButton />
