@@ -106,7 +106,7 @@ export default function SessionDetailPage() {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
         <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="animate-pulse">
+          <div className="animate-pulse motion-reduce:animate-none">
             <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-2/3 mb-4"></div>
             <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/3 mb-8"></div>
             <div className="space-y-4">

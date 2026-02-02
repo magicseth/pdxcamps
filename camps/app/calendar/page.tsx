@@ -328,7 +328,7 @@ function CalendarContent() {
   if (registrations === undefined || children === undefined) {
     return (
       <div className="max-w-6xl mx-auto space-y-6">
-        <div className="animate-pulse">
+        <div className="animate-pulse motion-reduce:animate-none">
           <div className="flex items-center gap-2 mb-6">
             <div className="h-10 w-10 bg-slate-200 dark:bg-slate-700 rounded"></div>
             <div className="h-8 w-40 bg-slate-200 dark:bg-slate-700 rounded"></div>

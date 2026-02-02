@@ -61,7 +61,7 @@ function FriendRequests() {
     return (
       <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <h2 className="text-lg font-semibold mb-4">Friend Requests</h2>
-        <div className="animate-pulse space-y-3">
+        <div className="animate-pulse motion-reduce:animate-none space-y-3">
           <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
           <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
         </div>
@@ -189,7 +189,7 @@ function MyFriends() {
     return (
       <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <h2 className="text-lg font-semibold mb-4">My Friends</h2>
-        <div className="animate-pulse space-y-4">
+        <div className="animate-pulse motion-reduce:animate-none space-y-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex items-center gap-3 p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
               <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
@@ -587,7 +587,7 @@ function CalendarSharingSettings() {
     return (
       <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <h2 className="text-lg font-semibold mb-4">Calendar Sharing Settings</h2>
-        <div className="animate-pulse space-y-4">
+        <div className="animate-pulse motion-reduce:animate-none space-y-4">
           <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-64"></div>
           <div className="h-24 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
         </div>

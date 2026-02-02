@@ -234,7 +234,7 @@ export default function DiscoverPage() {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="animate-pulse">
+          <div className="animate-pulse motion-reduce:animate-none">
             <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-48 mb-4"></div>
             <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-96 mb-8"></div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -912,7 +912,7 @@ export default function DiscoverPage() {
                 {[1, 2, 3, 4, 5, 6].map((i) => (
                   <div
                     key={i}
-                    className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden animate-pulse"
+                    className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden animate-pulse motion-reduce:animate-none"
                   >
                     {/* Image placeholder */}
                     <div className="h-40 bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600" />
@@ -1390,7 +1390,7 @@ function SessionCard({
           {campImageUrl ? (
             <>
               {/* Shimmer background shows through while image loads */}
-              <div className="absolute inset-0 bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 dark:from-slate-700 dark:via-slate-600 dark:to-slate-700 animate-pulse" />
+              <div className="absolute inset-0 bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 dark:from-slate-700 dark:via-slate-600 dark:to-slate-700 animate-pulse motion-reduce:animate-none" />
               <img
                 src={campImageUrl}
                 alt={camp?.name || 'Camp'}

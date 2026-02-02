@@ -42,7 +42,7 @@ function AdminContent() {
   if (isAdmin === undefined) {
     return (
       <div className="max-w-4xl mx-auto py-8">
-        <div className="animate-pulse space-y-6">
+        <div className="animate-pulse motion-reduce:animate-none space-y-6">
           <div className="h-8 w-48 bg-slate-200 dark:bg-slate-700 rounded"></div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[1, 2, 3].map((i) => (
@@ -75,7 +75,7 @@ function AdminContent() {
   if (dashboard === undefined) {
     return (
       <div className="max-w-6xl mx-auto">
-        <div className="animate-pulse space-y-4">
+        <div className="animate-pulse motion-reduce:animate-none space-y-4">
           <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-48"></div>
           <div className="grid grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((i) => (

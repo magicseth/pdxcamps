@@ -56,7 +56,7 @@ function SettingsContent() {
   if (family === undefined || children === undefined) {
     return (
       <div className="max-w-2xl mx-auto">
-        <div className="animate-pulse space-y-6">
+        <div className="animate-pulse motion-reduce:animate-none space-y-6">
           <div className="h-32 bg-slate-200 dark:bg-slate-700 rounded-lg" />
           <div className="h-48 bg-slate-200 dark:bg-slate-700 rounded-lg" />
         </div>
