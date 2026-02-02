@@ -329,13 +329,13 @@ export default function SessionDetailPage() {
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Success/Error Messages */}
         {saveSuccess && (
-          <div className="mb-6 p-4 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg flex items-center gap-2">
+          <div role="status" className="mb-6 p-4 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg flex items-center gap-2">
             <CheckCircleIcon />
             Session saved for later!
           </div>
         )}
         {saveError && (
-          <div className="mb-6 p-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg">
+          <div role="alert" className="mb-6 p-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg">
             {saveError}
           </div>
         )}
@@ -950,7 +950,7 @@ function RegisterModal({
         </div>
 
         {success ? (
-          <div className="text-center py-8">
+          <div role="status" className="text-center py-8">
             <CheckCircleIcon className="w-12 h-12 text-green-500 mx-auto mb-2" />
             <p className="text-lg font-medium text-slate-900 dark:text-white">Registered!</p>
             <p className="text-sm text-slate-600 dark:text-slate-400">
@@ -1166,7 +1166,7 @@ function WaitlistModal({
         </div>
 
         {success ? (
-          <div className="text-center py-8">
+          <div role="status" className="text-center py-8">
             <CheckCircleIcon className="w-12 h-12 text-green-500 mx-auto mb-2" />
             <p className="text-lg font-medium text-slate-900 dark:text-white">Added to Waitlist!</p>
             <p className="text-sm text-slate-600 dark:text-slate-400">
