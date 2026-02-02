@@ -1838,12 +1838,13 @@ function FilterChip({
   onRemove: () => void;
 }) {
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
+    <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium transition-transform hover:scale-105">
       {label}
       <button
         onClick={onRemove}
-        className="ml-0.5 hover:text-blue-900 dark:hover:text-blue-100"
+        className="ml-0.5 hover:text-blue-900 dark:hover:text-blue-100 transition-colors"
         title="Remove filter"
+        aria-label={`Remove ${label} filter`}
       >
         ×
       </button>
