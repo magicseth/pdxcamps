@@ -204,7 +204,7 @@ function SummaryCard({
   return (
     <div className={`rounded-lg border p-4 ${variantStyles[variant]}`}>
       <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
-      <p className={`text-3xl font-bold ${valueStyles[variant]}`}>{value}</p>
+      <p className={`text-3xl font-bold tabular-nums ${valueStyles[variant]}`}>{value}</p>
       <p className="text-xs text-slate-500 dark:text-slate-400">{subtext}</p>
     </div>
   );

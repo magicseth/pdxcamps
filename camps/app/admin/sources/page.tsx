@@ -148,25 +148,25 @@ function SourcesManagementContent() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4">
               <p className="text-sm text-slate-600 dark:text-slate-400">Total Sources</p>
-              <p className="text-2xl font-bold text-slate-900 dark:text-white">
+              <p className="text-2xl font-bold tabular-nums text-slate-900 dark:text-white">
                 {scrapeSources.length}
               </p>
             </div>
             <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4">
               <p className="text-sm text-slate-600 dark:text-slate-400">Active</p>
-              <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+              <p className="text-2xl font-bold tabular-nums text-green-600 dark:text-green-400">
                 {scrapeSources.filter((s) => s.isActive).length}
               </p>
             </div>
             <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4">
               <p className="text-sm text-slate-600 dark:text-slate-400">Unhealthy</p>
-              <p className="text-2xl font-bold text-red-600 dark:text-red-400">
+              <p className="text-2xl font-bold tabular-nums text-red-600 dark:text-red-400">
                 {scrapeSources.filter((s) => s.scraperHealth.consecutiveFailures >= 3).length}
               </p>
             </div>
             <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4">
               <p className="text-sm text-slate-600 dark:text-slate-400">Need Regeneration</p>
-              <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+              <p className="text-2xl font-bold tabular-nums text-orange-600 dark:text-orange-400">
                 {scrapeSources.filter((s) => s.scraperHealth.needsRegeneration).length}
               </p>
             </div>
