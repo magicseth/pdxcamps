@@ -706,3 +706,159 @@ export const storeImageMap = mutation({
     return { stored: Object.keys(args.imageMap).length };
   },
 });
+
+/**
+ * Update parsing notes for a source
+ * These notes guide the scraper on how to parse the site
+ */
+export const updateParsingNotes = mutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+    parsingNotes: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const source = await ctx.db.get(args.sourceId);
+    if (!source) {
+      throw new Error("Scrape source not found");
+    }
+
+    await ctx.db.patch(args.sourceId, {
+      parsingNotes: args.parsingNotes,
+      parsingNotesUpdatedAt: Date.now(),
+    });
+
+    return args.sourceId;
+  },
+});
+
+/**
+ * Flag a source for re-scan
+ */
+export const flagForRescan = mutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+    reason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const source = await ctx.db.get(args.sourceId);
+    if (!source) {
+      throw new Error("Scrape source not found");
+    }
+
+    await ctx.db.patch(args.sourceId, {
+      needsRescan: true,
+      rescanRequestedAt: Date.now(),
+      rescanReason: args.reason,
+      // Schedule for immediate scrape
+      nextScheduledScrape: Date.now(),
+    });
+
+    return args.sourceId;
+  },
+});
+
+/**
+ * Clear the re-scan flag after scraping
+ */
+export const clearRescanFlag = mutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+  },
+  handler: async (ctx, args) => {
+    const source = await ctx.db.get(args.sourceId);
+    if (!source) {
+      throw new Error("Scrape source not found");
+    }
+
+    await ctx.db.patch(args.sourceId, {
+      needsRescan: false,
+      rescanRequestedAt: undefined,
+      rescanReason: undefined,
+    });
+
+    return args.sourceId;
+  },
+});
+
+/**
+ * Add an additional URL to a source
+ */
+export const addAdditionalUrl = mutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+    url: v.string(),
+    label: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const source = await ctx.db.get(args.sourceId);
+    if (!source) {
+      throw new Error("Scrape source not found");
+    }
+
+    const additionalUrls = source.additionalUrls || [];
+
+    // Check for duplicates
+    if (additionalUrls.some(u => u.url === args.url)) {
+      throw new Error("URL already exists");
+    }
+
+    additionalUrls.push({
+      url: args.url,
+      label: args.label,
+    });
+
+    await ctx.db.patch(args.sourceId, {
+      additionalUrls,
+    });
+
+    return args.sourceId;
+  },
+});
+
+/**
+ * Remove an additional URL from a source
+ */
+export const removeAdditionalUrl = mutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+    url: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const source = await ctx.db.get(args.sourceId);
+    if (!source) {
+      throw new Error("Scrape source not found");
+    }
+
+    const additionalUrls = (source.additionalUrls || []).filter(
+      u => u.url !== args.url
+    );
+
+    await ctx.db.patch(args.sourceId, {
+      additionalUrls,
+    });
+
+    return args.sourceId;
+  },
+});
+
+/**
+ * Update the main URL of a source
+ */
+export const updateSourceUrl = mutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+    url: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const source = await ctx.db.get(args.sourceId);
+    if (!source) {
+      throw new Error("Scrape source not found");
+    }
+
+    await ctx.db.patch(args.sourceId, {
+      url: args.url,
+    });
+
+    return args.sourceId;
+  },
+});

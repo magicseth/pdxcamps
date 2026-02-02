@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as admin_mutations from "../admin/mutations.js";
 import type * as admin_queries from "../admin/queries.js";
 import type * as camps_mutations from "../camps/mutations.js";
 import type * as camps_queries from "../camps/queries.js";
@@ -23,6 +24,7 @@ import type * as discovery_queries from "../discovery/queries.js";
 import type * as families_mutations from "../families/mutations.js";
 import type * as families_queries from "../families/queries.js";
 import type * as lib_auth from "../lib/auth.js";
+import type * as lib_geocoding from "../lib/geocoding.js";
 import type * as lib_helpers from "../lib/helpers.js";
 import type * as lib_validators from "../lib/validators.js";
 import type * as locations_mutations from "../locations/mutations.js";
@@ -34,6 +36,9 @@ import type * as planner_queries from "../planner/queries.js";
 import type * as registrations_mutations from "../registrations/mutations.js";
 import type * as registrations_queries from "../registrations/queries.js";
 import type * as scraping_actions from "../scraping/actions.js";
+import type * as scraping_coverage from "../scraping/coverage.js";
+import type * as scraping_deduplication from "../scraping/deduplication.js";
+import type * as scraping_development from "../scraping/development.js";
 import type * as scraping_fixOrgWebsites from "../scraping/fixOrgWebsites.js";
 import type * as scraping_generateImages from "../scraping/generateImages.js";
 import type * as scraping_imageWorkflow from "../scraping/imageWorkflow.js";
@@ -52,6 +57,8 @@ import type * as scraping_scrapers_omsi from "../scraping/scrapers/omsi.js";
 import type * as scraping_scrapers_types from "../scraping/scrapers/types.js";
 import type * as scraping_seedAdditionalSources from "../scraping/seedAdditionalSources.js";
 import type * as scraping_seedSources from "../scraping/seedSources.js";
+import type * as scraping_urlDiscovery from "../scraping/urlDiscovery.js";
+import type * as scraping_validation from "../scraping/validation.js";
 import type * as seed from "../seed.js";
 import type * as sessions_mutations from "../sessions/mutations.js";
 import type * as sessions_queries from "../sessions/queries.js";
@@ -65,6 +72,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "admin/mutations": typeof admin_mutations;
   "admin/queries": typeof admin_queries;
   "camps/mutations": typeof camps_mutations;
   "camps/queries": typeof camps_queries;
@@ -80,6 +88,7 @@ declare const fullApi: ApiFromModules<{
   "families/mutations": typeof families_mutations;
   "families/queries": typeof families_queries;
   "lib/auth": typeof lib_auth;
+  "lib/geocoding": typeof lib_geocoding;
   "lib/helpers": typeof lib_helpers;
   "lib/validators": typeof lib_validators;
   "locations/mutations": typeof locations_mutations;
@@ -91,6 +100,9 @@ declare const fullApi: ApiFromModules<{
   "registrations/mutations": typeof registrations_mutations;
   "registrations/queries": typeof registrations_queries;
   "scraping/actions": typeof scraping_actions;
+  "scraping/coverage": typeof scraping_coverage;
+  "scraping/deduplication": typeof scraping_deduplication;
+  "scraping/development": typeof scraping_development;
   "scraping/fixOrgWebsites": typeof scraping_fixOrgWebsites;
   "scraping/generateImages": typeof scraping_generateImages;
   "scraping/imageWorkflow": typeof scraping_imageWorkflow;
@@ -109,6 +121,8 @@ declare const fullApi: ApiFromModules<{
   "scraping/scrapers/types": typeof scraping_scrapers_types;
   "scraping/seedAdditionalSources": typeof scraping_seedAdditionalSources;
   "scraping/seedSources": typeof scraping_seedSources;
+  "scraping/urlDiscovery": typeof scraping_urlDiscovery;
+  "scraping/validation": typeof scraping_validation;
   seed: typeof seed;
   "sessions/mutations": typeof sessions_mutations;
   "sessions/queries": typeof sessions_queries;

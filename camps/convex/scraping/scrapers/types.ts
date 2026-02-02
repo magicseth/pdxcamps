@@ -34,12 +34,29 @@ export interface ScrapedSession {
   maxGrade?: number;
   ageGradeRaw?: string;
 
-  // Location
+  // Location - name or description
   location?: string;
+  // Structured address (preferred over raw location string)
+  locationAddress?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+  };
+  // Pre-geocoded coordinates (if available from source)
+  locationLatitude?: number;
+  locationLongitude?: number;
 
-  // Availability
+  // Capacity & Availability
+  capacity?: number; // Total spots available
+  enrolledCount?: number; // Number already enrolled
+  spotsLeft?: number; // Remaining spots
   isAvailable?: boolean;
   availabilityRaw?: string;
+
+  // Flexibility - for drop-in camps that run all summer
+  isFlexible?: boolean; // True if this is a drop-in/flexible attendance camp
+  flexibleDateRange?: string; // Original "June 15 - August 21" range this was generated from
 
   // URLs
   registrationUrl?: string;

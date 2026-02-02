@@ -8,6 +8,7 @@ import { api } from '../../../convex/_generated/api';
 import { Id } from '../../../convex/_generated/dataModel';
 import { OrgLogo } from '../../../components/shared/OrgLogo';
 import { BottomNav } from '../../../components/shared/BottomNav';
+import { MapWrapper, MapSession } from '../../../components/map';
 
 // Categories for filtering
 const CATEGORIES = [
@@ -61,6 +62,7 @@ export default function DiscoverPage() {
       childGrade: searchParams.get('grade') ? parseInt(searchParams.get('grade')!) : undefined,
       selectedOrganizations: searchParams.get('orgs')?.split(',').filter(Boolean) || [],
       selectedLocations: searchParams.get('locations')?.split(',').filter(Boolean) || [],
+      maxDistanceMiles: searchParams.get('distance') ? parseInt(searchParams.get('distance')!) : undefined,
     };
   }, [searchParams]);
 
@@ -76,8 +78,10 @@ export default function DiscoverPage() {
   const [showFilters, setShowFilters] = useState(true);
   const [selectedOrganizations, setSelectedOrganizations] = useState<string[]>(() => getInitialState().selectedOrganizations);
   const [selectedLocations, setSelectedLocations] = useState<string[]>(() => getInitialState().selectedLocations);
-  const [sortBy, setSortBy] = useState<'date' | 'price-low' | 'price-high' | 'spots'>('date');
+  const [maxDistanceMiles, setMaxDistanceMiles] = useState<number | undefined>(() => getInitialState().maxDistanceMiles);
+  const [sortBy, setSortBy] = useState<'date' | 'price-low' | 'price-high' | 'spots' | 'distance'>('date');
   const [showAllOrgs, setShowAllOrgs] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
   // Ref for results section and initial render tracking
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -95,7 +99,7 @@ export default function DiscoverPage() {
     }
   }, [startDateAfter, startDateBefore, selectedCategories, maxPrice, hideSoldOut, extendedCareOnly, childAge, childGrade, selectedOrganizations, selectedLocations]);
 
-  // Keyboard shortcut: press 'f' to toggle filters (when not typing)
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ignore if typing in an input, textarea, or select
@@ -106,6 +110,10 @@ export default function DiscoverPage() {
       if (e.key === 'f' || e.key === 'F') {
         e.preventDefault();
         setShowFilters((prev) => !prev);
+      }
+      if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault();
+        setViewMode((prev) => prev === 'list' ? 'map' : 'list');
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -125,6 +133,7 @@ export default function DiscoverPage() {
     if (childGrade !== undefined) params.set('grade', childGrade.toString());
     if (selectedOrganizations.length > 0) params.set('orgs', selectedOrganizations.join(','));
     if (selectedLocations.length > 0) params.set('locations', selectedLocations.join(','));
+    if (maxDistanceMiles !== undefined) params.set('distance', maxDistanceMiles.toString());
 
     const queryString = params.toString();
     const newUrl = queryString ? `?${queryString}` : '';
@@ -133,7 +142,7 @@ export default function DiscoverPage() {
     if (window.location.search !== newUrl) {
       router.replace(`/discover/${citySlug}${newUrl}`, { scroll: false });
     }
-  }, [startDateAfter, startDateBefore, selectedCategories, maxPrice, hideSoldOut, extendedCareOnly, childAge, childGrade, selectedOrganizations, selectedLocations, citySlug, router]);
+  }, [startDateAfter, startDateBefore, selectedCategories, maxPrice, hideSoldOut, extendedCareOnly, childAge, childGrade, selectedOrganizations, selectedLocations, maxDistanceMiles, citySlug, router]);
 
   // Fetch city data
   const city = useQuery(api.cities.queries.getCityBySlug, { slug: citySlug });
@@ -165,6 +174,12 @@ export default function DiscoverPage() {
   // Fetch user's children for quick filter
   const myChildren = useQuery(api.children.queries.listChildren);
 
+  // Fetch family data for home address
+  const family = useQuery(api.families.queries.getCurrentFamily);
+  const homeLatitude = family?.homeAddress?.latitude;
+  const homeLongitude = family?.homeAddress?.longitude;
+  const hasHomeCoords = homeLatitude !== undefined && homeLongitude !== undefined;
+
   // Fetch sessions with filters
   const sessions = useQuery(
     api.sessions.queries.searchSessions,
@@ -179,6 +194,9 @@ export default function DiscoverPage() {
           childAge: childAge,
           childGrade: childGrade,
           locationIds: selectedLocations.length > 0 ? selectedLocations as Id<'locations'>[] : undefined,
+          homeLatitude: hasHomeCoords ? homeLatitude : undefined,
+          homeLongitude: hasHomeCoords ? homeLongitude : undefined,
+          maxDistanceMiles: hasHomeCoords && maxDistanceMiles !== undefined ? maxDistanceMiles : undefined,
         }
       : 'skip'
   );
@@ -211,6 +229,10 @@ export default function DiscoverPage() {
           const spotsA = a.capacity - a.enrolledCount;
           const spotsB = b.capacity - b.enrolledCount;
           return spotsB - spotsA; // Most spots first
+        case 'distance':
+          const distA = (a as { distanceFromHome?: number }).distanceFromHome ?? Infinity;
+          const distB = (b as { distanceFromHome?: number }).distanceFromHome ?? Infinity;
+          return distA - distB;
         default:
           return 0;
       }
@@ -228,6 +250,29 @@ export default function DiscoverPage() {
     });
     return counts;
   }, [sessions]);
+
+  // Filter locations based on selected organizations
+  // If orgs are selected, only show locations used by those orgs' sessions
+  const relevantLocations = useMemo(() => {
+    if (!allLocations) return [];
+
+    // If no organizations selected, show all locations
+    if (selectedOrganizations.length === 0) {
+      return allLocations;
+    }
+
+    // Get location IDs from sessions that match selected organizations
+    if (!sessions) return [];
+    const relevantLocationIds = new Set<string>();
+    sessions.forEach((s) => {
+      if (selectedOrganizations.includes(s.organizationId)) {
+        relevantLocationIds.add(s.locationId);
+      }
+    });
+
+    // Filter locations to only those used by selected orgs
+    return allLocations.filter((loc) => relevantLocationIds.has(loc._id));
+  }, [allLocations, sessions, selectedOrganizations]);
 
   // Loading state
   if (city === undefined) {
@@ -285,6 +330,7 @@ export default function DiscoverPage() {
     setChildGrade(undefined);
     setSelectedOrganizations([]);
     setSelectedLocations([]);
+    setMaxDistanceMiles(undefined);
   };
 
   const hasActiveFilters =
@@ -297,7 +343,8 @@ export default function DiscoverPage() {
     childAge !== undefined ||
     childGrade !== undefined ||
     selectedOrganizations.length > 0 ||
-    selectedLocations.length > 0;
+    selectedLocations.length > 0 ||
+    maxDistanceMiles !== undefined;
 
   // Count active filters for the badge
   const activeFilterCount =
@@ -310,7 +357,8 @@ export default function DiscoverPage() {
     (childAge !== undefined ? 1 : 0) +
     (childGrade !== undefined ? 1 : 0) +
     selectedOrganizations.length +
-    selectedLocations.length;
+    selectedLocations.length +
+    (maxDistanceMiles !== undefined ? 1 : 0);
 
   const handleOrganizationToggle = (orgId: string) => {
     setSelectedOrganizations((prev) =>
@@ -351,6 +399,35 @@ export default function DiscoverPage() {
               </h1>
             </div>
             <div className="flex items-center gap-3">
+              {/* View Mode Toggle */}
+              <div className="flex items-center rounded-lg border border-slate-300 dark:border-slate-600 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('list')}
+                  className={`px-3 py-1.5 text-sm font-medium flex items-center gap-1 ${
+                    viewMode === 'list'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                  }`}
+                  title="List view"
+                >
+                  <ListIcon />
+                  <span className="hidden sm:inline">List</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('map')}
+                  className={`px-3 py-1.5 text-sm font-medium flex items-center gap-1 ${
+                    viewMode === 'map'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                  }`}
+                  title="Map view (M key)"
+                >
+                  <MapIcon />
+                  <span className="hidden sm:inline">Map</span>
+                </button>
+              </div>
               <button
                 type="button"
                 onClick={() => setShowFilters(!showFilters)}
@@ -675,7 +752,7 @@ export default function DiscoverPage() {
               </div>
 
               {/* Extended Care Only */}
-              <div className="mb-4">
+              <div className="mb-6">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -685,6 +762,71 @@ export default function DiscoverPage() {
                   />
                   <span className="text-sm text-slate-700 dark:text-slate-300">Extended care available</span>
                 </label>
+              </div>
+
+              {/* Distance from Home */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Distance from Home
+                </label>
+                {hasHomeCoords ? (
+                  <>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {[5, 10, 15, 25].map((distance) => (
+                        <button
+                          key={distance}
+                          type="button"
+                          onClick={() => setMaxDistanceMiles(maxDistanceMiles === distance ? undefined : distance)}
+                          className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+                            maxDistanceMiles === distance
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                          }`}
+                        >
+                          {distance} mi
+                        </button>
+                      ))}
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <input
+                          id="discover-distance"
+                          type="number"
+                          inputMode="numeric"
+                          min={1}
+                          max={50}
+                          value={maxDistanceMiles ?? ''}
+                          onChange={(e) =>
+                            setMaxDistanceMiles(e.target.value ? parseInt(e.target.value) : undefined)
+                          }
+                          placeholder="Custom miles"
+                          className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                        />
+                        <span className="text-sm text-slate-500">mi</span>
+                      </div>
+                      {maxDistanceMiles !== undefined && (
+                        <input
+                          type="range"
+                          min={1}
+                          max={50}
+                          value={maxDistanceMiles}
+                          onChange={(e) => setMaxDistanceMiles(parseInt(e.target.value))}
+                          aria-label="Distance slider"
+                          className="w-full"
+                        />
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="p-3 bg-slate-100 dark:bg-slate-700/50 rounded-md">
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                      <Link href="/settings" className="text-blue-600 hover:underline">
+                        Add your home address
+                      </Link>{' '}
+                      in Settings to filter by distance.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </aside>
@@ -742,13 +884,13 @@ export default function DiscoverPage() {
             )}
 
             {/* Location Filter Chips */}
-            {allLocations && allLocations.length > 0 && (
+            {relevantLocations && relevantLocations.length > 0 && (
               <div className="mb-4">
                 <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">
                   Filter by Location
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {allLocations.map((location) => (
+                  {relevantLocations.map((location) => (
                     <button
                       key={location._id}
                       onClick={() => handleLocationToggle(location._id)}
@@ -853,6 +995,12 @@ export default function DiscoverPage() {
                       />
                     );
                   })}
+                  {maxDistanceMiles !== undefined && (
+                    <FilterChip
+                      label={`Within ${maxDistanceMiles} mi`}
+                      onRemove={() => setMaxDistanceMiles(undefined)}
+                    />
+                  )}
                 </div>
               </div>
             )}
@@ -910,13 +1058,14 @@ export default function DiscoverPage() {
                 <select
                   id="discover-sort"
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as 'date' | 'price-low' | 'price-high' | 'spots')}
+                  onChange={(e) => setSortBy(e.target.value as 'date' | 'price-low' | 'price-high' | 'spots' | 'distance')}
                   className="text-sm px-2 py-1 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300"
                 >
                   <option value="date">Start Date</option>
                   <option value="price-low">Price: Low to High</option>
                   <option value="price-high">Price: High to Low</option>
                   <option value="spots">Most Spots Available</option>
+                  {hasHomeCoords && <option value="distance">Distance</option>}
                 </select>
               </div>
             </div>
@@ -1024,13 +1173,51 @@ export default function DiscoverPage() {
               </div>
             )}
 
-            {/* Sessions List */}
+            {/* Sessions List or Map View */}
             {sessions !== undefined && filteredSessions.length > 0 && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {filteredSessions.map((session) => (
-                  <SessionCard key={session._id} session={session} cityId={city._id} isAdmin={isAdmin ?? false} />
-                ))}
-              </div>
+              viewMode === 'map' ? (
+                <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden">
+                  <MapWrapper
+                    sessions={filteredSessions.map((session) => ({
+                      _id: session._id,
+                      startDate: session.startDate,
+                      endDate: session.endDate,
+                      price: session.price,
+                      currency: session.currency,
+                      spotsLeft: Math.max(0, session.capacity - session.enrolledCount),
+                      distanceFromHome: (session as { distanceFromHome?: number }).distanceFromHome,
+                      camp: {
+                        name: session.campName ?? 'Camp',
+                      },
+                      organization: {
+                        name: session.organizationName ?? 'Organization',
+                      },
+                      location: {
+                        name: session.locationName ?? 'Location',
+                        latitude: session.locationLatitude,
+                        longitude: session.locationLongitude,
+                      },
+                    })) as MapSession[]}
+                    centerLatitude={city.centerLatitude}
+                    centerLongitude={city.centerLongitude}
+                    homeLatitude={homeLatitude}
+                    homeLongitude={homeLongitude}
+                    height="600px"
+                  />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {filteredSessions.map((session) => (
+                    <SessionCard
+                      key={session._id}
+                      session={session}
+                      cityId={city._id}
+                      isAdmin={isAdmin ?? false}
+                      distanceFromHome={(session as { distanceFromHome?: number }).distanceFromHome}
+                    />
+                  ))}
+                </div>
+              )
             )}
           </main>
         </div>
@@ -1083,6 +1270,7 @@ function SessionCard({
   session,
   cityId,
   isAdmin,
+  distanceFromHome,
 }: {
   session: {
     _id: Id<'sessions'>;
@@ -1111,11 +1299,14 @@ function SessionCard({
   };
   cityId: Id<'cities'>;
   isAdmin?: boolean;
+  distanceFromHome?: number;
 }) {
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showStyleEditor, setShowStyleEditor] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const generateImage = useAction(api.scraping.generateImages.generateCampImage);
+  const updateCampStyle = useMutation(api.camps.mutations.updateCampImageStyle);
 
   // Fetch related data
   const camp = useQuery(api.camps.queries.getCamp, { campId: session.campId });
@@ -1419,41 +1610,54 @@ function SessionCard({
                   e.currentTarget.style.display = 'none';
                 }}
               />
-              {/* Admin: Regenerate Button (shows on hover) */}
+              {/* Admin: Regenerate and Edit Style Buttons (shows on hover) */}
               {isAdmin && camp && (
-                <button
-                  onClick={async (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setIsGenerating(true);
-                    setGenerateError(null);
-                    try {
-                      const result = await generateImage({ campId: camp._id });
-                      if (!result.success) {
-                        setGenerateError(result.error || 'Failed to generate image');
+                <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowStyleEditor(true);
+                    }}
+                    className="px-2 py-1 bg-black/70 text-white text-xs font-medium rounded shadow hover:bg-black/90 flex items-center gap-1"
+                    title="Edit image style"
+                  >
+                    <PencilIcon />
+                  </button>
+                  <button
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsGenerating(true);
+                      setGenerateError(null);
+                      try {
+                        const result = await generateImage({ campId: camp._id });
+                        if (!result.success) {
+                          setGenerateError(result.error || 'Failed to generate image');
+                        }
+                      } catch (err) {
+                        setGenerateError(err instanceof Error ? err.message : 'Unknown error');
+                      } finally {
+                        setIsGenerating(false);
                       }
-                    } catch (err) {
-                      setGenerateError(err instanceof Error ? err.message : 'Unknown error');
-                    } finally {
-                      setIsGenerating(false);
-                    }
-                  }}
-                  disabled={isGenerating}
-                  className="absolute bottom-2 right-2 px-2 py-1 bg-black/70 text-white text-xs font-medium rounded shadow hover:bg-black/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                  title="Regenerate AI image for this camp"
-                >
-                  {isGenerating ? (
-                    <>
-                      <SpinnerIcon />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <SparklesIcon />
-                      Regenerate
-                    </>
-                  )}
-                </button>
+                    }}
+                    disabled={isGenerating}
+                    className="px-2 py-1 bg-black/70 text-white text-xs font-medium rounded shadow hover:bg-black/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                    title="Regenerate AI image"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <SpinnerIcon />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <SparklesIcon />
+                        Regenerate
+                      </>
+                    )}
+                  </button>
+                </div>
               )}
             </>
           ) : (
@@ -1687,6 +1891,11 @@ function SessionCard({
                 {location.name}
                 {location.address?.city && ` - ${location.address.city}`}
               </span>
+              {distanceFromHome !== undefined && (
+                <span className="flex-shrink-0 text-blue-600 dark:text-blue-400 font-medium">
+                  {distanceFromHome} mi
+                </span>
+              )}
               {location.address && (
                 <a
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
@@ -1751,6 +1960,20 @@ function SessionCard({
           sessionId={session._id}
           campName={camp?.name ?? 'Camp'}
           onClose={() => setShowSaveModal(false)}
+        />
+      )}
+
+      {/* Style Editor Modal */}
+      {showStyleEditor && camp && (
+        <StyleEditorModal
+          campId={camp._id}
+          campName={camp.name}
+          currentStyle={camp.imageStylePrompt}
+          onClose={() => setShowStyleEditor(false)}
+          onSave={async (style) => {
+            await updateCampStyle({ campId: camp._id, imageStylePrompt: style || undefined });
+            setShowStyleEditor(false);
+          }}
         />
       )}
     </>
@@ -2343,5 +2566,157 @@ function ShareSearchButton() {
         </>
       )}
     </button>
+  );
+}
+
+function PencilIcon() {
+  return (
+    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+      />
+    </svg>
+  );
+}
+
+function ListIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M4 6h16M4 10h16M4 14h16M4 18h16"
+      />
+    </svg>
+  );
+}
+
+function MapIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+      />
+    </svg>
+  );
+}
+
+// Style Editor Modal for admins
+function StyleEditorModal({
+  campId,
+  campName,
+  currentStyle,
+  onClose,
+  onSave,
+}: {
+  campId: Id<'camps'>;
+  campName: string;
+  currentStyle?: string;
+  onClose: () => void;
+  onSave: (style: string | undefined) => Promise<void>;
+}) {
+  const [style, setStyle] = useState(currentStyle || '');
+  const [isSaving, setIsSaving] = useState(false);
+
+  const presetStyles = [
+    'Vibrant watercolor with wet-on-wet technique. Dramatic low angle looking up. Golden hour sunlight streaming through. Frozen mid-action, peak moment captured.',
+    'Polished digital painting like Pixar concept art. Wide cinematic shot with rule of thirds. Bright overcast day, soft even lighting. Genuine laughter and joy visible.',
+    'Rich oil painting with visible impasto brushstrokes. Over-the-shoulder perspective, intimate. Dappled light filtering through trees. Curious discovery moment.',
+    'Studio Ghibli inspired animation style. Bird\'s eye view showing the whole activity. Magic hour glow, long shadows. Playful chaos and movement.',
+    'Editorial illustration style for New York Times. Dynamic diagonal composition. Dramatic rim lighting from behind. Intense concentration and focus.',
+    'Nostalgic Norman Rockwell style illustration. Symmetrical framing with central focus. Warm indoor lighting with soft shadows. Collaborative teamwork moment.',
+    'Crisp digital art, trending on artstation. Dutch angle adding energy. High key bright and airy. Triumphant achievement expression.',
+    'Dreamy soft pastel artwork with chalky texture. Close-up on hands and activity, shallow depth of field. Natural window light, cozy. Peaceful flow state.',
+  ];
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await onSave(style.trim() || undefined);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-lg w-full p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+            Edit Image Style: {campName}
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+          >
+            <CloseIcon />
+          </button>
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            Custom Style Prompt
+          </label>
+          <textarea
+            value={style}
+            onChange={(e) => setStyle(e.target.value)}
+            placeholder="e.g., Style: watercolor painting, soft colors, impressionistic..."
+            rows={3}
+            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
+          />
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Leave empty to use auto-generated style based on camp ID
+          </p>
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            Preset Styles
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {presetStyles.map((preset, i) => (
+              <button
+                key={i}
+                onClick={() => setStyle(preset)}
+                className="px-2 py-1 text-xs bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded hover:bg-slate-200 dark:hover:bg-slate-600"
+              >
+                {preset.replace('Style: ', '').split(',')[0]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              setStyle('');
+            }}
+            className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700"
+          >
+            Reset
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+          >
+            {isSaving ? 'Saving...' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

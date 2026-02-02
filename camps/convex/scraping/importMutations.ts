@@ -5,7 +5,7 @@
  * Separated from import.ts because mutations can't be in "use node" files.
  */
 
-import { mutation } from "../_generated/server";
+import { mutation, internalMutation } from "../_generated/server";
 import { v } from "convex/values";
 
 /**
@@ -81,27 +81,36 @@ export const createCamp = mutation({
 });
 
 /**
- * Create a location
+ * Create a location with optional address and coordinates
  */
 export const createLocation = mutation({
   args: {
     organizationId: v.id("organizations"),
     name: v.string(),
     cityId: v.id("cities"),
+    // Optional structured address
+    street: v.optional(v.string()),
+    city: v.optional(v.string()),
+    state: v.optional(v.string()),
+    zip: v.optional(v.string()),
+    // Optional coordinates (from geocoding or source)
+    latitude: v.optional(v.number()),
+    longitude: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     return ctx.db.insert("locations", {
       organizationId: args.organizationId,
       name: args.name,
       address: {
-        street: "TBD",
-        city: "Portland",
-        state: "OR",
-        zip: "97201",
+        street: args.street || "TBD",
+        city: args.city || "Portland",
+        state: args.state || "OR",
+        zip: args.zip || "97201",
       },
       cityId: args.cityId,
-      latitude: 45.5152,
-      longitude: -122.6784,
+      // Use provided coordinates or fall back to Portland city center
+      latitude: args.latitude ?? 45.5152,
+      longitude: args.longitude ?? -122.6784,
       isActive: true,
     });
   },
@@ -157,6 +166,232 @@ export const createSession = mutation({
       externalRegistrationUrl: args.registrationUrl,
       sourceId: args.sourceId,
       lastScrapedAt: Date.now(),
+    });
+  },
+});
+
+/**
+ * Create a session with completeness tracking (internal use)
+ */
+export const createSessionWithCompleteness = internalMutation({
+  args: {
+    campId: v.id("camps"),
+    locationId: v.id("locations"),
+    organizationId: v.id("organizations"),
+    cityId: v.id("cities"),
+    startDate: v.string(),
+    endDate: v.string(),
+    dropOffHour: v.number(),
+    dropOffMinute: v.number(),
+    pickUpHour: v.number(),
+    pickUpMinute: v.number(),
+    price: v.number(),
+    minAge: v.optional(v.number()),
+    maxAge: v.optional(v.number()),
+    minGrade: v.optional(v.number()),
+    maxGrade: v.optional(v.number()),
+    registrationUrl: v.optional(v.string()),
+    sourceId: v.id("scrapeSources"),
+    // Completeness fields
+    status: v.union(v.literal("draft"), v.literal("active")),
+    completenessScore: v.number(),
+    missingFields: v.array(v.string()),
+    dataSource: v.union(
+      v.literal("scraped"),
+      v.literal("manual"),
+      v.literal("enhanced")
+    ),
+    // Capacity fields
+    capacity: v.optional(v.number()),
+    enrolledCount: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    return ctx.db.insert("sessions", {
+      campId: args.campId,
+      locationId: args.locationId,
+      organizationId: args.organizationId,
+      cityId: args.cityId,
+      startDate: args.startDate,
+      endDate: args.endDate,
+      dropOffTime: { hour: args.dropOffHour, minute: args.dropOffMinute },
+      pickUpTime: { hour: args.pickUpHour, minute: args.pickUpMinute },
+      extendedCareAvailable: false,
+      price: args.price,
+      currency: "USD",
+      capacity: args.capacity ?? 20,
+      enrolledCount: args.enrolledCount ?? 0,
+      waitlistCount: 0,
+      ageRequirements: {
+        minAge: args.minAge,
+        maxAge: args.maxAge,
+        minGrade: args.minGrade,
+        maxGrade: args.maxGrade,
+      },
+      status: args.status,
+      waitlistEnabled: true,
+      externalRegistrationUrl: args.registrationUrl,
+      sourceId: args.sourceId,
+      lastScrapedAt: Date.now(),
+      // Completeness tracking
+      completenessScore: args.completenessScore,
+      missingFields: args.missingFields,
+      dataSource: args.dataSource,
+    });
+  },
+});
+
+/**
+ * Create a pending session for manual review
+ */
+export const createPendingSession = internalMutation({
+  args: {
+    jobId: v.id("scrapeJobs"),
+    sourceId: v.id("scrapeSources"),
+    rawData: v.string(),
+    partialData: v.object({
+      name: v.optional(v.string()),
+      dateRaw: v.optional(v.string()),
+      priceRaw: v.optional(v.string()),
+      ageGradeRaw: v.optional(v.string()),
+      timeRaw: v.optional(v.string()),
+      location: v.optional(v.string()),
+      description: v.optional(v.string()),
+      startDate: v.optional(v.string()),
+      endDate: v.optional(v.string()),
+      registrationUrl: v.optional(v.string()),
+    }),
+    validationErrors: v.array(
+      v.object({
+        field: v.string(),
+        error: v.string(),
+        attemptedValue: v.optional(v.string()),
+      })
+    ),
+    completenessScore: v.number(),
+  },
+  handler: async (ctx, args) => {
+    return ctx.db.insert("pendingSessions", {
+      jobId: args.jobId,
+      sourceId: args.sourceId,
+      rawData: args.rawData,
+      partialData: args.partialData,
+      validationErrors: args.validationErrors,
+      completenessScore: args.completenessScore,
+      status: "pending_review",
+      createdAt: Date.now(),
+    });
+  },
+});
+
+/**
+ * Update source session counts and quality metrics
+ */
+export const updateSourceSessionCounts = internalMutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+    sessionCount: v.number(),
+    activeSessionCount: v.number(),
+    dataQualityScore: v.number(),
+    qualityTier: v.union(
+      v.literal("high"),
+      v.literal("medium"),
+      v.literal("low")
+    ),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.sourceId, {
+      sessionCount: args.sessionCount,
+      activeSessionCount: args.activeSessionCount,
+      dataQualityScore: args.dataQualityScore,
+      qualityTier: args.qualityTier,
+      lastSessionsFoundAt: args.sessionCount > 0 ? Date.now() : undefined,
+    });
+  },
+});
+
+/**
+ * Update a pending session status
+ */
+export const updatePendingSessionStatus = mutation({
+  args: {
+    pendingSessionId: v.id("pendingSessions"),
+    status: v.union(
+      v.literal("pending_review"),
+      v.literal("manually_fixed"),
+      v.literal("imported"),
+      v.literal("discarded")
+    ),
+    reviewedBy: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.pendingSessionId, {
+      status: args.status,
+      reviewedAt: Date.now(),
+      reviewedBy: args.reviewedBy,
+    });
+  },
+});
+
+// ============ URL DISCOVERY MUTATIONS ============
+
+/**
+ * Record a URL check in history
+ */
+export const recordUrlCheck = internalMutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+    url: v.string(),
+    status: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const source = await ctx.db.get(args.sourceId);
+    if (!source) return;
+
+    const history = source.urlHistory || [];
+    history.push({
+      url: args.url,
+      status: args.status,
+      checkedAt: Date.now(),
+    });
+
+    // Keep only last 10 entries
+    const trimmedHistory = history.slice(-10);
+
+    await ctx.db.patch(args.sourceId, {
+      urlHistory: trimmedHistory,
+    });
+  },
+});
+
+/**
+ * Suggest a URL update for a source
+ */
+export const suggestUrlUpdate = internalMutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+    suggestedUrl: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.sourceId, {
+      suggestedUrl: args.suggestedUrl,
+    });
+  },
+});
+
+/**
+ * Apply a suggested URL update
+ */
+export const applyUrlUpdate = internalMutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+  },
+  handler: async (ctx, args) => {
+    const source = await ctx.db.get(args.sourceId);
+    if (!source?.suggestedUrl) return;
+
+    await ctx.db.patch(args.sourceId, {
+      url: source.suggestedUrl,
+      suggestedUrl: undefined,
     });
   },
 });

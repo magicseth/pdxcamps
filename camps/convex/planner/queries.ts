@@ -7,6 +7,7 @@ import {
   doDateRangesOverlap,
   countOverlappingWeekdays,
   calculateAge,
+  calculateDistance,
   isAgeInRange,
   isGradeInRange,
   SummerWeek,
@@ -599,6 +600,10 @@ export const searchSessionsByWeek = query({
     childAge: v.optional(v.number()),
     childGrade: v.optional(v.number()),
     categories: v.optional(v.array(v.string())),
+    // Distance filtering
+    homeLatitude: v.optional(v.number()),
+    homeLongitude: v.optional(v.number()),
+    maxDistanceMiles: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     // Get active sessions in the city
@@ -693,10 +698,42 @@ export const searchSessionsByWeek = query({
         .map((o) => [o._id, o])
     );
 
-    return sessions.map((s) => {
+    // Check if we need to calculate distances
+    const hasHomeCoords = args.homeLatitude !== undefined && args.homeLongitude !== undefined;
+
+    // If filtering by distance, we need all location coords
+    let allLocationMap = locationMap;
+    if (hasHomeCoords) {
+      // Fetch any locations we don't already have
+      const allLocationIds = [...new Set(sessions.map((s) => s.locationId))];
+      const missingLocationIds = allLocationIds.filter((id) => !locationMap.has(id));
+      if (missingLocationIds.length > 0) {
+        const missingLocationsRaw = await Promise.all(missingLocationIds.map((id) => ctx.db.get(id)));
+        for (const loc of missingLocationsRaw) {
+          if (loc) {
+            allLocationMap.set(loc._id, loc);
+          }
+        }
+      }
+    }
+
+    let results = sessions.map((s) => {
       const camp = campMap.get(s.campId);
-      const location = locationMap.get(s.locationId);
+      const location = allLocationMap.get(s.locationId);
       const org = orgMap.get(s.organizationId);
+
+      // Calculate distance if home coords provided
+      let distanceFromHome: number | undefined;
+      if (hasHomeCoords && location) {
+        distanceFromHome = Math.round(
+          calculateDistance(
+            args.homeLatitude!,
+            args.homeLongitude!,
+            location.latitude,
+            location.longitude
+          ) * 10
+        ) / 10;
+      }
 
       return {
         _id: s._id,
@@ -711,6 +748,7 @@ export const searchSessionsByWeek = query({
         spotsLeft: Math.max(0, s.capacity - s.enrolledCount),
         waitlistEnabled: s.waitlistEnabled,
         ageRequirements: s.ageRequirements,
+        distanceFromHome,
         camp: {
           _id: s.campId,
           name: s.campName ?? camp?.name ?? "Unknown Camp",
@@ -725,6 +763,8 @@ export const searchSessionsByWeek = query({
             state: "",
             zip: "",
           },
+          latitude: location?.latitude,
+          longitude: location?.longitude,
         },
         organization: {
           _id: s.organizationId,
@@ -732,6 +772,15 @@ export const searchSessionsByWeek = query({
         },
       };
     });
+
+    // Apply distance filter if specified
+    if (args.maxDistanceMiles !== undefined && hasHomeCoords) {
+      results = results.filter(
+        (s) => s.distanceFromHome !== undefined && s.distanceFromHome <= args.maxDistanceMiles!
+      );
+    }
+
+    return results;
   },
 });
 

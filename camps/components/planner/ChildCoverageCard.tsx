@@ -64,6 +64,7 @@ interface AvailableCamp {
   currency: string;
   spotsLeft: number;
   locationName: string;
+  distanceFromHome?: number;
 }
 
 interface ChildCoverageCardProps {
@@ -198,8 +199,11 @@ export function ChildCoverageCard({
                       {camp.campName}
                       <span className="ml-1 opacity-0 group-hover:opacity-100 text-blue-500">↗</span>
                     </div>
-                    <div className="text-slate-500 truncate" title={`${formatTime(camp.dropOffTime)}-${formatTime(camp.pickUpTime)} · ${camp.locationName}`}>
+                    <div className="text-slate-500 truncate" title={`${formatTime(camp.dropOffTime)}-${formatTime(camp.pickUpTime)} · ${camp.locationName}${camp.distanceFromHome ? ` · ${camp.distanceFromHome} mi` : ''}`}>
                       {formatTime(camp.dropOffTime)}-{formatTime(camp.pickUpTime)} · {camp.locationName}
+                      {camp.distanceFromHome !== undefined && (
+                        <span className="ml-1 text-blue-600 dark:text-blue-400">{camp.distanceFromHome} mi</span>
+                      )}
                     </div>
                   </a>
                   <div className="text-right shrink-0">

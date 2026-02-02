@@ -154,3 +154,25 @@ export const updateCampImages = mutation({
     return args.campId;
   },
 });
+
+/**
+ * Update camp image style prompt (admin only)
+ */
+export const updateCampImageStyle = mutation({
+  args: {
+    campId: v.id("camps"),
+    imageStylePrompt: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const camp = await ctx.db.get(args.campId);
+    if (!camp) {
+      throw new Error("Camp not found");
+    }
+
+    await ctx.db.patch(args.campId, {
+      imageStylePrompt: args.imageStylePrompt || undefined,
+    });
+
+    return args.campId;
+  },
+});

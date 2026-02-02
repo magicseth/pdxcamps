@@ -1,6 +1,7 @@
 import { query, QueryCtx } from "../_generated/server";
 import { v } from "convex/values";
 import { getFamily } from "../lib/auth";
+import { Doc } from "../_generated/dataModel";
 
 const ADMIN_EMAILS = ["seth@magicseth.com"];
 
@@ -39,6 +40,12 @@ export const getScrapingDashboard = query({
     // Get all scrape sources
     const sources = await ctx.db.query("scrapeSources").collect();
 
+    // Get pending sessions count
+    const pendingSessions = await ctx.db
+      .query("pendingSessions")
+      .withIndex("by_status", (q) => q.eq("status", "pending_review"))
+      .collect();
+
     // Get session counts per source
     const sourcesWithStats = await Promise.all(
       sources.map(async (source) => {
@@ -62,6 +69,12 @@ export const getScrapingDashboard = query({
 
         // Count active vs total sessions
         const activeSessions = sessions.filter((s) => s.status === "active");
+        const draftSessions = sessions.filter((s) => s.status === "draft");
+
+        // Count pending sessions for this source
+        const pendingForSource = pendingSessions.filter(
+          (p) => p.sourceId === source._id
+        ).length;
 
         return {
           _id: source._id,
@@ -72,9 +85,19 @@ export const getScrapingDashboard = query({
           scraperModule: source.scraperModule,
           isActive: source.isActive,
 
-          // Session stats
-          totalSessions: sessions.length,
-          activeSessions: activeSessions.length,
+          // Session stats (use denormalized values if available)
+          totalSessions: source.sessionCount ?? sessions.length,
+          activeSessions: source.activeSessionCount ?? activeSessions.length,
+          draftSessions: draftSessions.length,
+          pendingSessions: pendingForSource,
+
+          // Has data indicator
+          hasData: (source.sessionCount ?? sessions.length) > 0,
+
+          // Quality info
+          dataQualityScore: source.dataQualityScore,
+          qualityTier: source.qualityTier,
+          lastSessionsFoundAt: source.lastSessionsFoundAt,
 
           // Health info
           health: source.scraperHealth,
@@ -83,6 +106,7 @@ export const getScrapingDashboard = query({
           scrapeFrequencyHours: source.scrapeFrequencyHours,
 
           // Recent job info
+          lastJobId: recentJob?._id ?? null,
           lastJobStatus: recentJob?.status ?? null,
           lastJobSessionsFound: recentJob?.sessionsFound ?? null,
           lastJobError: recentJob?.errorMessage ?? null,
@@ -101,17 +125,165 @@ export const getScrapingDashboard = query({
       (sum, s) => sum + s.totalSessions,
       0
     );
+    const totalActiveSessions = sourcesWithStats.reduce(
+      (sum, s) => sum + s.activeSessions,
+      0
+    );
+    const sourcesWithSessions = sourcesWithStats.filter((s) => s.hasData).length;
+    const sourcesWithoutSessions = sourcesWithStats.filter(
+      (s) => s.isActive && !s.hasData
+    ).length;
     const sourcesWithErrors = sourcesWithStats.filter(
       (s) => s.health.consecutiveFailures > 0
     ).length;
 
+    // Quality breakdown
+    const highQualitySources = sourcesWithStats.filter(
+      (s) => s.qualityTier === "high"
+    ).length;
+    const mediumQualitySources = sourcesWithStats.filter(
+      (s) => s.qualityTier === "medium"
+    ).length;
+    const lowQualitySources = sourcesWithStats.filter(
+      (s) => s.qualityTier === "low"
+    ).length;
+
+    // Calculate success rates
+    const scrapeSuccessRate =
+      activeSources > 0
+        ? Math.round(
+            ((activeSources - sourcesWithErrors) / activeSources) * 100
+          )
+        : 0;
+    const dataSuccessRate =
+      activeSources > 0
+        ? Math.round((sourcesWithSessions / activeSources) * 100)
+        : 0;
+
     return {
       sources: sourcesWithStats,
       summary: {
+        // Source counts
         totalSources,
         activeSources,
-        totalSessions,
+        sourcesWithSessions, // THE KEY METRIC
+        sourcesWithoutSessions,
         sourcesWithErrors,
+
+        // Session counts
+        totalSessions,
+        totalActiveSessions,
+        pendingReview: pendingSessions.length,
+
+        // Quality breakdown
+        highQualitySources,
+        mediumQualitySources,
+        lowQualitySources,
+
+        // Success rates
+        scrapeSuccessRate,
+        dataSuccessRate,
+      },
+    };
+  },
+});
+
+/**
+ * Get a single location by ID (for admin use)
+ */
+export const getLocationById = query({
+  args: {
+    locationId: v.id("locations"),
+  },
+  handler: async (ctx, args) => {
+    const isAdminUser = await checkIsAdmin(ctx);
+    if (!isAdminUser) {
+      return null;
+    }
+
+    return ctx.db.get(args.locationId);
+  },
+});
+
+/**
+ * Get locations that need address/coordinate fixes
+ * Finds locations with placeholder data (TBD street, default coords, etc.)
+ */
+export const getLocationsNeedingFixes = query({
+  args: {},
+  handler: async (ctx) => {
+    const isAdminUser = await checkIsAdmin(ctx);
+    if (!isAdminUser) {
+      return null;
+    }
+
+    // Get all locations
+    const locations = await ctx.db.query("locations").collect();
+
+    // Portland city center coords (the default placeholder)
+    const DEFAULT_LAT = 45.5152;
+    const DEFAULT_LNG = -122.6784;
+    const COORD_TOLERANCE = 0.0001; // ~10 meters
+
+    // Identify locations needing fixes
+    const locationsNeedingFixes = locations.filter((loc) => {
+      // Check for placeholder street
+      const hasPlaceholderStreet =
+        !loc.address.street ||
+        loc.address.street === "TBD" ||
+        loc.address.street.trim() === "";
+
+      // Check for default coordinates (Portland city center)
+      const hasDefaultCoords =
+        Math.abs(loc.latitude - DEFAULT_LAT) < COORD_TOLERANCE &&
+        Math.abs(loc.longitude - DEFAULT_LNG) < COORD_TOLERANCE;
+
+      return hasPlaceholderStreet || hasDefaultCoords;
+    });
+
+    // Get organization names for each location
+    const orgIds = [...new Set(locationsNeedingFixes.map((l) => l.organizationId).filter(Boolean))];
+    const orgs = await Promise.all(orgIds.map((id) => id ? ctx.db.get(id) : null));
+    const orgMap = new Map(
+      orgs.filter((o): o is Doc<"organizations"> => o !== null).map((o) => [o._id, o])
+    );
+
+    // Count sessions per location
+    const sessionCounts = new Map<string, number>();
+    for (const loc of locationsNeedingFixes) {
+      const sessions = await ctx.db
+        .query("sessions")
+        .filter((q) => q.eq(q.field("locationId"), loc._id))
+        .collect();
+      sessionCounts.set(loc._id, sessions.length);
+    }
+
+    // Build result with enriched data
+    const result = locationsNeedingFixes.map((loc) => ({
+      _id: loc._id,
+      name: loc.name,
+      address: loc.address,
+      latitude: loc.latitude,
+      longitude: loc.longitude,
+      organizationId: loc.organizationId,
+      organizationName: loc.organizationId ? orgMap.get(loc.organizationId)?.name : null,
+      sessionCount: sessionCounts.get(loc._id) || 0,
+      issues: {
+        hasPlaceholderStreet: !loc.address.street || loc.address.street === "TBD" || loc.address.street.trim() === "",
+        hasDefaultCoords: Math.abs(loc.latitude - DEFAULT_LAT) < COORD_TOLERANCE && Math.abs(loc.longitude - DEFAULT_LNG) < COORD_TOLERANCE,
+      },
+    }));
+
+    // Sort by session count (most sessions first - higher priority to fix)
+    result.sort((a, b) => b.sessionCount - a.sessionCount);
+
+    return {
+      locations: result,
+      summary: {
+        total: locations.length,
+        needingFixes: locationsNeedingFixes.length,
+        withPlaceholderStreet: result.filter((l) => l.issues.hasPlaceholderStreet).length,
+        withDefaultCoords: result.filter((l) => l.issues.hasDefaultCoords).length,
       },
     };
   },

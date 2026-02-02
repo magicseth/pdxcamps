@@ -119,29 +119,103 @@ function AdminContent() {
         </span>
       </div>
 
-      {/* Summary Cards */}
+      {/* Summary Cards - Row 1: Key Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <SummaryCard
+          label="Sources with Data"
+          value={dashboard.summary.sourcesWithSessions}
+          subtext={`${dashboard.summary.dataSuccessRate}% of active`}
+          variant="success"
+        />
+        <SummaryCard
+          label="Active Sessions"
+          value={dashboard.summary.totalActiveSessions}
+          subtext={`${dashboard.summary.totalSessions} total`}
+        />
+        <SummaryCard
+          label="Pending Review"
+          value={dashboard.summary.pendingReview}
+          subtext="incomplete sessions"
+          variant={dashboard.summary.pendingReview > 0 ? 'warning' : 'default'}
+          href="/admin/pending"
+        />
+        <SummaryCard
+          label="No Data"
+          value={dashboard.summary.sourcesWithoutSessions}
+          subtext="active but empty"
+          variant={dashboard.summary.sourcesWithoutSessions > 0 ? 'error' : 'default'}
+        />
+      </div>
+
+      {/* Quick Links */}
+      <div className="flex flex-wrap gap-3">
+        <Link
+          href="/admin/scraper-dev"
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+        >
+          Scraper Development
+        </Link>
+        <Link
+          href="/admin/coverage"
+          className="px-4 py-2 bg-slate-600 text-white rounded-md hover:bg-slate-700 text-sm font-medium"
+        >
+          Coverage Analysis
+        </Link>
+        <Link
+          href="/admin/pending"
+          className="px-4 py-2 bg-slate-600 text-white rounded-md hover:bg-slate-700 text-sm font-medium"
+        >
+          Pending Sessions
+        </Link>
+        <Link
+          href="/admin/sources"
+          className="px-4 py-2 bg-slate-600 text-white rounded-md hover:bg-slate-700 text-sm font-medium"
+        >
+          All Sources
+        </Link>
+        <Link
+          href="/admin/locations"
+          className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 text-sm font-medium"
+        >
+          Fix Locations
+        </Link>
+      </div>
+
+      {/* Summary Cards - Row 2: Quality & Health */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <SummaryCard
+          label="High Quality"
+          value={dashboard.summary.highQualitySources}
+          subtext="complete data"
+          variant="success"
+          small
+        />
+        <SummaryCard
+          label="Medium Quality"
+          value={dashboard.summary.mediumQualitySources}
+          subtext="partial data"
+          variant="warning"
+          small
+        />
+        <SummaryCard
+          label="Low Quality"
+          value={dashboard.summary.lowQualitySources}
+          subtext="minimal data"
+          variant="error"
+          small
+        />
         <SummaryCard
           label="Total Sources"
           value={dashboard.summary.totalSources}
           subtext={`${dashboard.summary.activeSources} active`}
-        />
-        <SummaryCard
-          label="Total Sessions"
-          value={dashboard.summary.totalSessions}
-          subtext="from all sources"
-        />
-        <SummaryCard
-          label="Healthy"
-          value={dashboard.summary.activeSources - dashboard.summary.sourcesWithErrors}
-          subtext="sources running"
-          variant="success"
+          small
         />
         <SummaryCard
           label="With Errors"
           value={dashboard.summary.sourcesWithErrors}
-          subtext="need attention"
+          subtext={`${dashboard.summary.scrapeSuccessRate}% success`}
           variant={dashboard.summary.sourcesWithErrors > 0 ? 'error' : 'default'}
+          small
         />
       </div>
 
@@ -166,6 +240,9 @@ function AdminContent() {
                 <th scope="col" className="text-left px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">
                   Error
                 </th>
+                <th scope="col" className="text-left px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
@@ -185,29 +262,52 @@ function SummaryCard({
   value,
   subtext,
   variant = 'default',
+  href,
+  small = false,
 }: {
   label: string;
   value: number;
   subtext: string;
-  variant?: 'default' | 'success' | 'error';
+  variant?: 'default' | 'success' | 'warning' | 'error';
+  href?: string;
+  small?: boolean;
 }) {
   const variantStyles = {
     default: 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700',
     success: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800',
+    warning: 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800',
     error: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800',
   };
 
   const valueStyles = {
     default: 'text-slate-900 dark:text-white',
     success: 'text-green-700 dark:text-green-300',
+    warning: 'text-yellow-700 dark:text-yellow-300',
     error: 'text-red-700 dark:text-red-300',
   };
 
-  return (
-    <div className={`rounded-lg border p-4 ${variantStyles[variant]}`}>
+  const content = (
+    <>
       <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
-      <p className={`text-3xl font-bold tabular-nums ${valueStyles[variant]}`}>{value}</p>
+      <p className={`${small ? 'text-2xl' : 'text-3xl'} font-bold tabular-nums ${valueStyles[variant]}`}>{value}</p>
       <p className="text-xs text-slate-500 dark:text-slate-400">{subtext}</p>
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className={`rounded-lg border ${small ? 'p-3' : 'p-4'} ${variantStyles[variant]} hover:opacity-80 transition-opacity block`}
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <div className={`rounded-lg border ${small ? 'p-3' : 'p-4'} ${variantStyles[variant]}`}>
+      {content}
     </div>
   );
 }
@@ -221,6 +321,12 @@ interface SourceData {
   isActive: boolean;
   totalSessions: number;
   activeSessions: number;
+  draftSessions: number;
+  pendingSessions: number;
+  hasData: boolean;
+  dataQualityScore?: number;
+  qualityTier?: 'high' | 'medium' | 'low';
+  lastSessionsFoundAt?: number;
   health: {
     lastSuccessAt?: number;
     lastFailureAt?: number;
@@ -231,6 +337,7 @@ interface SourceData {
     needsRegeneration: boolean;
   };
   lastScrapedAt?: number;
+  lastJobId: string | null;
   lastJobStatus: string | null;
   lastJobSessionsFound: number | null;
   lastJobError: string | null;
@@ -238,9 +345,6 @@ interface SourceData {
 }
 
 function SourceRow({ source }: { source: SourceData }) {
-  const hasError = source.health.consecutiveFailures > 0;
-  const isHealthy = source.isActive && !hasError;
-
   // Format last scrape time
   const lastScrapeTime = source.lastScrapedAt
     ? formatRelativeTime(source.lastScrapedAt)
@@ -249,14 +353,21 @@ function SourceRow({ source }: { source: SourceData }) {
   // Get status badge
   const statusBadge = getStatusBadge(source);
 
+  // Get quality badge
+  const qualityBadge = getQualityBadge(source);
+
   return (
     <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
       <td className="px-4 py-3">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="font-medium text-slate-900 dark:text-white">
+            <Link
+              href={`/admin/sources/${source._id}`}
+              className="font-medium text-slate-900 dark:text-white hover:text-blue-600 hover:underline"
+            >
               {source.name}
-            </span>
+            </Link>
+            {qualityBadge}
             {!source.isActive && (
               <span className="px-1.5 py-0.5 text-xs bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 rounded">
                 Inactive
@@ -280,17 +391,35 @@ function SourceRow({ source }: { source: SourceData }) {
       <td className="px-4 py-3">
         <div className="space-y-1">
           <p className="font-medium text-slate-900 dark:text-white">
-            {source.totalSessions}
+            {source.activeSessions}
+            {source.draftSessions > 0 && (
+              <span className="text-yellow-600 dark:text-yellow-400 ml-1" title="Draft sessions">
+                +{source.draftSessions}
+              </span>
+            )}
           </p>
           <p className="text-xs text-slate-500">
-            {source.activeSessions} active
+            {source.totalSessions} total
+            {source.pendingSessions > 0 && (
+              <span className="text-orange-600 ml-1">
+                ({source.pendingSessions} pending)
+              </span>
+            )}
           </p>
         </div>
       </td>
       <td className="px-4 py-3">
         <div className="space-y-1">
           <p className="text-slate-900 dark:text-white">{lastScrapeTime}</p>
-          {source.lastJobSessionsFound !== null && (
+          {source.lastJobSessionsFound !== null && source.lastJobId && (
+            <Link
+              href={`/admin/jobs/${source.lastJobId}`}
+              className="text-xs text-blue-600 hover:underline"
+            >
+              Found {source.lastJobSessionsFound} sessions
+            </Link>
+          )}
+          {source.lastJobSessionsFound !== null && !source.lastJobId && (
             <p className="text-xs text-slate-500">
               Found {source.lastJobSessionsFound} sessions
             </p>
@@ -322,8 +451,48 @@ function SourceRow({ source }: { source: SourceData }) {
           <span className="text-xs text-slate-400">-</span>
         )}
       </td>
+      <td className="px-4 py-3">
+        <Link
+          href={`/admin/scraper-dev?sourceId=${source._id}&sourceName=${encodeURIComponent(source.name)}&sourceUrl=${encodeURIComponent(source.url)}`}
+          className="text-xs text-blue-600 hover:underline whitespace-nowrap"
+        >
+          Improve Scraper
+        </Link>
+      </td>
     </tr>
   );
+}
+
+function getQualityBadge(source: SourceData) {
+  if (!source.hasData) {
+    return null;
+  }
+
+  if (source.qualityTier === 'high') {
+    return (
+      <span className="px-1.5 py-0.5 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded" title={`${source.dataQualityScore}% complete`}>
+        High
+      </span>
+    );
+  }
+
+  if (source.qualityTier === 'medium') {
+    return (
+      <span className="px-1.5 py-0.5 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded" title={`${source.dataQualityScore}% complete`}>
+        Med
+      </span>
+    );
+  }
+
+  if (source.qualityTier === 'low') {
+    return (
+      <span className="px-1.5 py-0.5 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded" title={`${source.dataQualityScore}% complete`}>
+        Low
+      </span>
+    );
+  }
+
+  return null;
 }
 
 function getStatusBadge(source: SourceData) {

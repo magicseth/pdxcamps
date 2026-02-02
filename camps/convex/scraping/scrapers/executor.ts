@@ -312,6 +312,7 @@ export const executeStagehandScraper = action({
     url: v.string(),
     instruction: v.string(),
     sourceId: v.optional(v.id("scrapeSources")),
+    parsingNotes: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<ScrapeResult> => {
     const startTime = Date.now();
@@ -324,7 +325,19 @@ export const executeStagehandScraper = action({
     };
 
     try {
-      log("INFO", "Starting Stagehand scrape", { url: args.url });
+      // Fetch source's parsing notes if sourceId provided and no notes passed directly
+      let parsingNotes = args.parsingNotes;
+      if (args.sourceId && !parsingNotes) {
+        const source = await ctx.runQuery(api.scraping.queries.getScrapeSource, {
+          sourceId: args.sourceId,
+        });
+        parsingNotes = source?.parsingNotes;
+        if (parsingNotes) {
+          log("INFO", "Using parsing notes from source");
+        }
+      }
+
+      log("INFO", "Starting Stagehand scrape", { url: args.url, hasParsingNotes: !!parsingNotes });
 
       // Import zod for schema
       const { z } = await import("zod");
@@ -356,47 +369,127 @@ export const executeStagehandScraper = action({
       // Extract camp information using Stagehand's AI extraction
       const schema = z.object({
         sessions: z.array(z.object({
+          // REQUIRED - Name
           name: z.string().describe("The name of the camp session"),
           description: z.string().optional().describe("Description of the camp"),
-          dateRaw: z.string().optional().describe("Raw date text"),
-          startDate: z.string().optional().describe("Start date in YYYY-MM-DD format"),
-          endDate: z.string().optional().describe("End date in YYYY-MM-DD format"),
-          timeRaw: z.string().optional().describe("Raw time text like '9am-3pm'"),
-          priceRaw: z.string().optional().describe("Raw price text like '$350'"),
-          ageGradeRaw: z.string().optional().describe("Age or grade range like 'Ages 5-12'"),
-          location: z.string().optional().describe("Location name"),
-          registrationUrl: z.string().optional().describe("URL to register"),
-          isAvailable: z.boolean().optional().describe("Whether spots are available"),
-          category: z.string().optional().describe("Category like 'Sports', 'STEM', 'Arts'"),
-          imageUrls: z.array(z.string()).optional().describe("URLs of camp/session images"),
+
+          // REQUIRED - Dates (critical)
+          startDate: z.string().optional().describe("Start date in YYYY-MM-DD format. IMPORTANT: Convert any date format to YYYY-MM-DD."),
+          endDate: z.string().optional().describe("End date in YYYY-MM-DD format. IMPORTANT: Convert any date format to YYYY-MM-DD."),
+          dateRaw: z.string().optional().describe("Original date text exactly as shown on the page, for debugging"),
+
+          // REQUIRED - Times (critical)
+          dropOffHour: z.number().optional().describe("Drop-off hour in 24-hour format (0-23). Convert 9am to 9, 9pm to 21."),
+          dropOffMinute: z.number().optional().describe("Drop-off minute (0-59). Default to 0 if not specified."),
+          pickUpHour: z.number().optional().describe("Pick-up hour in 24-hour format (0-23). Convert 3pm to 15."),
+          pickUpMinute: z.number().optional().describe("Pick-up minute (0-59). Default to 0 if not specified."),
+          timeRaw: z.string().optional().describe("Original time text like '9am-3pm'"),
+
+          // REQUIRED - Location (critical) - extract FULL address when possible
+          location: z.string().optional().describe("Full address or location name where the camp takes place"),
+          // Structured address components (preferred over raw location string)
+          locationStreet: z.string().optional().describe("Street address (e.g., '1234 Main St')"),
+          locationCity: z.string().optional().describe("City name (e.g., 'Portland')"),
+          locationState: z.string().optional().describe("State abbreviation (e.g., 'OR')"),
+          locationZip: z.string().optional().describe("ZIP code (e.g., '97201')"),
+
+          // REQUIRED - Ages (critical)
+          minAge: z.number().optional().describe("Minimum age in years"),
+          maxAge: z.number().optional().describe("Maximum age in years"),
+          minGrade: z.number().optional().describe("Minimum grade (K=0, 1st=1, Pre-K=-1)"),
+          maxGrade: z.number().optional().describe("Maximum grade (K=0, 1st=1, etc.)"),
+          ageGradeRaw: z.string().optional().describe("Original age/grade text like 'Ages 5-12' or 'Grades K-5'"),
+
+          // REQUIRED - Price (critical, 0 for free is valid)
+          priceInCents: z.number().optional().describe("Price in cents (e.g., $350 = 35000). Use 0 for free camps."),
+          priceRaw: z.string().optional().describe("Original price text like '$350' or 'Free'"),
+
+          // IMPORTANT - Capacity/Availability
+          capacity: z.number().optional().describe("Total number of spots available"),
+          enrolledCount: z.number().optional().describe("Number of spots already taken/enrolled"),
+          spotsLeft: z.number().optional().describe("Number of remaining spots (if shown)"),
+          isAvailable: z.boolean().optional().describe("Whether spots are available or if it's sold out/full"),
+          availabilityRaw: z.string().optional().describe("Original availability text like '5 spots left' or 'Sold Out'"),
+
+          // Additional fields
+          registrationUrl: z.string().optional().describe("URL to register for this specific session"),
+          category: z.string().optional().describe("Category like 'Sports', 'STEM', 'Arts', 'Nature', 'Music'"),
+          imageUrls: z.array(z.string()).optional().describe("URLs of images for this camp/session"),
+
+          // Source tracking
+          sourceProductId: z.string().optional().describe("Unique ID for this camp/program if visible in the page"),
+          sourceSessionId: z.string().optional().describe("Unique ID for this specific session if different from product"),
         })),
         organization: z.object({
-          name: z.string().optional(),
-          description: z.string().optional(),
-          website: z.string().optional(),
-          logoUrl: z.string().optional(),
+          name: z.string().optional().describe("Name of the organization running the camps"),
+          description: z.string().optional().describe("About the organization"),
+          website: z.string().optional().describe("Organization's main website"),
+          logoUrl: z.string().optional().describe("URL to organization's logo image"),
         }).optional(),
       });
 
-      const extracted = await stagehand.extract(args.instruction, schema);
+      // Build enhanced instruction with parsing notes if available
+      let enhancedInstruction = `${args.instruction}
+
+EXTRACTION REQUIREMENTS:
+For EACH session, you MUST extract these fields if present on the page:
+1. Name of the camp/session
+2. Start and end dates (convert to YYYY-MM-DD format)
+3. Drop-off and pick-up times (convert to 24-hour format numbers)
+4. Location/address - IMPORTANT: Extract the FULL physical address if shown:
+   - locationStreet: Street address (e.g., "1234 Main St")
+   - locationCity: City name (e.g., "Portland")
+   - locationState: State abbreviation (e.g., "OR")
+   - locationZip: ZIP code (e.g., "97201")
+   - Also include the full address in the "location" field
+5. Age range OR grade range
+6. Price (convert to cents, e.g., $350 = 35000)
+7. Capacity/spots available if shown
+
+Extract EVERY individual session - if there are 10 weeks of the same camp, extract all 10 as separate sessions with different dates.
+Mark any sold-out or unavailable sessions as isAvailable: false.
+`;
+
+      // Add parsing notes if provided
+      if (parsingNotes) {
+        enhancedInstruction += `
+SITE-SPECIFIC PARSING NOTES:
+${parsingNotes}
+`;
+        log("DEBUG", "Added parsing notes to instruction");
+      }
+
+      const extracted = await stagehand.extract(enhancedInstruction, schema);
 
       await stagehand.close();
 
-      const sessions: ScrapedSession[] = (extracted.sessions || []).map((s) => ({
-        name: s.name || "",
-        description: s.description,
-        dateRaw: s.dateRaw,
-        startDate: s.startDate,
-        endDate: s.endDate,
-        timeRaw: s.timeRaw,
-        priceRaw: s.priceRaw,
-        ageGradeRaw: s.ageGradeRaw,
-        location: s.location,
-        registrationUrl: s.registrationUrl,
-        isAvailable: s.isAvailable,
-        category: s.category,
-        imageUrls: s.imageUrls,
-      }));
+      const sessions: ScrapedSession[] = (extracted.sessions || []).map((s) => {
+        // Build structured address if components are available
+        const hasAddressComponents = s.locationStreet || s.locationCity || s.locationState || s.locationZip;
+        const locationAddress = hasAddressComponents ? {
+          street: s.locationStreet,
+          city: s.locationCity,
+          state: s.locationState,
+          zip: s.locationZip,
+        } : undefined;
+
+        return {
+          name: s.name || "",
+          description: s.description,
+          dateRaw: s.dateRaw,
+          startDate: s.startDate,
+          endDate: s.endDate,
+          timeRaw: s.timeRaw,
+          priceRaw: s.priceRaw,
+          ageGradeRaw: s.ageGradeRaw,
+          location: s.location,
+          locationAddress,
+          registrationUrl: s.registrationUrl,
+          isAvailable: s.isAvailable,
+          category: s.category,
+          imageUrls: s.imageUrls,
+        };
+      });
 
       log("INFO", "Stagehand extraction complete", { sessionsFound: sessions.length });
 
@@ -453,5 +546,124 @@ export const executeStagehandScraper = action({
         pagesScraped: 0,
       };
     }
+  },
+});
+
+/**
+ * Scrape a source using all its configured URLs and parsing notes
+ * This is the primary way to scrape sources with multiple entry points
+ */
+export const scrapeSource = action({
+  args: {
+    sourceId: v.id("scrapeSources"),
+  },
+  handler: async (ctx, args): Promise<{
+    success: boolean;
+    totalSessions: number;
+    urlsScraped: number;
+    results: Array<{
+      url: string;
+      label?: string;
+      success: boolean;
+      sessionsFound: number;
+      error?: string;
+    }>;
+    error?: string;
+  }> => {
+    // Fetch the source with all its configuration
+    const source = await ctx.runQuery(api.scraping.queries.getScrapeSource, {
+      sourceId: args.sourceId,
+    });
+
+    if (!source) {
+      return {
+        success: false,
+        totalSessions: 0,
+        urlsScraped: 0,
+        results: [],
+        error: "Source not found",
+      };
+    }
+
+    if (!source.isActive) {
+      return {
+        success: false,
+        totalSessions: 0,
+        urlsScraped: 0,
+        results: [],
+        error: "Source is not active",
+      };
+    }
+
+    // Build list of all URLs to scrape
+    const urlsToScrape: Array<{ url: string; label?: string }> = [
+      { url: source.url, label: "Primary URL" },
+    ];
+
+    if (source.additionalUrls && source.additionalUrls.length > 0) {
+      urlsToScrape.push(...source.additionalUrls);
+    }
+
+    const results: Array<{
+      url: string;
+      label?: string;
+      success: boolean;
+      sessionsFound: number;
+      error?: string;
+    }> = [];
+
+    let totalSessions = 0;
+
+    // Scrape each URL
+    for (const urlInfo of urlsToScrape) {
+      try {
+        const instruction = `Extract all summer camp sessions from this page for ${source.name}.`;
+
+        // Call the Stagehand scraper with parsing notes
+        const result = await ctx.runAction(
+          api.scraping.scrapers.executor.executeStagehandScraper,
+          {
+            url: urlInfo.url,
+            instruction,
+            sourceId: args.sourceId,
+            parsingNotes: source.parsingNotes,
+          }
+        );
+
+        results.push({
+          url: urlInfo.url,
+          label: urlInfo.label,
+          success: result.success,
+          sessionsFound: result.sessions.length,
+          error: result.error,
+        });
+
+        if (result.success) {
+          totalSessions += result.sessions.length;
+        }
+      } catch (error) {
+        results.push({
+          url: urlInfo.url,
+          label: urlInfo.label,
+          success: false,
+          sessionsFound: 0,
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+    }
+
+    // Clear rescan flag if set
+    if (source.needsRescan) {
+      await ctx.runMutation(api.scraping.mutations.clearRescanFlag, {
+        sourceId: args.sourceId,
+      });
+    }
+
+    return {
+      success: results.some(r => r.success),
+      totalSessions,
+      urlsScraped: results.filter(r => r.success).length,
+      results,
+    };
   },
 });

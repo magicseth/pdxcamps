@@ -1,5 +1,6 @@
 import { query } from "../_generated/server";
 import { v } from "convex/values";
+import { validateSession } from "./validation";
 
 /**
  * List scrape sources with optional filters
@@ -66,6 +67,12 @@ export const getScrapeSource = query({
       ...source,
       organization,
       recentJobs,
+      // Include new fields
+      parsingNotes: source.parsingNotes,
+      parsingNotesUpdatedAt: source.parsingNotesUpdatedAt,
+      needsRescan: source.needsRescan,
+      rescanRequestedAt: source.rescanRequestedAt,
+      rescanReason: source.rescanReason,
     };
   },
 });
@@ -304,5 +311,217 @@ export const getScraperHealth = query({
       },
       recentAlerts,
     };
+  },
+});
+
+/**
+ * Get sessions from a job with validation status
+ * Shows what was scraped and whether each session is complete
+ */
+export const getJobSessions = query({
+  args: {
+    jobId: v.id("scrapeJobs"),
+  },
+  handler: async (ctx, args) => {
+    const job = await ctx.db.get(args.jobId);
+    if (!job) {
+      return null;
+    }
+
+    const rawData = await ctx.db
+      .query("scrapeRawData")
+      .withIndex("by_job", (q) => q.eq("jobId", args.jobId))
+      .first();
+
+    if (!rawData?.rawJson) {
+      return { sessions: [], parsed: false, job };
+    }
+
+    try {
+      const parsed = JSON.parse(rawData.rawJson);
+      const sessions = parsed.result?.sessions || [];
+
+      // Validate each session and add status
+      const validatedSessions = sessions.map(
+        (session: {
+          name: string;
+          description?: string;
+          startDate?: string;
+          endDate?: string;
+          dateRaw?: string;
+          timeRaw?: string;
+          dropOffHour?: number;
+          pickUpHour?: number;
+          priceInCents?: number;
+          priceRaw?: string;
+          minAge?: number;
+          maxAge?: number;
+          minGrade?: number;
+          maxGrade?: number;
+          ageGradeRaw?: string;
+          location?: string;
+          registrationUrl?: string;
+          imageUrls?: string[];
+          isAvailable?: boolean;
+        }) => {
+          const validation = validateSession(session);
+          return {
+            ...session,
+            validation: {
+              isComplete: validation.isComplete,
+              completenessScore: validation.completenessScore,
+              missingFields: validation.missingFields,
+              errors: validation.errors,
+            },
+          };
+        }
+      );
+
+      // Get source info
+      const source = await ctx.db.get(job.sourceId);
+
+      return {
+        sessions: validatedSessions,
+        parsed: true,
+        job,
+        source,
+        organization: parsed.result?.organization,
+        durationMs: parsed.result?.durationMs,
+        logs: parsed.logs,
+      };
+    } catch (e) {
+      return { sessions: [], parsed: false, job, error: String(e) };
+    }
+  },
+});
+
+/**
+ * Get pending sessions for review
+ */
+export const getPendingSessions = query({
+  args: {
+    sourceId: v.optional(v.id("scrapeSources")),
+    status: v.optional(
+      v.union(
+        v.literal("pending_review"),
+        v.literal("manually_fixed"),
+        v.literal("imported"),
+        v.literal("discarded")
+      )
+    ),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 100;
+
+    let pendingSessions;
+
+    if (args.sourceId) {
+      pendingSessions = await ctx.db
+        .query("pendingSessions")
+        .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId!))
+        .order("desc")
+        .take(limit);
+    } else if (args.status) {
+      pendingSessions = await ctx.db
+        .query("pendingSessions")
+        .withIndex("by_status", (q) => q.eq("status", args.status!))
+        .order("desc")
+        .take(limit);
+    } else {
+      pendingSessions = await ctx.db
+        .query("pendingSessions")
+        .order("desc")
+        .take(limit);
+    }
+
+    // Filter by status if both sourceId and status provided
+    if (args.sourceId && args.status) {
+      pendingSessions = pendingSessions.filter((s) => s.status === args.status);
+    }
+
+    // Enrich with source info
+    const enriched = await Promise.all(
+      pendingSessions.map(async (pending) => {
+        const source = await ctx.db.get(pending.sourceId);
+        return {
+          ...pending,
+          sourceName: source?.name ?? "Unknown",
+          sourceUrl: source?.url,
+        };
+      })
+    );
+
+    return enriched;
+  },
+});
+
+/**
+ * Get a single pending session by ID
+ */
+export const getPendingSession = query({
+  args: {
+    pendingSessionId: v.id("pendingSessions"),
+  },
+  handler: async (ctx, args) => {
+    const pending = await ctx.db.get(args.pendingSessionId);
+    if (!pending) {
+      return null;
+    }
+
+    const source = await ctx.db.get(pending.sourceId);
+    const job = await ctx.db.get(pending.jobId);
+
+    return {
+      ...pending,
+      source,
+      job,
+    };
+  },
+});
+
+/**
+ * Get sessions for a source with completeness info
+ */
+export const getSessionsBySource = query({
+  args: {
+    sourceId: v.id("scrapeSources"),
+    status: v.optional(
+      v.union(
+        v.literal("draft"),
+        v.literal("active"),
+        v.literal("sold_out"),
+        v.literal("cancelled"),
+        v.literal("completed")
+      )
+    ),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 100;
+
+    let sessions = await ctx.db
+      .query("sessions")
+      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .order("desc")
+      .take(limit);
+
+    // Filter by status if provided
+    if (args.status) {
+      sessions = sessions.filter((s) => s.status === args.status);
+    }
+
+    // Get camp names
+    const enriched = await Promise.all(
+      sessions.map(async (session) => {
+        const camp = await ctx.db.get(session.campId);
+        return {
+          ...session,
+          campName: camp?.name ?? session.campName ?? "Unknown",
+        };
+      })
+    );
+
+    return enriched;
   },
 });

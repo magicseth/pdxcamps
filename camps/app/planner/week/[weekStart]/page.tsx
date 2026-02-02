@@ -11,6 +11,7 @@ import { ChildCoverageCard } from '../../../../components/planner/ChildCoverageC
 import { AddEventModal } from '../../../../components/planner/AddEventModal';
 import { EditEventModal } from '../../../../components/planner/EditEventModal';
 import { BottomNav } from '../../../../components/shared/BottomNav';
+import { MapWrapper, MapSession } from '../../../../components/map';
 import { calculateAge, isAgeInRange, isGradeInRange, doDateRangesOverlap } from '../../../../convex/lib/helpers';
 
 export default function WeekDetailPage() {
@@ -116,14 +117,19 @@ function WeekDetailContent() {
   } | null>(null);
   const [selectedOrganizations, setSelectedOrganizations] = useState<string[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
+  const [maxDistanceMiles, setMaxDistanceMiles] = useState<number | undefined>(undefined);
+  const [showMap, setShowMap] = useState(false);
   const [savingForChild, setSavingForChild] = useState<{
     childId: Id<'children'>;
     childName: string;
     sessionId: Id<'sessions'>;
   } | null>(null);
 
-  // Get family's primary city
+  // Get family's primary city and home address
   const family = useQuery(api.families.queries.getCurrentFamily);
+  const homeLatitude = family?.homeAddress?.latitude;
+  const homeLongitude = family?.homeAddress?.longitude;
+  const hasHomeCoords = homeLatitude !== undefined && homeLongitude !== undefined;
 
   // Calculate week end for the search query
   const weekEnd = useMemo(() => {
@@ -144,7 +150,14 @@ function WeekDetailContent() {
   const allAvailableSessions = useQuery(
     api.planner.queries.searchSessionsByWeek,
     family?.primaryCityId
-      ? { cityId: family.primaryCityId, weekStartDate: weekStart, weekEndDate: weekEnd }
+      ? {
+          cityId: family.primaryCityId,
+          weekStartDate: weekStart,
+          weekEndDate: weekEnd,
+          homeLatitude: hasHomeCoords ? homeLatitude : undefined,
+          homeLongitude: hasHomeCoords ? homeLongitude : undefined,
+          maxDistanceMiles: hasHomeCoords && maxDistanceMiles !== undefined ? maxDistanceMiles : undefined,
+        }
       : 'skip'
   );
 
@@ -449,11 +462,12 @@ function WeekDetailContent() {
                 {childrenWithGaps.map(c => c.child.firstName).join(', ')} need{childrenWithGaps.length === 1 ? 's' : ''} coverage
               </p>
             </div>
-            {(selectedOrganizations.length > 0 || selectedLocations.length > 0) && (
+            {(selectedOrganizations.length > 0 || selectedLocations.length > 0 || maxDistanceMiles !== undefined) && (
               <button
                 onClick={() => {
                   setSelectedOrganizations([]);
                   setSelectedLocations([]);
+                  setMaxDistanceMiles(undefined);
                 }}
                 className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400"
               >
@@ -461,6 +475,29 @@ function WeekDetailContent() {
               </button>
             )}
           </div>
+
+          {/* Distance Filter */}
+          {hasHomeCoords && (
+            <div>
+              <p className="text-xs font-medium text-blue-800 dark:text-blue-200 mb-2">Distance from Home</p>
+              <div className="flex flex-wrap gap-2">
+                {[5, 10, 15, 25].map((distance) => (
+                  <button
+                    key={distance}
+                    onClick={() => setMaxDistanceMiles(maxDistanceMiles === distance ? undefined : distance)}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                      maxDistanceMiles === distance
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    {distance} mi
+                    {maxDistanceMiles === distance && <span className="ml-1">✕</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Organization chips */}
           <div>
@@ -506,11 +543,12 @@ function WeekDetailContent() {
             </div>
           )}
 
-          {(selectedOrganizations.length > 0 || selectedLocations.length > 0) && (
+          {(selectedOrganizations.length > 0 || selectedLocations.length > 0 || maxDistanceMiles !== undefined) && (
             <p className="text-xs text-blue-700 dark:text-blue-300">
               Showing {totalCamps} camp{totalCamps === 1 ? '' : 's'}
               {selectedOrganizations.length > 0 && ` from ${selectedOrganizations.length} organization${selectedOrganizations.length > 1 ? 's' : ''}`}
               {selectedLocations.length > 0 && ` at ${selectedLocations.length} location${selectedLocations.length > 1 ? 's' : ''}`}
+              {maxDistanceMiles !== undefined && ` within ${maxDistanceMiles} miles`}
             </p>
           )}
         </div>
@@ -525,6 +563,54 @@ function WeekDetailContent() {
           <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
             No camps found for this week. Try browsing all camps or add a family event.
           </p>
+        </div>
+      )}
+
+      {/* Map View Section */}
+      {allAvailableSessions && allAvailableSessions.length > 0 && family?.primaryCityId && (
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden">
+          <button
+            onClick={() => setShowMap(!showMap)}
+            className="w-full flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <MapIcon />
+              <span className="font-medium text-slate-900 dark:text-white">Map View</span>
+              <span className="text-sm text-slate-500">({allAvailableSessions.length} camps)</span>
+            </div>
+            <ChevronDownIcon className={`transition-transform ${showMap ? 'rotate-180' : ''}`} />
+          </button>
+          {showMap && (
+            <div className="border-t border-slate-200 dark:border-slate-700">
+              <MapWrapper
+                sessions={allAvailableSessions.map((session) => ({
+                  _id: session._id,
+                  startDate: session.startDate,
+                  endDate: session.endDate,
+                  price: session.price,
+                  currency: session.currency,
+                  spotsLeft: session.spotsLeft,
+                  distanceFromHome: session.distanceFromHome,
+                  camp: {
+                    name: session.camp?.name ?? 'Camp',
+                  },
+                  organization: {
+                    name: session.organization?.name ?? 'Organization',
+                  },
+                  location: {
+                    name: session.location?.name ?? 'Location',
+                    latitude: session.location?.latitude,
+                    longitude: session.location?.longitude,
+                  },
+                })) as MapSession[]}
+                centerLatitude={45.5152} // Portland default, ideally get from city
+                centerLongitude={-122.6784}
+                homeLatitude={homeLatitude}
+                homeLongitude={homeLongitude}
+                height="400px"
+              />
+            </div>
+          )}
         </div>
       )}
 
@@ -545,6 +631,7 @@ function WeekDetailContent() {
             currency: s.currency,
             spotsLeft: s.spotsLeft,
             locationName: s.location?.name ?? 'Unknown Location',
+            distanceFromHome: s.distanceFromHome,
           }));
 
           // Enrich events with childIds for the edit modal
@@ -703,6 +790,27 @@ function SearchIcon() {
         strokeWidth={2}
         d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
       />
+    </svg>
+  );
+}
+
+function MapIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+      />
+    </svg>
+  );
+}
+
+function ChevronDownIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg className={`w-5 h-5 ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
     </svg>
   );
 }

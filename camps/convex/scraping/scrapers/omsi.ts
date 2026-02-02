@@ -223,12 +223,25 @@ function extractSession(
 ): ScrapedSession | null {
   if (!product.name) return null;
 
+  // OMSI location with actual address
+  const locationName = session?.location || "OMSI";
+  const isMainOmsi = locationName === "OMSI" || locationName.toLowerCase().includes("omsi");
+
   const scraped: ScrapedSession = {
     name: product.name,
     description: product.shortDescription || undefined,
     category: product.subject || "STEM",
     ageGradeRaw: product.gradeLevel || undefined,
-    location: session?.location || "OMSI",
+    location: locationName,
+    // Include actual OMSI address and coordinates for the main location
+    locationAddress: isMainOmsi ? {
+      street: "1945 SE Water Ave",
+      city: "Portland",
+      state: "OR",
+      zip: "97214",
+    } : undefined,
+    locationLatitude: isMainOmsi ? 45.5084 : undefined,
+    locationLongitude: isMainOmsi ? -122.6655 : undefined,
     isAvailable: session?.available ?? true,
     availabilityRaw: session?.available ? "Available" : "Sold Out",
     registrationUrl: `https://secure.omsi.edu/camps-and-classes?product=${product.safeURL}`,

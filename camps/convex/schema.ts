@@ -127,6 +127,8 @@ export default defineSchema({
     // Images - source URLs from scraping and stored files
     imageUrls: v.optional(v.array(v.string())),
     imageStorageIds: v.array(v.id("_storage")),
+    // Custom style prompt for AI image generation (overrides auto-generated style)
+    imageStylePrompt: v.optional(v.string()),
     isActive: v.boolean(),
   })
     .index("by_organization", ["organizationId"])
@@ -217,6 +219,13 @@ export default defineSchema({
     // Scraping source
     sourceId: v.optional(v.id("scrapeSources")),
     lastScrapedAt: v.optional(v.number()),
+
+    // Data completeness tracking
+    completenessScore: v.optional(v.number()), // 0-100
+    missingFields: v.optional(v.array(v.string())), // ["location", "hours"]
+    dataSource: v.optional(
+      v.union(v.literal("scraped"), v.literal("manual"), v.literal("enhanced"))
+    ),
   })
     .index("by_camp", ["campId"])
     .index("by_city_and_status", ["cityId", "status"])
@@ -371,6 +380,13 @@ export default defineSchema({
     name: v.string(),
     url: v.string(),
 
+    // Additional URLs for sites with multiple entry points
+    // e.g., different seasons, locations, or programs
+    additionalUrls: v.optional(v.array(v.object({
+      url: v.string(),
+      label: v.optional(v.string()), // e.g., "2026 Summer", "Eastside Location"
+    }))),
+
     // Scraper module name (e.g., "omsi", "portland-parks")
     // References convex/scraping/scrapers/{module}.ts
     scraperModule: v.optional(v.string()),
@@ -446,10 +462,142 @@ export default defineSchema({
     lastScrapedAt: v.optional(v.number()),
     nextScheduledScrape: v.optional(v.number()),
     isActive: v.boolean(),
+
+    // Denormalized session counts (updated after import)
+    sessionCount: v.optional(v.number()), // Total sessions from this source
+    activeSessionCount: v.optional(v.number()), // Sessions with status "active"
+    lastSessionsFoundAt: v.optional(v.number()), // When we last found >0 sessions
+
+    // URL discovery and fallback tracking
+    urlHistory: v.optional(
+      v.array(
+        v.object({
+          url: v.string(),
+          status: v.string(), // 'valid', '404', 'redirected'
+          checkedAt: v.number(),
+        })
+      )
+    ),
+    suggestedUrl: v.optional(v.string()),
+
+    // Data quality tracking
+    dataQualityScore: v.optional(v.number()), // 0-100 based on average session completeness
+    qualityTier: v.optional(
+      v.union(
+        v.literal("high"), // >80% complete sessions
+        v.literal("medium"), // 50-80% complete
+        v.literal("low") // <50% complete (like aggregator data)
+      )
+    ),
+
+    // Admin notes for parsing guidance
+    parsingNotes: v.optional(v.string()), // Notes on how to parse this source
+    parsingNotesUpdatedAt: v.optional(v.number()),
+
+    // Re-scan flag
+    needsRescan: v.optional(v.boolean()), // Flag to trigger priority re-scan
+    rescanRequestedAt: v.optional(v.number()),
+    rescanReason: v.optional(v.string()),
   })
     .index("by_organization", ["organizationId"])
     .index("by_next_scheduled_scrape", ["nextScheduledScrape"])
     .index("by_is_active", ["isActive"]),
+
+  // Pending sessions for review (incomplete or failed validation)
+  // ============ SCRAPER DEVELOPMENT ============
+
+  // Queue of sites needing scraper development
+  scraperDevelopmentRequests: defineTable({
+    // Target site info
+    sourceName: v.string(),
+    sourceUrl: v.string(),
+    sourceId: v.optional(v.id("scrapeSources")), // Link to existing source if updating
+
+    // Request details
+    requestedBy: v.optional(v.string()),
+    requestedAt: v.number(),
+    notes: v.optional(v.string()), // Initial guidance for the scraper
+
+    // Development status
+    status: v.union(
+      v.literal("pending"),        // Waiting for Claude Code to pick up
+      v.literal("in_progress"),    // Claude Code is working on it
+      v.literal("testing"),        // Scraper written, being tested
+      v.literal("needs_feedback"), // User needs to review and provide feedback
+      v.literal("completed"),      // Scraper is ready
+      v.literal("failed")          // Could not develop a working scraper
+    ),
+
+    // Claude Code session tracking
+    claudeSessionId: v.optional(v.string()),
+    claudeSessionStartedAt: v.optional(v.number()),
+
+    // Generated scraper
+    generatedScraperCode: v.optional(v.string()),
+    scraperVersion: v.optional(v.number()),
+
+    // Test results
+    lastTestRun: v.optional(v.number()),
+    lastTestSessionsFound: v.optional(v.number()),
+    lastTestError: v.optional(v.string()),
+    lastTestSampleData: v.optional(v.string()), // JSON sample of extracted sessions
+
+    // Feedback loop
+    feedbackHistory: v.optional(v.array(v.object({
+      feedbackAt: v.number(),
+      feedbackBy: v.optional(v.string()),
+      feedback: v.string(),
+      scraperVersionBefore: v.number(),
+    }))),
+
+    // Retry tracking
+    testRetryCount: v.optional(v.number()),
+    maxTestRetries: v.optional(v.number()), // Default 3
+
+    // Completion
+    completedAt: v.optional(v.number()),
+    finalScraperCode: v.optional(v.string()),
+  })
+    .index("by_status", ["status"])
+    .index("by_source", ["sourceId"]),
+
+  pendingSessions: defineTable({
+    jobId: v.id("scrapeJobs"),
+    sourceId: v.id("scrapeSources"),
+    rawData: v.string(), // Original JSON
+    partialData: v.object({
+      name: v.optional(v.string()),
+      dateRaw: v.optional(v.string()),
+      priceRaw: v.optional(v.string()),
+      ageGradeRaw: v.optional(v.string()),
+      timeRaw: v.optional(v.string()),
+      location: v.optional(v.string()),
+      description: v.optional(v.string()),
+      startDate: v.optional(v.string()),
+      endDate: v.optional(v.string()),
+      registrationUrl: v.optional(v.string()),
+    }),
+    validationErrors: v.array(
+      v.object({
+        field: v.string(),
+        error: v.string(),
+        attemptedValue: v.optional(v.string()),
+      })
+    ),
+    completenessScore: v.number(), // 0-100
+    status: v.union(
+      v.literal("pending_review"),
+      v.literal("manually_fixed"),
+      v.literal("imported"),
+      v.literal("discarded")
+    ),
+    createdAt: v.number(),
+    reviewedAt: v.optional(v.number()),
+    reviewedBy: v.optional(v.string()),
+  })
+    .index("by_source", ["sourceId"])
+    .index("by_status", ["status"])
+    .index("by_job", ["jobId"]),
 
   // Scraper version history for rollback
   scraperVersions: defineTable({

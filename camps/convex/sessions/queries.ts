@@ -1,6 +1,6 @@
 import { query } from "../_generated/server";
 import { v } from "convex/values";
-import { calculateAge, isAgeInRange, isGradeInRange } from "../lib/helpers";
+import { calculateDistance, isAgeInRange, isGradeInRange } from "../lib/helpers";
 
 /**
  * Main discovery query for searching sessions
@@ -16,6 +16,10 @@ export const searchSessions = query({
     childAge: v.optional(v.number()),
     childGrade: v.optional(v.number()),
     locationIds: v.optional(v.array(v.id("locations"))),
+    // Distance filtering
+    homeLatitude: v.optional(v.number()),
+    homeLongitude: v.optional(v.number()),
+    maxDistanceMiles: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     // Start with sessions in the city that are active
@@ -77,7 +81,50 @@ export const searchSessions = query({
       });
     }
 
-    return sessions;
+    // Fetch all locations for sessions (needed for map display and distance)
+    const locationIds = [...new Set(sessions.map((s) => s.locationId))];
+    const locations = await Promise.all(locationIds.map((id) => ctx.db.get(id)));
+    const locationMap = new Map(locations.filter(Boolean).map((loc) => [loc!._id, loc!]));
+
+    // Calculate distance if home coordinates provided
+    const hasHomeCoords = args.homeLatitude !== undefined && args.homeLongitude !== undefined;
+
+    // Add location coordinates and distance to each session
+    type SessionWithLocationAndDistance = typeof sessions[number] & {
+      distanceFromHome?: number;
+      locationLatitude?: number;
+      locationLongitude?: number;
+    };
+
+    let enrichedSessions: SessionWithLocationAndDistance[] = sessions.map((session) => {
+      const location = locationMap.get(session.locationId);
+      const result: SessionWithLocationAndDistance = {
+        ...session,
+        locationLatitude: location?.latitude,
+        locationLongitude: location?.longitude,
+      };
+
+      if (hasHomeCoords && location) {
+        const distance = calculateDistance(
+          args.homeLatitude!,
+          args.homeLongitude!,
+          location.latitude,
+          location.longitude
+        );
+        result.distanceFromHome = Math.round(distance * 10) / 10;
+      }
+
+      return result;
+    });
+
+    // Apply distance filter if specified
+    if (hasHomeCoords && args.maxDistanceMiles !== undefined) {
+      enrichedSessions = enrichedSessions.filter(
+        (session) => session.distanceFromHome !== undefined && session.distanceFromHome <= args.maxDistanceMiles!
+      );
+    }
+
+    return enrichedSessions;
   },
 });
 
