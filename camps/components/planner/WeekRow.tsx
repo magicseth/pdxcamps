@@ -132,7 +132,7 @@ export function WeekRow({ data, isFirstOfMonth = false }: WeekRowProps) {
       {hasGap ? (
         <Link
           href={`/planner/week/${week.startDate}`}
-          className="flex-shrink-0 text-xs text-blue-600 dark:text-blue-400 font-medium hover:underline animate-pulse motion-reduce:animate-none"
+          className="flex-shrink-0 text-xs text-blue-600 dark:text-blue-400 font-medium hover:underline animate-pulse motion-reduce:animate-none rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           title={`Find camps for ${week.label} (${week.startDate} to ${week.endDate})`}
         >
           {childrenWithGaps > 1 ? `${childrenWithGaps} need camps` : 'Find camps'} →
@@ -140,7 +140,7 @@ export function WeekRow({ data, isFirstOfMonth = false }: WeekRowProps) {
       ) : (
         <Link
           href={`/planner/week/${week.startDate}`}
-          className="flex-shrink-0 p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md transition-colors"
+          className="flex-shrink-0 p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           aria-label={`View week ${week.weekNumber} details`}
         >
           <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
