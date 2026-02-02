@@ -659,6 +659,7 @@ export default function SessionDetailPage() {
                         e.target.value = '';
                       }
                     }}
+                    aria-label="Save this camp session for a child"
                     className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 font-medium rounded-md hover:bg-slate-50 dark:hover:bg-slate-600 appearance-none cursor-pointer"
                     defaultValue=""
                   >
