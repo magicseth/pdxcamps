@@ -234,14 +234,15 @@ export default function DiscoverPage() {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="animate-pulse motion-reduce:animate-none">
-            <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-48 mb-4"></div>
-            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-96 mb-8"></div>
+          <div role="status" aria-live="polite" className="animate-pulse motion-reduce:animate-none">
+            <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-48 mb-4" aria-hidden="true"></div>
+            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-96 mb-8" aria-hidden="true"></div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="h-64 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+                <div key={i} className="h-64 bg-slate-200 dark:bg-slate-700 rounded-lg" aria-hidden="true"></div>
               ))}
             </div>
+            <span className="sr-only">Loading camps...</span>
           </div>
         </div>
       </div>
