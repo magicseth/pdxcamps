@@ -304,9 +304,17 @@ function PlannerHub({
 
   return (
     <div className="min-h-screen flex flex-col">
+      {/* Skip to main content link for keyboard users */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg focus:font-medium"
+      >
+        Skip to main content
+      </a>
+
       <AppHeader user={user} onSignOut={onSignOut} />
 
-      <main className="flex-1 pb-20">
+      <main id="main-content" className="flex-1 pb-20">
         <div className="max-w-4xl mx-auto px-4 py-6">
           {/* Hero Stats Section */}
           <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 mb-6 text-white">
