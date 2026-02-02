@@ -1633,6 +1633,7 @@ function SaveSessionModal({
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const children = useQuery(api.children.queries.listChildren);
   const markInterested = useMutation(api.registrations.mutations.markInterested);
@@ -1656,6 +1657,7 @@ function SaveSessionModal({
 
     try {
       setError(null);
+      setIsSaving(true);
       await markInterested({
         childId: selectedChildId,
         sessionId,
@@ -1667,6 +1669,8 @@ function SaveSessionModal({
       }, 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save session');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -1797,9 +1801,10 @@ function SaveSessionModal({
                   </button>
                   <button
                     onClick={handleSave}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    disabled={isSaving}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Save
+                    {isSaving ? 'Saving...' : 'Save'}
                   </button>
                 </div>
               </>
