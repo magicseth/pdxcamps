@@ -13,7 +13,7 @@ export default function PlannerPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-pulse motion-reduce:animate-none text-slate-500">Redirecting...</div>
+      <div role="status" aria-live="polite" className="animate-pulse motion-reduce:animate-none text-slate-500">Redirecting...</div>
     </div>
   );
 }
