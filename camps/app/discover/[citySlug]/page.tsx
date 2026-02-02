@@ -923,11 +923,12 @@ export default function DiscoverPage() {
 
             {/* Loading State */}
             {sessions === undefined && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div role="status" aria-live="polite" className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
                   <div
                     key={i}
                     className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden animate-pulse motion-reduce:animate-none"
+                    aria-hidden="true"
                   >
                     {/* Image placeholder */}
                     <div className="h-40 bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600" />
@@ -960,6 +961,7 @@ export default function DiscoverPage() {
                     </div>
                   </div>
                 ))}
+                <span className="sr-only">Loading camp sessions...</span>
               </div>
             )}
 
