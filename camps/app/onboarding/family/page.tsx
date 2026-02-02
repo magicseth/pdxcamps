@@ -115,11 +115,12 @@ export default function FamilySetupPage() {
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="The Smith Family"
+                aria-describedby="displayName-help"
                 className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white"
                 disabled={isSubmitting}
                 autoFocus
               />
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              <p id="displayName-help" className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                 This is how other families will see you
               </p>
             </div>
@@ -132,6 +133,7 @@ export default function FamilySetupPage() {
                 id="primaryCity"
                 value={primaryCityId}
                 onChange={(e) => setPrimaryCityId(e.target.value as Id<'cities'>)}
+                aria-describedby="primaryCity-help"
                 className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white"
                 disabled={isSubmitting}
               >
@@ -142,7 +144,7 @@ export default function FamilySetupPage() {
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              <p id="primaryCity-help" className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                 We&apos;ll show you camps in this area first
               </p>
             </div>
@@ -155,6 +157,7 @@ export default function FamilySetupPage() {
                 id="calendarSharing"
                 value={calendarSharingDefault}
                 onChange={(e) => setCalendarSharingDefault(e.target.value as CalendarSharingDefault)}
+                aria-describedby="calendarSharing-help"
                 className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white"
                 disabled={isSubmitting}
               >
@@ -162,7 +165,7 @@ export default function FamilySetupPage() {
                 <option value="friends_only">Friends Only - Visible to connected families</option>
                 <option value="public">Public - Visible to everyone</option>
               </select>
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              <p id="calendarSharing-help" className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                 Control who can see your camp schedule
               </p>
             </div>
