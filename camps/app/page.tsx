@@ -124,7 +124,7 @@ function AuthenticatedHub({ user, onSignOut }: { user: User | null; onSignOut: (
 function LoadingState() {
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-pulse flex flex-col items-center gap-4">
+      <div className="animate-pulse motion-reduce:animate-none flex flex-col items-center gap-4">
         <div className="w-12 h-12 bg-blue-200 dark:bg-blue-800 rounded-full"></div>
         <div className="h-4 w-32 bg-slate-200 dark:bg-slate-700 rounded"></div>
       </div>
@@ -434,6 +434,7 @@ function PlannerHub({
                 <div className="flex items-center bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-1">
                   <button
                     onClick={() => setSelectedChildId('all')}
+                    aria-pressed={selectedChildId === 'all'}
                     className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                       selectedChildId === 'all'
                         ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
@@ -447,6 +448,7 @@ function PlannerHub({
                       key={child._id}
                       onClick={() => setSelectedChildId(child._id)}
                       title={child.lastName ? `${child.firstName} ${child.lastName}` : child.firstName}
+                      aria-pressed={selectedChildId === child._id}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                         selectedChildId === child._id
                           ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
@@ -483,6 +485,7 @@ function PlannerHub({
             <CoverageLegend />
             {stats && stats.weeksWithGaps > 0 && (
               <label
+                htmlFor="show-only-gaps"
                 className={`flex items-center gap-2 cursor-pointer select-none px-3 py-1.5 rounded-lg transition-colors ${
                   showOnlyGaps
                     ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
@@ -491,6 +494,7 @@ function PlannerHub({
                 title="Toggle gaps filter (G key)"
               >
                 <input
+                  id="show-only-gaps"
                   type="checkbox"
                   checked={showOnlyGaps}
                   onChange={(e) => setShowOnlyGaps(e.target.checked)}
@@ -508,7 +512,7 @@ function PlannerHub({
           {coverage === undefined ? (
             <div className="space-y-2">
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-16 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse"></div>
+                <div key={i} className="h-16 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse motion-reduce:animate-none"></div>
               ))}
             </div>
           ) : (
