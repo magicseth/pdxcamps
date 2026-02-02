@@ -1,0 +1,539 @@
+import { mutation } from "../_generated/server";
+import { v } from "convex/values";
+
+// Validators for scraper config matching schema.ts
+const scraperConfigValidator = v.object({
+  version: v.number(),
+  generatedAt: v.number(),
+  generatedBy: v.union(v.literal("claude"), v.literal("manual")),
+
+  entryPoints: v.array(
+    v.object({
+      url: v.string(),
+      type: v.union(
+        v.literal("session_list"),
+        v.literal("calendar"),
+        v.literal("program_page")
+      ),
+    })
+  ),
+
+  pagination: v.optional(
+    v.object({
+      type: v.union(
+        v.literal("next_button"),
+        v.literal("load_more"),
+        v.literal("page_numbers"),
+        v.literal("none")
+      ),
+      selector: v.optional(v.string()),
+    })
+  ),
+
+  sessionExtraction: v.object({
+    containerSelector: v.string(),
+    fields: v.object({
+      name: v.object({ selector: v.string() }),
+      dates: v.object({ selector: v.string(), format: v.string() }),
+      price: v.optional(v.object({ selector: v.string() })),
+      ageRange: v.optional(
+        v.object({ selector: v.string(), pattern: v.string() })
+      ),
+      status: v.optional(
+        v.object({
+          selector: v.string(),
+          soldOutIndicators: v.array(v.string()),
+        })
+      ),
+      registrationUrl: v.optional(v.object({ selector: v.string() })),
+    }),
+  }),
+
+  requiresJavaScript: v.boolean(),
+  waitForSelector: v.optional(v.string()),
+});
+
+/**
+ * Create a new scrape source
+ */
+export const createScrapeSource = mutation({
+  args: {
+    name: v.string(),
+    url: v.string(),
+    organizationId: v.optional(v.id("organizations")),
+    scraperConfig: scraperConfigValidator,
+    scrapeFrequencyHours: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // Validate organization exists if provided
+    if (args.organizationId) {
+      const org = await ctx.db.get(args.organizationId);
+      if (!org) {
+        throw new Error("Organization not found");
+      }
+    }
+
+    // Validate scrape frequency
+    if (args.scrapeFrequencyHours < 1) {
+      throw new Error("Scrape frequency must be at least 1 hour");
+    }
+
+    const now = Date.now();
+
+    const sourceId = await ctx.db.insert("scrapeSources", {
+      name: args.name,
+      url: args.url,
+      organizationId: args.organizationId,
+      scraperConfig: args.scraperConfig,
+      scraperHealth: {
+        lastSuccessAt: undefined,
+        lastFailureAt: undefined,
+        consecutiveFailures: 0,
+        totalRuns: 0,
+        successRate: 0,
+        lastError: undefined,
+        needsRegeneration: false,
+      },
+      scrapeFrequencyHours: args.scrapeFrequencyHours,
+      lastScrapedAt: undefined,
+      nextScheduledScrape: now, // Schedule immediately
+      isActive: true,
+    });
+
+    // Create initial version history
+    await ctx.db.insert("scraperVersions", {
+      scrapeSourceId: sourceId,
+      version: args.scraperConfig.version,
+      config: JSON.stringify(args.scraperConfig),
+      createdAt: now,
+      createdBy: args.scraperConfig.generatedBy,
+      changeReason: "Initial configuration",
+      isActive: true,
+    });
+
+    return sourceId;
+  },
+});
+
+/**
+ * Update scraper config (also creates version history)
+ */
+export const updateScraperConfig = mutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+    scraperConfig: scraperConfigValidator,
+    changeReason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const source = await ctx.db.get(args.sourceId);
+    if (!source) {
+      throw new Error("Scrape source not found");
+    }
+
+    const now = Date.now();
+
+    // Deactivate previous version
+    const previousVersions = await ctx.db
+      .query("scraperVersions")
+      .withIndex("by_source_and_active", (q) =>
+        q.eq("scrapeSourceId", args.sourceId).eq("isActive", true)
+      )
+      .collect();
+
+    for (const version of previousVersions) {
+      await ctx.db.patch(version._id, { isActive: false });
+    }
+
+    // Create new version history entry
+    await ctx.db.insert("scraperVersions", {
+      scrapeSourceId: args.sourceId,
+      version: args.scraperConfig.version,
+      config: JSON.stringify(args.scraperConfig),
+      createdAt: now,
+      createdBy: args.scraperConfig.generatedBy,
+      changeReason: args.changeReason ?? "Configuration update",
+      isActive: true,
+    });
+
+    // Update the source with new config
+    await ctx.db.patch(args.sourceId, {
+      scraperConfig: args.scraperConfig,
+      scraperHealth: {
+        ...source.scraperHealth,
+        needsRegeneration: false, // Clear the regeneration flag
+      },
+    });
+
+    return args.sourceId;
+  },
+});
+
+/**
+ * Create a new pending scrape job
+ */
+export const createScrapeJob = mutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+    triggeredBy: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const source = await ctx.db.get(args.sourceId);
+    if (!source) {
+      throw new Error("Scrape source not found");
+    }
+
+    // Check if there's already a pending or running job
+    const existingJob = await ctx.db
+      .query("scrapeJobs")
+      .withIndex("by_source_and_status", (q) =>
+        q.eq("sourceId", args.sourceId).eq("status", "pending")
+      )
+      .first();
+
+    if (existingJob) {
+      throw new Error("A pending job already exists for this source");
+    }
+
+    const runningJob = await ctx.db
+      .query("scrapeJobs")
+      .withIndex("by_source_and_status", (q) =>
+        q.eq("sourceId", args.sourceId).eq("status", "running")
+      )
+      .first();
+
+    if (runningJob) {
+      throw new Error("A job is already running for this source");
+    }
+
+    const jobId = await ctx.db.insert("scrapeJobs", {
+      sourceId: args.sourceId,
+      status: "pending",
+      triggeredBy: args.triggeredBy,
+      startedAt: undefined,
+      completedAt: undefined,
+      sessionsFound: undefined,
+      sessionsCreated: undefined,
+      sessionsUpdated: undefined,
+      retryCount: 0,
+      errorMessage: undefined,
+    });
+
+    return jobId;
+  },
+});
+
+/**
+ * Mark a job as running
+ */
+export const startScrapeJob = mutation({
+  args: {
+    jobId: v.id("scrapeJobs"),
+  },
+  handler: async (ctx, args) => {
+    const job = await ctx.db.get(args.jobId);
+    if (!job) {
+      throw new Error("Scrape job not found");
+    }
+
+    if (job.status !== "pending") {
+      throw new Error(`Cannot start job in "${job.status}" status`);
+    }
+
+    await ctx.db.patch(args.jobId, {
+      status: "running",
+      startedAt: Date.now(),
+    });
+
+    return args.jobId;
+  },
+});
+
+/**
+ * Mark a job as completed
+ */
+export const completeScrapeJob = mutation({
+  args: {
+    jobId: v.id("scrapeJobs"),
+    sessionsFound: v.number(),
+    sessionsCreated: v.number(),
+    sessionsUpdated: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const job = await ctx.db.get(args.jobId);
+    if (!job) {
+      throw new Error("Scrape job not found");
+    }
+
+    if (job.status !== "running") {
+      throw new Error(`Cannot complete job in "${job.status}" status`);
+    }
+
+    const now = Date.now();
+
+    await ctx.db.patch(args.jobId, {
+      status: "completed",
+      completedAt: now,
+      sessionsFound: args.sessionsFound,
+      sessionsCreated: args.sessionsCreated,
+      sessionsUpdated: args.sessionsUpdated,
+    });
+
+    // Update source last scraped time
+    await ctx.db.patch(job.sourceId, {
+      lastScrapedAt: now,
+    });
+
+    return args.jobId;
+  },
+});
+
+/**
+ * Mark a job as failed and update health metrics
+ */
+export const failScrapeJob = mutation({
+  args: {
+    jobId: v.id("scrapeJobs"),
+    errorMessage: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const job = await ctx.db.get(args.jobId);
+    if (!job) {
+      throw new Error("Scrape job not found");
+    }
+
+    if (job.status !== "running" && job.status !== "pending") {
+      throw new Error(`Cannot fail job in "${job.status}" status`);
+    }
+
+    const now = Date.now();
+
+    await ctx.db.patch(args.jobId, {
+      status: "failed",
+      completedAt: now,
+      errorMessage: args.errorMessage,
+    });
+
+    // Update source health metrics
+    const source = await ctx.db.get(job.sourceId);
+    if (source) {
+      const newConsecutiveFailures = source.scraperHealth.consecutiveFailures + 1;
+      const newTotalRuns = source.scraperHealth.totalRuns + 1;
+      const successfulRuns = Math.round(
+        source.scraperHealth.successRate * source.scraperHealth.totalRuns
+      );
+      const newSuccessRate = successfulRuns / newTotalRuns;
+
+      // Flag for regeneration if too many consecutive failures
+      const needsRegeneration =
+        newConsecutiveFailures >= 3 || source.scraperHealth.needsRegeneration;
+
+      await ctx.db.patch(job.sourceId, {
+        scraperHealth: {
+          ...source.scraperHealth,
+          lastFailureAt: now,
+          consecutiveFailures: newConsecutiveFailures,
+          totalRuns: newTotalRuns,
+          successRate: newSuccessRate,
+          lastError: args.errorMessage,
+          needsRegeneration,
+        },
+      });
+
+      // Create alert if needed
+      if (newConsecutiveFailures === 3) {
+        await ctx.db.insert("scraperAlerts", {
+          sourceId: job.sourceId,
+          alertType: "scraper_degraded",
+          message: `Scraper "${source.name}" has failed 3 times consecutively. Last error: ${args.errorMessage}`,
+          severity: "warning",
+          createdAt: now,
+          acknowledgedAt: undefined,
+          acknowledgedBy: undefined,
+        });
+      } else if (newConsecutiveFailures >= 5) {
+        await ctx.db.insert("scraperAlerts", {
+          sourceId: job.sourceId,
+          alertType: "scraper_needs_regeneration",
+          message: `Scraper "${source.name}" needs regeneration after ${newConsecutiveFailures} consecutive failures.`,
+          severity: "error",
+          createdAt: now,
+          acknowledgedAt: undefined,
+          acknowledgedBy: undefined,
+        });
+      }
+    }
+
+    return args.jobId;
+  },
+});
+
+/**
+ * Store raw scraped data for a job
+ */
+export const storeRawData = mutation({
+  args: {
+    jobId: v.id("scrapeJobs"),
+    rawJson: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const job = await ctx.db.get(args.jobId);
+    if (!job) {
+      throw new Error("Scrape job not found");
+    }
+
+    const rawDataId = await ctx.db.insert("scrapeRawData", {
+      jobId: args.jobId,
+      sourceId: job.sourceId,
+      rawJson: args.rawJson,
+      processedAt: undefined,
+      resultingSessionId: undefined,
+      processingError: undefined,
+    });
+
+    return rawDataId;
+  },
+});
+
+/**
+ * Record a detected change during scraping
+ */
+export const recordChange = mutation({
+  args: {
+    jobId: v.id("scrapeJobs"),
+    sessionId: v.optional(v.id("sessions")),
+    changeType: v.union(
+      v.literal("session_added"),
+      v.literal("session_removed"),
+      v.literal("status_changed"),
+      v.literal("price_changed"),
+      v.literal("dates_changed")
+    ),
+    previousValue: v.optional(v.string()),
+    newValue: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const job = await ctx.db.get(args.jobId);
+    if (!job) {
+      throw new Error("Scrape job not found");
+    }
+
+    const changeId = await ctx.db.insert("scrapeChanges", {
+      jobId: args.jobId,
+      sourceId: job.sourceId,
+      sessionId: args.sessionId,
+      changeType: args.changeType,
+      previousValue: args.previousValue,
+      newValue: args.newValue,
+      detectedAt: Date.now(),
+      notified: false,
+    });
+
+    return changeId;
+  },
+});
+
+/**
+ * Create an admin alert
+ */
+export const createAlert = mutation({
+  args: {
+    sourceId: v.optional(v.id("scrapeSources")),
+    alertType: v.union(
+      v.literal("scraper_disabled"),
+      v.literal("scraper_degraded"),
+      v.literal("high_change_volume"),
+      v.literal("scraper_needs_regeneration"),
+      v.literal("new_sources_pending")
+    ),
+    message: v.string(),
+    severity: v.union(
+      v.literal("info"),
+      v.literal("warning"),
+      v.literal("error"),
+      v.literal("critical")
+    ),
+  },
+  handler: async (ctx, args) => {
+    // Validate source exists if provided
+    if (args.sourceId) {
+      const source = await ctx.db.get(args.sourceId);
+      if (!source) {
+        throw new Error("Scrape source not found");
+      }
+    }
+
+    const alertId = await ctx.db.insert("scraperAlerts", {
+      sourceId: args.sourceId,
+      alertType: args.alertType,
+      message: args.message,
+      severity: args.severity,
+      createdAt: Date.now(),
+      acknowledgedAt: undefined,
+      acknowledgedBy: undefined,
+    });
+
+    return alertId;
+  },
+});
+
+/**
+ * Acknowledge an alert
+ */
+export const acknowledgeAlert = mutation({
+  args: {
+    alertId: v.id("scraperAlerts"),
+    acknowledgedBy: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const alert = await ctx.db.get(args.alertId);
+    if (!alert) {
+      throw new Error("Alert not found");
+    }
+
+    if (alert.acknowledgedAt !== undefined) {
+      throw new Error("Alert already acknowledged");
+    }
+
+    await ctx.db.patch(args.alertId, {
+      acknowledgedAt: Date.now(),
+      acknowledgedBy: args.acknowledgedBy ?? "system",
+    });
+
+    return args.alertId;
+  },
+});
+
+/**
+ * Enable or disable a scrape source
+ */
+export const toggleSourceActive = mutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+    isActive: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const source = await ctx.db.get(args.sourceId);
+    if (!source) {
+      throw new Error("Scrape source not found");
+    }
+
+    await ctx.db.patch(args.sourceId, {
+      isActive: args.isActive,
+    });
+
+    // Create alert when disabling a source
+    if (!args.isActive && source.isActive) {
+      await ctx.db.insert("scraperAlerts", {
+        sourceId: args.sourceId,
+        alertType: "scraper_disabled",
+        message: `Scraper "${source.name}" has been disabled.`,
+        severity: "info",
+        createdAt: Date.now(),
+        acknowledgedAt: undefined,
+        acknowledgedBy: undefined,
+      });
+    }
+
+    return args.sourceId;
+  },
+});
