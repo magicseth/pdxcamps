@@ -361,6 +361,14 @@ function CalendarContent() {
           >
             Today
           </button>
+          <span className="hidden sm:flex items-center gap-2 ml-3 text-xs text-slate-400">
+            <kbd className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded text-[10px]">←</kbd>
+            <kbd className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded text-[10px]">→</kbd>
+            <span>navigate</span>
+            <span className="mx-1">·</span>
+            <kbd className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded text-[10px]">T</kbd>
+            <span>today</span>
+          </span>
         </div>
 
         {/* View Toggle */}
