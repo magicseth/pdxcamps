@@ -59,6 +59,7 @@ export default function DiscoverPage() {
       childAge: searchParams.get('age') ? parseInt(searchParams.get('age')!) : undefined,
       childGrade: searchParams.get('grade') ? parseInt(searchParams.get('grade')!) : undefined,
       selectedOrganizations: searchParams.get('orgs')?.split(',').filter(Boolean) || [],
+      selectedLocations: searchParams.get('locations')?.split(',').filter(Boolean) || [],
     };
   }, [searchParams]);
 
@@ -72,6 +73,7 @@ export default function DiscoverPage() {
   const [childGrade, setChildGrade] = useState<number | undefined>(() => getInitialState().childGrade);
   const [showFilters, setShowFilters] = useState(true);
   const [selectedOrganizations, setSelectedOrganizations] = useState<string[]>(() => getInitialState().selectedOrganizations);
+  const [selectedLocations, setSelectedLocations] = useState<string[]>(() => getInitialState().selectedLocations);
 
   // Update URL when filters change
   useEffect(() => {
@@ -84,6 +86,7 @@ export default function DiscoverPage() {
     if (childAge !== undefined) params.set('age', childAge.toString());
     if (childGrade !== undefined) params.set('grade', childGrade.toString());
     if (selectedOrganizations.length > 0) params.set('orgs', selectedOrganizations.join(','));
+    if (selectedLocations.length > 0) params.set('locations', selectedLocations.join(','));
 
     const queryString = params.toString();
     const newUrl = queryString ? `?${queryString}` : '';
@@ -92,7 +95,7 @@ export default function DiscoverPage() {
     if (window.location.search !== newUrl) {
       router.replace(`/discover/${citySlug}${newUrl}`, { scroll: false });
     }
-  }, [startDateAfter, startDateBefore, selectedCategories, maxPrice, hideSoldOut, childAge, childGrade, selectedOrganizations, citySlug, router]);
+  }, [startDateAfter, startDateBefore, selectedCategories, maxPrice, hideSoldOut, childAge, childGrade, selectedOrganizations, selectedLocations, citySlug, router]);
 
   // Fetch city data
   const city = useQuery(api.cities.queries.getCityBySlug, { slug: citySlug });
@@ -100,6 +103,12 @@ export default function DiscoverPage() {
   // Fetch all organizations for filter chips
   const allOrganizations = useQuery(
     api.organizations.queries.listOrganizations,
+    city ? { cityId: city._id } : 'skip'
+  );
+
+  // Fetch all locations for filter chips
+  const allLocations = useQuery(
+    api.locations.queries.listLocations,
     city ? { cityId: city._id } : 'skip'
   );
 
@@ -116,6 +125,7 @@ export default function DiscoverPage() {
           excludeSoldOut: hideSoldOut || undefined,
           childAge: childAge,
           childGrade: childGrade,
+          locationIds: selectedLocations.length > 0 ? selectedLocations as Id<'locations'>[] : undefined,
         }
       : 'skip'
   );
@@ -182,6 +192,7 @@ export default function DiscoverPage() {
     setChildAge(undefined);
     setChildGrade(undefined);
     setSelectedOrganizations([]);
+    setSelectedLocations([]);
   };
 
   const hasActiveFilters =
@@ -192,11 +203,18 @@ export default function DiscoverPage() {
     hideSoldOut ||
     childAge !== undefined ||
     childGrade !== undefined ||
-    selectedOrganizations.length > 0;
+    selectedOrganizations.length > 0 ||
+    selectedLocations.length > 0;
 
   const handleOrganizationToggle = (orgId: string) => {
     setSelectedOrganizations((prev) =>
       prev.includes(orgId) ? prev.filter((id) => id !== orgId) : [...prev, orgId]
+    );
+  };
+
+  const handleLocationToggle = (locationId: string) => {
+    setSelectedLocations((prev) =>
+      prev.includes(locationId) ? prev.filter((id) => id !== locationId) : [...prev, locationId]
     );
   };
 
@@ -416,6 +434,34 @@ export default function DiscoverPage() {
                       <OrgLogo url={org.logoUrl} name={org.name} size="xs" />
                       {org.name}
                       {selectedOrganizations.includes(org._id) && (
+                        <span className="ml-1">✕</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Location Filter Chips */}
+            {allLocations && allLocations.length > 0 && (
+              <div className="mb-4">
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">
+                  Filter by Location
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {allLocations.map((location) => (
+                    <button
+                      key={location._id}
+                      onClick={() => handleLocationToggle(location._id)}
+                      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                        selectedLocations.includes(location._id)
+                          ? 'bg-green-600 text-white'
+                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      <LocationIcon />
+                      {location.name}
+                      {selectedLocations.includes(location._id) && (
                         <span className="ml-1">✕</span>
                       )}
                     </button>

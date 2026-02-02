@@ -7,6 +7,7 @@ interface OrgLogoProps {
   name?: string;
   size?: 'xs' | 'sm' | 'md' | 'lg';
   className?: string;
+  fallback?: React.ReactNode;
 }
 
 const sizeClasses = {
@@ -18,16 +19,16 @@ const sizeClasses = {
 
 /**
  * Consistent organization logo component with fallback handling.
- * Shows logo image if valid URL, otherwise shows nothing.
+ * Shows logo image if valid URL, otherwise shows fallback or nothing.
  */
-export function OrgLogo({ url, name, size = 'sm', className = '' }: OrgLogoProps) {
+export function OrgLogo({ url, name, size = 'sm', className = '', fallback }: OrgLogoProps) {
   const [hasError, setHasError] = useState(false);
 
   // Validate URL
   const isValidUrl = url && url.startsWith('http');
 
   if (!isValidUrl || hasError) {
-    return null;
+    return fallback ? <>{fallback}</> : null;
   }
 
   return (

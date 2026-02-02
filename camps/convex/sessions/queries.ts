@@ -15,6 +15,7 @@ export const searchSessions = query({
     excludeSoldOut: v.optional(v.boolean()),
     childAge: v.optional(v.number()),
     childGrade: v.optional(v.number()),
+    locationIds: v.optional(v.array(v.id("locations"))),
   },
   handler: async (ctx, args) => {
     // Start with sessions in the city that are active
@@ -43,6 +44,12 @@ export const searchSessions = query({
       sessions = sessions.filter(
         (session) => session.enrolledCount < session.capacity
       );
+    }
+
+    // Apply location filter
+    if (args.locationIds && args.locationIds.length > 0) {
+      const locationIdSet = new Set(args.locationIds);
+      sessions = sessions.filter((session) => locationIdSet.has(session.locationId));
     }
 
     // Apply age/grade filters
