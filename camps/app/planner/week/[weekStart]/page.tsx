@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { useParams } from 'next/navigation';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
@@ -58,9 +58,36 @@ export default function WeekDetailPage() {
 
 function WeekDetailContent() {
   const params = useParams();
+  const router = useRouter();
   const weekStart = params.weekStart as string;
 
   const [showAddEventModal, setShowAddEventModal] = useState(false);
+
+  // Keyboard shortcuts: left/right arrows for week navigation, 'e' for add event
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    const target = e.target as HTMLElement;
+    // Don't trigger in form inputs
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') return;
+
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      router.push(`/planner/week/${getPreviousMonday(weekStart)}`);
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      router.push(`/planner/week/${getNextMonday(weekStart)}`);
+    } else if ((e.key === 'e' || e.key === 'E') && !showAddEventModal) {
+      e.preventDefault();
+      setShowAddEventModal(true);
+    } else if (e.key === 'Escape' && showAddEventModal) {
+      e.preventDefault();
+      setShowAddEventModal(false);
+    }
+  }, [router, weekStart, showAddEventModal]);
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
   const [editingEvent, setEditingEvent] = useState<{
     _id: Id<'familyEvents'>;
     title: string;
@@ -370,13 +397,23 @@ function WeekDetailContent() {
         <Link
           href={`/planner/week/${getPreviousMonday(weekDetail.weekStartDate)}`}
           className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
+          title="Previous week (← arrow key)"
         >
           <ChevronLeftIcon />
           Previous Week
         </Link>
+        <span className="hidden sm:flex items-center gap-2 text-xs text-slate-400">
+          <kbd className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded text-[10px]">←</kbd>
+          <kbd className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded text-[10px]">→</kbd>
+          <span>navigate</span>
+          <span className="mx-1">·</span>
+          <kbd className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded text-[10px]">E</kbd>
+          <span>add event</span>
+        </span>
         <Link
           href={`/planner/week/${getNextMonday(weekDetail.weekStartDate)}`}
           className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
+          title="Next week (→ arrow key)"
         >
           Next Week
           <ChevronRightIcon />
