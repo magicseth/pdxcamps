@@ -695,8 +695,9 @@ export default function DiscoverPage() {
                   </p>
                   {allOrganizations.length > 6 && (
                     <button
+                      type="button"
                       onClick={() => setShowAllOrgs(!showAllOrgs)}
-                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                     >
                       {showAllOrgs ? 'Show less' : `Show all ${allOrganizations.length}`}
                     </button>

@@ -9,7 +9,7 @@ export default function AdminPage() {
   return (
     <>
       <header className="sticky top-0 z-10 bg-background p-4 border-b-2 border-slate-200 dark:border-slate-800 flex flex-row justify-between items-center">
-        <Link href="/" className="font-semibold hover:underline">
+        <Link href="/" className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
           PDX Camps
         </Link>
         <h1 className="text-lg font-semibold">Admin Dashboard</h1>
@@ -65,7 +65,7 @@ function AdminContent() {
         </p>
         <Link
           href="/"
-          className="inline-block mt-4 text-blue-600 hover:underline"
+          className="inline-block mt-4 text-blue-600 hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
         >
           Return to Home
         </Link>
@@ -98,7 +98,7 @@ function AdminContent() {
         </p>
         <Link
           href="/"
-          className="inline-block mt-4 text-blue-600 hover:underline"
+          className="inline-block mt-4 text-blue-600 hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
         >
           Return to Home
         </Link>

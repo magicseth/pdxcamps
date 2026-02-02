@@ -409,7 +409,7 @@ export default function SessionDetailPage() {
                     by{' '}
                     <Link
                       href={`/organization/${organization.slug}`}
-                      className="text-blue-600 hover:text-blue-700 hover:underline"
+                      className="text-blue-600 hover:text-blue-700 hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                     >
                       {organization.name}
                     </Link>

@@ -158,7 +158,7 @@ function FamilyProfileSection({
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
         <p className="text-slate-600 dark:text-slate-400">
           No family profile found.{' '}
-          <Link href="/onboarding" className="text-blue-600 hover:underline">
+          <Link href="/onboarding" className="text-blue-600 hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
             Complete setup
           </Link>
         </p>
