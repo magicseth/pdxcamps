@@ -778,16 +778,39 @@ export default function DiscoverPage() {
             {/* Loading State */}
             {sessions === undefined && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {[1, 2, 3, 4].map((i) => (
+                {[1, 2, 3, 4, 5, 6].map((i) => (
                   <div
                     key={i}
-                    className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 animate-pulse"
+                    className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden animate-pulse"
                   >
-                    <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded w-3/4 mb-3"></div>
-                    <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2 mb-4"></div>
-                    <div className="space-y-2">
-                      <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
-                      <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-2/3"></div>
+                    {/* Image placeholder */}
+                    <div className="h-40 bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600" />
+                    {/* Content placeholder */}
+                    <div className="p-4 space-y-3">
+                      {/* Camp name and org */}
+                      <div className="space-y-2">
+                        <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
+                        <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
+                      </div>
+                      {/* Details: date, time, price, ages */}
+                      <div className="space-y-2 pt-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 bg-slate-200 dark:bg-slate-700 rounded"></div>
+                          <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-40"></div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 bg-slate-200 dark:bg-slate-700 rounded"></div>
+                          <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-32"></div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 bg-slate-200 dark:bg-slate-700 rounded"></div>
+                          <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-24"></div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 bg-slate-200 dark:bg-slate-700 rounded"></div>
+                          <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-28"></div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
