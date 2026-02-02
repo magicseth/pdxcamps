@@ -70,10 +70,10 @@ export function WeekRow({ data, isFirstOfMonth = false }: WeekRowProps) {
   return (
     <div
       ref={rowRef}
-      className={`flex items-center gap-4 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${
+      className={`flex items-center gap-4 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-200 hover:shadow-sm cursor-pointer ${
         isFirstOfMonth ? 'border-t border-slate-200 dark:border-slate-700' : ''
       } ${isCurrentWeek ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500' : ''} ${
-        isPastWeek ? 'opacity-50' : ''
+        isPastWeek ? 'opacity-50 hover:opacity-70' : ''
       }`}
     >
       {/* Week info */}
