@@ -381,6 +381,7 @@ export default function SessionDetailPage() {
                 src={camp.resolvedImageUrl}
                 alt={camp.name}
                 loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover"
               />
               {organization?.resolvedLogoUrl && (

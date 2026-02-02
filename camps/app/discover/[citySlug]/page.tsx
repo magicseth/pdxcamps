@@ -1402,6 +1402,7 @@ function SessionCard({
                 alt={camp?.name || 'Camp'}
                 className="relative w-full h-full object-cover"
                 loading="lazy"
+                decoding="async"
                 onError={(e) => {
                   // On error, hide image and show placeholder
                   e.currentTarget.style.display = 'none';
