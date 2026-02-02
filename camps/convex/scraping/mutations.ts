@@ -609,3 +609,39 @@ export const activateScrapeSource = mutation({
     return args.sourceId;
   },
 });
+
+/**
+ * Clean up stuck/pending jobs for a source
+ */
+export const cleanupStuckJobs = mutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+  },
+  handler: async (ctx, args) => {
+    const stuckJobs = await ctx.db
+      .query("scrapeJobs")
+      .withIndex("by_source_and_status", (q) =>
+        q.eq("sourceId", args.sourceId).eq("status", "pending")
+      )
+      .collect();
+
+    const runningJobs = await ctx.db
+      .query("scrapeJobs")
+      .withIndex("by_source_and_status", (q) =>
+        q.eq("sourceId", args.sourceId).eq("status", "running")
+      )
+      .collect();
+
+    const allStuck = [...stuckJobs, ...runningJobs];
+    
+    for (const job of allStuck) {
+      await ctx.db.patch(job._id, {
+        status: "failed",
+        completedAt: Date.now(),
+        errorMessage: "Manually marked as failed (cleanup)",
+      });
+    }
+
+    return { cleaned: allStuck.length };
+  },
+});

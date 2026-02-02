@@ -79,10 +79,15 @@ export const executeScraper = action({
         );
       }
 
-      // Create scrape job record
+      // Create and start scrape job record
       const jobId = await ctx.runMutation(api.scraping.mutations.createScrapeJob, {
         sourceId: args.sourceId,
         triggeredBy: "executor",
+      });
+
+      // Start the job
+      await ctx.runMutation(api.scraping.mutations.startScrapeJob, {
+        jobId,
       });
 
       // Store raw data
