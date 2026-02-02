@@ -91,25 +91,25 @@ export function WeekRow({ data, isFirstOfMonth = false }: WeekRowProps) {
         )}
       </div>
 
-      {/* Gap indicator */}
-      {hasGap && (
-        <div className="flex-shrink-0">
-          <span className="text-xs text-red-600 dark:text-red-400 font-medium">
-            Needs coverage
-          </span>
-        </div>
+      {/* Gap indicator / Find camps link */}
+      {hasGap ? (
+        <Link
+          href={`/planner/week/${week.startDate}`}
+          className="flex-shrink-0 text-xs text-blue-600 dark:text-blue-400 font-medium hover:underline"
+        >
+          Find camps →
+        </Link>
+      ) : (
+        <Link
+          href={`/planner/week/${week.startDate}`}
+          className="flex-shrink-0 p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md transition-colors"
+          aria-label={`View week ${week.weekNumber} details`}
+        >
+          <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </Link>
       )}
-
-      {/* Link to detail */}
-      <Link
-        href={`/planner/week/${week.startDate}`}
-        className="flex-shrink-0 p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md transition-colors"
-        aria-label={`View week ${week.weekNumber} details`}
-      >
-        <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
-      </Link>
     </div>
   );
 }
