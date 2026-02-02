@@ -40,7 +40,19 @@ function AdminContent() {
   const dashboard = useQuery(api.admin.queries.getScrapingDashboard);
 
   if (isAdmin === undefined) {
-    return <div className="text-center py-8">Loading...</div>;
+    return (
+      <div className="max-w-4xl mx-auto py-8">
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 w-48 bg-slate-200 dark:bg-slate-700 rounded"></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-24 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+            ))}
+          </div>
+          <div className="h-64 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+        </div>
+      </div>
+    );
   }
 
   if (!isAdmin) {
