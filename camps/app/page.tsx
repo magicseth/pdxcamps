@@ -244,11 +244,29 @@ function PlannerHub({
     const fullyPlannedWeeks = coverage.filter(
       (w) => w.childCoverage.every((c) => c.status === 'full' || c.status === 'event')
     ).length;
+
+    // Count unique registrations (registered status)
+    const registeredSessionIds = new Set<string>();
+    const interestedSessionIds = new Set<string>();
+    for (const week of coverage) {
+      for (const child of week.childCoverage) {
+        for (const reg of child.registrations) {
+          if (reg.status === 'registered') {
+            registeredSessionIds.add(reg.sessionId);
+          } else if (reg.status === 'interested' || reg.status === 'waitlisted') {
+            interestedSessionIds.add(reg.sessionId);
+          }
+        }
+      }
+    }
+
     return {
       totalWeeks,
       weeksWithGaps,
       fullyPlannedWeeks,
       coverage: totalWeeks > 0 ? Math.round((fullyPlannedWeeks / totalWeeks) * 100) : 0,
+      registeredCount: registeredSessionIds.size,
+      savedCount: interestedSessionIds.size,
     };
   }, [coverage]);
 
@@ -278,22 +296,33 @@ function PlannerHub({
             </div>
 
             {stats && (
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <div className="text-3xl font-bold">{stats.coverage}%</div>
-                  <div className="text-sm text-blue-100">Planned</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-bold">{stats.fullyPlannedWeeks}</div>
-                  <div className="text-sm text-blue-100">Weeks Covered</div>
-                </div>
-                <div>
-                  <div className={`text-3xl font-bold ${stats.weeksWithGaps > 0 ? 'text-yellow-300' : ''}`}>
-                    {stats.weeksWithGaps}
+              <>
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  <div>
+                    <div className="text-3xl font-bold">{stats.coverage}%</div>
+                    <div className="text-sm text-blue-100">Planned</div>
                   </div>
-                  <div className="text-sm text-blue-100">Gaps to Fill</div>
+                  <div>
+                    <div className="text-3xl font-bold">{stats.fullyPlannedWeeks}</div>
+                    <div className="text-sm text-blue-100">Weeks Covered</div>
+                  </div>
+                  <div>
+                    <div className={`text-3xl font-bold ${stats.weeksWithGaps > 0 ? 'text-yellow-300' : ''}`}>
+                      {stats.weeksWithGaps}
+                    </div>
+                    <div className="text-sm text-blue-100">Gaps to Fill</div>
+                  </div>
                 </div>
-              </div>
+                <div className="flex items-center gap-4 text-sm text-blue-100 border-t border-blue-500/30 pt-3">
+                  <span>{stats.registeredCount} camp{stats.registeredCount !== 1 ? 's' : ''} registered</span>
+                  {stats.savedCount > 0 && (
+                    <>
+                      <span className="text-blue-300">•</span>
+                      <span>{stats.savedCount} saved for later</span>
+                    </>
+                  )}
+                </div>
+              </>
             )}
 
             {stats && stats.weeksWithGaps > 0 && defaultCity && (
