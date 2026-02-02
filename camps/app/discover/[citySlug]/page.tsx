@@ -1207,6 +1207,18 @@ function SessionCard({
             <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-1">
               {organization?.name ?? 'Loading...'}
             </p>
+            {camp?.categories && camp.categories.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {camp.categories.slice(0, 3).map((cat) => (
+                  <span
+                    key={cat}
+                    className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
+                  >
+                    {cat}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
         {/* Spots Left Bar */}
