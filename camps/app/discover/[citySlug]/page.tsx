@@ -923,25 +923,50 @@ function SessionCard({
         return {
           label: `Waitlist (${session.waitlistCount})`,
           className: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+          urgent: false,
         };
       }
       return {
         label: 'Sold Out',
         className: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+        urgent: false,
       };
     }
 
     const spotsLeft = session.capacity - session.enrolledCount;
+
+    // Very low availability (1-2 spots)
+    if (spotsLeft <= 2) {
+      return {
+        label: `Only ${spotsLeft} spot${spotsLeft === 1 ? '' : 's'} left!`,
+        className: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+        urgent: true,
+      };
+    }
+
+    // Low availability (3-5 spots)
     if (spotsLeft <= 5) {
       return {
         label: `${spotsLeft} spots left`,
         className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+        urgent: false,
       };
     }
 
+    // Good availability (6-10 spots)
+    if (spotsLeft <= 10) {
+      return {
+        label: `${spotsLeft} spots`,
+        className: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+        urgent: false,
+      };
+    }
+
+    // Plenty available
     return {
       label: 'Available',
       className: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+      urgent: false,
     };
   };
 
@@ -1076,7 +1101,7 @@ function SessionCard({
           )}
           {/* Status badge overlay */}
           <span
-            className={`absolute top-2 right-2 px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadge.className}`}
+            className={`absolute top-2 right-2 px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadge.className} ${statusBadge.urgent ? 'animate-pulse' : ''}`}
           >
             {statusBadge.label}
           </span>
