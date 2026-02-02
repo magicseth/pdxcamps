@@ -883,6 +883,23 @@ function SessionCard({
     }).format(amount);
   };
 
+  // Calculate camp days (weekdays only)
+  const getCampDays = (startDateStr: string, endDateStr: string): number => {
+    const start = new Date(startDateStr + 'T00:00:00');
+    const end = new Date(endDateStr + 'T00:00:00');
+    let days = 0;
+    const current = new Date(start);
+    while (current <= end) {
+      const dayOfWeek = current.getDay();
+      // Count weekdays only (Mon-Fri)
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        days++;
+      }
+      current.setDate(current.getDate() + 1);
+    }
+    return days;
+  };
+
   // Format age range
   const formatAgeRange = (requirements: typeof session.ageRequirements) => {
     const parts: string[] = [];
@@ -1160,7 +1177,21 @@ function SessionCard({
           </div>
           <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
             <DollarIcon />
-            <span>{formatPrice(session.price, session.currency)}</span>
+            <span>
+              {formatPrice(session.price, session.currency)}
+              {(() => {
+                const days = getCampDays(session.startDate, session.endDate);
+                if (days > 1) {
+                  const perDay = Math.round(session.price / days);
+                  return (
+                    <span className="text-slate-500 dark:text-slate-500 ml-1">
+                      ({formatPrice(perDay, session.currency)}/day)
+                    </span>
+                  );
+                }
+                return null;
+              })()}
+            </span>
           </div>
           <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
             <UsersIcon />
