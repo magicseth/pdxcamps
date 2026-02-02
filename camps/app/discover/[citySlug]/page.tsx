@@ -1096,24 +1096,28 @@ function SessionCard({
     locationId: session.locationId,
   });
 
-  // Format dates
+  // Format dates with day of week
   const formatDateRange = (start: string, end: string) => {
     const startDate = new Date(start + 'T00:00:00');
     const endDate = new Date(end + 'T00:00:00');
     const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const startDay = dayNames[startDate.getDay()];
+    const endDay = dayNames[endDate.getDay()];
 
     if (start === end) {
-      return startDate.toLocaleDateString('en-US', { ...options, year: 'numeric' });
+      return `${startDay}, ${startDate.toLocaleDateString('en-US', { ...options, year: 'numeric' })}`;
     }
 
     const startYear = startDate.getFullYear();
     const endYear = endDate.getFullYear();
 
     if (startYear === endYear) {
-      return `${startDate.toLocaleDateString('en-US', options)} - ${endDate.toLocaleDateString('en-US', { ...options, year: 'numeric' })}`;
+      // Show days only if they're weekdays (Mon-Fri typical camp week)
+      return `${startDay} ${startDate.toLocaleDateString('en-US', options)} - ${endDay} ${endDate.toLocaleDateString('en-US', { ...options, year: 'numeric' })}`;
     }
 
-    return `${startDate.toLocaleDateString('en-US', { ...options, year: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { ...options, year: 'numeric' })}`;
+    return `${startDay} ${startDate.toLocaleDateString('en-US', { ...options, year: 'numeric' })} - ${endDay} ${endDate.toLocaleDateString('en-US', { ...options, year: 'numeric' })}`;
   };
 
   // Format price
