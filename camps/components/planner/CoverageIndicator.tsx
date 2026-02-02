@@ -117,28 +117,26 @@ export function CoverageChip({ status, childName, eventTitle, campName, organiza
 }
 
 export function CoverageLegend() {
+  const legendItems = [
+    { color: 'bg-green-500', label: 'Covered', tooltip: 'Registered for camp all week' },
+    { color: 'bg-yellow-500', label: 'Partial', tooltip: 'Some days covered, some gaps' },
+    { color: 'bg-red-500', label: 'Gap', tooltip: 'No coverage - needs a camp!' },
+    { color: 'bg-orange-500', label: 'Tentative', tooltip: 'Saved or on waitlist' },
+    { color: 'bg-purple-500', label: 'Event', tooltip: 'Family vacation or trip' },
+  ];
+
   return (
     <div className="flex flex-wrap gap-3 text-xs">
-      <div className="flex items-center gap-1">
-        <span className="w-3 h-3 rounded-full bg-green-500"></span>
-        <span className="text-slate-600 dark:text-slate-400">Covered</span>
-      </div>
-      <div className="flex items-center gap-1">
-        <span className="w-3 h-3 rounded-full bg-yellow-500"></span>
-        <span className="text-slate-600 dark:text-slate-400">Partial</span>
-      </div>
-      <div className="flex items-center gap-1">
-        <span className="w-3 h-3 rounded-full bg-red-500"></span>
-        <span className="text-slate-600 dark:text-slate-400">Gap</span>
-      </div>
-      <div className="flex items-center gap-1">
-        <span className="w-3 h-3 rounded-full bg-orange-500"></span>
-        <span className="text-slate-600 dark:text-slate-400">Tentative</span>
-      </div>
-      <div className="flex items-center gap-1">
-        <span className="w-3 h-3 rounded-full bg-purple-500"></span>
-        <span className="text-slate-600 dark:text-slate-400">Event</span>
-      </div>
+      {legendItems.map((item) => (
+        <div
+          key={item.label}
+          className="flex items-center gap-1 cursor-help"
+          title={item.tooltip}
+        >
+          <span className={`w-3 h-3 rounded-full ${item.color}`}></span>
+          <span className="text-slate-600 dark:text-slate-400">{item.label}</span>
+        </div>
+      ))}
     </div>
   );
 }
