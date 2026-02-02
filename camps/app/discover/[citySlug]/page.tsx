@@ -1249,10 +1249,13 @@ function SessionCard({
         <div className="relative h-32 overflow-hidden group">
           {campImageUrl ? (
             <>
+              {/* Shimmer background shows through while image loads */}
+              <div className="absolute inset-0 bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 dark:from-slate-700 dark:via-slate-600 dark:to-slate-700 animate-pulse" />
               <img
                 src={campImageUrl}
                 alt={camp?.name || 'Camp'}
-                className="w-full h-full object-cover"
+                className="relative w-full h-full object-cover"
+                loading="lazy"
                 onError={(e) => {
                   // On error, hide image and show placeholder
                   e.currentTarget.style.display = 'none';
