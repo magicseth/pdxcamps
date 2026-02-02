@@ -1385,7 +1385,7 @@ function SessionCard({
           <div className="mb-3">
             <Link
               href={`/session/${session._id}`}
-              className="text-lg font-semibold text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 line-clamp-1"
+              className="text-lg font-semibold text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 hover:underline line-clamp-1"
             >
               {camp?.name ?? 'Loading...'}
             </Link>
