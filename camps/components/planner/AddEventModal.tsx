@@ -180,10 +180,11 @@ export function AddEventModal({
 
           {/* Title */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label htmlFor="event-title" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Title *
             </label>
             <input
+              id="event-title"
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -266,10 +267,11 @@ export function AddEventModal({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="event-start-date" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Start Date *
               </label>
               <input
+                id="event-start-date"
                 type="date"
                 value={startDate}
                 onChange={(e) => {
@@ -285,10 +287,11 @@ export function AddEventModal({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="event-end-date" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 End Date *
               </label>
               <input
+                id="event-end-date"
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
@@ -348,10 +351,11 @@ export function AddEventModal({
 
           {/* Location (optional) */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label htmlFor="event-location" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Location (optional)
             </label>
             <input
+              id="event-location"
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
@@ -387,7 +391,7 @@ export function AddEventModal({
           {/* Notes (optional) */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+              <label htmlFor="event-notes" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Notes (optional)
               </label>
               <span className={`text-xs ${notes.length > 450 ? 'text-orange-500' : 'text-slate-400'}`}>
@@ -395,6 +399,7 @@ export function AddEventModal({
               </span>
             </div>
             <textarea
+              id="event-notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value.slice(0, 500))}
               placeholder="Any additional details..."
