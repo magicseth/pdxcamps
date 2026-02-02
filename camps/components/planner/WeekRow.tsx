@@ -129,7 +129,8 @@ export function WeekRow({ data, isFirstOfMonth = false }: WeekRowProps) {
       {hasGap ? (
         <Link
           href={`/planner/week/${week.startDate}`}
-          className="flex-shrink-0 text-xs text-blue-600 dark:text-blue-400 font-medium hover:underline"
+          className="flex-shrink-0 text-xs text-blue-600 dark:text-blue-400 font-medium hover:underline animate-pulse motion-reduce:animate-none"
+          title={`Find camps for ${week.label} (${week.startDate} to ${week.endDate})`}
         >
           Find camps →
         </Link>
