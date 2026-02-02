@@ -263,14 +263,28 @@ async function executeStagehandScraperCode(
     const cleanCode = code
       // Remove import statements
       .replace(/import\s+.*?from\s+['"][^'"]+['"];?\n?/g, "")
-      // Remove export interface blocks
+      // Remove export interface blocks (single and multi-line)
       .replace(/export\s+interface\s+\w+\s*\{[\s\S]*?\n\}/g, "")
-      // Remove type annotations
+      // Remove interface blocks (without export)
+      .replace(/interface\s+\w+\s*\{[\s\S]*?\n\}/g, "")
+      // Remove type annotations on variables (e.g., `: Array<{ start: string; end: string }>`)
+      .replace(/:\s*Array<[^>]+>/g, "")
+      .replace(/:\s*\{[^}]+\}\[\]/g, "") // `: { ... }[]`
+      .replace(/:\s*\{[^}]+\}/g, "") // `: { ... }` on single lines
+      // Remove function return type annotations
       .replace(/:\s*Promise<[^>]+>/g, "")
       .replace(/:\s*ExtractedSession\[\]/g, "")
       .replace(/:\s*Page/g, "")
+      // Remove simple type annotations (: string, : number, : boolean, : any, etc.)
+      .replace(/:\s*(string|number|boolean|any|void|null|undefined)\b/g, "")
+      // Remove type annotations like `: SomeType` but not object colons
+      .replace(/(?<![{,])\s*:\s*[A-Z][A-Za-z0-9]*(?:\[\])?(?=\s*[=;,)])/g, "")
+      // Remove `as Type` assertions
+      .replace(/\s+as\s+\w+(?:\[\])?/g, "")
       // Change export async function to just async function
-      .replace(/export\s+async\s+function/g, "async function");
+      .replace(/export\s+async\s+function/g, "async function")
+      // Remove other export keywords
+      .replace(/export\s+/g, "");
 
     // Create and execute the scraper function
     const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
@@ -353,7 +367,22 @@ export const testScraperCode = action({
 
     log("INFO", "Testing scraper code", { url: args.url });
 
-    const result = await executeDynamicScraper(args.code, config, log);
+    // Use same detection logic as main executor
+    const isStagehandScraper =
+      args.code.includes('from "@anthropic-ai/stagehand"') ||
+      args.code.includes('from "@browserbasehq/stagehand"') ||
+      args.code.includes("page.extract(") ||
+      args.code.includes("page.goto(") ||
+      (args.code.includes("scrape(page") && args.code.includes("page.evaluate"));
+
+    let result: ScrapeResult;
+    if (isStagehandScraper) {
+      log("DEBUG", "Using Stagehand execution");
+      result = await executeStagehandScraperCode(args.code, config, log);
+    } else {
+      log("DEBUG", "Using dynamic execution");
+      result = await executeDynamicScraper(args.code, config, log);
+    }
 
     return {
       ...result,
