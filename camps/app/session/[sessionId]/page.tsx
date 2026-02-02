@@ -653,6 +653,55 @@ export default function SessionDetailPage() {
                   <HeartIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
                 </div>
               )}
+
+              {/* Add to Calendar */}
+              <button
+                onClick={() => {
+                  // Generate ICS file content
+                  const formatICSDate = (dateStr: string, time: { hour: number; minute: number }) => {
+                    const date = new Date(dateStr + 'T00:00:00');
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const hour = String(time.hour).padStart(2, '0');
+                    const minute = String(time.minute).padStart(2, '0');
+                    return `${year}${month}${day}T${hour}${minute}00`;
+                  };
+
+                  const startDateTime = formatICSDate(session.startDate, session.dropOffTime);
+                  const endDateTime = formatICSDate(session.endDate, session.pickUpTime);
+                  const locationStr = location?.address
+                    ? `${location.name}\\n${location.address.street}\\, ${location.address.city}\\, ${location.address.state} ${location.address.zip}`
+                    : location?.name || '';
+
+                  const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//PDX Camps//Camp Session//EN
+BEGIN:VEVENT
+DTSTART:${startDateTime}
+DTEND:${endDateTime}
+SUMMARY:${(camp?.name || 'Camp Session').replace(/[,;]/g, '\\$&')}
+DESCRIPTION:Drop-off: ${formatTime(session.dropOffTime)}\\nPick-up: ${formatTime(session.pickUpTime)}\\nOrganization: ${organization?.name || ''}\\n\\nPrice: ${formatPrice(session.price, session.currency)}
+LOCATION:${locationStr}
+END:VEVENT
+END:VCALENDAR`;
+
+                  // Download the ICS file
+                  const blob = new Blob([icsContent], { type: 'text/calendar' });
+                  const url = URL.createObjectURL(blob);
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.download = `${(camp?.name || 'camp-session').toLowerCase().replace(/\s+/g, '-')}.ics`;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  URL.revokeObjectURL(url);
+                }}
+                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 font-medium rounded-md hover:bg-slate-50 dark:hover:bg-slate-600 flex items-center justify-center gap-2"
+              >
+                <CalendarPlusIcon className="w-5 h-5" />
+                Add to Calendar
+              </button>
             </div>
 
             {/* Organization Info */}
@@ -1192,6 +1241,25 @@ function ChevronRightIcon({ className = 'w-4 h-4' }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+    </svg>
+  );
+}
+
+function CalendarPlusIcon({ className = 'w-5 h-5' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M12 11v6m-3-3h6"
+      />
     </svg>
   );
 }
