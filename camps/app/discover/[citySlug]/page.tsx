@@ -1330,6 +1330,9 @@ function SessionCard({
   const enrollmentPercent = session.enrolledCount / session.capacity;
   const isPopular = !isSoldOut && enrollmentPercent >= 0.75 && spotsLeft > 2;
 
+  // Check if budget-friendly (under $200)
+  const isBudgetFriendly = session.price < 20000; // 200 dollars in cents
+
   // Get camp image URL (from Convex storage or fallback)
   const campImageUrl = camp?.resolvedImageUrls?.[0] || null;
 
@@ -1487,6 +1490,11 @@ function SessionCard({
             {isPopular && (
               <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200">
                 🔥 Popular
+              </span>
+            )}
+            {isBudgetFriendly && !isSoldOut && (
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
+                💰 Budget-friendly
               </span>
             )}
           </div>
