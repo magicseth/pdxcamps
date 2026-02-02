@@ -26,7 +26,7 @@ export default function WeekDetailPage() {
 
       <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3 sticky top-0 z-20">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+          <Link href="/" className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
             <BackIcon />
             <span className="font-medium">Back to Planner</span>
           </Link>

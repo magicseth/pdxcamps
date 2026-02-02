@@ -21,7 +21,7 @@ export default function FriendsPage() {
       <header className="sticky top-0 z-20 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+            <Link href="/" className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
               <BackIcon />
               <span className="text-sm font-medium hidden sm:inline">Planner</span>
             </Link>
