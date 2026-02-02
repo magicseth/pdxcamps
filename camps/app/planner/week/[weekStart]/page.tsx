@@ -13,15 +13,20 @@ import { calculateAge, isAgeInRange, isGradeInRange, doDateRangesOverlap } from 
 
 export default function WeekDetailPage() {
   return (
-    <>
-      <header className="sticky top-0 z-10 bg-background p-4 border-b-2 border-slate-200 dark:border-slate-800 flex flex-row justify-between items-center">
-        <Link href="/planner" className="font-semibold hover:underline flex items-center gap-2">
-          <BackIcon />
-          Summer Planner
-        </Link>
-        <h1 className="text-lg font-semibold">Week Details</h1>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+      <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3 sticky top-0 z-20">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+            <BackIcon />
+            <span className="font-medium">Back to Planner</span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <span className="text-xl">☀️</span>
+            <span className="font-bold text-lg">PDX Camps</span>
+          </div>
+        </div>
       </header>
-      <main className="p-4 md:p-8">
+      <main className="p-4 md:p-8 pb-24">
         <Authenticated>
           <WeekDetailContent />
         </Authenticated>
@@ -31,14 +36,14 @@ export default function WeekDetailPage() {
               Please sign in to view week details.
             </p>
             <a href="/sign-in">
-              <button className="bg-foreground text-background px-6 py-2 rounded-md">
+              <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
                 Sign in
               </button>
             </a>
           </div>
         </Unauthenticated>
       </main>
-    </>
+    </div>
   );
 }
 
@@ -238,8 +243,8 @@ function WeekDetailContent() {
           Could not load details for this week.
         </p>
         <Link
-          href="/planner"
-          className="inline-block bg-foreground text-background px-6 py-2 rounded-md font-medium hover:opacity-90"
+          href="/"
+          className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700"
         >
           Back to Planner
         </Link>
@@ -415,7 +420,7 @@ function WeekDetailContent() {
       {/* Quick Links */}
       <div className="flex flex-wrap gap-3 border-t border-slate-200 dark:border-slate-700 pt-4">
         <Link
-          href="/planner"
+          href="/"
           className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1"
         >
           <GridIcon />

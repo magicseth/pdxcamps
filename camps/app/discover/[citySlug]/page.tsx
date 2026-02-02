@@ -200,29 +200,39 @@ export default function DiscoverPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 pb-20">
       {/* Header */}
-      <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+      <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-20">
+        <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <div>
-              <Link href="/" className="text-sm text-blue-600 hover:text-blue-700 mb-1 block">
-                &larr; Back to Home
+            <div className="flex items-center gap-4">
+              <Link href="/" className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                <span className="text-sm font-medium hidden sm:inline">Planner</span>
               </Link>
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-                Camps in {city.name}, {city.state}
+              <div className="h-6 w-px bg-slate-200 dark:bg-slate-700"></div>
+              <h1 className="text-lg font-bold text-slate-900 dark:text-white">
+                Discover Camps
               </h1>
             </div>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="md:hidden flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 rounded-md"
-            >
-              <FilterIcon />
-              Filters
-              {hasActiveFilters && (
-                <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
-              )}
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="md:hidden flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 rounded-lg text-sm"
+              >
+                <FilterIcon />
+                Filters
+                {hasActiveFilters && (
+                  <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
+                )}
+              </button>
+              <Link href="/" className="flex items-center gap-2">
+                <span className="text-xl">☀️</span>
+                <span className="font-bold hidden sm:inline">PDX Camps</span>
+              </Link>
+            </div>
           </div>
         </div>
       </header>
