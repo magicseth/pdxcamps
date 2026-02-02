@@ -36,6 +36,8 @@ export function OrgLogo({ url, name, size = 'sm', className = '', fallback }: Or
       src={url}
       alt={name ? `${name} logo` : ''}
       title={name}
+      loading="lazy"
+      decoding="async"
       className={`object-contain rounded-sm flex-shrink-0 ${sizeClasses[size]} ${className}`}
       onError={() => setHasError(true)}
     />
