@@ -213,6 +213,51 @@ export function AddEventModal({
           </div>
 
           {/* Date Range */}
+          <div className="mb-2 flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                const today = new Date();
+                const day = today.getDay();
+                const monday = new Date(today);
+                monday.setDate(today.getDate() - day + 1);
+                const friday = new Date(monday);
+                friday.setDate(monday.getDate() + 4);
+                setStartDate(monday.toISOString().split('T')[0]);
+                setEndDate(friday.toISOString().split('T')[0]);
+              }}
+              className="text-xs px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded hover:bg-slate-200 dark:hover:bg-slate-600"
+            >
+              This Week
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const today = new Date();
+                const day = today.getDay();
+                const monday = new Date(today);
+                monday.setDate(today.getDate() - day + 8);
+                const friday = new Date(monday);
+                friday.setDate(monday.getDate() + 4);
+                setStartDate(monday.toISOString().split('T')[0]);
+                setEndDate(friday.toISOString().split('T')[0]);
+              }}
+              className="text-xs px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded hover:bg-slate-200 dark:hover:bg-slate-600"
+            >
+              Next Week
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const today = new Date();
+                setStartDate(today.toISOString().split('T')[0]);
+                setEndDate(today.toISOString().split('T')[0]);
+              }}
+              className="text-xs px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded hover:bg-slate-200 dark:hover:bg-slate-600"
+            >
+              Today
+            </button>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
