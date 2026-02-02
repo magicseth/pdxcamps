@@ -550,6 +550,26 @@ export default defineSchema({
       scraperVersionBefore: v.number(),
     }))),
 
+    // Site exploration results (discovered navigation structure)
+    siteExploration: v.optional(v.object({
+      exploredAt: v.number(),
+      siteType: v.optional(v.string()),
+      hasMultipleLocations: v.optional(v.boolean()),
+      locations: v.optional(v.array(v.object({
+        name: v.string(),
+        url: v.optional(v.string()),
+        siteId: v.optional(v.string()),
+      }))),
+      hasCategories: v.optional(v.boolean()),
+      categories: v.optional(v.array(v.object({
+        name: v.string(),
+        id: v.optional(v.string()),
+      }))),
+      registrationSystem: v.optional(v.string()),
+      urlPatterns: v.optional(v.array(v.string())),
+      navigationNotes: v.optional(v.array(v.string())),
+    })),
+
     // Retry tracking
     testRetryCount: v.optional(v.number()),
     maxTestRetries: v.optional(v.number()), // Default 3

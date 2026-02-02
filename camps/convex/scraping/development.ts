@@ -408,3 +408,53 @@ export const forceRestart = mutation({
     return args.requestId;
   },
 });
+
+/**
+ * Save site exploration results
+ * Called by daemon after exploring a site's navigation structure
+ */
+export const saveExploration = mutation({
+  args: {
+    requestId: v.id("scraperDevelopmentRequests"),
+    exploration: v.object({
+      siteType: v.optional(v.string()),
+      hasMultipleLocations: v.optional(v.boolean()),
+      locations: v.optional(
+        v.array(
+          v.object({
+            name: v.string(),
+            url: v.optional(v.string()),
+            siteId: v.optional(v.string()),
+          })
+        )
+      ),
+      hasCategories: v.optional(v.boolean()),
+      categories: v.optional(
+        v.array(
+          v.object({
+            name: v.string(),
+            id: v.optional(v.string()),
+          })
+        )
+      ),
+      registrationSystem: v.optional(v.string()),
+      urlPatterns: v.optional(v.array(v.string())),
+      navigationNotes: v.optional(v.array(v.string())),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const request = await ctx.db.get(args.requestId);
+    if (!request) {
+      throw new Error("Request not found");
+    }
+
+    await ctx.db.patch(args.requestId, {
+      siteExploration: {
+        exploredAt: Date.now(),
+        ...args.exploration,
+      },
+    });
+
+    return args.requestId;
+  },
+});
