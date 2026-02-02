@@ -1015,6 +1015,21 @@ function SessionCard({
     return `${hour12}:${time.minute.toString().padStart(2, '0')}${ampm}`;
   };
 
+  // Calculate session duration and return half-day/full-day label
+  const getDayTypeLabel = (
+    dropOff: { hour: number; minute: number },
+    pickUp: { hour: number; minute: number }
+  ): { label: string; isHalfDay: boolean } => {
+    const dropOffMinutes = dropOff.hour * 60 + dropOff.minute;
+    const pickUpMinutes = pickUp.hour * 60 + pickUp.minute;
+    const durationHours = (pickUpMinutes - dropOffMinutes) / 60;
+    // Half-day is typically less than 5 hours
+    if (durationHours < 5) {
+      return { label: 'Half day', isHalfDay: true };
+    }
+    return { label: 'Full day', isHalfDay: false };
+  };
+
   // Format age range
   const formatAgeRange = (requirements: typeof session.ageRequirements) => {
     const parts: string[] = [];
@@ -1316,6 +1331,20 @@ function SessionCard({
             <ClockIcon />
             <span>
               {formatTime(session.dropOffTime)} - {formatTime(session.pickUpTime)}
+              {(() => {
+                const dayType = getDayTypeLabel(session.dropOffTime, session.pickUpTime);
+                return (
+                  <span
+                    className={`ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
+                      dayType.isHalfDay
+                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                        : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                    }`}
+                  >
+                    {dayType.label}
+                  </span>
+                );
+              })()}
               {session.extendedCareAvailable && (
                 <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
                   +Extended care
