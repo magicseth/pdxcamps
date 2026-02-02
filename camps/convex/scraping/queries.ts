@@ -151,6 +151,23 @@ export const listScrapeJobs = query({
 });
 
 /**
+ * Get raw data by job ID
+ */
+export const getRawDataByJob = query({
+  args: {
+    jobId: v.id("scrapeJobs"),
+  },
+  handler: async (ctx, args) => {
+    const rawData = await ctx.db
+      .query("scrapeRawData")
+      .withIndex("by_job", (q) => q.eq("jobId", args.jobId))
+      .first();
+
+    return rawData;
+  },
+});
+
+/**
  * Get a scrape job with raw data
  */
 export const getScrapeJob = query({

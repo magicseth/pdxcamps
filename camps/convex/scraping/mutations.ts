@@ -645,3 +645,48 @@ export const cleanupStuckJobs = mutation({
     return { cleaned: allStuck.length };
   },
 });
+
+/**
+ * Update organization logo with storage ID
+ */
+export const updateOrganizationLogo = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    logoUrl: v.string(),
+    logoStorageId: v.id("_storage"),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.organizationId, {
+      logoUrl: args.logoUrl,
+      logoStorageId: args.logoStorageId,
+    });
+    return args.organizationId;
+  },
+});
+
+/**
+ * Store image map for a job (URL -> storage ID mapping)
+ */
+export const storeImageMap = mutation({
+  args: {
+    jobId: v.id("scrapeJobs"),
+    imageMap: v.record(v.string(), v.id("_storage")),
+  },
+  handler: async (ctx, args) => {
+    // Store as raw data associated with the job
+    const existingRaw = await ctx.db
+      .query("scrapeRawData")
+      .withIndex("by_job", (q) => q.eq("jobId", args.jobId))
+      .first();
+
+    if (existingRaw) {
+      const current = JSON.parse(existingRaw.rawJson || "{}");
+      current.imageMap = args.imageMap;
+      await ctx.db.patch(existingRaw._id, {
+        rawJson: JSON.stringify(current),
+      });
+    }
+
+    return { stored: Object.keys(args.imageMap).length };
+  },
+});
