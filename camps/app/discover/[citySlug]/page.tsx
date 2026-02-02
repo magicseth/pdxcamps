@@ -1637,6 +1637,17 @@ function SaveSessionModal({
   const children = useQuery(api.children.queries.listChildren);
   const markInterested = useMutation(api.registrations.mutations.markInterested);
 
+  // Close on Escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !success) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [onClose, success]);
+
   const handleSave = async () => {
     if (!selectedChildId) {
       setError('Please select a child');
