@@ -77,6 +77,7 @@ export default function DiscoverPage() {
   const [selectedOrganizations, setSelectedOrganizations] = useState<string[]>(() => getInitialState().selectedOrganizations);
   const [selectedLocations, setSelectedLocations] = useState<string[]>(() => getInitialState().selectedLocations);
   const [sortBy, setSortBy] = useState<'date' | 'price-low' | 'price-high' | 'spots'>('date');
+  const [showAllOrgs, setShowAllOrgs] = useState(false);
 
   // Update URL when filters change
   useEffect(() => {
@@ -609,11 +610,21 @@ export default function DiscoverPage() {
             {/* Organization Filter Chips */}
             {allOrganizations && allOrganizations.length > 0 && (
               <div className="mb-4">
-                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">
-                  Filter by Organization
-                </p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                    Filter by Organization
+                  </p>
+                  {allOrganizations.length > 6 && (
+                    <button
+                      onClick={() => setShowAllOrgs(!showAllOrgs)}
+                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      {showAllOrgs ? 'Show less' : `Show all ${allOrganizations.length}`}
+                    </button>
+                  )}
+                </div>
                 <div className="flex flex-wrap gap-2">
-                  {allOrganizations.map((org) => (
+                  {(showAllOrgs ? allOrganizations : allOrganizations.slice(0, 6)).map((org) => (
                     <button
                       key={org._id}
                       onClick={() => handleOrganizationToggle(org._id)}
