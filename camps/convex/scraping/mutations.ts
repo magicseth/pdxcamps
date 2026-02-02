@@ -537,3 +537,75 @@ export const toggleSourceActive = mutation({
     return args.sourceId;
   },
 });
+
+/**
+ * Update scraper code for a source
+ * This stores the AI-generated scraper code in the database
+ */
+export const updateScraperCode = mutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+    code: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const source = await ctx.db.get(args.sourceId);
+    if (!source) {
+      throw new Error("Scrape source not found");
+    }
+
+    await ctx.db.patch(args.sourceId, {
+      scraperCode: args.code,
+    });
+
+    return args.sourceId;
+  },
+});
+
+/**
+ * Update scraper module reference (for built-in scrapers)
+ */
+export const updateScraperModule = mutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+    module: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const source = await ctx.db.get(args.sourceId);
+    if (!source) {
+      throw new Error("Scrape source not found");
+    }
+
+    await ctx.db.patch(args.sourceId, {
+      scraperModule: args.module,
+    });
+
+    return args.sourceId;
+  },
+});
+
+/**
+ * Activate a scrape source (enable scheduled scraping)
+ */
+export const activateScrapeSource = mutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+  },
+  handler: async (ctx, args) => {
+    const source = await ctx.db.get(args.sourceId);
+    if (!source) {
+      throw new Error("Scrape source not found");
+    }
+
+    // Require either scraperModule or scraperCode
+    if (!source.scraperModule && !source.scraperCode) {
+      throw new Error("Cannot activate source without scraper code or module");
+    }
+
+    await ctx.db.patch(args.sourceId, {
+      isActive: true,
+      nextScheduledScrape: Date.now() + source.scrapeFrequencyHours * 60 * 60 * 1000,
+    });
+
+    return args.sourceId;
+  },
+});

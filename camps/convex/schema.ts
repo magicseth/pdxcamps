@@ -339,7 +339,15 @@ export default defineSchema({
     name: v.string(),
     url: v.string(),
 
-    // AI-generated scraper configuration
+    // Scraper module name (e.g., "omsi", "portland-parks")
+    // References convex/scraping/scrapers/{module}.ts
+    scraperModule: v.optional(v.string()),
+
+    // Scraper code - stored directly for AI-generated scrapers
+    // This is the actual TypeScript code that will be executed
+    scraperCode: v.optional(v.string()),
+
+    // AI-generated scraper configuration (legacy/fallback)
     scraperConfig: v.object({
       version: v.number(),
       generatedAt: v.number(),
