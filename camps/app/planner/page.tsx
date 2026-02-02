@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useQuery } from 'convex/react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
 import Link from 'next/link';
@@ -42,9 +43,37 @@ export default function PlannerPage() {
 
 function PlannerContent() {
   const currentYear = new Date().getFullYear();
-  const [selectedYear, setSelectedYear] = useState(currentYear);
-  const [selectedChildId, setSelectedChildId] = useState<Id<'children'> | 'all'>('all');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Parse initial state from URL
+  const getInitialYear = useCallback(() => {
+    const yearParam = searchParams.get('year');
+    return yearParam ? parseInt(yearParam) : currentYear;
+  }, [searchParams, currentYear]);
+
+  const getInitialChildId = useCallback(() => {
+    const childParam = searchParams.get('child');
+    return childParam && childParam !== 'all' ? childParam as Id<'children'> : 'all';
+  }, [searchParams]);
+
+  const [selectedYear, setSelectedYear] = useState<number>(getInitialYear);
+  const [selectedChildId, setSelectedChildId] = useState<Id<'children'> | 'all'>(getInitialChildId);
   const [showAddEventModal, setShowAddEventModal] = useState(false);
+
+  // Update URL when filters change
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (selectedYear !== currentYear) params.set('year', selectedYear.toString());
+    if (selectedChildId !== 'all') params.set('child', selectedChildId);
+
+    const queryString = params.toString();
+    const newUrl = queryString ? `?${queryString}` : '';
+
+    if (window.location.search !== newUrl) {
+      router.replace(`/planner${newUrl}`, { scroll: false });
+    }
+  }, [selectedYear, selectedChildId, currentYear, router]);
 
   // Fetch children
   const children = useQuery(api.children.queries.listChildren);

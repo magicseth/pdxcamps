@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
@@ -44,17 +44,54 @@ const GRADE_LABELS: Record<number, string> = {
 export default function DiscoverPage() {
   const params = useParams();
   const citySlug = params.citySlug as string;
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  // Filter state
-  const [startDateAfter, setStartDateAfter] = useState<string>('');
-  const [startDateBefore, setStartDateBefore] = useState<string>('');
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [maxPrice, setMaxPrice] = useState<number | undefined>(undefined);
-  const [hideSoldOut, setHideSoldOut] = useState(false);
-  const [childAge, setChildAge] = useState<number | undefined>(undefined);
-  const [childGrade, setChildGrade] = useState<number | undefined>(undefined);
+  // Parse initial state from URL
+  const getInitialState = useCallback(() => {
+    return {
+      startDateAfter: searchParams.get('from') || '',
+      startDateBefore: searchParams.get('to') || '',
+      selectedCategories: searchParams.get('categories')?.split(',').filter(Boolean) || [],
+      maxPrice: searchParams.get('maxPrice') ? parseInt(searchParams.get('maxPrice')!) : undefined,
+      hideSoldOut: searchParams.get('hideSoldOut') === 'true',
+      childAge: searchParams.get('age') ? parseInt(searchParams.get('age')!) : undefined,
+      childGrade: searchParams.get('grade') ? parseInt(searchParams.get('grade')!) : undefined,
+      selectedOrganizations: searchParams.get('orgs')?.split(',').filter(Boolean) || [],
+    };
+  }, [searchParams]);
+
+  // Filter state - initialized from URL
+  const [startDateAfter, setStartDateAfter] = useState<string>(() => getInitialState().startDateAfter);
+  const [startDateBefore, setStartDateBefore] = useState<string>(() => getInitialState().startDateBefore);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(() => getInitialState().selectedCategories);
+  const [maxPrice, setMaxPrice] = useState<number | undefined>(() => getInitialState().maxPrice);
+  const [hideSoldOut, setHideSoldOut] = useState(() => getInitialState().hideSoldOut);
+  const [childAge, setChildAge] = useState<number | undefined>(() => getInitialState().childAge);
+  const [childGrade, setChildGrade] = useState<number | undefined>(() => getInitialState().childGrade);
   const [showFilters, setShowFilters] = useState(true);
-  const [selectedOrganizations, setSelectedOrganizations] = useState<string[]>([]);
+  const [selectedOrganizations, setSelectedOrganizations] = useState<string[]>(() => getInitialState().selectedOrganizations);
+
+  // Update URL when filters change
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (startDateAfter) params.set('from', startDateAfter);
+    if (startDateBefore) params.set('to', startDateBefore);
+    if (selectedCategories.length > 0) params.set('categories', selectedCategories.join(','));
+    if (maxPrice !== undefined) params.set('maxPrice', maxPrice.toString());
+    if (hideSoldOut) params.set('hideSoldOut', 'true');
+    if (childAge !== undefined) params.set('age', childAge.toString());
+    if (childGrade !== undefined) params.set('grade', childGrade.toString());
+    if (selectedOrganizations.length > 0) params.set('orgs', selectedOrganizations.join(','));
+
+    const queryString = params.toString();
+    const newUrl = queryString ? `?${queryString}` : '';
+
+    // Only update if the URL actually changed
+    if (window.location.search !== newUrl) {
+      router.replace(`/discover/${citySlug}${newUrl}`, { scroll: false });
+    }
+  }, [startDateAfter, startDateBefore, selectedCategories, maxPrice, hideSoldOut, childAge, childGrade, selectedOrganizations, citySlug, router]);
 
   // Fetch city data
   const city = useQuery(api.cities.queries.getCityBySlug, { slug: citySlug });
@@ -81,6 +118,14 @@ export default function DiscoverPage() {
         }
       : 'skip'
   );
+
+  // Filter sessions by selected organizations (client-side)
+  // This useMemo must be called before any early returns to maintain hooks order
+  const filteredSessions = useMemo(() => {
+    if (!sessions) return [];
+    if (selectedOrganizations.length === 0) return sessions;
+    return sessions.filter((s) => selectedOrganizations.includes(s.organizationId));
+  }, [sessions, selectedOrganizations]);
 
   // Loading state
   if (city === undefined) {
@@ -147,13 +192,6 @@ export default function DiscoverPage() {
     childAge !== undefined ||
     childGrade !== undefined ||
     selectedOrganizations.length > 0;
-
-  // Filter sessions by selected organizations (client-side)
-  const filteredSessions = useMemo(() => {
-    if (!sessions) return [];
-    if (selectedOrganizations.length === 0) return sessions;
-    return sessions.filter((s) => selectedOrganizations.includes(s.organizationId));
-  }, [sessions, selectedOrganizations]);
 
   const handleOrganizationToggle = (orgId: string) => {
     setSelectedOrganizations((prev) =>
@@ -589,22 +627,73 @@ function SessionCard({
   const spotsLeft = session.capacity - session.enrolledCount;
   const isSoldOut = session.status === 'sold_out' || spotsLeft <= 0;
 
+  // Get camp image URL (from Convex storage or fallback)
+  const campImageUrl = camp?.resolvedImageUrls?.[0] || null;
+
+  // Category-based colors for placeholder
+  const getCategoryStyle = (categories: string[] | undefined) => {
+    const category = categories?.[0]?.toLowerCase() || '';
+    const styles: Record<string, { bg: string; icon: string }> = {
+      sports: { bg: 'from-green-500 to-emerald-600', icon: '⚽' },
+      arts: { bg: 'from-purple-500 to-pink-600', icon: '🎨' },
+      stem: { bg: 'from-blue-500 to-cyan-600', icon: '🔬' },
+      technology: { bg: 'from-blue-500 to-indigo-600', icon: '💻' },
+      nature: { bg: 'from-green-600 to-teal-600', icon: '🌲' },
+      music: { bg: 'from-pink-500 to-rose-600', icon: '🎵' },
+      academic: { bg: 'from-amber-500 to-orange-600', icon: '📚' },
+      drama: { bg: 'from-red-500 to-pink-600', icon: '🎭' },
+      adventure: { bg: 'from-orange-500 to-red-600', icon: '🏕️' },
+      cooking: { bg: 'from-yellow-500 to-orange-500', icon: '👨‍🍳' },
+      dance: { bg: 'from-fuchsia-500 to-purple-600', icon: '💃' },
+    };
+    return styles[category] || { bg: 'from-slate-500 to-slate-600', icon: '🏕️' };
+  };
+
+  const categoryStyle = getCategoryStyle(camp?.categories);
+
   return (
     <>
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
-        {/* Header with Logo */}
-        <div className="flex items-start gap-3 mb-3">
-          {/* Organization Logo */}
-          {organization?.logoUrl && (
-            <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+        {/* Camp Image or Category Placeholder */}
+        <div className="relative h-32 overflow-hidden">
+          {campImageUrl ? (
+            <img
+              src={campImageUrl}
+              alt={camp?.name || 'Camp'}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                // On error, hide image and show placeholder
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+          ) : (
+            <div className={`w-full h-full bg-gradient-to-br ${categoryStyle.bg} flex items-center justify-center`}>
+              <span className="text-4xl opacity-50">{categoryStyle.icon}</span>
+            </div>
+          )}
+          {/* Status badge overlay */}
+          <span
+            className={`absolute top-2 right-2 px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadge.className}`}
+          >
+            {statusBadge.label}
+          </span>
+          {/* Organization logo overlay */}
+          {organization?.logoUrl &&
+           organization.logoUrl !== '<UNKNOWN>' &&
+           organization.logoUrl.startsWith('http') && (
+            <div className="absolute bottom-2 left-2 w-10 h-10 rounded-lg bg-white dark:bg-slate-800 shadow-md flex items-center justify-center overflow-hidden">
               <img
                 src={organization.logoUrl}
                 alt={organization.name}
-                className="w-10 h-10 object-contain"
+                className="w-8 h-8 object-contain"
               />
             </div>
           )}
-          <div className="flex-1 min-w-0">
+        </div>
+
+        <div className="p-4">
+          {/* Header */}
+          <div className="mb-3">
             <Link
               href={`/session/${session._id}`}
               className="text-lg font-semibold text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 line-clamp-1"
@@ -615,12 +704,6 @@ function SessionCard({
               {organization?.name ?? 'Loading...'}
             </p>
           </div>
-          <span
-            className={`flex-shrink-0 px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadge.className}`}
-          >
-            {statusBadge.label}
-          </span>
-        </div>
 
         {/* Spots Left Bar */}
         {!isSoldOut && (
@@ -686,6 +769,7 @@ function SessionCard({
           >
             <HeartIcon />
           </button>
+        </div>
         </div>
       </div>
 
