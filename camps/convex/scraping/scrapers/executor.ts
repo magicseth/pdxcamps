@@ -252,7 +252,7 @@ async function executeStagehandScraperCode(
     await stagehand.init();
     log("DEBUG", "Stagehand initialized");
 
-    // Get the page
+    // Get the page from context
     const page = stagehand.context.pages()[0];
     await page.goto(config.url, { waitUntil: "domcontentloaded", timeoutMs: 30000 });
     log("DEBUG", "Page loaded", { url: config.url });
@@ -285,16 +285,22 @@ async function executeStagehandScraperCode(
 
     const cleanCode = transpileResult.outputText;
 
+    // Import zod for scrapers to use with stagehand.extract()
+    const { z } = await import("zod");
+
     // Create and execute the scraper function
+    // Pass both page and stagehand so scrapers can use either
+    // The stagehand object has .extract() for AI extraction
+    // Also pass z (zod) for schema definitions
     const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
-    const scraperModule = new AsyncFunction("page", `
+    const scraperModule = new AsyncFunction("page", "stagehand", "z", `
       ${cleanCode}
       return await scrape(page);
     `);
 
     log("DEBUG", "Executing scraper code");
     const sessions = await Promise.race([
-      scraperModule(page),
+      scraperModule(page, stagehand, z),
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("Scraper timeout (120s)")), 120000)
       ),
