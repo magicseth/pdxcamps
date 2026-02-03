@@ -367,7 +367,11 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
       {/* Footer */}
       <footer className="bg-white border-t border-slate-200 py-8 mt-12">
         <div className="max-w-3xl mx-auto px-4 text-center text-slate-500 text-sm">
-          <p>© {new Date().getFullYear()} PDX Camps. Made in Portland.</p>
+          <p className="mb-2">© {new Date().getFullYear()} PDX Camps. Made in Portland.</p>
+          <div className="flex justify-center gap-4">
+            <Link href="/terms" className="hover:text-slate-700">Terms</Link>
+            <Link href="/privacy" className="hover:text-slate-700">Privacy</Link>
+          </div>
         </div>
       </footer>
     </div>

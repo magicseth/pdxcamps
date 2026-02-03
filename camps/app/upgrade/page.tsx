@@ -185,6 +185,14 @@ export default function UpgradePage() {
             </FAQItem>
           </div>
         </div>
+
+        {/* Footer */}
+        <div className="mt-16 text-center text-slate-500 text-sm">
+          <div className="flex justify-center gap-4">
+            <Link href="/terms" className="hover:text-slate-700 dark:hover:text-slate-300">Terms</Link>
+            <Link href="/privacy" className="hover:text-slate-700 dark:hover:text-slate-300">Privacy</Link>
+          </div>
+        </div>
       </div>
     </div>
   );
