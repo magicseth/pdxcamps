@@ -504,6 +504,11 @@ export default defineSchema({
     needsRescan: v.optional(v.boolean()), // Flag to trigger priority re-scan
     rescanRequestedAt: v.optional(v.number()),
     rescanReason: v.optional(v.string()),
+
+    // Closure tracking - for sources that don't actually offer camps
+    closureReason: v.optional(v.string()), // Why this source was marked closed
+    closedAt: v.optional(v.number()), // When it was marked closed
+    closedBy: v.optional(v.string()), // "daemon" or admin user ID
   })
     .index("by_organization", ["organizationId"])
     .index("by_city", ["cityId"])

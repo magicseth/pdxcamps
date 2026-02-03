@@ -1105,3 +1105,55 @@ export const deleteSourceWithData = mutation({
     return { deleted: true };
   },
 });
+
+/**
+ * Mark a source as closed (no camps available)
+ * Used by the daemon when it discovers a source doesn't actually offer camps
+ * e.g., "Central org site - individual clubs may have camps on their own sites"
+ */
+export const markSourceClosed = mutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+    reason: v.string(),
+    closedBy: v.optional(v.string()), // "daemon" or admin identifier
+  },
+  handler: async (ctx, args) => {
+    const source = await ctx.db.get(args.sourceId);
+    if (!source) {
+      throw new Error("Source not found");
+    }
+
+    await ctx.db.patch(args.sourceId, {
+      isActive: false,
+      closureReason: args.reason,
+      closedAt: Date.now(),
+      closedBy: args.closedBy ?? "daemon",
+    });
+
+    return { closed: true, sourceId: args.sourceId };
+  },
+});
+
+/**
+ * Reopen a previously closed source
+ */
+export const reopenSource = mutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+  },
+  handler: async (ctx, args) => {
+    const source = await ctx.db.get(args.sourceId);
+    if (!source) {
+      throw new Error("Source not found");
+    }
+
+    await ctx.db.patch(args.sourceId, {
+      isActive: true,
+      closureReason: undefined,
+      closedAt: undefined,
+      closedBy: undefined,
+    });
+
+    return { reopened: true, sourceId: args.sourceId };
+  },
+});

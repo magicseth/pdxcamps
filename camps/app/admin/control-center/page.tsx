@@ -531,6 +531,7 @@ function SourceDetailPanel({
 
   const submitFeedback = useMutation(api.scraping.development.submitScraperFeedbackFromSource);
   const refreshLogo = useMutation(api.scraping.mutations.refreshSourceLogo);
+  const reopenSource = useMutation(api.scraping.mutations.reopenSource);
 
   const health = getHealthIndicatorFn(source.scraperHealth);
 
@@ -564,6 +565,15 @@ function SourceDetailPanel({
     } catch (error) {
       console.error('Failed to delete source:', error);
       alert(error instanceof Error ? error.message : 'Failed to delete source');
+    }
+  };
+
+  const handleReopenSource = async () => {
+    try {
+      await reopenSource({ sourceId: source._id });
+    } catch (error) {
+      console.error('Failed to reopen source:', error);
+      alert(error instanceof Error ? error.message : 'Failed to reopen source');
     }
   };
 
@@ -755,6 +765,34 @@ function SourceDetailPanel({
             </p>
           )}
         </div>
+
+        {/* Closure Notice */}
+        {source.closureReason && (
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-amber-800 dark:text-amber-200 flex items-center gap-2">
+                  <ClosedIcon className="w-4 h-4" />
+                  Source Marked as Closed
+                </h3>
+                <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+                  {source.closureReason}
+                </p>
+                {source.closedAt && (
+                  <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                    Closed {formatTimestamp(source.closedAt)} by {source.closedBy || 'unknown'}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={handleReopenSource}
+                className="px-3 py-1.5 text-sm bg-amber-100 dark:bg-amber-800 text-amber-800 dark:text-amber-200 rounded hover:bg-amber-200 dark:hover:bg-amber-700"
+              >
+                Reopen Source
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Sessions Preview */}
         <div>
@@ -1413,6 +1451,14 @@ function LinkIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+    </svg>
+  );
+}
+
+function ClosedIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
     </svg>
   );
 }
