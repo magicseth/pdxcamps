@@ -508,28 +508,28 @@ function LandingPage() {
 
             <div className="space-y-4">
               <FAQItem
-                question="Is PDX Camps really free?"
-                answer="Yes! PDX Camps is completely free for families. We aggregate publicly available camp information to help Portland parents plan their summers. No hidden fees, no premium tier (yet)."
+                question="Is this really free? What's the catch?"
+                answer="Truly free, no catch. We built this because we're Portland parents too, and we were tired of the spreadsheet chaos. Eventually we may add premium features, but finding camps and planning your summer will always be free."
               />
               <FAQItem
-                question="Where does the camp data come from?"
-                answer="We collect information from camp provider websites across the Portland metro area—OMSI, Oregon Zoo, Portland Parks & Rec, private providers, and more. We update our data regularly to keep it accurate."
+                question="How do I actually book a camp?"
+                answer="You book directly with each camp—OMSI, Portland Parks, Oregon Zoo, whoever. We link you straight to their registration page. We're here to help you find and plan, not to be another middleman."
               />
               <FAQItem
-                question="Do I register for camps through PDX Camps?"
-                answer="No—we help you discover and plan, but you register directly with each camp provider. We link you straight to their registration page so you can book."
+                question="Can I see camps near my neighborhood?"
+                answer="Yes! Filter by area to find camps close to home, work, or your kids' school. Less driving = more summer. We cover Portland, Beaverton, Lake Oswego, Tigard, West Linn, and surrounding areas."
               />
               <FAQItem
-                question="How is this different from Sawyer or ActivityHero?"
-                answer="Those platforms serve camp operators and only show camps that use their software. PDX Camps shows ALL camps in Portland, regardless of what registration system they use. Plus, our week-by-week planner helps you see your whole summer—not just search for individual camps."
+                question="How does the friends feature work?"
+                answer="Share your planning link with other parents you know. When they're planning too, you can see which camps have friends signed up. Great for coordinating carpools and making sure your kid knows someone at camp."
               />
               <FAQItem
-                question="What ages does this work for?"
-                answer="We have camps for kids ages 3-17, with the most options for ages 5-14. You can filter by age or grade to see exactly what's available for your child."
+                question="My kids are different ages. Does this help?"
+                answer="Absolutely. Add all your kids with their ages/grades, and the planner shows each child's schedule side by side. Filter camps by age to see what works for each kid—or find camps that take siblings together."
               />
               <FAQItem
-                question="Do you cover camps outside Portland?"
-                answer="Right now we're focused on the Portland metro area (including Beaverton, Lake Oswego, Tigard, and surrounding areas). We may expand to other cities in the future!"
+                question="What if a camp isn't listed?"
+                answer="We're constantly adding camps, but if you notice one missing, let us know! We want to have every option available to Portland families."
               />
             </div>
           </div>
