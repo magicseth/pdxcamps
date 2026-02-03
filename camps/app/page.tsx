@@ -1232,20 +1232,20 @@ function PlannerHub({
                 className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 border border-white/40 text-white rounded-lg font-medium text-sm hover:bg-white/30 transition-colors"
               >
                 <ShareIcon />
-                Share Plan
+                Share Schedule
               </button>
             </div>
           </div>
 
-          {/* Share Your Plan - Big CTA */}
+          {/* Share Your Schedule - Big CTA */}
           <div className="bg-gradient-to-r from-surface-dark to-surface rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-4 text-center sm:text-left">
                 <div className="text-4xl">🔗</div>
                 <div>
-                  <h3 className="text-xl font-bold">Share Your Summer Plan!</h3>
+                  <h3 className="text-xl font-bold">Share Your Summer Schedule!</h3>
                   <p className="text-white/80">
-                    Send your plan to friends & family. Coordinate camps together!
+                    Send your schedule to friends & family. Coordinate camps together!
                   </p>
                 </div>
               </div>
@@ -1253,7 +1253,7 @@ function PlannerHub({
                 onClick={() => setShowShareModal(true)}
                 className="flex-shrink-0 px-8 py-4 bg-white text-primary font-bold text-lg rounded-xl hover:bg-surface/20 transition-all shadow-lg hover:shadow-xl hover:scale-105"
               >
-                Share Plan →
+                Share Schedule →
               </button>
             </div>
           </div>
@@ -1277,7 +1277,7 @@ function PlannerHub({
                   href="/upgrade"
                   className="flex-shrink-0 px-4 py-2 bg-gradient-to-r from-accent to-accent-dark text-white font-medium rounded-lg hover:from-accent-dark hover:to-primary transition-all shadow-sm"
                 >
-                  Upgrade — $29
+                  Upgrade
                 </Link>
               </div>
             </div>
@@ -1579,7 +1579,7 @@ function SharePlanModal({
     >
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Share Summer Plans</h2>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Share Summer Schedule</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"
