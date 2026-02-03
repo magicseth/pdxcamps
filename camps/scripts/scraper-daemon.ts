@@ -53,7 +53,8 @@ if (!CONVEX_URL) {
 const client = new ConvexHttpClient(CONVEX_URL);
 
 // Scratchpad directory for Claude Code work
-const SCRATCHPAD_DIR = path.join(process.cwd(), ".scraper-development");
+// Place scraper development outside Next.js project to avoid triggering Turbopack rebuilds
+const SCRATCHPAD_DIR = path.join(process.cwd(), "..", ".scraper-development");
 if (!fs.existsSync(SCRATCHPAD_DIR)) {
   fs.mkdirSync(SCRATCHPAD_DIR, { recursive: true });
 }

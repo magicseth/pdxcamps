@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useAuth } from '@workos-inc/authkit-nextjs/components';
 import type { User } from '@workos-inc/node';
 import { WeekRow, MonthHeader } from '../components/planner/WeekRow';
+import { PlannerGrid } from '../components/planner/PlannerGrid';
 import { CoverageLegend } from '../components/planner/CoverageIndicator';
 import { AddEventModal } from '../components/planner/AddEventModal';
 import { BottomNav } from '../components/shared/BottomNav';
@@ -28,15 +29,38 @@ export default function Home() {
   );
 }
 
+// Market configuration - change this to pivot to other cities
+const CURRENT_MARKET = {
+  slug: 'portland',
+  name: 'Portland',
+  tagline: 'PDX Camps',
+  region: 'Portland Metro Area',
+  heroSubtext: 'OMSI, Oregon Zoo, Portland Parks & Rec, and 100+ more camps in the Portland area.',
+};
+
 // Landing page for unauthenticated users
 function LandingPage() {
+  const featuredCamps = useQuery(api.camps.queries.getFeaturedCamps, {
+    citySlug: CURRENT_MARKET.slug,
+    limit: 6,
+  });
+
+  const featuredSessions = useQuery(api.sessions.queries.getFeaturedSessions, {
+    citySlug: CURRENT_MARKET.slug,
+    limit: 16,
+  });
+
+  const organizationsWithLogos = useQuery(api.organizations.queries.getOrganizationsWithLogos, {
+    citySlug: CURRENT_MARKET.slug,
+  });
+
   return (
     <div className="min-h-screen flex flex-col">
       <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-2xl">☀️</span>
-            <span className="font-bold text-xl">PDX Camps</span>
+            <span className="font-bold text-xl">{CURRENT_MARKET.tagline}</span>
           </div>
           <div className="flex gap-3">
             <a
@@ -55,55 +79,478 @@ function LandingPage() {
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-16">
-        <div className="text-center max-w-2xl">
-          <h1 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-6">
-            Plan your kids' <span className="text-blue-600">summer</span> with confidence
-          </h1>
-          <p className="text-lg text-slate-600 dark:text-slate-400 mb-8">
-            Discover camps, track coverage week-by-week, coordinate with friends, and never worry about gaps in your summer schedule again.
-          </p>
-          <div className="flex gap-4 justify-center">
-            <a
-              href="/sign-up"
-              className="px-8 py-3 text-lg font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-lg shadow-blue-600/25"
-            >
-              Start Planning Free
-            </a>
-            <a
-              href="/discover/portland"
-              className="px-8 py-3 text-lg font-medium border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-            >
-              Browse Camps
-            </a>
+      <main className="flex-1">
+        {/* Hero Section */}
+        <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white">
+          <div className="max-w-6xl mx-auto px-4 py-20">
+            <div className="max-w-3xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full text-sm font-medium mb-6">
+                <span>📍</span>
+                <span>{CURRENT_MARKET.region}</span>
+              </div>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
+                {CURRENT_MARKET.name} summer camps <span className="text-yellow-300">YOUR</span> kids will love
+              </h1>
+              <p className="text-xl text-blue-100 mb-4">
+                {CURRENT_MARKET.heroSubtext}
+              </p>
+              <p className="text-lg text-blue-200 mb-8">
+                Plan week-by-week, track coverage, and never stress about summer again.
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <a
+                  href="/sign-up"
+                  className="px-8 py-4 text-lg font-semibold bg-white text-blue-700 rounded-xl hover:bg-blue-50 shadow-lg transition-all hover:scale-105"
+                >
+                  Start Planning Free
+                </a>
+                <a
+                  href={`/discover/${CURRENT_MARKET.slug}`}
+                  className="px-8 py-4 text-lg font-semibold bg-blue-500/30 text-white border-2 border-white/30 rounded-xl hover:bg-blue-500/50 transition-all"
+                >
+                  Browse All Camps
+                </a>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="mt-16 grid md:grid-cols-3 gap-8 max-w-4xl">
-          <div className="text-center">
-            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl">📅</span>
+        {/* Scrolling Organization Logos */}
+        {organizationsWithLogos && organizationsWithLogos.length > 0 && (
+          <div className="bg-white py-8 overflow-hidden border-b border-slate-200">
+            <div className="max-w-6xl mx-auto px-4 mb-4">
+              <p className="text-center text-sm text-slate-500 font-medium uppercase tracking-wider">
+                The most trusted camps in {CURRENT_MARKET.name}
+              </p>
             </div>
-            <h2 className="font-semibold text-slate-900 dark:text-white mb-2">Week-by-Week Planning</h2>
-            <p className="text-sm text-slate-600 dark:text-slate-400">See your whole summer at a glance. Instantly spot coverage gaps.</p>
+            <div className="relative">
+              <div className="flex items-center gap-12 animate-scroll-slow">
+                {/* First set */}
+                {organizationsWithLogos.map((org) => (
+                  <a
+                    key={org._id}
+                    href={`/discover/${CURRENT_MARKET.slug}?org=${org.slug}`}
+                    className="flex-shrink-0 h-16 w-32 flex items-center justify-center grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition-all duration-300"
+                    title={org.name}
+                  >
+                    <img
+                      src={org.logoUrl!}
+                      alt={org.name}
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </a>
+                ))}
+                {/* Duplicate for seamless loop */}
+                {organizationsWithLogos.map((org) => (
+                  <a
+                    key={`dup-${org._id}`}
+                    href={`/discover/${CURRENT_MARKET.slug}?org=${org.slug}`}
+                    className="flex-shrink-0 h-16 w-32 flex items-center justify-center grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition-all duration-300"
+                    title={org.name}
+                  >
+                    <img
+                      src={org.logoUrl!}
+                      alt={org.name}
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </a>
+                ))}
+              </div>
+            </div>
+            <style jsx>{`
+              @keyframes scroll-slow {
+                0% {
+                  transform: translateX(0);
+                }
+                100% {
+                  transform: translateX(-50%);
+                }
+              }
+              .animate-scroll-slow {
+                animation: scroll-slow 40s linear infinite;
+              }
+              .animate-scroll-slow:hover {
+                animation-play-state: paused;
+              }
+            `}</style>
           </div>
-          <div className="text-center">
-            <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl">🔍</span>
+        )}
+
+        {/* Scrolling Sessions Showcase */}
+        {featuredSessions && featuredSessions.length > 0 && (
+          <div className="bg-slate-900 py-12 overflow-hidden">
+            <div className="max-w-6xl mx-auto px-4 mb-6">
+              <h2 className="text-2xl font-bold text-white">
+                Upcoming camps in <span className="text-yellow-400">{CURRENT_MARKET.name}</span>
+              </h2>
+              <p className="text-slate-400 mt-1">Real sessions with real spots available</p>
             </div>
-            <h2 className="font-semibold text-slate-900 dark:text-white mb-2">Smart Discovery</h2>
-            <p className="text-sm text-slate-600 dark:text-slate-400">Filter by age, category, price, and dates. Find the perfect camp.</p>
+
+            {/* Infinite scroll container */}
+            <div className="relative">
+              <div className="flex gap-4 animate-scroll hover:pause-animation">
+                {/* First set */}
+                {featuredSessions.map((session) => (
+                  <SessionShowcaseCard key={session._id} session={session} citySlug={CURRENT_MARKET.slug} />
+                ))}
+                {/* Duplicate for seamless loop */}
+                {featuredSessions.map((session) => (
+                  <SessionShowcaseCard key={`dup-${session._id}`} session={session} citySlug={CURRENT_MARKET.slug} />
+                ))}
+              </div>
+            </div>
+
+            <style jsx>{`
+              @keyframes scroll {
+                0% {
+                  transform: translateX(0);
+                }
+                100% {
+                  transform: translateX(-50%);
+                }
+              }
+              .animate-scroll {
+                animation: scroll 60s linear infinite;
+              }
+              .animate-scroll:hover {
+                animation-play-state: paused;
+              }
+            `}</style>
           </div>
-          <div className="text-center">
-            <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl">👨‍👩‍👧‍👦</span>
+        )}
+
+        {/* Featured Camps Section */}
+        {featuredCamps && featuredCamps.length > 0 && (
+          <div className="py-16 px-4">
+            <div className="max-w-6xl mx-auto">
+              <div className="text-center mb-10">
+                <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-3">
+                  Popular {CURRENT_MARKET.name} Camps
+                </h2>
+                <p className="text-slate-600 dark:text-slate-400">
+                  Trusted by families across the {CURRENT_MARKET.region}
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {featuredCamps.map((camp) => (
+                  <FeaturedCampCard key={camp._id} camp={camp} citySlug={CURRENT_MARKET.slug} />
+                ))}
+              </div>
+
+              <div className="text-center mt-10">
+                <a
+                  href={`/discover/${CURRENT_MARKET.slug}`}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                >
+                  View All {CURRENT_MARKET.name} Camps
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </a>
+              </div>
             </div>
-            <h2 className="font-semibold text-slate-900 dark:text-white mb-2">Family Coordination</h2>
-            <p className="text-sm text-slate-600 dark:text-slate-400">Add vacations, track multiple kids, share plans with friends.</p>
+          </div>
+        )}
+
+        {/* Features Section */}
+        <div className="bg-slate-100 dark:bg-slate-800/50 py-16 px-4">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-2xl font-bold text-center text-slate-900 dark:text-white mb-10">
+              Everything you need to plan summer
+            </h2>
+            <div className="grid md:grid-cols-3 gap-8">
+              <div className="text-center">
+                <div className="w-14 h-14 bg-green-100 dark:bg-green-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <span className="text-3xl">📅</span>
+                </div>
+                <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Week-by-Week Planning</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400">See your whole summer at a glance. Instantly spot coverage gaps.</p>
+              </div>
+              <div className="text-center">
+                <div className="w-14 h-14 bg-purple-100 dark:bg-purple-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <span className="text-3xl">🔍</span>
+                </div>
+                <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Smart Discovery</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Filter by age, category, price, and dates. Find the perfect camp.</p>
+              </div>
+              <div className="text-center">
+                <div className="w-14 h-14 bg-orange-100 dark:bg-orange-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <span className="text-3xl">👨‍👩‍👧‍👦</span>
+                </div>
+                <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Family Coordination</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Add vacations, track multiple kids, share plans with friends.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* CTA Section */}
+        <div className="py-16 px-4 text-center">
+          <div className="max-w-2xl mx-auto">
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
+              Ready to plan your summer?
+            </h2>
+            <p className="text-lg text-slate-600 dark:text-slate-400 mb-8">
+              Join hundreds of {CURRENT_MARKET.name} families who use {CURRENT_MARKET.tagline} to organize their kids' summers.
+            </p>
+            <a
+              href="/sign-up"
+              className="inline-block px-8 py-4 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-600/25 transition-all hover:scale-105"
+            >
+              Get Started — It's Free
+            </a>
           </div>
         </div>
       </main>
+
+      {/* Footer */}
+      <footer className="bg-slate-900 text-slate-400 py-8 px-4">
+        <div className="max-w-6xl mx-auto text-center text-sm">
+          <p>© {new Date().getFullYear()} {CURRENT_MARKET.tagline}. Made with ☀️ in {CURRENT_MARKET.name}.</p>
+        </div>
+      </footer>
     </div>
+  );
+}
+
+// Featured camp card for landing page
+function FeaturedCampCard({ camp, citySlug }: {
+  camp: {
+    _id: string;
+    name: string;
+    slug: string;
+    description: string;
+    categories: string[];
+    ageRequirements: { minAge?: number; maxAge?: number; minGrade?: number; maxGrade?: number };
+    organizationName?: string;
+    imageUrl?: string;
+    priceRange?: { min: number; max: number };
+    upcomingSessionCount: number;
+  };
+  citySlug: string;
+}) {
+  // Format age range
+  const formatAgeRange = () => {
+    const { minAge, maxAge, minGrade, maxGrade } = camp.ageRequirements;
+    if (minGrade !== undefined || maxGrade !== undefined) {
+      const gradeLabel = (g: number) => (g === 0 ? 'K' : g < 0 ? 'Pre-K' : `${g}`);
+      if (minGrade !== undefined && maxGrade !== undefined) {
+        return `Grades ${gradeLabel(minGrade)}-${gradeLabel(maxGrade)}`;
+      }
+      if (minGrade !== undefined) return `Grades ${gradeLabel(minGrade)}+`;
+      if (maxGrade !== undefined) return `Grades up to ${gradeLabel(maxGrade)}`;
+    }
+    if (minAge !== undefined && maxAge !== undefined) {
+      return `Ages ${minAge}-${maxAge}`;
+    }
+    if (minAge !== undefined) return `Ages ${minAge}+`;
+    if (maxAge !== undefined) return `Ages up to ${maxAge}`;
+    return null;
+  };
+
+  // Format price
+  const formatPrice = () => {
+    if (!camp.priceRange) return null;
+    const { min, max } = camp.priceRange;
+    if (min === max) {
+      return `$${(min / 100).toFixed(0)}`;
+    }
+    return `$${(min / 100).toFixed(0)} - $${(max / 100).toFixed(0)}`;
+  };
+
+  const ageRange = formatAgeRange();
+  const price = formatPrice();
+
+  return (
+    <a
+      href={`/discover/${citySlug}?camp=${camp.slug}`}
+      className="group bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all border border-slate-200 dark:border-slate-700"
+    >
+      {/* Image */}
+      <div className="aspect-[16/10] bg-slate-200 dark:bg-slate-700 relative overflow-hidden">
+        {camp.imageUrl ? (
+          <img
+            src={camp.imageUrl}
+            alt={camp.name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-4xl">
+            🏕️
+          </div>
+        )}
+        {/* Category badge */}
+        {camp.categories[0] && (
+          <span className="absolute top-3 left-3 px-2 py-1 bg-white/90 dark:bg-slate-900/90 rounded-full text-xs font-medium text-slate-700 dark:text-slate-300">
+            {camp.categories[0]}
+          </span>
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="p-4">
+        <h3 className="font-semibold text-slate-900 dark:text-white mb-1 group-hover:text-blue-600 transition-colors line-clamp-1">
+          {camp.name}
+        </h3>
+        {camp.organizationName && (
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">
+            {camp.organizationName}
+          </p>
+        )}
+        <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 mb-3">
+          {camp.description}
+        </p>
+
+        {/* Meta info */}
+        <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+          {ageRange && (
+            <span className="flex items-center gap-1">
+              <span>👤</span>
+              {ageRange}
+            </span>
+          )}
+          {price && (
+            <span className="flex items-center gap-1">
+              <span>💰</span>
+              {price}
+            </span>
+          )}
+          {camp.upcomingSessionCount > 0 && (
+            <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
+              <span>📅</span>
+              {camp.upcomingSessionCount} sessions
+            </span>
+          )}
+        </div>
+      </div>
+    </a>
+  );
+}
+
+// Session showcase card for scrolling display
+function SessionShowcaseCard({ session, citySlug }: {
+  session: {
+    _id: string;
+    campName: string;
+    campSlug: string;
+    organizationName?: string;
+    organizationLogoUrl?: string;
+    imageUrl?: string;
+    startDate: string;
+    endDate: string;
+    price: number;
+    locationName?: string;
+    ageRequirements?: { minAge?: number; maxAge?: number; minGrade?: number; maxGrade?: number };
+    categories: string[];
+    spotsLeft: number;
+    isSoldOut: boolean;
+  };
+  citySlug: string;
+}) {
+  // Format date range
+  const formatDateRange = () => {
+    const start = new Date(session.startDate + 'T12:00:00');
+    const end = new Date(session.endDate + 'T12:00:00');
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    if (start.getMonth() === end.getMonth()) {
+      return `${monthNames[start.getMonth()]} ${start.getDate()}-${end.getDate()}`;
+    }
+    return `${monthNames[start.getMonth()]} ${start.getDate()} - ${monthNames[end.getMonth()]} ${end.getDate()}`;
+  };
+
+  // Format price
+  const formatPrice = () => {
+    return `$${(session.price / 100).toFixed(0)}`;
+  };
+
+  // Format ages
+  const formatAges = () => {
+    if (!session.ageRequirements) return null;
+    const { minAge, maxAge, minGrade, maxGrade } = session.ageRequirements;
+    if (minGrade !== undefined || maxGrade !== undefined) {
+      const gradeLabel = (g: number) => (g === 0 ? 'K' : `${g}`);
+      if (minGrade !== undefined && maxGrade !== undefined) {
+        return `Gr ${gradeLabel(minGrade)}-${gradeLabel(maxGrade)}`;
+      }
+    }
+    if (minAge !== undefined && maxAge !== undefined) {
+      return `${minAge}-${maxAge}y`;
+    }
+    return null;
+  };
+
+  return (
+    <a
+      href={`/discover/${citySlug}?camp=${session.campSlug}`}
+      className="flex-shrink-0 w-72 bg-slate-800 rounded-xl overflow-hidden border border-slate-700 hover:border-blue-500 transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-blue-500/20 group"
+    >
+      {/* Image */}
+      <div className="aspect-[16/10] bg-slate-700 relative overflow-hidden">
+        {session.imageUrl ? (
+          <img
+            src={session.imageUrl}
+            alt={session.campName}
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-4xl bg-gradient-to-br from-blue-600 to-purple-600">
+            🏕️
+          </div>
+        )}
+        {/* Date badge */}
+        <div className="absolute top-3 left-3 px-2.5 py-1 bg-black/70 backdrop-blur-sm rounded-lg text-white text-sm font-medium">
+          {formatDateRange()}
+        </div>
+        {/* Spots indicator */}
+        {session.isSoldOut ? (
+          <div className="absolute top-3 right-3 px-2 py-1 bg-red-500 rounded-lg text-white text-xs font-bold">
+            SOLD OUT
+          </div>
+        ) : session.spotsLeft <= 5 && session.spotsLeft > 0 ? (
+          <div className="absolute top-3 right-3 px-2 py-1 bg-orange-500 rounded-lg text-white text-xs font-bold">
+            {session.spotsLeft} left!
+          </div>
+        ) : null}
+        {/* Organization logo */}
+        {session.organizationLogoUrl && (
+          <div className="absolute bottom-2 left-2 w-10 h-10 rounded-lg bg-white shadow-lg overflow-hidden border border-white/50">
+            <img
+              src={session.organizationLogoUrl}
+              alt={session.organizationName || 'Organization'}
+              className="w-full h-full object-contain p-1"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="p-4">
+        <h3 className="font-semibold text-white text-sm line-clamp-1 group-hover:text-blue-400 transition-colors">
+          {session.campName}
+        </h3>
+        {session.organizationName && (
+          <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">
+            {session.organizationName}
+          </p>
+        )}
+
+        <div className="flex items-center justify-between mt-3">
+          {session.price > 0 ? (
+            <span className="text-lg font-bold text-green-400">{formatPrice()}</span>
+          ) : (
+            <span className="text-sm text-slate-500">Price TBD</span>
+          )}
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            {formatAges() && <span>{formatAges()}</span>}
+            {session.categories[0] && (
+              <span className="px-2 py-0.5 bg-slate-700 rounded-full">{session.categories[0]}</span>
+            )}
+          </div>
+        </div>
+      </div>
+    </a>
   );
 }
 
@@ -192,6 +639,7 @@ function PlannerHub({
   });
   const [showOnlyGaps, setShowOnlyGaps] = useState(false);
   const [showAddEventModal, setShowAddEventModal] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   // Update URL when filters change
   useEffect(() => {
@@ -493,9 +941,36 @@ function PlannerHub({
             </button>
           </div>
 
-          {/* Legend + Gap Filter */}
+          {/* Legend + View Toggle + Gap Filter */}
           <div className="mb-4 flex items-center justify-between flex-wrap gap-3">
-            <CoverageLegend />
+            <div className="flex items-center gap-4">
+              <CoverageLegend />
+              {/* View Toggle */}
+              <div className="flex items-center bg-slate-100 dark:bg-slate-700 rounded-lg p-0.5">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                    viewMode === 'grid'
+                      ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                  title="Grid view"
+                >
+                  <GridIcon />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                    viewMode === 'list'
+                      ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                  title="List view"
+                >
+                  <ListIcon />
+                </button>
+              </div>
+            </div>
             {stats && stats.weeksWithGaps > 0 && (
               <label
                 htmlFor="show-only-gaps"
@@ -529,6 +1004,40 @@ function PlannerHub({
               ))}
               <span className="sr-only">Loading coverage data...</span>
             </div>
+          ) : filteredCoverage.length === 0 ? (
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-8 text-center">
+              {showOnlyGaps && stats && stats.weeksWithGaps === 0 ? (
+                <>
+                  <div className="text-4xl mb-3">🎉</div>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">
+                    No gaps to show!
+                  </h3>
+                  <p className="text-slate-500 dark:text-slate-400">
+                    Amazing work! Every week is covered for summer {selectedYear}.
+                  </p>
+                </>
+              ) : showOnlyGaps ? (
+                <>
+                  <div className="text-4xl mb-3">✨</div>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">
+                    No gaps for {children.find(c => c._id === selectedChildId)?.firstName || 'this child'}!
+                  </h3>
+                  <p className="text-slate-500 dark:text-slate-400">
+                    This child is fully covered for the summer.
+                  </p>
+                </>
+              ) : (
+                <p className="text-slate-500 dark:text-slate-400">
+                  No weeks found for summer {selectedYear}.
+                </p>
+              )}
+            </div>
+          ) : viewMode === 'grid' ? (
+            <PlannerGrid
+              coverage={filteredCoverage}
+              children={selectedChildId === 'all' ? children : children.filter(c => c._id === selectedChildId)}
+              citySlug={defaultCity?.slug}
+            />
           ) : (
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
               {coverageByMonth.map(([month, weeks]) => (
@@ -541,35 +1050,6 @@ function PlannerHub({
                   </div>
                 </div>
               ))}
-              {filteredCoverage.length === 0 && (
-                <div className="p-8 text-center">
-                  {showOnlyGaps && stats && stats.weeksWithGaps === 0 ? (
-                    <>
-                      <div className="text-4xl mb-3">🎉</div>
-                      <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">
-                        No gaps to show!
-                      </h3>
-                      <p className="text-slate-500 dark:text-slate-400">
-                        Amazing work! Every week is covered for summer {selectedYear}.
-                      </p>
-                    </>
-                  ) : showOnlyGaps ? (
-                    <>
-                      <div className="text-4xl mb-3">✨</div>
-                      <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">
-                        No gaps for {children.find(c => c._id === selectedChildId)?.firstName || 'this child'}!
-                      </h3>
-                      <p className="text-slate-500 dark:text-slate-400">
-                        This child is fully covered for the summer.
-                      </p>
-                    </>
-                  ) : (
-                    <p className="text-slate-500 dark:text-slate-400">
-                      No weeks found for summer {selectedYear}.
-                    </p>
-                  )}
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -649,6 +1129,22 @@ function SettingsIcon() {
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  );
+}
+
+function GridIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+    </svg>
+  );
+}
+
+function ListIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
     </svg>
   );
 }

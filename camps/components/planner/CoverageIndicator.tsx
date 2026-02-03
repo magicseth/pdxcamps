@@ -118,22 +118,23 @@ export function CoverageChip({ status, childName, eventTitle, campName, organiza
 
 export function CoverageLegend() {
   const legendItems = [
-    { color: 'bg-green-500', label: 'Covered', tooltip: 'Registered for camp all week' },
-    { color: 'bg-yellow-500', label: 'Partial', tooltip: 'Some days covered, some gaps' },
-    { color: 'bg-red-500', label: 'Gap', tooltip: 'No coverage - needs a camp!' },
-    { color: 'bg-orange-500', label: 'Tentative', tooltip: 'Saved or on waitlist' },
-    { color: 'bg-purple-500', label: 'Event', tooltip: 'Family vacation or trip' },
+    { bg: 'bg-green-100 dark:bg-green-900/40', icon: '✓', iconColor: 'text-green-600 dark:text-green-400', label: 'Covered', tooltip: 'Registered for camp all week' },
+    { bg: 'bg-yellow-100 dark:bg-yellow-900/40', icon: '◐', iconColor: 'text-yellow-600 dark:text-yellow-400', label: 'Partial', tooltip: 'Some days covered, some gaps' },
+    { bg: 'bg-red-50 dark:bg-red-900/20', icon: '•', iconColor: 'text-red-300 dark:text-red-600', label: 'Gap', tooltip: 'No coverage - click to find camps!' },
+    { bg: 'bg-purple-100 dark:bg-purple-900/40', icon: '✈️', iconColor: '', label: 'Event', tooltip: 'Family vacation or trip' },
   ];
 
   return (
-    <div className="flex flex-wrap gap-3 text-xs">
+    <div className="flex flex-wrap gap-2 text-xs">
       {legendItems.map((item) => (
         <div
           key={item.label}
-          className="flex items-center gap-1 cursor-help"
+          className="flex items-center gap-1.5 cursor-help"
           title={item.tooltip}
         >
-          <span className={`w-3 h-3 rounded-full ${item.color}`}></span>
+          <span className={`w-6 h-6 rounded flex items-center justify-center ${item.bg}`}>
+            <span className={item.iconColor}>{item.icon}</span>
+          </span>
           <span className="text-slate-600 dark:text-slate-400">{item.label}</span>
         </div>
       ))}
