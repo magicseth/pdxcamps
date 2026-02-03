@@ -593,7 +593,7 @@ function LocationEditForm({
         <button onClick={onCancel} className="px-4 py-2 bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-white text-sm rounded-lg">
           Cancel
         </button>
-        <button onClick={onGeocode} disabled={geocoding} className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg disabled:opacity-50">
+        <button onClick={onGeocode} disabled={geocoding} className="px-4 py-2 bg-accent text-white text-sm rounded-lg disabled:opacity-50">
           {geocoding ? '...' : 'Geocode'}
         </button>
       </div>
@@ -647,7 +647,7 @@ function LocationDisplay({
         <button
           onClick={onGeocode}
           disabled={geocoding}
-          className="px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-sm rounded-lg disabled:opacity-50"
+          className="px-3 py-1.5 bg-surface/30 dark:bg-purple-900/30 text-primary-dark dark:text-purple-300 text-sm rounded-lg disabled:opacity-50"
         >
           {geocoding ? '...' : 'Geocode'}
         </button>

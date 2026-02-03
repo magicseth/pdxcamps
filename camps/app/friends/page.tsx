@@ -292,7 +292,7 @@ function MyFriends() {
                           friendId: friendship.friend!._id,
                           displayName: friendship.friend!.displayName,
                         })}
-                        className="px-3 py-1.5 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded-md text-sm font-medium hover:bg-purple-200 dark:hover:bg-purple-800"
+                        className="px-3 py-1.5 bg-surface/30 dark:bg-purple-900 text-primary-dark dark:text-purple-300 rounded-md text-sm font-medium hover:bg-purple-200 dark:hover:bg-purple-800"
                       >
                         Share My Calendar
                       </button>
@@ -702,7 +702,7 @@ function CalendarSharingSettings() {
                     <span
                       className={`px-2.5 py-1 rounded-full text-xs font-medium ${
                         share.permission === 'view_details'
-                          ? 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200'
+                          ? 'bg-surface/30 dark:bg-purple-900 text-purple-800 dark:text-purple-200'
                           : 'bg-primary/20 dark:bg-primary-dark text-primary dark:text-white/70'
                       }`}
                     >

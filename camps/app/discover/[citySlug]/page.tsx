@@ -1530,10 +1530,10 @@ function SessionCard({
 
     if (daysUntilStart < 0) return null; // Already started
     if (daysUntilStart === 0) {
-      return { label: 'Starts today!', className: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200', urgent: true };
+      return { label: 'Starts today!', className: 'bg-surface/30 text-purple-800 dark:bg-purple-900 dark:text-purple-200', urgent: true };
     }
     if (daysUntilStart <= 3) {
-      return { label: `Starts in ${daysUntilStart} day${daysUntilStart === 1 ? '' : 's'}`, className: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200', urgent: true };
+      return { label: `Starts in ${daysUntilStart} day${daysUntilStart === 1 ? '' : 's'}`, className: 'bg-surface/30 text-purple-800 dark:bg-purple-900 dark:text-purple-200', urgent: true };
     }
     if (daysUntilStart <= 14) {
       return { label: 'Starting soon', className: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200', urgent: false };

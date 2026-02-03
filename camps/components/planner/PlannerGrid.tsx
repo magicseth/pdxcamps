@@ -191,7 +191,7 @@ function CoverageCell({ data, week, childId, isCurrentWeek, isPastWeek, citySlug
   let tooltip = '';
 
   if (hasEvent) {
-    bgColor = 'bg-purple-100 dark:bg-purple-900/40';
+    bgColor = 'bg-surface/30 dark:bg-surface-dark/40';
     icon = '✈️';
     tooltip = eventTitle || 'Family Event';
   } else if (status === 'full') {
@@ -199,11 +199,11 @@ function CoverageCell({ data, week, childId, isCurrentWeek, isPastWeek, citySlug
     icon = '✓';
     tooltip = campName || 'Covered';
   } else if (status === 'partial') {
-    bgColor = 'bg-yellow-100 dark:bg-yellow-900/40';
+    bgColor = 'bg-accent/20 dark:bg-accent/30';
     icon = '◐';
     tooltip = campName ? `Partial: ${campName}` : 'Partial coverage';
   } else {
-    bgColor = 'bg-red-50 dark:bg-red-900/20';
+    bgColor = 'bg-accent/10 dark:bg-accent/20';
     icon = '';
     tooltip = availableCount !== undefined
       ? `${availableCount} camp${availableCount === 1 ? '' : 's'} available`
@@ -229,13 +229,13 @@ function CoverageCell({ data, week, childId, isCurrentWeek, isPastWeek, citySlug
       ) : status === 'full' ? (
         <span className="text-green-600 dark:text-green-400 font-bold text-sm">{icon}</span>
       ) : status === 'partial' ? (
-        <span className="text-yellow-600 dark:text-yellow-400 text-sm">{icon}</span>
+        <span className="text-accent-dark dark:text-accent text-sm">{icon}</span>
       ) : (
         <>
           {availableCount !== undefined && availableCount > 0 ? (
-            <span className="text-red-600 dark:text-red-400 text-sm font-semibold">{availableCount}</span>
+            <span className="text-accent-dark dark:text-accent text-sm font-semibold">{availableCount}</span>
           ) : (
-            <span className="text-red-300 dark:text-red-700 text-lg">•</span>
+            <span className="text-accent/50 dark:text-accent/60 text-lg">•</span>
           )}
         </>
       )}
@@ -256,7 +256,7 @@ function CoverageCell({ data, week, childId, isCurrentWeek, isPastWeek, citySlug
         <td className="border-b border-l border-slate-100 dark:border-slate-700/50 p-0">
           <button
             onClick={handleClick}
-            className="block w-full h-full hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors cursor-pointer"
+            className="block w-full h-full hover:bg-accent/20 dark:hover:bg-accent/30 transition-colors cursor-pointer"
           >
             {cellContent}
           </button>
@@ -268,7 +268,7 @@ function CoverageCell({ data, week, childId, isCurrentWeek, isPastWeek, citySlug
       <td className="border-b border-l border-slate-100 dark:border-slate-700/50 p-0">
         <Link
           href={citySlug ? `/discover/${citySlug}?from=${week.week.startDate}&to=${week.week.endDate}` : `/planner/week/${week.week.startDate}`}
-          className="block w-full h-full hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+          className="block w-full h-full hover:bg-accent/20 dark:hover:bg-accent/30 transition-colors"
         >
           {cellContent}
         </Link>

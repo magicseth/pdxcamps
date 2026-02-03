@@ -140,7 +140,7 @@ export default function SharedPlanPage({ params }: { params: Promise<{ token: st
               {/* Events */}
               {week.events.map((event, i) => (
                 <div key={i} className="flex items-center gap-3 mt-2">
-                  <div className="w-8 h-8 rounded bg-purple-100 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded bg-surface/30 flex items-center justify-center">
                     {event.eventType === 'vacation' ? '✈️' : event.eventType === 'family_visit' ? '👨‍👩‍👧' : '📅'}
                   </div>
                   <div>
@@ -154,7 +154,7 @@ export default function SharedPlanPage({ params }: { params: Promise<{ token: st
         </div>
 
         {/* CTA Section */}
-        <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-8 text-center">
+        <div className="bg-gradient-to-br from-accent/10 to-accent/5 border-2 border-accent/30 rounded-2xl p-8 text-center">
           <h2 className="text-2xl font-bold text-slate-900 mb-2">
             Plan Your Family's Summer Too!
           </h2>
@@ -164,7 +164,7 @@ export default function SharedPlanPage({ params }: { params: Promise<{ token: st
           </p>
           <Link
             href="/sign-up"
-            className="inline-block px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-lg rounded-xl hover:from-amber-600 hover:to-orange-600 shadow-lg shadow-orange-500/25 transition-all hover:shadow-xl hover:scale-105"
+            className="inline-block px-8 py-4 bg-gradient-to-r from-accent to-accent-dark text-white font-bold text-lg rounded-xl hover:from-accent-dark hover:to-primary shadow-lg shadow-orange-500/25 transition-all hover:shadow-xl hover:scale-105"
           >
             Start Planning Free →
           </Link>

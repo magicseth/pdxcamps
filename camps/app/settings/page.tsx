@@ -896,7 +896,7 @@ function SubscriptionSection() {
 
           <Link
             href="/upgrade"
-            className="block w-full px-4 py-3 text-center bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium rounded-md hover:from-amber-600 hover:to-orange-600 transition-all"
+            className="block w-full px-4 py-3 text-center bg-gradient-to-r from-accent to-accent-dark text-white font-medium rounded-md hover:from-accent-dark hover:to-primary transition-all"
           >
             Upgrade to Summer Pass - $29
           </Link>
@@ -950,7 +950,7 @@ function CancelSubscriptionModal({
           Before you cancel, would you like to switch to our discounted plan instead?
         </p>
 
-        <div className="bg-gradient-to-br from-primary/10 to-indigo-50 dark:from-primary-dark/20 dark:to-indigo-900/20 border border-primary/30 dark:border-primary-dark rounded-lg p-4 mb-6">
+        <div className="bg-gradient-to-br from-primary/10 to-surface/10 dark:from-primary-dark/20 dark:to-indigo-900/20 border border-primary/30 dark:border-primary-dark rounded-lg p-4 mb-6">
           <div className="flex items-center justify-between mb-2">
             <span className="font-semibold text-primary-dark dark:text-white/80">Lite Plan</span>
             <span className="text-2xl font-bold text-primary dark:text-primary-light">$3<span className="text-sm font-normal">/mo</span></span>

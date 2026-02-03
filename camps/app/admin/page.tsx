@@ -351,7 +351,7 @@ function AdminContent() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
+            <div className="w-10 h-10 rounded-lg bg-surface/30 dark:bg-purple-900/30 flex items-center justify-center text-primary dark:text-purple-400">
               <ChartIcon />
             </div>
             <div>

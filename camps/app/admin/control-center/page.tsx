@@ -360,7 +360,7 @@ function ControlCenterContent() {
                   className={`px-4 py-2 text-sm font-medium rounded-md flex items-center gap-2 ${
                     isGeneratingImages
                       ? 'bg-slate-100 text-slate-400 dark:bg-slate-700 cursor-not-allowed'
-                      : 'bg-purple-600 text-white hover:bg-purple-700'
+                      : 'bg-accent text-white hover:bg-purple-700'
                   }`}
                   title="Generate AI images for camps without images"
                 >
@@ -901,7 +901,7 @@ function SourceDetailPanel({
 
         {/* Closure Notice */}
         {source.closureReason && (
-          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-accent/30 dark:border-accent/40 rounded-lg p-4">
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="text-sm font-medium text-amber-800 dark:text-amber-200 flex items-center gap-2">
@@ -1291,7 +1291,7 @@ function DaemonTasksPanel({ tasks }: { tasks: DaemonTask[] }) {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
       case 'in_progress': return 'bg-primary/20 text-primary dark:bg-primary-dark/30 dark:text-white/60';
-      case 'testing': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
+      case 'testing': return 'bg-surface/30 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
       case 'needs_feedback': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
       default: return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300';
     }

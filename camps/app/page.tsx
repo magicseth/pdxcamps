@@ -274,7 +274,7 @@ function LandingPage() {
             </div>
 
             {/* Empathy statement */}
-            <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-8 text-center border border-amber-200">
+            <div className="bg-gradient-to-r from-accent/10 to-accent/5 rounded-2xl p-8 text-center border border-accent/30">
               <p className="text-xl text-slate-700 leading-relaxed">
                 Planning summer shouldn't take more time than <em>enjoying</em> summer.
                 <br />
@@ -814,7 +814,7 @@ function SessionShowcaseCard({ session, citySlug }: {
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-4xl bg-gradient-to-br from-primary to-purple-600">
+          <div className="w-full h-full flex items-center justify-center text-4xl bg-gradient-to-br from-primary to-surface-dark">
             🏕️
           </div>
         )}
@@ -1249,7 +1249,7 @@ function PlannerHub({
               </div>
               <button
                 onClick={() => setShowShareModal(true)}
-                className="flex-shrink-0 px-8 py-4 bg-white text-purple-600 font-bold text-lg rounded-xl hover:bg-purple-50 transition-all shadow-lg hover:shadow-xl hover:scale-105"
+                className="flex-shrink-0 px-8 py-4 bg-white text-primary font-bold text-lg rounded-xl hover:bg-surface/20 transition-all shadow-lg hover:shadow-xl hover:scale-105"
               >
                 Share Plan →
               </button>
@@ -1258,7 +1258,7 @@ function PlannerHub({
 
           {/* Upgrade Banner for Free Users */}
           {!isPremium && subscription !== undefined && (
-            <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-6">
+            <div className="bg-gradient-to-r from-accent/10 to-accent/5 dark:from-accent/20 dark:to-accent/10 border border-accent/30 dark:border-accent/40 rounded-xl p-4 mb-6">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div className="text-2xl">✨</div>
@@ -1273,7 +1273,7 @@ function PlannerHub({
                 </div>
                 <Link
                   href="/upgrade"
-                  className="flex-shrink-0 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium rounded-lg hover:from-amber-600 hover:to-orange-600 transition-all shadow-sm"
+                  className="flex-shrink-0 px-4 py-2 bg-gradient-to-r from-accent to-accent-dark text-white font-medium rounded-lg hover:from-accent-dark hover:to-primary transition-all shadow-sm"
                 >
                   Upgrade — $29
                 </Link>
@@ -1575,7 +1575,7 @@ function SharePlanModal({
                   onClick={() => toggleChild(child._id)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
                     selectedChildIds.has(child._id)
-                      ? 'bg-purple-600 text-white shadow-md'
+                      ? 'bg-accent text-white shadow-md'
                       : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
                   }`}
                 >
@@ -1619,7 +1619,7 @@ function SharePlanModal({
 
             <button
               onClick={handleShare}
-              className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg"
+              className="w-full py-4 bg-gradient-to-r from-accent to-accent-dark text-white font-bold text-lg rounded-xl hover:from-accent-dark hover:to-primary transition-all shadow-lg"
             >
               📤 Share with Friends & Family
             </button>
@@ -1639,7 +1639,7 @@ function SharePlanModal({
             <button
               onClick={handleGenerateLink}
               disabled={isGenerating || selectedChildren.length === 0}
-              className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-4 bg-gradient-to-r from-accent to-accent-dark text-white font-bold text-lg rounded-xl hover:from-accent-dark hover:to-primary transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isGenerating ? 'Generating...' : '🔗 Generate Share Link'}
             </button>
@@ -1665,7 +1665,7 @@ function AppHeader({ user, onSignOut, isPremium }: { user: User | null; onSignOu
           {!isPremium && isPremium !== undefined && (
             <Link
               href="/upgrade"
-              className="text-sm px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium rounded-lg hover:from-amber-600 hover:to-orange-600 transition-all shadow-sm"
+              className="text-sm px-3 py-1.5 bg-gradient-to-r from-accent to-accent-dark text-white font-medium rounded-lg hover:from-accent-dark hover:to-primary transition-all shadow-sm"
             >
               Upgrade
             </Link>

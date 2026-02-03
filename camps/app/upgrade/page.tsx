@@ -71,7 +71,7 @@ export default function UpgradePage() {
           </p>
 
           {canceled && (
-            <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-amber-800 dark:text-amber-200 text-sm">
+            <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-accent/30 dark:border-accent/40 rounded-lg text-amber-800 dark:text-amber-200 text-sm">
               Checkout was canceled. No worries—you can try again when you're ready.
             </div>
           )}
@@ -112,7 +112,7 @@ export default function UpgradePage() {
           </div>
 
           {/* Summer Pass */}
-          <div className="bg-gradient-to-br from-primary to-indigo-700 rounded-2xl shadow-lg p-8 relative overflow-hidden">
+          <div className="bg-gradient-to-br from-primary to-surface-dark rounded-2xl shadow-lg p-8 relative overflow-hidden">
             <div className="absolute top-4 right-4 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full">
               BEST VALUE
             </div>

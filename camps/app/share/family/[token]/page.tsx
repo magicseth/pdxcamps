@@ -42,8 +42,15 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
 
   const childNames = plan.children.map(c => c.childName).join(' & ');
 
-  // Collect all unique camps for the "sign up your kids" section
-  const allCamps = new Map<string, { campName: string; organizationName: string; campSlug: string; citySlug: string; dates: string[] }>();
+  // Collect all unique sessions for the "sign up your kids" section
+  const allCamps = new Map<string, {
+    campName: string;
+    organizationName: string;
+    campSlug: string;
+    citySlug: string;
+    startDate: string;
+    endDate: string;
+  }>();
   for (const child of plan.children) {
     for (const week of child.weeks) {
       for (const camp of week.camps) {
@@ -53,17 +60,22 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
             organizationName: camp.organizationName,
             campSlug: camp.campSlug,
             citySlug: camp.citySlug,
-            dates: [`${week.label} ${week.monthName}`],
+            startDate: camp.startDate,
+            endDate: camp.endDate,
           });
-        } else {
-          const existing = allCamps.get(camp.sessionId)!;
-          if (!existing.dates.includes(`${week.label} ${week.monthName}`)) {
-            existing.dates.push(`${week.label} ${week.monthName}`);
-          }
         }
       }
     }
   }
+
+  // Helper to format date range
+  const formatDateRange = (startDate: string, endDate: string) => {
+    const start = new Date(startDate + 'T12:00:00');
+    const end = new Date(endDate + 'T12:00:00');
+    const startStr = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const endStr = end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return `${startStr} - ${endStr}`;
+  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -85,11 +97,11 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
 
       <main className="max-w-3xl mx-auto px-4 py-8">
         {/* Plan Header */}
-        <div className="bg-gradient-to-br from-purple-600 to-pink-600 rounded-2xl p-6 mb-6 text-white">
+        <div className="bg-gradient-to-br from-accent to-accent-dark rounded-2xl p-6 mb-6 text-white">
           <h1 className="text-2xl font-bold mb-2">
             {childNames}'s Summer {plan.year}
           </h1>
-          <p className="text-purple-100 mb-4">
+          <p className="text-white/80 mb-4">
             Shared by the {plan.familyName} family
           </p>
 
@@ -97,15 +109,15 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
           <div className="grid grid-cols-3 gap-4">
             <div>
               <div className="text-3xl font-bold">{plan.familyStats.totalCoveredWeeks}</div>
-              <div className="text-sm text-purple-100">Weeks Planned</div>
+              <div className="text-sm text-white/80">Weeks Planned</div>
             </div>
             <div>
               <div className="text-3xl font-bold">{plan.familyStats.totalCamps}</div>
-              <div className="text-sm text-purple-100">Camps Booked</div>
+              <div className="text-sm text-white/80">Camps Booked</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-yellow-300">{plan.familyStats.totalGapWeeks}</div>
-              <div className="text-sm text-purple-100">Open Weeks</div>
+              <div className="text-sm text-white/80">Open Weeks</div>
             </div>
           </div>
         </div>
@@ -177,25 +189,33 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
                   {/* Camps */}
                   {week.camps.length > 0 ? (
                     <div className="space-y-2">
-                      {week.camps.map((camp, i) => (
-                        <div key={i} className="flex items-center justify-between gap-3 bg-white rounded-lg p-2 border border-slate-100">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">
-                              {camp.organizationName[0]}
+                      {week.camps.map((camp, i) => {
+                        const formatDate = (dateStr: string) => {
+                          const d = new Date(dateStr + 'T12:00:00');
+                          return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        };
+                        return (
+                          <div key={i} className="flex items-center justify-between gap-3 bg-white rounded-lg p-2 border border-slate-100">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">
+                                {camp.organizationName[0]}
+                              </div>
+                              <div>
+                                <div className="font-medium text-slate-900 text-sm">{camp.campName}</div>
+                                <div className="text-xs text-slate-500">
+                                  {camp.organizationName} · {formatDate(camp.startDate)} - {formatDate(camp.endDate)}
+                                </div>
+                              </div>
                             </div>
-                            <div>
-                              <div className="font-medium text-slate-900 text-sm">{camp.campName}</div>
-                              <div className="text-xs text-slate-500">{camp.organizationName}</div>
-                            </div>
+                            <Link
+                              href={`/discover/${camp.citySlug}?camp=${camp.campSlug}&from=${camp.startDate}&to=${camp.endDate}`}
+                              className="flex-shrink-0 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                              View Session
+                            </Link>
                           </div>
-                          <Link
-                            href={`/discover/${camp.citySlug}?camp=${camp.campSlug}`}
-                            className="flex-shrink-0 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors"
-                          >
-                            View Camp
-                          </Link>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : week.hasEvent ? (
                     <div className="flex items-center gap-3 text-slate-500 text-sm">
@@ -212,21 +232,23 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
           </div>
         ))}
 
-        {/* All Camps Summary */}
+        {/* All Sessions Summary */}
         {allCamps.size > 0 && (
           <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-6">
             <h3 className="font-bold text-slate-900 mb-4">
-              All Camps ({allCamps.size})
+              All Sessions ({allCamps.size})
             </h3>
             <div className="space-y-3">
               {Array.from(allCamps.values()).map((camp, i) => (
                 <div key={i} className="flex items-center justify-between gap-3 p-3 bg-slate-50 rounded-lg">
                   <div>
                     <div className="font-medium text-slate-900">{camp.campName}</div>
-                    <div className="text-sm text-slate-500">{camp.organizationName}</div>
+                    <div className="text-sm text-slate-500">
+                      {camp.organizationName} · {formatDateRange(camp.startDate, camp.endDate)}
+                    </div>
                   </div>
                   <Link
-                    href={`/discover/${camp.citySlug}?camp=${camp.campSlug}`}
+                    href={`/discover/${camp.citySlug}?camp=${camp.campSlug}&from=${camp.startDate}&to=${camp.endDate}`}
                     className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     Add to My Plan
@@ -238,7 +260,7 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
         )}
 
         {/* Big CTA Section */}
-        <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-8 text-center">
+        <div className="bg-gradient-to-br from-accent/10 to-accent/5 border-2 border-accent/30 rounded-2xl p-8 text-center">
           <h2 className="text-2xl font-bold text-slate-900 mb-2">
             Plan your summer together!
           </h2>
@@ -247,7 +269,7 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
           </p>
           <Link
             href="/sign-up"
-            className="inline-block px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-lg rounded-xl hover:from-amber-600 hover:to-orange-600 shadow-lg shadow-orange-500/25 transition-all hover:shadow-xl hover:scale-105"
+            className="inline-block px-8 py-4 bg-gradient-to-r from-accent to-accent-dark text-white font-bold text-lg rounded-xl hover:from-accent-dark hover:to-primary shadow-lg shadow-orange-500/25 transition-all hover:shadow-xl hover:scale-105"
           >
             Sign Up Free
           </Link>

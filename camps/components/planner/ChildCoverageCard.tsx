@@ -101,10 +101,10 @@ export function ChildCoverageCard({
 
   const statusColors = {
     full: 'border-green-500 bg-green-50 dark:bg-green-900/20',
-    partial: 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20',
-    gap: 'border-red-500 bg-red-50 dark:bg-red-900/20',
-    tentative: 'border-orange-500 bg-orange-50 dark:bg-orange-900/20',
-    event: 'border-purple-500 bg-purple-50 dark:bg-purple-900/20',
+    partial: 'border-accent bg-accent/10 dark:bg-accent/20',
+    gap: 'border-accent bg-accent/10 dark:bg-accent/20',
+    tentative: 'border-accent-light bg-accent/5 dark:bg-accent/15',
+    event: 'border-surface bg-surface/20 dark:bg-surface-dark/20',
   };
 
   const registeredCamps = registrations.filter((r) => r.status === 'registered');
@@ -143,7 +143,7 @@ export function ChildCoverageCard({
         {events.length > 0 && (
           <button
             onClick={() => onEditEvent?.(events[0])}
-            className="text-xs text-purple-700 dark:text-purple-300 font-medium flex items-center gap-1 hover:text-purple-900 dark:hover:text-purple-100 group"
+            className="text-xs text-primary-dark dark:text-purple-300 font-medium flex items-center gap-1 hover:text-purple-900 dark:hover:text-white/80 group"
             title="Click to edit event"
           >
             <span>✈</span> {events[0].title}

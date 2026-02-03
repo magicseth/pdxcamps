@@ -100,12 +100,12 @@ export function WeekRow({ data, isFirstOfMonth = false }: WeekRowProps) {
         {sharedEvent ? (
           // Show single event badge for shared events
           <span
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 text-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface/30 text-primary dark:bg-surface-dark/40 dark:text-surface-light text-sm"
             title={sharedEvent.title}
           >
             <span>✈</span>
             <span className="font-medium">All</span>
-            <span className="text-purple-600 dark:text-purple-300 truncate max-w-[150px]">
+            <span className="text-primary-light dark:text-surface-light truncate max-w-[150px]">
               {sharedEvent.title}
             </span>
           </span>

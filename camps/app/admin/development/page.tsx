@@ -414,7 +414,7 @@ function RequestRow({ request }: { request: any }) {
           <div className="flex items-center gap-2">
             <StatusBadge status={request.status} />
             {request.cityName && (
-              <span className="px-1.5 py-0.5 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded">
+              <span className="px-1.5 py-0.5 text-xs bg-surface/30 dark:bg-purple-900/30 text-primary-dark dark:text-purple-300 rounded">
                 {request.cityName}
               </span>
             )}
@@ -585,7 +585,7 @@ function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     pending: 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300',
     in_progress: 'bg-primary/20 dark:bg-primary-dark/30 text-primary-dark dark:text-white/60',
-    testing: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300',
+    testing: 'bg-surface/30 dark:bg-purple-900/30 text-primary-dark dark:text-purple-300',
     needs_feedback: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300',
     completed: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
     failed: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',

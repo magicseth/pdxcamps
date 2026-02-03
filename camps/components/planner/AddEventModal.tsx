@@ -16,7 +16,7 @@ const EVENT_TYPES: { value: EventType; label: string; icon: string }[] = [
 ];
 
 const COLORS = [
-  { value: 'purple', label: 'Purple', class: 'bg-purple-500' },
+  { value: 'purple', label: 'Purple', class: 'bg-surface/200' },
   { value: 'blue', label: 'Blue', class: 'bg-primary' },
   { value: 'green', label: 'Green', class: 'bg-green-500' },
   { value: 'yellow', label: 'Yellow', class: 'bg-yellow-500' },

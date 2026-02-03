@@ -28,7 +28,7 @@ const STATUS_CONFIG: Record<
     title: 'Partially covered',
   },
   gap: {
-    bg: 'bg-red-500',
+    bg: 'bg-accent',
     icon: '○',
     label: 'Gap',
     title: 'No coverage - needs camp',
@@ -40,7 +40,7 @@ const STATUS_CONFIG: Record<
     title: 'Interested or waitlisted only',
   },
   event: {
-    bg: 'bg-purple-500',
+    bg: 'bg-surface/200',
     icon: '✈',
     label: 'Event',
     title: 'Family event',
@@ -81,12 +81,12 @@ export function CoverageChip({ status, childName, eventTitle, campName, organiza
   if (status === 'event' && eventTitle) {
     return (
       <span
-        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 text-sm"
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface/30 text-primary dark:bg-surface-dark/40 dark:text-surface-light text-sm"
         title={`${childName}: ${eventTitle}`}
       >
         <span>✈</span>
         <span className="font-medium">{childName}</span>
-        <span className="text-purple-600 dark:text-purple-300 truncate max-w-[100px]">
+        <span className="text-primary-light dark:text-surface-light truncate max-w-[100px]">
           {eventTitle}
         </span>
       </span>
@@ -95,10 +95,10 @@ export function CoverageChip({ status, childName, eventTitle, campName, organiza
 
   const bgColors: Record<CoverageStatus, string> = {
     full: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-    partial: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-    gap: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 ring-1 ring-red-300 dark:ring-red-700',
-    tentative: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
-    event: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+    partial: 'bg-accent/20 text-accent-dark dark:bg-accent/30 dark:text-accent-light',
+    gap: 'bg-accent/10 text-accent-dark dark:bg-accent/20 dark:text-accent ring-1 ring-accent/30 dark:ring-accent/50',
+    tentative: 'bg-accent/15 text-accent-dark dark:bg-accent/25 dark:text-accent',
+    event: 'bg-surface/30 text-primary dark:bg-surface-dark/40 dark:text-surface-light',
   };
 
   return (
@@ -119,9 +119,9 @@ export function CoverageChip({ status, childName, eventTitle, campName, organiza
 export function CoverageLegend() {
   const legendItems = [
     { bg: 'bg-green-100 dark:bg-green-900/40', icon: '✓', iconColor: 'text-green-600 dark:text-green-400', label: 'Covered', tooltip: 'Registered for camp all week' },
-    { bg: 'bg-yellow-100 dark:bg-yellow-900/40', icon: '◐', iconColor: 'text-yellow-600 dark:text-yellow-400', label: 'Partial', tooltip: 'Some days covered, some gaps' },
-    { bg: 'bg-red-50 dark:bg-red-900/20', icon: '•', iconColor: 'text-red-300 dark:text-red-600', label: 'Gap', tooltip: 'No coverage - click to find camps!' },
-    { bg: 'bg-purple-100 dark:bg-purple-900/40', icon: '✈️', iconColor: '', label: 'Event', tooltip: 'Family vacation or trip' },
+    { bg: 'bg-accent/20 dark:bg-accent/30', icon: '◐', iconColor: 'text-accent-dark dark:text-accent', label: 'Partial', tooltip: 'Some days covered, some gaps' },
+    { bg: 'bg-accent/10 dark:bg-accent/20', icon: '•', iconColor: 'text-accent/60 dark:text-accent', label: 'Gap', tooltip: 'No coverage - click to find camps!' },
+    { bg: 'bg-surface/30 dark:bg-surface-dark/40', icon: '✈️', iconColor: '', label: 'Event', tooltip: 'Family vacation or trip' },
   ];
 
   return (

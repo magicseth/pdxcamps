@@ -256,7 +256,7 @@ export default function SavedCampsPage() {
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-8">
         {/* Upgrade Banner for Free Users */}
         {!isPremium && subscription !== undefined && savedCount >= FREE_LIMIT - 1 && (
-          <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+          <div className="bg-gradient-to-r from-accent/10 to-accent/5 dark:from-accent/20 dark:to-accent/10 border border-accent/30 dark:border-accent/40 rounded-xl p-4">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className="text-2xl">💾</div>
@@ -273,7 +273,7 @@ export default function SavedCampsPage() {
               </div>
               <Link
                 href="/upgrade"
-                className="flex-shrink-0 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium rounded-lg hover:from-amber-600 hover:to-orange-600 transition-all shadow-sm"
+                className="flex-shrink-0 px-4 py-2 bg-gradient-to-r from-accent to-accent-dark text-white font-medium rounded-lg hover:from-accent-dark hover:to-primary transition-all shadow-sm"
               >
                 Upgrade
               </Link>

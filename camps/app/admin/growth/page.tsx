@@ -797,7 +797,7 @@ function getStatusBadgeClass(status: string): string {
     case 'rejected':
       return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
     case 'scraper_generated':
-      return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
+      return 'bg-surface/30 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
     case 'duplicate':
       return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300';
     default:
