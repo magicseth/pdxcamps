@@ -40,6 +40,7 @@ export interface ChildWeekCoverage {
     organizationLogoUrl: string | null;
     status: "interested" | "waitlisted" | "registered" | "cancelled";
     overlappingDays: number;
+    registrationUrl: string | null;
   }[];
   events: {
     eventId: Id<"familyEvents">;
@@ -203,6 +204,7 @@ export const getSummerCoverage = query({
               organizationLogoUrl: orgLogoUrl,
               status: r.status,
               overlappingDays,
+              registrationUrl: session.externalRegistrationUrl ?? null,
             };
           })
           .filter((r): r is NonNullable<typeof r> => r !== null);

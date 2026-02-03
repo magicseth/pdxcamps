@@ -154,6 +154,7 @@ interface OrganizedOrg {
 function MarketSeedingTab({ cities }: { cities: any[] | undefined }) {
   // New automated workflow
   const queueDirectoryUrls = useMutation(api.scraping.directoryDaemon.queueDirectoryUrls);
+  const seedCampUrls = useMutation(api.scraping.directoryDaemon.seedCampUrls);
   const queueStatus = useQuery(api.scraping.directoryDaemon.getQueueStatus, {});
 
   // Legacy manual workflow
@@ -398,11 +399,73 @@ function MarketSeedingTab({ cities }: { cities: any[] | undefined }) {
         )}
       </div>
 
-      {/* Automated Queue */}
+      {/* Direct Camp URL Seeding - No Scraping */}
       <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
-        <h3 className="text-lg font-semibold mb-4">2. Queue Directory URLs (Automated)</h3>
+        <h3 className="text-lg font-semibold mb-4">2. Add Camp URLs (Direct)</h3>
         <p className="text-sm text-slate-500 mb-4">
-          Paste directory URLs below (one per line). The daemon will automatically scrape them and create organizations.
+          Paste camp organization URLs below (one per line). Creates organizations and scrape sources immediately - no scraping needed.
+        </p>
+        <div className="space-y-4">
+          <textarea
+            value={manualUrls}
+            onChange={(e) => setManualUrls(e.target.value)}
+            placeholder="https://omsi.edu/camps&#10;https://oregonzoo.org/education/camps&#10;https://example.com/summer-camps"
+            rows={8}
+            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white font-mono text-sm"
+          />
+          <button
+            onClick={async () => {
+              if (!selectedCitySlug || !manualUrls.trim()) {
+                setError('Select a city and enter at least one URL');
+                return;
+              }
+              setIsLoading(true);
+              setError(null);
+              try {
+                const urls = manualUrls.split('\n').map(u => u.trim()).filter(u => u.startsWith('http'));
+                const result = await seedCampUrls({
+                  citySlug: selectedCitySlug,
+                  urls
+                });
+                setManualUrls('');
+                setSeedingResult({
+                  success: true,
+                  cityId: null,
+                  results: result.results.map(r => ({
+                    url: r.url,
+                    name: r.name,
+                    organizationId: null,
+                    sourceId: null,
+                    developmentRequestId: null,
+                    status: r.status as 'created' | 'exists' | 'error',
+                  })),
+                  summary: {
+                    total: result.total,
+                    created: result.created,
+                    existing: result.existed,
+                    errors: result.total - result.created - result.existed,
+                  }
+                });
+              } catch (err) {
+                setError(err instanceof Error ? err.message : 'Failed to seed URLs');
+              } finally {
+                setIsLoading(false);
+              }
+            }}
+            disabled={isLoading || !selectedCitySlug}
+            className="px-6 py-3 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 disabled:opacity-50"
+          >
+            {isLoading ? 'Creating...' : 'Create Organizations'}
+          </button>
+        </div>
+      </div>
+
+      {/* Directory Queue (for automated scraping) */}
+      <details className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+        <summary className="p-6 cursor-pointer text-lg font-semibold">Queue Directory URLs (Automated Scraping)</summary>
+        <div className="p-6 pt-0">
+        <p className="text-sm text-slate-500 mb-4">
+          Queue directory/listing pages to be scraped. May fail with 403 if site blocks bots.
         </p>
         <div className="space-y-4">
           <textarea

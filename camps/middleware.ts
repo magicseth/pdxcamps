@@ -1,28 +1,14 @@
 import { authkitMiddleware } from '@workos-inc/authkit-nextjs';
-import { NextRequest, NextResponse } from 'next/server';
 
-const workosMiddleware = authkitMiddleware({
+// For multi-domain support, set WORKOS_REDIRECT_URI env var per deployment
+// or add all callback URLs to WorkOS dashboard
+export default authkitMiddleware({
   eagerAuth: true,
   middlewareAuth: {
     enabled: true,
     unauthenticatedPaths: ['/', '/sign-in', '/sign-up', '/share/:path*', '/discover/:path*', '/terms', '/privacy'],
   },
 });
-
-// Wrapper to dynamically set redirect URI based on request host
-export default async function middleware(request: NextRequest) {
-  const host = request.headers.get('host') || 'localhost:3000';
-  const protocol = host.includes('localhost') ? 'http' : 'https';
-  const redirectUri = `${protocol}://${host}/callback`;
-
-  // Clone request with x-redirect-uri header for WorkOS
-  const requestWithRedirect = new NextRequest(request, {
-    headers: new Headers(request.headers),
-  });
-  requestWithRedirect.headers.set('x-redirect-uri', redirectUri);
-
-  return workosMiddleware(requestWithRedirect);
-}
 
 export const config = {
   matcher: [
