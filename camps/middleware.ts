@@ -1,13 +1,30 @@
 import { authkitMiddleware } from '@workos-inc/authkit-nextjs';
 
-// For multi-domain support, set WORKOS_REDIRECT_URI env var per deployment
-// or add all callback URLs to WorkOS dashboard
+// Determine redirect URI based on environment
+const getRedirectUri = () => {
+  // Check for explicit env var first
+  if (process.env.WORKOS_REDIRECT_URI) {
+    return process.env.WORKOS_REDIRECT_URI;
+  }
+  // Netlify production
+  if (process.env.URL) {
+    return `${process.env.URL}/callback`;
+  }
+  // Vercel
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}/callback`;
+  }
+  // Default for local dev
+  return 'http://localhost:3000/callback';
+};
+
 export default authkitMiddleware({
   eagerAuth: true,
   middlewareAuth: {
     enabled: true,
     unauthenticatedPaths: ['/', '/sign-in', '/sign-up', '/share/:path*', '/discover/:path*', '/terms', '/privacy'],
   },
+  redirectUri: getRedirectUri(),
 });
 
 export const config = {
