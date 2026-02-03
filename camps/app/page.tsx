@@ -497,6 +497,81 @@ function LandingPage() {
           </section>
         )}
 
+        {/* Pricing Section */}
+        <section className="py-20 px-4 bg-white">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+                Simple pricing. Start free.
+              </h2>
+              <p className="text-xl text-slate-600">
+                Try everything with our free plan. Upgrade when you need more.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+              {/* Free Plan */}
+              <div className="bg-slate-50 rounded-2xl p-8 border-2 border-slate-200">
+                <div className="text-center mb-6">
+                  <h3 className="text-xl font-bold text-slate-900 mb-2">Free</h3>
+                  <div className="text-4xl font-bold text-slate-900">$0</div>
+                  <p className="text-slate-500 mt-1">forever</p>
+                </div>
+                <ul className="space-y-3 mb-8">
+                  <PricingFeature included>Browse all {CURRENT_MARKET.name} camps</PricingFeature>
+                  <PricingFeature included>Plan for 1 child</PricingFeature>
+                  <PricingFeature included>See 4 weeks of summer</PricingFeature>
+                  <PricingFeature included>Save up to 5 camps</PricingFeature>
+                  <PricingFeature>All 12 weeks</PricingFeature>
+                  <PricingFeature>Unlimited children</PricingFeature>
+                  <PricingFeature>Registration deadline reminders</PricingFeature>
+                  <PricingFeature>Calendar export</PricingFeature>
+                </ul>
+                <a
+                  href="/sign-up"
+                  className="block w-full py-3 px-6 text-center font-semibold bg-white border-2 border-slate-300 rounded-xl text-slate-700 hover:border-slate-400 hover:bg-slate-50 transition-colors"
+                >
+                  Get Started Free
+                </a>
+              </div>
+
+              {/* Premium Plan */}
+              <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-8 text-white relative overflow-hidden">
+                {/* Popular badge */}
+                <div className="absolute top-4 right-4 px-3 py-1 bg-amber-400 text-amber-900 text-xs font-bold rounded-full">
+                  BEST VALUE
+                </div>
+                <div className="text-center mb-6">
+                  <h3 className="text-xl font-bold mb-2">Summer Pass</h3>
+                  <div className="text-4xl font-bold">$29</div>
+                  <p className="text-blue-200 mt-1">one-time for summer 2025</p>
+                  <p className="text-sm text-blue-300 mt-2">or $5/month</p>
+                </div>
+                <ul className="space-y-3 mb-8">
+                  <PricingFeature included light>Browse all {CURRENT_MARKET.name} camps</PricingFeature>
+                  <PricingFeature included light>Unlimited children</PricingFeature>
+                  <PricingFeature included light>All 12 weeks of summer</PricingFeature>
+                  <PricingFeature included light>Unlimited saved camps</PricingFeature>
+                  <PricingFeature included light>Registration deadline reminders</PricingFeature>
+                  <PricingFeature included light>Export to Google/Apple Calendar</PricingFeature>
+                  <PricingFeature included light>Share calendar with co-parent</PricingFeature>
+                  <PricingFeature included light>Priority support</PricingFeature>
+                </ul>
+                <a
+                  href="/sign-up"
+                  className="block w-full py-3 px-6 text-center font-semibold bg-white text-blue-700 rounded-xl hover:bg-blue-50 transition-colors shadow-lg"
+                >
+                  Start Free, Upgrade Anytime
+                </a>
+              </div>
+            </div>
+
+            <p className="text-center text-slate-500 mt-8 text-sm">
+              All plans include access to 100+ camps. Premium features unlock after free trial.
+            </p>
+          </div>
+        </section>
+
         {/* FAQ Section */}
         <section className="py-20 px-4 bg-slate-50">
           <div className="max-w-3xl mx-auto">
@@ -509,7 +584,7 @@ function LandingPage() {
             <div className="space-y-4">
               <FAQItem
                 question="Is this really free? What's the catch?"
-                answer="Truly free, no catch. We built this because we're Portland parents too, and we were tired of the spreadsheet chaos. Eventually we may add premium features, but finding camps and planning your summer will always be free."
+                answer="The free plan lets you browse all camps, plan for one child, and see 4 weeks of summer. That's enough for many families! If you need to plan for multiple kids, see all 12 weeks, or want deadline reminders, our Summer Pass is $29 one-time (or $5/month). We're Portland parents too—we keep it affordable."
               />
               <FAQItem
                 question="How do I actually book a camp?"
@@ -597,6 +672,21 @@ function FeatureCard({ icon, title, description }: { icon: string; title: string
       <h3 className="font-semibold text-lg text-slate-900 mb-2">{title}</h3>
       <p className="text-slate-600">{description}</p>
     </div>
+  );
+}
+
+function PricingFeature({ children, included = false, light = false }: { children: React.ReactNode; included?: boolean; light?: boolean }) {
+  return (
+    <li className={`flex items-center gap-3 ${light ? 'text-white' : included ? 'text-slate-900' : 'text-slate-400'}`}>
+      {included ? (
+        <CheckCircleIcon className={`w-5 h-5 flex-shrink-0 ${light ? 'text-green-300' : 'text-green-500'}`} />
+      ) : (
+        <svg className="w-5 h-5 flex-shrink-0 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <circle cx="12" cy="12" r="10" strokeWidth="2" />
+        </svg>
+      )}
+      <span className={!included ? 'line-through' : ''}>{children}</span>
+    </li>
   );
 }
 
