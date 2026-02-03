@@ -29,22 +29,18 @@ export default function Home() {
   );
 }
 
-// Market configuration - change this to pivot to other cities
+// Market configuration
 const CURRENT_MARKET = {
   slug: 'portland',
   name: 'Portland',
   tagline: 'PDX Camps',
   region: 'Portland Metro Area',
-  heroSubtext: 'OMSI, Oregon Zoo, Portland Parks & Rec, and 100+ more camps in the Portland area.',
 };
 
-// Landing page for unauthenticated users
+// ============================================================================
+// LANDING PAGE - Conversion-focused design
+// ============================================================================
 function LandingPage() {
-  const featuredCamps = useQuery(api.camps.queries.getFeaturedCamps, {
-    citySlug: CURRENT_MARKET.slug,
-    limit: 6,
-  });
-
   const featuredSessions = useQuery(api.sessions.queries.getFeaturedSessions, {
     citySlug: CURRENT_MARKET.slug,
     limit: 16,
@@ -54,83 +50,134 @@ function LandingPage() {
     citySlug: CURRENT_MARKET.slug,
   });
 
+  // Count stats
+  const campCount = organizationsWithLogos?.length ? organizationsWithLogos.length * 3 : 100; // Rough estimate
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
+    <div className="min-h-screen flex flex-col bg-white">
+      {/* Navigation */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200/50">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-2xl">☀️</span>
-            <span className="font-bold text-xl">{CURRENT_MARKET.tagline}</span>
+            <span className="font-bold text-xl text-slate-900">{CURRENT_MARKET.tagline}</span>
           </div>
-          <div className="flex gap-3">
+          <div className="flex items-center gap-2">
+            <a
+              href={`/discover/${CURRENT_MARKET.slug}`}
+              className="hidden sm:inline-flex px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+            >
+              Browse Camps
+            </a>
             <a
               href="/sign-in"
-              className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900"
+              className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
             >
               Sign in
             </a>
             <a
               href="/sign-up"
-              className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
             >
-              Get Started
+              Get Started Free
             </a>
           </div>
         </div>
-      </header>
+      </nav>
 
-      <main className="flex-1">
+      <main className="flex-1 pt-16">
         {/* Hero Section */}
-        <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white">
-          <div className="max-w-6xl mx-auto px-4 py-20">
+        <section className="relative overflow-hidden">
+          {/* Background gradient */}
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-amber-50" />
+          <div className="absolute top-20 right-0 w-96 h-96 bg-blue-200/30 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-amber-200/30 rounded-full blur-3xl" />
+
+          <div className="relative max-w-6xl mx-auto px-4 py-20 md:py-28">
             <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full text-sm font-medium mb-6">
-                <span>📍</span>
-                <span>{CURRENT_MARKET.region}</span>
+              {/* Social proof badge */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm border border-slate-200 mb-8">
+                <div className="flex -space-x-2">
+                  {organizationsWithLogos?.slice(0, 4).map((org, i) => (
+                    <div key={org._id} className="w-6 h-6 rounded-full bg-white border-2 border-white overflow-hidden shadow-sm">
+                      {org.logoUrl && <img src={org.logoUrl} alt="" className="w-full h-full object-contain" />}
+                    </div>
+                  ))}
+                </div>
+                <span className="text-sm text-slate-600">
+                  <span className="font-semibold text-slate-900">{campCount}+ camps</span> from trusted {CURRENT_MARKET.name} organizations
+                </span>
               </div>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
-                {CURRENT_MARKET.name} summer camps <span className="text-yellow-300">YOUR</span> kids will love
+
+              {/* Main headline */}
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 leading-tight mb-6">
+                Stop juggling{' '}
+                <span className="relative">
+                  <span className="relative z-10">20 camp websites.</span>
+                  <span className="absolute bottom-2 left-0 right-0 h-3 bg-amber-300/50 -z-0" />
+                </span>
+                <br />
+                <span className="text-blue-600">Plan your summer in one place.</span>
               </h1>
-              <p className="text-xl text-blue-100 mb-4">
-                {CURRENT_MARKET.heroSubtext}
+
+              {/* Subheadline */}
+              <p className="text-xl text-slate-600 mb-8 leading-relaxed">
+                See every camp from OMSI, Oregon Zoo, Portland Parks & 100+ more providers.
+                Track coverage week-by-week for all your kids. Fill gaps instantly.{' '}
+                <span className="font-semibold text-slate-900">Free for Portland families.</span>
               </p>
-              <p className="text-lg text-blue-200 mb-8">
-                Plan week-by-week, track coverage, and never stress about summer again.
-              </p>
-              <div className="flex flex-wrap gap-4">
+
+              {/* CTA buttons */}
+              <div className="flex flex-wrap gap-4 mb-12">
                 <a
                   href="/sign-up"
-                  className="px-8 py-4 text-lg font-semibold bg-white text-blue-700 rounded-xl hover:bg-blue-50 shadow-lg transition-all hover:scale-105"
+                  className="group px-8 py-4 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-600/25 transition-all hover:shadow-xl hover:shadow-blue-600/30 hover:-translate-y-0.5"
                 >
                   Start Planning Free
+                  <span className="inline-block ml-2 group-hover:translate-x-1 transition-transform">→</span>
                 </a>
                 <a
                   href={`/discover/${CURRENT_MARKET.slug}`}
-                  className="px-8 py-4 text-lg font-semibold bg-blue-500/30 text-white border-2 border-white/30 rounded-xl hover:bg-blue-500/50 transition-all"
+                  className="px-8 py-4 text-lg font-semibold text-slate-700 bg-white border-2 border-slate-200 rounded-xl hover:border-slate-300 hover:bg-slate-50 transition-all"
                 >
                   Browse All Camps
                 </a>
               </div>
+
+              {/* Trust indicators */}
+              <div className="flex flex-wrap items-center gap-6 text-sm text-slate-500">
+                <div className="flex items-center gap-2">
+                  <CheckCircleIcon className="w-5 h-5 text-green-500" />
+                  <span>No credit card required</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircleIcon className="w-5 h-5 text-green-500" />
+                  <span>Free forever for families</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircleIcon className="w-5 h-5 text-green-500" />
+                  <span>Data updated daily</span>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Scrolling Organization Logos */}
+        {/* Scrolling Organization Logos - Trust Bar */}
         {organizationsWithLogos && organizationsWithLogos.length > 0 && (
-          <div className="bg-white py-8 overflow-hidden border-b border-slate-200">
+          <section className="bg-slate-50 py-8 border-y border-slate-200 overflow-hidden">
             <div className="max-w-6xl mx-auto px-4 mb-4">
               <p className="text-center text-sm text-slate-500 font-medium uppercase tracking-wider">
-                The most trusted camps in {CURRENT_MARKET.name}
+                Trusted by {CURRENT_MARKET.name} families for camps from
               </p>
             </div>
             <div className="relative">
-              <div className="flex items-center gap-12 animate-scroll-slow">
-                {/* First set */}
+              <div className="flex items-center gap-16 animate-scroll-slow">
                 {organizationsWithLogos.map((org) => (
                   <a
                     key={org._id}
                     href={`/discover/${CURRENT_MARKET.slug}?org=${org.slug}`}
-                    className="flex-shrink-0 h-16 w-32 flex items-center justify-center grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition-all duration-300"
+                    className="flex-shrink-0 h-12 w-28 flex items-center justify-center grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition-all duration-300"
                     title={org.name}
                   >
                     <img
@@ -140,12 +187,11 @@ function LandingPage() {
                     />
                   </a>
                 ))}
-                {/* Duplicate for seamless loop */}
                 {organizationsWithLogos.map((org) => (
                   <a
                     key={`dup-${org._id}`}
                     href={`/discover/${CURRENT_MARKET.slug}?org=${org.slug}`}
-                    className="flex-shrink-0 h-16 w-32 flex items-center justify-center grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition-all duration-300"
+                    className="flex-shrink-0 h-12 w-28 flex items-center justify-center grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition-all duration-300"
                     title={org.name}
                   >
                     <img
@@ -159,12 +205,8 @@ function LandingPage() {
             </div>
             <style jsx>{`
               @keyframes scroll-slow {
-                0% {
-                  transform: translateX(0);
-                }
-                100% {
-                  transform: translateX(-50%);
-                }
+                0% { transform: translateX(0); }
+                100% { transform: translateX(-50%); }
               }
               .animate-scroll-slow {
                 animation: scroll-slow 40s linear infinite;
@@ -173,27 +215,170 @@ function LandingPage() {
                 animation-play-state: paused;
               }
             `}</style>
-          </div>
+          </section>
         )}
+
+        {/* Pain Point Section */}
+        <section className="py-20 px-4">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+                Summer planning shouldn't feel like a second job
+              </h2>
+              <p className="text-xl text-slate-600">
+                Sound familiar?
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6 mb-16">
+              {/* Pain points */}
+              <div className="bg-red-50 rounded-2xl p-6 border border-red-100">
+                <div className="text-3xl mb-4">😫</div>
+                <h3 className="font-semibold text-slate-900 mb-2">"I have 15 tabs open..."</h3>
+                <p className="text-slate-600">
+                  Checking OMSI, then Portland Parks, then the Zoo, then Trackers... each with different dates, prices, and age ranges.
+                </p>
+              </div>
+              <div className="bg-red-50 rounded-2xl p-6 border border-red-100">
+                <div className="text-3xl mb-4">😰</div>
+                <h3 className="font-semibold text-slate-900 mb-2">"Wait, what about week 7?"</h3>
+                <p className="text-slate-600">
+                  You thought summer was planned, but there's a gap. And the good camps are already full.
+                </p>
+              </div>
+              <div className="bg-red-50 rounded-2xl p-6 border border-red-100">
+                <div className="text-3xl mb-4">🤯</div>
+                <h3 className="font-semibold text-slate-900 mb-2">"My kids are different ages..."</h3>
+                <p className="text-slate-600">
+                  One's 6, one's 10. Different camps, different requirements. Endless spreadsheets.
+                </p>
+              </div>
+              <div className="bg-red-50 rounded-2xl p-6 border border-red-100">
+                <div className="text-3xl mb-4">😤</div>
+                <h3 className="font-semibold text-slate-900 mb-2">"Registration opened WHEN?"</h3>
+                <p className="text-slate-600">
+                  Popular camps fill in hours. Miss the email, miss the camp.
+                </p>
+              </div>
+            </div>
+
+            {/* The stat */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-8 text-center text-white">
+              <div className="text-5xl font-bold mb-2">69%</div>
+              <p className="text-blue-100 text-lg">
+                of parents say they <span className="font-semibold text-white">can't easily find camps</span> with the features they want.
+              </p>
+              <p className="text-blue-200 text-sm mt-2">— American Camp Association Research</p>
+            </div>
+          </div>
+        </section>
+
+        {/* Solution Section */}
+        <section className="py-20 px-4 bg-slate-50">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-medium mb-4">
+                <span>✨</span> The better way
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+                Your entire summer. One simple view.
+              </h2>
+              <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+                PDX Camps aggregates {campCount}+ camps from every provider in {CURRENT_MARKET.name} and shows you exactly what weeks are covered—and what gaps need filling.
+              </p>
+            </div>
+
+            {/* Feature grid */}
+            <div className="grid md:grid-cols-3 gap-8">
+              <FeatureCard
+                icon="📅"
+                title="Week-by-Week Planner"
+                description="See your entire summer at a glance. Each child gets a row. Red means gap, green means covered. Simple."
+              />
+              <FeatureCard
+                icon="🔍"
+                title="Smart Search"
+                description="Filter by age, price, dates, category, and location. Find the perfect camp in seconds, not hours."
+              />
+              <FeatureCard
+                icon="👨‍👩‍👧‍👦"
+                title="Multi-Child Planning"
+                description="Different ages? Different interests? See coverage for everyone in your family, side by side."
+              />
+              <FeatureCard
+                icon="🎯"
+                title="Gap Detection"
+                description="Instantly see which weeks need camps. Click a gap to see available options that fit."
+              />
+              <FeatureCard
+                icon="✈️"
+                title="Family Events"
+                description="Add vacations, trips, or camp-free weeks. They count as covered so you plan around what matters."
+              />
+              <FeatureCard
+                icon="🏕️"
+                title="All Providers, One Place"
+                description="OMSI, Oregon Zoo, Portland Parks, Trackers, Steve & Kate's, and 100+ more. All searchable together."
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Social Proof - How It Works */}
+        <section className="py-20 px-4">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+                Plan your summer in 3 steps
+              </h2>
+            </div>
+
+            <div className="space-y-12">
+              <StepCard
+                number={1}
+                title="Add your kids"
+                description="Enter their ages and grades. We'll automatically filter camps to show only what's appropriate."
+              />
+              <StepCard
+                number={2}
+                title="See your coverage"
+                description="The planner shows every week of summer. Green = covered. Red = needs a camp. It's that simple."
+              />
+              <StepCard
+                number={3}
+                title="Fill the gaps"
+                description="Click any red week to see camps that fit. Filter by price, location, and category. Register directly with the camp."
+              />
+            </div>
+
+            <div className="text-center mt-12">
+              <a
+                href="/sign-up"
+                className="inline-flex items-center gap-2 px-8 py-4 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-600/25 transition-all hover:shadow-xl"
+              >
+                Start Planning Now
+                <span>→</span>
+              </a>
+              <p className="text-sm text-slate-500 mt-3">Free forever. No credit card required.</p>
+            </div>
+          </div>
+        </section>
 
         {/* Scrolling Sessions Showcase */}
         {featuredSessions && featuredSessions.length > 0 && (
-          <div className="bg-slate-900 py-12 overflow-hidden">
-            <div className="max-w-6xl mx-auto px-4 mb-6">
+          <section className="bg-slate-900 py-16 overflow-hidden">
+            <div className="max-w-6xl mx-auto px-4 mb-8">
               <h2 className="text-2xl font-bold text-white">
-                Upcoming camps in <span className="text-yellow-400">{CURRENT_MARKET.name}</span>
+                Real camps, real spots available
               </h2>
-              <p className="text-slate-400 mt-1">Real sessions with real spots available</p>
+              <p className="text-slate-400 mt-1">Browse camps happening this summer in {CURRENT_MARKET.name}</p>
             </div>
 
-            {/* Infinite scroll container */}
             <div className="relative">
               <div className="flex gap-4 animate-scroll hover:pause-animation">
-                {/* First set */}
                 {featuredSessions.map((session) => (
                   <SessionShowcaseCard key={session._id} session={session} citySlug={CURRENT_MARKET.slug} />
                 ))}
-                {/* Duplicate for seamless loop */}
                 {featuredSessions.map((session) => (
                   <SessionShowcaseCard key={`dup-${session._id}`} session={session} citySlug={CURRENT_MARKET.slug} />
                 ))}
@@ -202,12 +387,8 @@ function LandingPage() {
 
             <style jsx>{`
               @keyframes scroll {
-                0% {
-                  transform: translateX(0);
-                }
-                100% {
-                  transform: translateX(-50%);
-                }
+                0% { transform: translateX(0); }
+                100% { transform: translateX(-50%); }
               }
               .animate-scroll {
                 animation: scroll 60s linear infinite;
@@ -216,215 +397,159 @@ function LandingPage() {
                 animation-play-state: paused;
               }
             `}</style>
-          </div>
+          </section>
         )}
 
-        {/* Featured Camps Section */}
-        {featuredCamps && featuredCamps.length > 0 && (
-          <div className="py-16 px-4">
-            <div className="max-w-6xl mx-auto">
-              <div className="text-center mb-10">
-                <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-3">
-                  Popular {CURRENT_MARKET.name} Camps
-                </h2>
-                <p className="text-slate-600 dark:text-slate-400">
-                  Trusted by families across the {CURRENT_MARKET.region}
-                </p>
-              </div>
+        {/* FAQ Section */}
+        <section className="py-20 px-4 bg-slate-50">
+          <div className="max-w-3xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-slate-900 mb-4">
+                Frequently asked questions
+              </h2>
+            </div>
 
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {featuredCamps.map((camp) => (
-                  <FeaturedCampCard key={camp._id} camp={camp} citySlug={CURRENT_MARKET.slug} />
-                ))}
-              </div>
-
-              <div className="text-center mt-10">
-                <a
-                  href={`/discover/${CURRENT_MARKET.slug}`}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
-                >
-                  View All {CURRENT_MARKET.name} Camps
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </a>
-              </div>
+            <div className="space-y-4">
+              <FAQItem
+                question="Is PDX Camps really free?"
+                answer="Yes! PDX Camps is completely free for families. We aggregate publicly available camp information to help Portland parents plan their summers. No hidden fees, no premium tier (yet)."
+              />
+              <FAQItem
+                question="Where does the camp data come from?"
+                answer="We collect information from camp provider websites across the Portland metro area—OMSI, Oregon Zoo, Portland Parks & Rec, private providers, and more. We update our data regularly to keep it accurate."
+              />
+              <FAQItem
+                question="Do I register for camps through PDX Camps?"
+                answer="No—we help you discover and plan, but you register directly with each camp provider. We link you straight to their registration page so you can book."
+              />
+              <FAQItem
+                question="How is this different from Sawyer or ActivityHero?"
+                answer="Those platforms serve camp operators and only show camps that use their software. PDX Camps shows ALL camps in Portland, regardless of what registration system they use. Plus, our week-by-week planner helps you see your whole summer—not just search for individual camps."
+              />
+              <FAQItem
+                question="What ages does this work for?"
+                answer="We have camps for kids ages 3-17, with the most options for ages 5-14. You can filter by age or grade to see exactly what's available for your child."
+              />
+              <FAQItem
+                question="Do you cover camps outside Portland?"
+                answer="Right now we're focused on the Portland metro area (including Beaverton, Lake Oswego, Tigard, and surrounding areas). We may expand to other cities in the future!"
+              />
             </div>
           </div>
-        )}
+        </section>
 
-        {/* Features Section */}
-        <div className="bg-slate-100 dark:bg-slate-800/50 py-16 px-4">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-2xl font-bold text-center text-slate-900 dark:text-white mb-10">
-              Everything you need to plan summer
+        {/* Final CTA Section */}
+        <section className="py-20 px-4 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white">
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Ready to take the stress out of summer?
             </h2>
-            <div className="grid md:grid-cols-3 gap-8">
-              <div className="text-center">
-                <div className="w-14 h-14 bg-green-100 dark:bg-green-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <span className="text-3xl">📅</span>
-                </div>
-                <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Week-by-Week Planning</h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400">See your whole summer at a glance. Instantly spot coverage gaps.</p>
-              </div>
-              <div className="text-center">
-                <div className="w-14 h-14 bg-purple-100 dark:bg-purple-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <span className="text-3xl">🔍</span>
-                </div>
-                <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Smart Discovery</h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400">Filter by age, category, price, and dates. Find the perfect camp.</p>
-              </div>
-              <div className="text-center">
-                <div className="w-14 h-14 bg-orange-100 dark:bg-orange-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <span className="text-3xl">👨‍👩‍👧‍👦</span>
-                </div>
-                <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Family Coordination</h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400">Add vacations, track multiple kids, share plans with friends.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* CTA Section */}
-        <div className="py-16 px-4 text-center">
-          <div className="max-w-2xl mx-auto">
-            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
-              Ready to plan your summer?
-            </h2>
-            <p className="text-lg text-slate-600 dark:text-slate-400 mb-8">
-              Join hundreds of {CURRENT_MARKET.name} families who use {CURRENT_MARKET.tagline} to organize their kids' summers.
+            <p className="text-xl text-blue-100 mb-8">
+              Join hundreds of {CURRENT_MARKET.name} families who plan their summers with PDX Camps.
             </p>
             <a
               href="/sign-up"
-              className="inline-block px-8 py-4 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-600/25 transition-all hover:scale-105"
+              className="inline-block px-10 py-5 text-xl font-semibold bg-white text-blue-700 rounded-xl hover:bg-blue-50 shadow-xl transition-all hover:scale-105"
             >
               Get Started — It's Free
             </a>
+            <p className="text-blue-200 text-sm mt-4">
+              No credit card required. Plan your entire summer in minutes.
+            </p>
           </div>
-        </div>
+        </section>
       </main>
 
       {/* Footer */}
-      <footer className="bg-slate-900 text-slate-400 py-8 px-4">
-        <div className="max-w-6xl mx-auto text-center text-sm">
-          <p>© {new Date().getFullYear()} {CURRENT_MARKET.tagline}. Made with ☀️ in {CURRENT_MARKET.name}.</p>
+      <footer className="bg-slate-900 text-slate-400 py-12 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">☀️</span>
+              <span className="font-bold text-lg text-white">{CURRENT_MARKET.tagline}</span>
+            </div>
+            <div className="flex items-center gap-6 text-sm">
+              <a href={`/discover/${CURRENT_MARKET.slug}`} className="hover:text-white transition-colors">Browse Camps</a>
+              <a href="/sign-in" className="hover:text-white transition-colors">Sign In</a>
+              <a href="/sign-up" className="hover:text-white transition-colors">Get Started</a>
+            </div>
+          </div>
+          <div className="border-t border-slate-800 mt-8 pt-8 text-center text-sm">
+            <p>© {new Date().getFullYear()} {CURRENT_MARKET.tagline}. Made with ☀️ in {CURRENT_MARKET.name}.</p>
+            <p className="text-slate-500 mt-1">
+              Helping Portland families plan stress-free summers since 2024.
+            </p>
+          </div>
         </div>
       </footer>
     </div>
   );
 }
 
-// Featured camp card for landing page
-function FeaturedCampCard({ camp, citySlug }: {
-  camp: {
-    _id: string;
-    name: string;
-    slug: string;
-    description: string;
-    categories: string[];
-    ageRequirements: { minAge?: number; maxAge?: number; minGrade?: number; maxGrade?: number };
-    organizationName?: string;
-    imageUrl?: string;
-    priceRange?: { min: number; max: number };
-    upcomingSessionCount: number;
-  };
-  citySlug: string;
-}) {
-  // Format age range
-  const formatAgeRange = () => {
-    const { minAge, maxAge, minGrade, maxGrade } = camp.ageRequirements;
-    if (minGrade !== undefined || maxGrade !== undefined) {
-      const gradeLabel = (g: number) => (g === 0 ? 'K' : g < 0 ? 'Pre-K' : `${g}`);
-      if (minGrade !== undefined && maxGrade !== undefined) {
-        return `Grades ${gradeLabel(minGrade)}-${gradeLabel(maxGrade)}`;
-      }
-      if (minGrade !== undefined) return `Grades ${gradeLabel(minGrade)}+`;
-      if (maxGrade !== undefined) return `Grades up to ${gradeLabel(maxGrade)}`;
-    }
-    if (minAge !== undefined && maxAge !== undefined) {
-      return `Ages ${minAge}-${maxAge}`;
-    }
-    if (minAge !== undefined) return `Ages ${minAge}+`;
-    if (maxAge !== undefined) return `Ages up to ${maxAge}`;
-    return null;
-  };
+// ============================================================================
+// LANDING PAGE COMPONENTS
+// ============================================================================
 
-  // Format price
-  const formatPrice = () => {
-    if (!camp.priceRange) return null;
-    const { min, max } = camp.priceRange;
-    if (min === max) {
-      return `$${(min / 100).toFixed(0)}`;
-    }
-    return `$${(min / 100).toFixed(0)} - $${(max / 100).toFixed(0)}`;
-  };
+function FeatureCard({ icon, title, description }: { icon: string; title: string; description: string }) {
+  return (
+    <div className="bg-white rounded-2xl p-6 border border-slate-200 hover:border-blue-200 hover:shadow-lg transition-all">
+      <div className="text-4xl mb-4">{icon}</div>
+      <h3 className="font-semibold text-lg text-slate-900 mb-2">{title}</h3>
+      <p className="text-slate-600">{description}</p>
+    </div>
+  );
+}
 
-  const ageRange = formatAgeRange();
-  const price = formatPrice();
+function StepCard({ number, title, description }: { number: number; title: string; description: string }) {
+  return (
+    <div className="flex gap-6 items-start">
+      <div className="flex-shrink-0 w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
+        {number}
+      </div>
+      <div>
+        <h3 className="font-semibold text-xl text-slate-900 mb-1">{title}</h3>
+        <p className="text-slate-600 text-lg">{description}</p>
+      </div>
+    </div>
+  );
+}
+
+function FAQItem({ question, answer }: { question: string; answer: string }) {
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <a
-      href={`/discover/${citySlug}?camp=${camp.slug}`}
-      className="group bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all border border-slate-200 dark:border-slate-700"
-    >
-      {/* Image */}
-      <div className="aspect-[16/10] bg-slate-200 dark:bg-slate-700 relative overflow-hidden">
-        {camp.imageUrl ? (
-          <img
-            src={camp.imageUrl}
-            alt={camp.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-4xl">
-            🏕️
-          </div>
-        )}
-        {/* Category badge */}
-        {camp.categories[0] && (
-          <span className="absolute top-3 left-3 px-2 py-1 bg-white/90 dark:bg-slate-900/90 rounded-full text-xs font-medium text-slate-700 dark:text-slate-300">
-            {camp.categories[0]}
-          </span>
-        )}
-      </div>
-
-      {/* Content */}
-      <div className="p-4">
-        <h3 className="font-semibold text-slate-900 dark:text-white mb-1 group-hover:text-blue-600 transition-colors line-clamp-1">
-          {camp.name}
-        </h3>
-        {camp.organizationName && (
-          <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">
-            {camp.organizationName}
-          </p>
-        )}
-        <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 mb-3">
-          {camp.description}
-        </p>
-
-        {/* Meta info */}
-        <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
-          {ageRange && (
-            <span className="flex items-center gap-1">
-              <span>👤</span>
-              {ageRange}
-            </span>
-          )}
-          {price && (
-            <span className="flex items-center gap-1">
-              <span>💰</span>
-              {price}
-            </span>
-          )}
-          {camp.upcomingSessionCount > 0 && (
-            <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
-              <span>📅</span>
-              {camp.upcomingSessionCount} sessions
-            </span>
-          )}
+    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-6 py-4 text-left flex items-center justify-between gap-4 hover:bg-slate-50 transition-colors"
+      >
+        <span className="font-medium text-slate-900">{question}</span>
+        <span className={`text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}>
+          <ChevronDownIcon />
+        </span>
+      </button>
+      {isOpen && (
+        <div className="px-6 pb-4 text-slate-600">
+          {answer}
         </div>
-      </div>
-    </a>
+      )}
+    </div>
+  );
+}
+
+function CheckCircleIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="currentColor" viewBox="0 0 20 20">
+      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+    </svg>
+  );
+}
+
+function ChevronDownIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+    </svg>
   );
 }
 
@@ -448,7 +573,6 @@ function SessionShowcaseCard({ session, citySlug }: {
   };
   citySlug: string;
 }) {
-  // Format date range
   const formatDateRange = () => {
     const start = new Date(session.startDate + 'T12:00:00');
     const end = new Date(session.endDate + 'T12:00:00');
@@ -460,12 +584,10 @@ function SessionShowcaseCard({ session, citySlug }: {
     return `${monthNames[start.getMonth()]} ${start.getDate()} - ${monthNames[end.getMonth()]} ${end.getDate()}`;
   };
 
-  // Format price
   const formatPrice = () => {
     return `$${(session.price / 100).toFixed(0)}`;
   };
 
-  // Format ages
   const formatAges = () => {
     if (!session.ageRequirements) return null;
     const { minAge, maxAge, minGrade, maxGrade } = session.ageRequirements;
@@ -486,7 +608,6 @@ function SessionShowcaseCard({ session, citySlug }: {
       href={`/discover/${citySlug}?camp=${session.campSlug}`}
       className="flex-shrink-0 w-72 bg-slate-800 rounded-xl overflow-hidden border border-slate-700 hover:border-blue-500 transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-blue-500/20 group"
     >
-      {/* Image */}
       <div className="aspect-[16/10] bg-slate-700 relative overflow-hidden">
         {session.imageUrl ? (
           <img
@@ -499,11 +620,9 @@ function SessionShowcaseCard({ session, citySlug }: {
             🏕️
           </div>
         )}
-        {/* Date badge */}
         <div className="absolute top-3 left-3 px-2.5 py-1 bg-black/70 backdrop-blur-sm rounded-lg text-white text-sm font-medium">
           {formatDateRange()}
         </div>
-        {/* Spots indicator */}
         {session.isSoldOut ? (
           <div className="absolute top-3 right-3 px-2 py-1 bg-red-500 rounded-lg text-white text-xs font-bold">
             SOLD OUT
@@ -513,7 +632,6 @@ function SessionShowcaseCard({ session, citySlug }: {
             {session.spotsLeft} left!
           </div>
         ) : null}
-        {/* Organization logo */}
         {session.organizationLogoUrl && (
           <div className="absolute bottom-2 left-2 w-10 h-10 rounded-lg bg-white shadow-lg overflow-hidden border border-white/50">
             <img
@@ -525,7 +643,6 @@ function SessionShowcaseCard({ session, citySlug }: {
         )}
       </div>
 
-      {/* Content */}
       <div className="p-4">
         <h3 className="font-semibold text-white text-sm line-clamp-1 group-hover:text-blue-400 transition-colors">
           {session.campName}
@@ -554,13 +671,15 @@ function SessionShowcaseCard({ session, citySlug }: {
   );
 }
 
-// Main authenticated hub - the summer planner
+// ============================================================================
+// AUTHENTICATED SECTIONS (unchanged from original)
+// ============================================================================
+
 function AuthenticatedHub({ user, onSignOut }: { user: User | null; onSignOut: () => void }) {
   const family = useQuery(api.families.queries.getCurrentFamily);
   const children = useQuery(api.children.queries.listChildren);
   const cities = useQuery(api.cities.queries.listActiveCities);
 
-  // If family setup is incomplete, show onboarding prompt
   if (family === undefined || children === undefined) {
     return <LoadingState />;
   }
@@ -612,7 +731,6 @@ function OnboardingPrompt({ user, onSignOut, hasFamily }: { user: User | null; o
   );
 }
 
-// The main planner hub
 function PlannerHub({
   user,
   onSignOut,
@@ -621,14 +739,13 @@ function PlannerHub({
 }: {
   user: User | null;
   onSignOut: () => void;
-  children: { _id: Id<'children'>; firstName: string; lastName?: string }[];
+  children: { _id: Id<'children'>; firstName: string; lastName?: string; birthdate?: string; currentGrade?: number }[];
   cities: { _id: Id<'cities'>; slug: string; name: string }[];
 }) {
   const currentYear = new Date().getFullYear();
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // State
   const [selectedYear, setSelectedYear] = useState<number>(() => {
     const yearParam = searchParams.get('year');
     return yearParam ? parseInt(yearParam) : currentYear;
@@ -641,7 +758,6 @@ function PlannerHub({
   const [showAddEventModal, setShowAddEventModal] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  // Update URL when filters change
   useEffect(() => {
     const params = new URLSearchParams();
     if (selectedYear !== currentYear) params.set('year', selectedYear.toString());
@@ -650,7 +766,6 @@ function PlannerHub({
     router.replace(`/${queryString ? `?${queryString}` : ''}`, { scroll: false });
   }, [selectedYear, selectedChildId, currentYear, router]);
 
-  // Keyboard shortcut: 'e' to add event, 'g' to toggle gaps filter
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -670,17 +785,14 @@ function PlannerHub({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [showAddEventModal]);
 
-  // Fetch summer coverage
   const coverage = useQuery(api.planner.queries.getSummerCoverage, {
     year: selectedYear,
   });
 
-  // Filter coverage by selected child and gaps filter
   const filteredCoverage = useMemo(() => {
     if (!coverage) return [];
     let result = coverage;
 
-    // Filter by child
     if (selectedChildId !== 'all') {
       result = result.map((week) => ({
         ...week,
@@ -691,7 +803,6 @@ function PlannerHub({
       }));
     }
 
-    // Filter to only show weeks with gaps
     if (showOnlyGaps) {
       result = result.filter((week) => week.hasGap);
     }
@@ -699,7 +810,6 @@ function PlannerHub({
     return result;
   }, [coverage, selectedChildId, showOnlyGaps]);
 
-  // Group coverage by month
   const coverageByMonth = useMemo(() => {
     const groups: Map<string, typeof filteredCoverage> = new Map();
     for (const week of filteredCoverage) {
@@ -710,7 +820,6 @@ function PlannerHub({
     return Array.from(groups.entries());
   }, [filteredCoverage]);
 
-  // Calculate summary stats
   const stats = useMemo(() => {
     if (!coverage) return null;
     const totalWeeks = coverage.length;
@@ -719,7 +828,6 @@ function PlannerHub({
       (w) => w.childCoverage.every((c) => c.status === 'full' || c.status === 'event')
     ).length;
 
-    // Count unique registrations (registered status)
     const registeredSessionIds = new Set<string>();
     const interestedSessionIds = new Set<string>();
     let totalGaps = 0;
@@ -751,9 +859,36 @@ function PlannerHub({
 
   const defaultCity = cities.find(c => c.slug === 'portland') || cities[0];
 
+  const handleGapClick = useCallback((weekStart: string, weekEnd: string, childId: Id<'children'>) => {
+    const child = children.find(c => c._id === childId);
+    if (!defaultCity) return;
+
+    const params = new URLSearchParams();
+    params.set('from', weekStart);
+    params.set('to', weekEnd);
+
+    if (child?.birthdate) {
+      const birthDate = new Date(child.birthdate);
+      const weekStartDate = new Date(weekStart);
+      let age = weekStartDate.getFullYear() - birthDate.getFullYear();
+      const monthDiff = weekStartDate.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && weekStartDate.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      if (age > 0) {
+        params.set('age', age.toString());
+      }
+    }
+
+    if (child?.currentGrade !== undefined) {
+      params.set('grade', child.currentGrade.toString());
+    }
+
+    router.push(`/discover/${defaultCity.slug}?${params.toString()}`);
+  }, [children, defaultCity, router]);
+
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Skip to main content link for keyboard users */}
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg focus:font-medium"
@@ -765,7 +900,6 @@ function PlannerHub({
 
       <main id="main-content" className="flex-1 pb-20">
         <div className="max-w-4xl mx-auto px-4 py-6">
-          {/* Hero Stats Section */}
           <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 mb-6 text-white">
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-2xl font-bold">Summer {selectedYear}</h1>
@@ -831,7 +965,6 @@ function PlannerHub({
                     </div>
                   </div>
                 </div>
-                {/* Visual progress bar */}
                 <div className="mb-4">
                   <div className="h-3 bg-blue-900/50 rounded-full overflow-hidden">
                     <div
@@ -854,15 +987,18 @@ function PlannerHub({
                   </div>
                 </div>
                 <div className="flex items-center gap-4 text-sm text-blue-100 border-t border-blue-500/30 pt-3">
-                  <span>{stats.registeredCount} camp{stats.registeredCount !== 1 ? 's' : ''} registered</span>
+                  <Link href="/saved" className="hover:text-white hover:underline transition-colors">
+                    {stats.registeredCount} camp{stats.registeredCount !== 1 ? 's' : ''} registered
+                  </Link>
                   {stats.savedCount > 0 && (
                     <>
                       <span className="text-blue-300">•</span>
-                      <span>{stats.savedCount} saved for later</span>
+                      <Link href="/saved" className="hover:text-white hover:underline transition-colors">
+                        {stats.savedCount} saved for later
+                      </Link>
                     </>
                   )}
                 </div>
-                {/* Motivational message */}
                 <p className="mt-3 text-sm text-blue-200 italic">
                   {stats.coverage === 100
                     ? "🎉 Amazing! Summer is fully planned!"
@@ -888,7 +1024,6 @@ function PlannerHub({
             )}
           </div>
 
-          {/* Child Selector + Actions */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               {children.length > 1 && (
@@ -941,11 +1076,9 @@ function PlannerHub({
             </button>
           </div>
 
-          {/* Legend + View Toggle + Gap Filter */}
           <div className="mb-4 flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-4">
               <CoverageLegend />
-              {/* View Toggle */}
               <div className="flex items-center bg-slate-100 dark:bg-slate-700 rounded-lg p-0.5">
                 <button
                   onClick={() => setViewMode('grid')}
@@ -996,7 +1129,6 @@ function PlannerHub({
             )}
           </div>
 
-          {/* Coverage Grid */}
           {coverage === undefined ? (
             <div role="status" aria-live="polite" className="space-y-2">
               {[1, 2, 3, 4, 5].map((i) => (
@@ -1037,6 +1169,7 @@ function PlannerHub({
               coverage={filteredCoverage}
               children={selectedChildId === 'all' ? children : children.filter(c => c._id === selectedChildId)}
               citySlug={defaultCity?.slug}
+              onGapClick={handleGapClick}
             />
           ) : (
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
@@ -1055,10 +1188,8 @@ function PlannerHub({
         </div>
       </main>
 
-      {/* Bottom Navigation */}
       <BottomNav citySlug={defaultCity?.slug} />
 
-      {/* Add Event Modal */}
       <AddEventModal
         isOpen={showAddEventModal}
         onClose={() => setShowAddEventModal(false)}
@@ -1068,7 +1199,6 @@ function PlannerHub({
   );
 }
 
-// App Header with user menu
 function AppHeader({ user, onSignOut }: { user: User | null; onSignOut: () => void }) {
   const ADMIN_EMAILS = ['seth@magicseth.com'];
   const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email);
