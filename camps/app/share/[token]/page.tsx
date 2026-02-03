@@ -141,7 +141,7 @@ export default function SharedPlanPage({ params }: { params: Promise<{ token: st
               {week.events.map((event, i) => (
                 <div key={i} className="flex items-center gap-3 mt-2">
                   <div className="w-8 h-8 rounded bg-purple-100 flex items-center justify-center">
-                    {event.eventType === 'vacation' ? '✈️' : event.eventType === 'camp_free' ? '🏠' : '📅'}
+                    {event.eventType === 'vacation' ? '✈️' : event.eventType === 'family_visit' ? '👨‍👩‍👧' : '📅'}
                   </div>
                   <div>
                     <div className="font-medium text-slate-900 text-sm">{event.title}</div>

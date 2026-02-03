@@ -937,7 +937,7 @@ function PlannerHub({
 }: {
   user: User | null;
   onSignOut: () => void;
-  children: { _id: Id<'children'>; firstName: string; lastName?: string; birthdate?: string; currentGrade?: number }[];
+  children: { _id: Id<'children'>; firstName: string; lastName?: string; birthdate?: string; currentGrade?: number; shareToken?: string }[];
   cities: { _id: Id<'cities'>; slug: string; name: string }[];
 }) {
   const currentYear = new Date().getFullYear();
