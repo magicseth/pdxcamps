@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery, useMutation, useAction } from 'convex/react';
+import { ConvexError } from 'convex/values';
 import { api } from '../../../convex/_generated/api';
 import { Id } from '../../../convex/_generated/dataModel';
 import { OrgLogo } from '../../../components/shared/OrgLogo';
@@ -76,6 +77,7 @@ export default function DiscoverPage() {
   const [extendedCareOnly, setExtendedCareOnly] = useState(() => getInitialState().extendedCareOnly);
   const [childAge, setChildAge] = useState<number | undefined>(() => getInitialState().childAge);
   const [childGrade, setChildGrade] = useState<number | undefined>(() => getInitialState().childGrade);
+  const [selectedChildId, setSelectedChildId] = useState<Id<'children'> | null>(null);
   const [showFilters, setShowFilters] = useState(true);
   const [selectedOrganizations, setSelectedOrganizations] = useState<string[]>(() => getInitialState().selectedOrganizations);
   const [selectedLocations, setSelectedLocations] = useState<string[]>(() => getInitialState().selectedLocations);
@@ -605,6 +607,8 @@ export default function DiscoverPage() {
                             key={child._id}
                             type="button"
                             onClick={() => {
+                              // Track which child is selected for pre-filling save modal
+                              setSelectedChildId(child._id);
                               if (grade !== undefined) {
                                 setChildGrade(grade);
                                 setChildAge(undefined);
@@ -1206,6 +1210,7 @@ export default function DiscoverPage() {
                       cityId={city._id}
                       isAdmin={isAdmin ?? false}
                       distanceFromHome={(session as { distanceFromHome?: number }).distanceFromHome}
+                      preSelectedChildId={selectedChildId}
                     />
                   ))}
                 </div>
@@ -1263,6 +1268,7 @@ function SessionCard({
   cityId,
   isAdmin,
   distanceFromHome,
+  preSelectedChildId,
 }: {
   session: {
     _id: Id<'sessions'>;
@@ -1292,6 +1298,7 @@ function SessionCard({
   cityId: Id<'cities'>;
   isAdmin?: boolean;
   distanceFromHome?: number;
+  preSelectedChildId?: Id<'children'> | null;
 }) {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -1961,6 +1968,7 @@ function SessionCard({
           campName={camp?.name ?? 'Camp'}
           onClose={() => setShowSaveModal(false)}
           onPaywallHit={() => setShowUpgradeModal(true)}
+          preSelectedChildId={preSelectedChildId}
         />
       )}
 
@@ -1993,13 +2001,15 @@ function SaveSessionModal({
   campName,
   onClose,
   onPaywallHit,
+  preSelectedChildId,
 }: {
   sessionId: Id<'sessions'>;
   campName: string;
   onClose: () => void;
   onPaywallHit: () => void;
+  preSelectedChildId?: Id<'children'> | null;
 }) {
-  const [selectedChildId, setSelectedChildId] = useState<Id<'children'> | null>(null);
+  const [selectedChildId, setSelectedChildId] = useState<Id<'children'> | null>(preSelectedChildId ?? null);
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -2038,13 +2048,31 @@ function SaveSessionModal({
         onClose();
       }, 1500);
     } catch (err) {
-      // Check for paywall error
-      if (err instanceof Error && err.message.includes('PAYWALL:')) {
+      // Check for paywall error - ConvexError has data property
+      console.log('Save error:', err);
+
+      // Handle ConvexError with structured data
+      if (err instanceof ConvexError) {
+        const data = err.data as { type?: string; code?: string } | undefined;
+        console.log('ConvexError data:', data);
+        if (data?.type === 'PAYWALL') {
+          console.log('Paywall detected via ConvexError, showing upgrade modal');
+          onClose();
+          onPaywallHit();
+          return;
+        }
+      }
+
+      // Fallback: check error message for legacy support
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      if (errorMessage.includes('PAYWALL:')) {
+        console.log('Paywall detected via message, showing upgrade modal');
         onClose();
         onPaywallHit();
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to save session');
+
+      setError(errorMessage || 'Failed to save session');
     } finally {
       setIsSaving(false);
     }

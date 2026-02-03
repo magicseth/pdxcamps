@@ -46,6 +46,16 @@ export const listLocations = query({
 });
 
 /**
+ * List all locations (including inactive) - for migration
+ */
+export const listAllLocations = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("locations").collect();
+  },
+});
+
+/**
  * Get a location by ID
  */
 export const getLocation = query({

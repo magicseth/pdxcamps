@@ -176,3 +176,24 @@ export const updateCampImageStyle = mutation({
     return args.campId;
   },
 });
+
+/**
+ * Toggle featured status for a camp (admin only)
+ */
+export const toggleFeatured = mutation({
+  args: {
+    campId: v.id("camps"),
+  },
+  handler: async (ctx, args) => {
+    const camp = await ctx.db.get(args.campId);
+    if (!camp) {
+      throw new Error("Camp not found");
+    }
+
+    await ctx.db.patch(args.campId, {
+      isFeatured: !camp.isFeatured,
+    });
+
+    return { campId: args.campId, isFeatured: !camp.isFeatured };
+  },
+});

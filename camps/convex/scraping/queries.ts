@@ -702,6 +702,30 @@ export const getSessionsBySource = query({
 });
 
 /**
+ * List all scrape sources (for migration)
+ */
+export const listAllScrapeSources = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("scrapeSources").collect();
+  },
+});
+
+/**
+ * Get scrape source by URL (for deduplication)
+ */
+export const getScrapeSourceByUrl = query({
+  args: {
+    url: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Try exact match first
+    const sources = await ctx.db.query("scrapeSources").collect();
+    return sources.find((s) => s.url === args.url) ?? null;
+  },
+});
+
+/**
  * Get data quality issues for a source's sessions
  * Returns counts of sessions missing key fields
  */

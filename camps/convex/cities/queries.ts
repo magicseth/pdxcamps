@@ -42,6 +42,16 @@ export const getCityById = query({
 });
 
 /**
+ * List all cities (including inactive) - for migration
+ */
+export const listAllCities = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("cities").collect();
+  },
+});
+
+/**
  * List all neighborhoods for a city
  */
 export const listNeighborhoods = query({

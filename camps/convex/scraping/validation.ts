@@ -124,6 +124,33 @@ export function validateSession(session: ScrapedSession): ValidationResult {
     });
   }
 
+  // CRITICAL: Check if session spans too long (likely program overview, not actual session)
+  if (session.startDate && session.endDate && isValidDateFormat(session.startDate) && isValidDateFormat(session.endDate)) {
+    const start = new Date(session.startDate);
+    const end = new Date(session.endDate);
+    const daysDiff = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+
+    // Most camps are 1 week (5 days) or 2 weeks (10 days). 3 weeks max for overnight camps.
+    if (daysDiff > 21) {
+      errors.push({
+        field: "dateRange",
+        error: `Session spans ${daysDiff} days - likely a program overview, not an individual camp session (max 21 days)`,
+        attemptedValue: `${session.startDate} to ${session.endDate}`,
+      });
+    }
+  }
+
+  // CRITICAL: Validate registrationUrl is a valid URL
+  if (session.registrationUrl) {
+    if (!isValidUrl(session.registrationUrl)) {
+      errors.push({
+        field: "registrationUrl",
+        error: "Registration URL is not a valid HTTP/HTTPS URL",
+        attemptedValue: session.registrationUrl,
+      });
+    }
+  }
+
   if (session.dropOffHour === undefined) {
     missing.push("dropOffTime");
     if (session.timeRaw) {
@@ -168,6 +195,16 @@ export function validateSession(session: ScrapedSession): ValidationResult {
         field: "location",
         error: "Location appears incomplete or generic - should include street address",
         attemptedValue: session.location,
+      });
+    }
+
+    // CRITICAL: Check for comma-separated list of multiple venues (scraper bug)
+    const commaCount = (session.location!.match(/,/g) || []).length;
+    if (commaCount >= 3 && session.location!.length > 100) {
+      errors.push({
+        field: "location",
+        error: `Location appears to be a list of ${commaCount + 1} venues - should be a single location`,
+        attemptedValue: session.location!.slice(0, 100) + "...",
       });
     }
   }
@@ -296,6 +333,15 @@ function isValidDateFormat(date: string): boolean {
 
 function isValidHour(hour: number): boolean {
   return Number.isInteger(hour) && hour >= 0 && hour <= 23;
+}
+
+function isValidUrl(str: string): boolean {
+  try {
+    const url = new URL(str);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 
 /**

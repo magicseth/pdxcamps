@@ -77,6 +77,10 @@ export const executeScrape = action({
     });
 
     const config = source.scraperConfig;
+    if (!config) {
+      throw new Error("Scrape source has no scraper configuration");
+    }
+
     let allSessions: ExtractedSession[] = [];
     let pagesScraped = 0;
     const rawDataAccumulator: unknown[] = [];
@@ -557,6 +561,16 @@ export const internalExecuteScrape = internalAction({
     await ctx.runMutation(api.scraping.mutations.startScrapeJob, { jobId });
 
     const config = source.scraperConfig;
+    if (!config) {
+      return {
+        success: false,
+        sessions: [],
+        error: "Scrape source has no scraper configuration",
+        pagesScraped: 0,
+        rawData: "{}",
+      };
+    }
+
     let allSessions: ExtractedSession[] = [];
     let pagesScraped = 0;
     const rawDataAccumulator: unknown[] = [];
@@ -616,7 +630,7 @@ export const internalExecuteScrape = internalAction({
  * Run scheduled scrapes for all sources due
  * This action is meant to be called by a cron job
  */
-export const runScheduledScrapes = action({
+export const runScheduledScrapes = internalAction({
   args: {},
   handler: async (ctx) => {
     const dueForScrape = await ctx.runQuery(

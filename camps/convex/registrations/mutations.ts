@@ -1,5 +1,6 @@
 import { mutation, internalMutation } from "../_generated/server";
 import { v } from "convex/values";
+import { ConvexError } from "convex/values";
 import { requireFamily } from "../lib/auth";
 import { components } from "../_generated/api";
 
@@ -98,18 +99,29 @@ export const markInterested = mutation({
     let isPremium = false;
 
     if (identity) {
-      const subscriptions = await ctx.runQuery(
-        components.stripe.public.listSubscriptionsByUserId,
-        { userId: identity.subject }
-      );
-      isPremium = subscriptions.some(
-        (sub) => sub.status === "active" || sub.status === "trialing"
-      );
+      try {
+        const subscriptions = await ctx.runQuery(
+          components.stripe.public.listSubscriptionsByUserId,
+          { userId: identity.subject }
+        );
+        isPremium = subscriptions.some(
+          (sub) => sub.status === "active" || sub.status === "trialing"
+        );
+      } catch (e) {
+        // If Stripe component fails, assume not premium but don't block
+        console.error("Failed to check subscription status:", e);
+        isPremium = false;
+      }
     }
 
     // Block if at limit and not premium
     if (activeSavedCamps >= FREE_SAVED_CAMPS_LIMIT && !isPremium) {
-      throw new Error("PAYWALL:CAMP_LIMIT");
+      throw new ConvexError({
+        type: "PAYWALL",
+        code: "CAMP_LIMIT",
+        savedCount: activeSavedCamps,
+        limit: FREE_SAVED_CAMPS_LIMIT,
+      });
     }
     // === END PAYWALL CHECK ===
 

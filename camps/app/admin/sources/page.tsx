@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Id } from '../../../convex/_generated/dataModel';
 import Link from 'next/link';
 import { useAuth } from '@workos-inc/authkit-nextjs/components';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { AdminTabs, StatCard } from '../../../components/admin';
 
 export default function SourcesManagementPage() {
   const { user } = useAuth();
@@ -31,16 +33,77 @@ export default function SourcesManagementPage() {
     );
   }
 
-  return <SourcesManagementContent />;
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <SourcesManagementContent />
+    </Suspense>
+  );
 }
 
+function LoadingState() {
+  return (
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-900">
+      <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="animate-pulse">
+            <div className="h-4 w-24 bg-slate-200 dark:bg-slate-700 rounded mb-2"></div>
+            <div className="h-8 w-48 bg-slate-200 dark:bg-slate-700 rounded"></div>
+          </div>
+        </div>
+      </header>
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        <div role="status" aria-live="polite" className="animate-pulse motion-reduce:animate-none space-y-4">
+          <div className="h-12 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+          <div className="grid grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-24 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+            ))}
+          </div>
+          <div className="h-96 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+          <span className="sr-only">Loading sources...</span>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+type TabFilter = 'all' | 'active' | 'failing' | 'nodata';
+
 function SourcesManagementContent() {
-  const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // Get initial tab from URL
+  const initialTab = (searchParams.get('tab') as TabFilter) || 'all';
+  const [activeTab, setActiveTab] = useState<TabFilter>(initialTab);
   const [triggeringSource, setTriggeringSource] = useState<Id<'scrapeSources'> | null>(null);
 
-  // Fetch scrape sources
-  const scrapeSources = useQuery(api.scraping.queries.listScrapeSources, {
-    isActive: activeFilter === 'all' ? undefined : activeFilter === 'active',
+  // Update URL when tab changes
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab as TabFilter);
+    const params = new URLSearchParams(searchParams.toString());
+    if (tab === 'all') {
+      params.delete('tab');
+    } else {
+      params.set('tab', tab);
+    }
+    router.push(`/admin/sources${params.toString() ? '?' + params.toString() : ''}`);
+  };
+
+  // Sync with URL changes
+  useEffect(() => {
+    const tab = searchParams.get('tab') as TabFilter;
+    if (tab && ['all', 'active', 'failing', 'nodata'].includes(tab)) {
+      setActiveTab(tab);
+    } else if (!tab) {
+      setActiveTab('all');
+    }
+  }, [searchParams]);
+
+  // Single query for both counts and filtered sources
+  const filteredData = useQuery(api.scraping.queries.listSourcesFiltered, {
+    filter: activeTab,
+    limit: 50,
   });
 
   // Mutations
@@ -73,6 +136,19 @@ function SourcesManagementContent() {
     }
   };
 
+  // Use counts from combined query
+  const stats = filteredData?.counts ?? { all: 0, active: 0, failing: 0, nodata: 0 };
+
+  // Filtered sources from the filtered query
+  const filteredSources = filteredData?.sources ?? [];
+
+  const tabs = [
+    { id: 'all', label: 'All', count: stats.all },
+    { id: 'active', label: 'Active', count: stats.active },
+    { id: 'failing', label: 'Failing', count: stats.failing },
+    { id: 'nodata', label: 'No Data', count: stats.nodata },
+  ];
+
   const getHealthIndicator = (health: {
     consecutiveFailures: number;
     successRate: number;
@@ -93,12 +169,6 @@ function SourcesManagementContent() {
     return { color: 'gray', label: 'Unknown' };
   };
 
-  const filters = [
-    { value: 'all', label: 'All Sources' },
-    { value: 'active', label: 'Active' },
-    { value: 'inactive', label: 'Inactive' },
-  ] as const;
-
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-900">
       {/* Header */}
@@ -110,71 +180,55 @@ function SourcesManagementContent() {
                 &larr; Back to Admin
               </Link>
               <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-                Scrape Sources
+                Sources
               </h1>
               <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
                 Manage scraping configurations and monitor health
               </p>
             </div>
+            <Link
+              href="/admin/growth"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+            >
+              + Add Source
+            </Link>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Filters */}
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 mb-6">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-medium text-slate-700 dark:text-slate-300 mr-2">
-              Status:
-            </span>
-            {filters.map((filter) => (
-              <button
-                key={filter.value}
-                onClick={() => setActiveFilter(filter.value)}
-                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                  activeFilter === filter.value
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-                }`}
-              >
-                {filter.label}
-              </button>
-            ))}
-          </div>
+        {/* Tabs */}
+        <div className="mb-6">
+          <AdminTabs tabs={tabs} activeTab={activeTab} onTabChange={handleTabChange} />
         </div>
 
         {/* Stats Summary */}
-        {scrapeSources && (
+        {filteredData?.counts && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4">
-              <p className="text-sm text-slate-600 dark:text-slate-400">Total Sources</p>
-              <p className="text-2xl font-bold tabular-nums text-slate-900 dark:text-white">
-                {scrapeSources.length}
-              </p>
-            </div>
-            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4">
-              <p className="text-sm text-slate-600 dark:text-slate-400">Active</p>
-              <p className="text-2xl font-bold tabular-nums text-green-600 dark:text-green-400">
-                {scrapeSources.filter((s) => s.isActive).length}
-              </p>
-            </div>
-            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4">
-              <p className="text-sm text-slate-600 dark:text-slate-400">Unhealthy</p>
-              <p className="text-2xl font-bold tabular-nums text-red-600 dark:text-red-400">
-                {scrapeSources.filter((s) => s.scraperHealth.consecutiveFailures >= 3).length}
-              </p>
-            </div>
-            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4">
-              <p className="text-sm text-slate-600 dark:text-slate-400">Need Regeneration</p>
-              <p className="text-2xl font-bold tabular-nums text-orange-600 dark:text-orange-400">
-                {scrapeSources.filter((s) => s.scraperHealth.needsRegeneration).length}
-              </p>
-            </div>
+            <StatCard
+              label="Total Sources"
+              value={stats.all}
+            />
+            <StatCard
+              label="Active"
+              value={stats.active}
+              variant="success"
+            />
+            <StatCard
+              label="Failing"
+              value={stats.failing}
+              variant={stats.failing > 0 ? 'error' : 'default'}
+            />
+            <StatCard
+              label="No Data"
+              value={stats.nodata}
+              variant={stats.nodata > 0 ? 'warning' : 'default'}
+            />
           </div>
         )}
 
         {/* Loading State */}
-        {scrapeSources === undefined && (
+        {filteredData === undefined && (
           <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm">
             <div role="status" aria-live="polite" className="p-6 animate-pulse motion-reduce:animate-none space-y-4">
               {[1, 2, 3, 4].map((i) => (
@@ -190,22 +244,28 @@ function SourcesManagementContent() {
         )}
 
         {/* Empty State */}
-        {scrapeSources !== undefined && scrapeSources.length === 0 && (
+        {filteredData !== undefined && filteredSources.length === 0 && (
           <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-12 text-center">
             <div className="text-slate-400 mb-4">
               <EmptyIcon />
             </div>
             <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-              No scrape sources found
+              {activeTab === 'all' ? 'No scrape sources found' : `No ${activeTab} sources`}
             </h3>
             <p className="text-slate-600 dark:text-slate-400">
-              Scrape sources will appear here when they are created from approved discoveries.
+              {activeTab === 'all'
+                ? 'Scrape sources will appear here when they are created.'
+                : activeTab === 'failing'
+                ? 'Great news! No sources are currently failing.'
+                : activeTab === 'nodata'
+                ? 'All active sources have produced data.'
+                : 'No sources match this filter.'}
             </p>
           </div>
         )}
 
         {/* Sources List */}
-        {scrapeSources !== undefined && scrapeSources.length > 0 && (
+        {filteredData !== undefined && filteredSources.length > 0 && (
           <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
@@ -232,7 +292,7 @@ function SourcesManagementContent() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                {scrapeSources.map((source) => {
+                {filteredSources.map((source) => {
                   const health = getHealthIndicator(source.scraperHealth);
                   return (
                     <tr key={source._id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
@@ -376,6 +436,12 @@ function SourcesManagementContent() {
               </tbody>
               </table>
             </div>
+            {/* Pagination info */}
+            {filteredData && filteredData.totalCount > filteredSources.length && (
+              <div className="px-6 py-3 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 text-sm text-slate-600 dark:text-slate-400">
+                Showing {filteredSources.length} of {filteredData.totalCount} sources
+              </div>
+            )}
           </div>
         )}
       </main>

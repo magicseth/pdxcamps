@@ -31,6 +31,7 @@ export interface ChildWeekCoverage {
   childName: string;
   status: CoverageStatus;
   coveredDays: number;
+  availableSessionCount?: number; // Number of available sessions for gaps
   registrations: {
     registrationId: Id<"registrations">;
     sessionId: Id<"sessions">;
@@ -145,6 +146,32 @@ export const getSummerCoverage = query({
       doDateRangesOverlap(e.startDate, e.endDate, summerStart, summerEnd)
     );
 
+    // Get all active sessions in the family's city for counting available options
+    const allActiveSessions = await ctx.db
+      .query("sessions")
+      .withIndex("by_city_and_status", (q) =>
+        q.eq("cityId", family.primaryCityId).eq("status", "active")
+      )
+      .collect();
+
+    // Filter to sessions that overlap summer and have spots available
+    const availableSummerSessions = allActiveSessions.filter((s) => {
+      const hasSpots = s.capacity > s.enrolledCount;
+      const overlapsSummer = doDateRangesOverlap(
+        s.startDate,
+        s.endDate,
+        summerStart,
+        summerEnd
+      );
+      return hasSpots && overlapsSummer;
+    });
+
+    // Pre-compute child ages for efficiency
+    const childAges = new Map<string, number>();
+    for (const child of children) {
+      childAges.set(child._id, calculateAge(child.birthdate));
+    }
+
     // Build coverage for each week
     return weeks.map((week) => {
       const childCoverage: ChildWeekCoverage[] = children.map((child) => {
@@ -232,11 +259,39 @@ export const getSummerCoverage = query({
           status = "gap";
         }
 
+        // Count available sessions for gaps
+        let availableSessionCount: number | undefined;
+        if (status === "gap" || status === "partial" || status === "tentative") {
+          const childAge = childAges.get(child._id) ?? 0;
+          const childGrade = child.currentGrade;
+
+          availableSessionCount = availableSummerSessions.filter((s) => {
+            // Check if session overlaps this week
+            const overlaps = doDateRangesOverlap(
+              s.startDate,
+              s.endDate,
+              week.startDate,
+              week.endDate
+            );
+            if (!overlaps) return false;
+
+            // Check age/grade eligibility
+            const ageOk = isAgeInRange(childAge, s.ageRequirements);
+            const gradeOk =
+              childGrade === undefined ||
+              childGrade === null ||
+              isGradeInRange(childGrade, s.ageRequirements);
+
+            return ageOk && gradeOk;
+          }).length;
+        }
+
         return {
           childId: child._id,
           childName: child.firstName,
           status,
           coveredDays,
+          availableSessionCount,
           registrations: childRegistrations,
           events: childEvents,
         };

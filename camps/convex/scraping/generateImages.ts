@@ -10,6 +10,7 @@
 import { action, internalAction } from "../_generated/server";
 import { api, internal } from "../_generated/api";
 import { v } from "convex/values";
+import { Doc } from "../_generated/dataModel";
 import { fal } from "@fal-ai/client";
 import { workflow, vWorkflowId } from "./imageWorkflow";
 import Anthropic from "@anthropic-ai/sdk";
@@ -337,17 +338,17 @@ export const startImageGeneration = action({
     // Get camps without images
     const camps = await ctx.runQuery(api.camps.queries.listAllCamps, {});
     const campsNeedingImages = camps.filter(
-      (camp) =>
+      (camp: Doc<"camps">) =>
         (!camp.imageUrls || camp.imageUrls.length === 0) &&
         (!camp.imageStorageIds || camp.imageStorageIds.length === 0)
     );
 
     const campsToProcess = campsNeedingImages.slice(0, limit);
-    const campNames = campsToProcess.map(c => c.name);
+    const campNames = campsToProcess.map((c: Doc<"camps">) => c.name);
 
     // Pre-compute prompts for each camp (need to await since generatePrompt is async)
     const campData = await Promise.all(
-      campsToProcess.map(async (camp) => {
+      campsToProcess.map(async (camp: Doc<"camps">) => {
         // Get organization name for better prompt context
         const organization = await ctx.runQuery(api.organizations.queries.getOrganization, {
           organizationId: camp.organizationId,
@@ -472,14 +473,14 @@ export const listCampsWithoutImages = action({
     const camps = await ctx.runQuery(api.camps.queries.listAllCamps, {});
 
     const campsNeedingImages = camps.filter(
-      (camp) =>
+      (camp: Doc<"camps">) =>
         (!camp.imageUrls || camp.imageUrls.length === 0) &&
         (!camp.imageStorageIds || camp.imageStorageIds.length === 0)
     );
 
     return {
       count: campsNeedingImages.length,
-      camps: campsNeedingImages.map((camp) => ({
+      camps: campsNeedingImages.map((camp: Doc<"camps">) => ({
         id: camp._id,
         name: camp.name,
         categories: camp.categories,

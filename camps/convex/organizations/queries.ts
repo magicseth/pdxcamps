@@ -82,3 +82,94 @@ export const listAllOrganizations = query({
     return await ctx.db.query("organizations").collect();
   },
 });
+
+/**
+ * List organizations with pagination and counts (single query)
+ */
+export const listOrganizationsPaginated = query({
+  args: {
+    cityId: v.optional(v.id("cities")),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 50;
+
+    let organizations;
+    if (args.cityId) {
+      // Get all active orgs and filter by city
+      const allOrgs = await ctx.db
+        .query("organizations")
+        .withIndex("by_is_active", (q) => q.eq("isActive", true))
+        .collect();
+      organizations = allOrgs.filter((org) => org.cityIds.includes(args.cityId!));
+    } else {
+      organizations = await ctx.db.query("organizations").collect();
+    }
+
+    // Calculate counts from same data
+    const counts = {
+      total: organizations.length,
+      withLogo: organizations.filter((o) => o.logoStorageId || o.logoUrl).length,
+      withoutLogo: organizations.filter((o) => !o.logoStorageId && !o.logoUrl).length,
+      withWebsite: organizations.filter((o) => o.website).length,
+    };
+
+    const totalCount = organizations.length;
+    const paginated = organizations.slice(0, limit);
+
+    return {
+      organizations: paginated,
+      counts,
+      totalCount,
+      hasMore: totalCount > limit,
+    };
+  },
+});
+
+/**
+ * Get organizations with logos for landing page showcase
+ */
+export const getOrganizationsWithLogos = query({
+  args: {
+    citySlug: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Get city by slug
+    const city = await ctx.db
+      .query("cities")
+      .withIndex("by_slug", (q) => q.eq("slug", args.citySlug))
+      .unique();
+
+    if (!city) return [];
+
+    // Get all active organizations with logos
+    const organizations = await ctx.db
+      .query("organizations")
+      .withIndex("by_is_active", (q) => q.eq("isActive", true))
+      .collect();
+
+    // Filter to orgs in this city with logos
+    const orgsWithLogos = organizations.filter(
+      (org) => org.cityIds.includes(city._id) && org.logoStorageId
+    );
+
+    // Resolve logo URLs and return
+    const results = await Promise.all(
+      orgsWithLogos.map(async (org) => {
+        const logoUrl = await ctx.storage.getUrl(org.logoStorageId!);
+        return {
+          _id: org._id,
+          name: org.name,
+          slug: org.slug,
+          logoUrl,
+          website: org.website,
+        };
+      })
+    );
+
+    // Filter out any with null logo URLs and sort by name
+    return results
+      .filter((org) => org.logoUrl)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  },
+});

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Id } from '../../../convex/_generated/dataModel';
 import Link from 'next/link';
@@ -66,6 +66,20 @@ function ControlCenterContent() {
   const [selectedCityId, setSelectedCityId] = useState<Id<'cities'> | null>(
     initialCityId as Id<'cities'> | null
   );
+
+  // Image generation state
+  const [isGeneratingImages, setIsGeneratingImages] = useState(false);
+  const [imageGenStatus, setImageGenStatus] = useState<{
+    workflowId?: string;
+    campsQueued?: number;
+    status?: string;
+    result?: { completed: number; failed: number };
+  } | null>(null);
+
+  // Image generation actions
+  const startImageGeneration = useAction(api.scraping.generateImages.startImageGeneration);
+  const getWorkflowStatus = useAction(api.scraping.generateImages.getWorkflowStatus);
+  const listCampsWithoutImages = useAction(api.scraping.generateImages.listCampsWithoutImages);
 
   // Query cities for filter
   const cities = useQuery(api.cities.queries.listActiveCities, {});
@@ -196,6 +210,62 @@ function ControlCenterContent() {
     }
   };
 
+  // Image generation handler
+  const handleGenerateImages = async () => {
+    setIsGeneratingImages(true);
+    setImageGenStatus(null);
+    try {
+      // First check how many camps need images
+      const preview = await listCampsWithoutImages({});
+      if (preview.count === 0) {
+        alert('All camps already have images!');
+        setIsGeneratingImages(false);
+        return;
+      }
+
+      // Start the workflow (limit to 50 at a time for safety)
+      const result = await startImageGeneration({ limit: 50 });
+      setImageGenStatus({
+        workflowId: result.workflowId,
+        campsQueued: result.campsQueued,
+        status: 'running',
+      });
+
+      // Poll for status
+      const pollStatus = async () => {
+        if (!result.workflowId) return;
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const status = await getWorkflowStatus({ workflowId: result.workflowId as any });
+          if (status.status === 'completed' && status.result) {
+            setImageGenStatus(prev => ({
+              ...prev,
+              status: 'completed',
+              result: { completed: status.result!.completed, failed: status.result!.failed },
+            }));
+            setIsGeneratingImages(false);
+          } else if (status.status === 'failed') {
+            setImageGenStatus(prev => ({ ...prev, status: 'failed' }));
+            setIsGeneratingImages(false);
+          } else {
+            // Still running, poll again
+            setTimeout(pollStatus, 5000);
+          }
+        } catch (e) {
+          console.error('Failed to poll workflow status:', e);
+          setTimeout(pollStatus, 10000);
+        }
+      };
+
+      // Start polling after a short delay
+      setTimeout(pollStatus, 3000);
+    } catch (error) {
+      console.error('Failed to start image generation:', error);
+      alert(error instanceof Error ? error.message : 'Failed to start image generation');
+      setIsGeneratingImages(false);
+    }
+  };
+
   // Stats from query
   const stats = filteredData?.counts ?? { all: 0, active: 0, failing: 0, nodata: 0 };
   const pendingReviewCount = pendingSessions?.length ?? 0;
@@ -281,6 +351,69 @@ function ControlCenterContent() {
                   onChange={(e) => handleSearchChange(e.target.value)}
                   className="pl-9 pr-4 py-2 w-64 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
+              </div>
+              {/* Image Generation Button */}
+              <div className="relative">
+                <button
+                  onClick={handleGenerateImages}
+                  disabled={isGeneratingImages}
+                  className={`px-4 py-2 text-sm font-medium rounded-md flex items-center gap-2 ${
+                    isGeneratingImages
+                      ? 'bg-slate-100 text-slate-400 dark:bg-slate-700 cursor-not-allowed'
+                      : 'bg-purple-600 text-white hover:bg-purple-700'
+                  }`}
+                  title="Generate AI images for camps without images"
+                >
+                  {isGeneratingImages ? (
+                    <>
+                      <SpinnerIcon />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <ImageIcon className="w-4 h-4" />
+                      Generate Images
+                    </>
+                  )}
+                </button>
+                {imageGenStatus && (
+                  <div className="absolute top-full right-0 mt-2 w-64 p-3 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 z-20">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-slate-900 dark:text-white">
+                        Image Generation
+                      </span>
+                      <button
+                        onClick={() => setImageGenStatus(null)}
+                        className="text-slate-400 hover:text-slate-600"
+                      >
+                        <XIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="text-sm text-slate-600 dark:text-slate-400">
+                      {imageGenStatus.status === 'running' && (
+                        <div className="flex items-center gap-2">
+                          <SpinnerIcon />
+                          <span>Processing {imageGenStatus.campsQueued} camps...</span>
+                        </div>
+                      )}
+                      {imageGenStatus.status === 'completed' && imageGenStatus.result && (
+                        <div className="space-y-1">
+                          <p className="text-green-600 dark:text-green-400">
+                            Completed: {imageGenStatus.result.completed} images
+                          </p>
+                          {imageGenStatus.result.failed > 0 && (
+                            <p className="text-red-600 dark:text-red-400">
+                              Failed: {imageGenStatus.result.failed}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                      {imageGenStatus.status === 'failed' && (
+                        <p className="text-red-600 dark:text-red-400">Workflow failed</p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
               <Link
                 href="/admin/growth"
@@ -1459,6 +1592,14 @@ function ClosedIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+    </svg>
+  );
+}
+
+function ImageIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
     </svg>
   );
 }

@@ -1,0 +1,22 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "campweeks"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+main = ".open-next/worker.js"
+
+# Static assets
+assets = { directory = ".open-next/assets", binding = "ASSETS" }
+
+# Environment variables (add your secrets via wrangler secret put)
+[vars]
+NODE_ENV = "production"
+
+# Custom domain
+routes = [
+  { pattern = "campweeks.com", custom_domain = true },
+  { pattern = "www.campweeks.com", custom_domain = true }
+]
+
+# Build configuration
+[build]
+command = "npx @opennextjs/cloudflare build"

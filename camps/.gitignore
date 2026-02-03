@@ -43,3 +43,9 @@ next-env.d.ts
 
 # Scraper development runtime files
 .scraper-development/
+
+# Cloudflare OpenNext build output
+.open-next/
+
+# Netlify
+.netlify/

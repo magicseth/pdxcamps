@@ -1,2 +1,5 @@
 # Scraper development runtime files (outside Next.js project to avoid Turbopack rebuilds)
 .scraper-development/
+
+# Local Netlify folder
+.netlify

@@ -1,5 +1,5 @@
 import { cronJobs } from "convex/server";
-// import { internal } from "./_generated/api";
+import { internal } from "./_generated/api";
 
 const crons = cronJobs();
 
@@ -9,14 +9,12 @@ const crons = cronJobs();
 
 // Run scheduled scrapes every 15 minutes
 // This action queries all sources due for scraping and executes them
-// Uncomment when ready to enable automated scraping:
-//
-// crons.interval(
-//   "scrape scheduler",
-//   { minutes: 15 },
-//   internal.scraping.actions.runScheduledScrapes,
-//   {}
-// );
+crons.interval(
+  "scrape scheduler",
+  { minutes: 15 },
+  internal.scraping.actions.runScheduledScrapes,
+  {}
+);
 
 // ============================================
 // DISCOVERY CRONS

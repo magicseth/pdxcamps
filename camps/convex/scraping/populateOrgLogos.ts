@@ -11,7 +11,7 @@
 import { action, internalAction } from "../_generated/server";
 import { internal, api } from "../_generated/api";
 import { v } from "convex/values";
-import { Id } from "../_generated/dataModel";
+import { Id, Doc } from "../_generated/dataModel";
 import { ActionCtx } from "../_generated/server";
 import { Stagehand } from "@browserbasehq/stagehand";
 import { z } from "zod";
@@ -324,7 +324,7 @@ export const populateOrgLogos = action({
 
     // Filter to orgs without logos
     const orgsWithoutLogos = organizations.filter(
-      (org) => !org.logoStorageId
+      (org: Doc<"organizations">) => !org.logoStorageId
     );
 
     console.log(`[Logos] Processing ${Math.min(orgsWithoutLogos.length, limit)} of ${orgsWithoutLogos.length} organizations without logos`);
@@ -566,7 +566,7 @@ export const refreshOrgLogos = action({
 
     // Get all organizations with websites
     const organizations = await ctx.runQuery(api.organizations.queries.listAllOrganizations, {});
-    const orgsWithWebsites = organizations.filter((org) => org.website && isValidUrl(org.website));
+    const orgsWithWebsites = organizations.filter((org: Doc<"organizations">) => org.website && isValidUrl(org.website));
 
     console.log(`[Logos] Refreshing logos for ${Math.min(orgsWithWebsites.length, limit)} organizations`);
 

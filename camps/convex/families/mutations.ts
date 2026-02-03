@@ -107,6 +107,26 @@ export const updateFamily = mutation({
 });
 
 /**
+ * Admin: Update a family's WorkOS user ID (for migration fixes)
+ */
+export const adminUpdateWorkosUserId = mutation({
+  args: {
+    familyId: v.id("families"),
+    workosUserId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const family = await ctx.db.get(args.familyId);
+    if (!family) {
+      throw new Error("Family not found");
+    }
+    await ctx.db.patch(args.familyId, {
+      workosUserId: args.workosUserId,
+    });
+    return args.familyId;
+  },
+});
+
+/**
  * Mark the current family's onboarding as completed.
  */
 export const completeOnboarding = mutation({

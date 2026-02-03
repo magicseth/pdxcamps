@@ -206,3 +206,97 @@ export const listUpcomingSessions = query({
     return sessions;
   },
 });
+
+/**
+ * Get featured sessions for landing page showcase
+ * Returns enriched session data with camp name, image, organization, location
+ */
+export const getFeaturedSessions = query({
+  args: {
+    citySlug: v.string(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 20;
+
+    // Get city by slug
+    const city = await ctx.db
+      .query("cities")
+      .withIndex("by_slug", (q) => q.eq("slug", args.citySlug))
+      .unique();
+
+    if (!city) return [];
+
+    const today = new Date().toISOString().split("T")[0];
+
+    // Get upcoming active sessions with prices (prioritize sessions with good data)
+    const allSessions = await ctx.db
+      .query("sessions")
+      .withIndex("by_city_and_status_and_start_date", (q) =>
+        q.eq("cityId", city._id).eq("status", "active").gte("startDate", today)
+      )
+      .take(200);
+
+    // Filter to sessions with prices and sort by start date
+    const sessionsWithPrices = allSessions
+      .filter((s) => s.price > 0)
+      .sort((a, b) => a.startDate.localeCompare(b.startDate));
+
+    // Take a variety - spread across different camps
+    const selectedSessions: typeof sessionsWithPrices = [];
+    const seenCamps = new Set<string>();
+
+    for (const session of sessionsWithPrices) {
+      if (selectedSessions.length >= limit) break;
+      // Allow some duplicates but prioritize variety
+      if (!seenCamps.has(session.campId) || selectedSessions.length < limit / 2) {
+        selectedSessions.push(session);
+        seenCamps.add(session.campId);
+      }
+    }
+
+    // Enrich with camp, organization, and location data
+    const enrichedSessions = await Promise.all(
+      selectedSessions.map(async (session) => {
+        const camp = await ctx.db.get(session.campId);
+        if (!camp) return null;
+
+        const organization = await ctx.db.get(camp.organizationId);
+        const location = await ctx.db.get(session.locationId);
+
+        // Get image URL
+        let imageUrl: string | undefined;
+        if (camp.imageStorageIds && camp.imageStorageIds.length > 0) {
+          imageUrl = await ctx.storage.getUrl(camp.imageStorageIds[0]) ?? undefined;
+        } else if (camp.imageUrls && camp.imageUrls.length > 0) {
+          imageUrl = camp.imageUrls[0];
+        }
+
+        // Get organization logo URL
+        let orgLogoUrl: string | undefined;
+        if (organization?.logoStorageId) {
+          orgLogoUrl = await ctx.storage.getUrl(organization.logoStorageId) ?? undefined;
+        }
+
+        return {
+          _id: session._id,
+          campName: camp.name,
+          campSlug: camp.slug,
+          organizationName: organization?.name,
+          organizationLogoUrl: orgLogoUrl,
+          imageUrl,
+          startDate: session.startDate,
+          endDate: session.endDate,
+          price: session.price,
+          locationName: location?.name,
+          ageRequirements: session.ageRequirements || camp.ageRequirements,
+          categories: camp.categories,
+          spotsLeft: session.capacity - session.enrolledCount,
+          isSoldOut: session.enrolledCount >= session.capacity,
+        };
+      })
+    );
+
+    return enrichedSessions.filter((s): s is NonNullable<typeof s> => s !== null);
+  },
+});

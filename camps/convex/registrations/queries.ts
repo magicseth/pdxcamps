@@ -273,3 +273,104 @@ export const getChildCalendar = query({
     });
   },
 });
+
+/**
+ * Get all saved camps for the current family, organized by status.
+ * Returns camps with full details including registration URLs.
+ */
+export const getSavedCamps = query({
+  args: {},
+  handler: async (ctx) => {
+    const family = await getFamily(ctx);
+    if (!family) {
+      return {
+        interested: [],
+        registered: [],
+        waitlisted: [],
+        cancelled: [],
+      };
+    }
+
+    // Get all registrations for the family
+    const registrations = await ctx.db
+      .query("registrations")
+      .withIndex("by_family", (q) => q.eq("familyId", family._id))
+      .collect();
+
+    // Fetch all related sessions
+    const sessionIds = Array.from(new Set(registrations.map((r) => r.sessionId)));
+    const sessionsRaw = await Promise.all(sessionIds.map((id) => ctx.db.get(id)));
+    const sessions = sessionsRaw.filter((s): s is Doc<"sessions"> => s !== null);
+    const sessionMap = new Map(sessions.map((s) => [s._id, s]));
+
+    // Collect all unique IDs for batch fetching
+    const campIds = Array.from(new Set(sessions.map((s) => s.campId)));
+    const locationIds = Array.from(new Set(sessions.map((s) => s.locationId)));
+    const organizationIds = Array.from(new Set(sessions.map((s) => s.organizationId)));
+    const childIds = Array.from(new Set(registrations.map((r) => r.childId)));
+
+    // Batch fetch all related entities
+    const [campsRaw, locationsRaw, organizationsRaw, childrenRaw] = await Promise.all([
+      Promise.all(campIds.map((id) => ctx.db.get(id))),
+      Promise.all(locationIds.map((id) => ctx.db.get(id))),
+      Promise.all(organizationIds.map((id) => ctx.db.get(id))),
+      Promise.all(childIds.map((id) => ctx.db.get(id))),
+    ]);
+
+    // Create lookup maps
+    const camps = campsRaw.filter((c): c is Doc<"camps"> => c !== null);
+    const locations = locationsRaw.filter((l): l is Doc<"locations"> => l !== null);
+    const organizations = organizationsRaw.filter((o): o is Doc<"organizations"> => o !== null);
+    const children = childrenRaw.filter((c): c is Doc<"children"> => c !== null);
+
+    const campMap = new Map(camps.map((c) => [c._id, c]));
+    const locationMap = new Map(locations.map((l) => [l._id, l]));
+    const organizationMap = new Map(organizations.map((o) => [o._id, o]));
+    const childMap = new Map(children.map((c) => [c._id, c]));
+
+    // Build enriched registrations
+    const enrichedRegistrations = registrations.map((registration) => {
+      const session = sessionMap.get(registration.sessionId);
+      const camp = session ? campMap.get(session.campId) : null;
+      const location = session ? locationMap.get(session.locationId) : null;
+      const organization = session ? organizationMap.get(session.organizationId) : null;
+      const child = childMap.get(registration.childId);
+
+      return {
+        ...registration,
+        child: child ?? null,
+        session: session
+          ? {
+              ...session,
+              camp: camp ?? null,
+              location: location ?? null,
+              organization: organization ?? null,
+            }
+          : null,
+      };
+    });
+
+    // Sort by session start date
+    const sortByDate = (a: typeof enrichedRegistrations[0], b: typeof enrichedRegistrations[0]) => {
+      const dateA = a.session?.startDate ?? "";
+      const dateB = b.session?.startDate ?? "";
+      return dateA.localeCompare(dateB);
+    };
+
+    // Group by status
+    return {
+      interested: enrichedRegistrations
+        .filter((r) => r.status === "interested")
+        .sort(sortByDate),
+      registered: enrichedRegistrations
+        .filter((r) => r.status === "registered")
+        .sort(sortByDate),
+      waitlisted: enrichedRegistrations
+        .filter((r) => r.status === "waitlisted")
+        .sort(sortByDate),
+      cancelled: enrichedRegistrations
+        .filter((r) => r.status === "cancelled")
+        .sort(sortByDate),
+    };
+  },
+});

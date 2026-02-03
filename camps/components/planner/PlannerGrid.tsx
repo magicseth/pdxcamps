@@ -10,6 +10,7 @@ interface ChildCoverage {
   childName: string;
   status: CoverageStatus;
   coveredDays: number;
+  availableSessionCount?: number;
   registrations: {
     registrationId: string;
     campName: string;
@@ -37,11 +38,12 @@ interface WeekData {
 
 interface PlannerGridProps {
   coverage: WeekData[];
-  children: { _id: Id<'children'>; firstName: string }[];
+  children: { _id: Id<'children'>; firstName: string; birthdate?: string; currentGrade?: number }[];
   citySlug?: string;
+  onGapClick?: (weekStart: string, weekEnd: string, childId: Id<'children'>) => void;
 }
 
-export function PlannerGrid({ coverage, children, citySlug }: PlannerGridProps) {
+export function PlannerGrid({ coverage, children, citySlug, onGapClick }: PlannerGridProps) {
   // Group weeks by month
   const weeksByMonth = useMemo(() => {
     const groups: Map<string, WeekData[]> = new Map();
@@ -147,9 +149,11 @@ export function PlannerGrid({ coverage, children, citySlug }: PlannerGridProps) 
                       key={`${child._id}-${week.week.startDate}`}
                       data={cellData}
                       week={week}
+                      childId={child._id}
                       isCurrentWeek={current}
                       isPastWeek={past}
                       citySlug={citySlug}
+                      onGapClick={onGapClick}
                     />
                   );
                 })}
@@ -165,18 +169,21 @@ export function PlannerGrid({ coverage, children, citySlug }: PlannerGridProps) 
 interface CoverageCellProps {
   data: ChildCoverage | null;
   week: WeekData;
+  childId: Id<'children'>;
   isCurrentWeek: boolean;
   isPastWeek: boolean;
   citySlug?: string;
+  onGapClick?: (weekStart: string, weekEnd: string, childId: Id<'children'>) => void;
 }
 
-function CoverageCell({ data, week, isCurrentWeek, isPastWeek, citySlug }: CoverageCellProps) {
+function CoverageCell({ data, week, childId, isCurrentWeek, isPastWeek, citySlug, onGapClick }: CoverageCellProps) {
   const status = data?.status || 'gap';
   const hasEvent = data?.events && data.events.length > 0;
   const hasRegistration = data?.registrations && data.registrations.length > 0;
   const campName = data?.registrations?.[0]?.campName;
   const eventTitle = data?.events?.[0]?.title;
   const logoUrl = data?.registrations?.[0]?.organizationLogoUrl;
+  const availableCount = data?.availableSessionCount;
 
   // Determine cell appearance
   let bgColor = '';
@@ -198,12 +205,14 @@ function CoverageCell({ data, week, isCurrentWeek, isPastWeek, citySlug }: Cover
   } else {
     bgColor = 'bg-red-50 dark:bg-red-900/20';
     icon = '';
-    tooltip = 'Gap - needs camp';
+    tooltip = availableCount !== undefined
+      ? `${availableCount} camp${availableCount === 1 ? '' : 's'} available`
+      : 'Gap - needs camp';
   }
 
   const cellContent = (
     <div
-      className={`w-full h-full min-h-[48px] flex items-center justify-center ${bgColor} ${
+      className={`w-full h-full min-h-[48px] flex flex-col items-center justify-center ${bgColor} ${
         isPastWeek ? 'opacity-50' : ''
       } ${isCurrentWeek ? 'ring-2 ring-blue-500 ring-inset' : ''}`}
       title={tooltip}
@@ -211,7 +220,8 @@ function CoverageCell({ data, week, isCurrentWeek, isPastWeek, citySlug }: Cover
       {logoUrl ? (
         <img
           src={logoUrl}
-          alt=""
+          alt={campName || ''}
+          title={campName || 'Camp'}
           className="w-6 h-6 rounded object-contain"
         />
       ) : hasEvent ? (
@@ -221,17 +231,43 @@ function CoverageCell({ data, week, isCurrentWeek, isPastWeek, citySlug }: Cover
       ) : status === 'partial' ? (
         <span className="text-yellow-600 dark:text-yellow-400 text-sm">{icon}</span>
       ) : (
-        <span className="text-red-300 dark:text-red-700 text-lg">•</span>
+        <>
+          {availableCount !== undefined && availableCount > 0 ? (
+            <span className="text-red-600 dark:text-red-400 text-sm font-semibold">{availableCount}</span>
+          ) : (
+            <span className="text-red-300 dark:text-red-700 text-lg">•</span>
+          )}
+        </>
       )}
     </div>
   );
 
   // Make gap cells clickable to find camps
   if (status === 'gap' && !isPastWeek) {
+    const handleClick = () => {
+      if (onGapClick) {
+        onGapClick(week.week.startDate, week.week.endDate, childId);
+      }
+    };
+
+    // If we have an onGapClick handler, use a button; otherwise use a Link
+    if (onGapClick) {
+      return (
+        <td className="border-b border-l border-slate-100 dark:border-slate-700/50 p-0">
+          <button
+            onClick={handleClick}
+            className="block w-full h-full hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors cursor-pointer"
+          >
+            {cellContent}
+          </button>
+        </td>
+      );
+    }
+
     return (
       <td className="border-b border-l border-slate-100 dark:border-slate-700/50 p-0">
         <Link
-          href={citySlug ? `/discover/${citySlug}?week=${week.week.startDate}` : `/planner/week/${week.week.startDate}`}
+          href={citySlug ? `/discover/${citySlug}?from=${week.week.startDate}&to=${week.week.endDate}` : `/planner/week/${week.week.startDate}`}
           className="block w-full h-full hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
         >
           {cellContent}

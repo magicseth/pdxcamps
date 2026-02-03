@@ -1,0 +1,17 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Next.js plugin for Netlify
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Custom domain redirect
+[[redirects]]
+  from = "https://campweeks.netlify.app/*"
+  to = "https://campweeks.com/:splat"
+  status = 301
+  force = true

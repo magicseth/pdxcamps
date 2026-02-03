@@ -1,9 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import Link from 'next/link';
 import { Authenticated, Unauthenticated } from 'convex/react';
+import { Id } from '../../convex/_generated/dataModel';
+import { StatCard, AlertBanner } from '../../components/admin';
 
 export default function AdminPage() {
   return (
@@ -12,7 +15,7 @@ export default function AdminPage() {
         <Link href="/" className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
           PDX Camps
         </Link>
-        <h1 className="text-lg font-semibold">Admin Dashboard</h1>
+        <h1 className="text-lg font-semibold">Command Center</h1>
       </header>
       <main className="p-4 md:p-8">
         <Authenticated>
@@ -37,16 +40,21 @@ export default function AdminPage() {
 }
 
 function AdminContent() {
+  const [selectedCityId, setSelectedCityId] = useState<Id<"cities"> | undefined>(undefined);
+
   const isAdmin = useQuery(api.admin.queries.isAdmin);
-  const dashboard = useQuery(api.admin.queries.getScrapingDashboard);
+  const cities = useQuery(api.cities.queries.listActiveCities);
+  // Use lightweight summary query instead of full dashboard with sources
+  const dashboard = useQuery(api.admin.queries.getDashboardSummary, { cityId: selectedCityId });
+  const alerts = useQuery(api.scraping.queries.listUnacknowledgedAlerts, {});
 
   if (isAdmin === undefined) {
     return (
       <div className="max-w-4xl mx-auto py-8">
         <div role="status" aria-live="polite" className="animate-pulse motion-reduce:animate-none space-y-6">
           <div className="h-8 w-48 bg-slate-200 dark:bg-slate-700 rounded" aria-hidden="true"></div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
               <div key={i} className="h-24 bg-slate-200 dark:bg-slate-700 rounded-lg" aria-hidden="true"></div>
             ))}
           </div>
@@ -108,64 +116,135 @@ function AdminContent() {
     );
   }
 
+  // Calculate alert counts
+  const alertStats = {
+    critical: alerts?.filter((a) => a.severity === 'critical').length ?? 0,
+    error: alerts?.filter((a) => a.severity === 'error').length ?? 0,
+    warning: alerts?.filter((a) => a.severity === 'warning').length ?? 0,
+  };
+
+  // Build needs attention items
+  const needsAttention: AttentionItem[] = [];
+
+  // Failing sources
+  if (dashboard.summary.sourcesWithErrors > 0) {
+    needsAttention.push({
+      type: 'error',
+      title: `${dashboard.summary.sourcesWithErrors} source${dashboard.summary.sourcesWithErrors > 1 ? 's' : ''} failing`,
+      description: 'Consecutive scrape failures detected',
+      primaryAction: { label: 'View Sources', href: '/admin/sources?tab=failing' },
+      secondaryAction: { label: 'Fix Scrapers', href: '/admin/development' },
+    });
+  }
+
+  // Pending sessions
+  if (dashboard.summary.pendingReview > 0) {
+    needsAttention.push({
+      type: 'warning',
+      title: `${dashboard.summary.pendingReview} session${dashboard.summary.pendingReview > 1 ? 's' : ''} need review`,
+      description: 'Incomplete session data waiting for review',
+      primaryAction: { label: 'Review Sessions', href: '/admin/data-quality' },
+    });
+  }
+
+  // No data sources
+  if (dashboard.summary.sourcesWithoutSessions > 0) {
+    needsAttention.push({
+      type: 'info',
+      title: `${dashboard.summary.sourcesWithoutSessions} source${dashboard.summary.sourcesWithoutSessions > 1 ? 's' : ''} with no data`,
+      description: 'Active sources that have not produced sessions',
+      primaryAction: { label: 'View Sources', href: '/admin/sources?tab=nodata' },
+    });
+  }
+
+  // Low quality sources
+  if (dashboard.summary.lowQualitySources > 0) {
+    needsAttention.push({
+      type: 'info',
+      title: `${dashboard.summary.lowQualitySources} source${dashboard.summary.lowQualitySources > 1 ? 's' : ''} with low quality`,
+      description: 'Sources returning minimal or incomplete data',
+      primaryAction: { label: 'Improve Scrapers', href: '/admin/development' },
+    });
+  }
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
+      {/* Header with Market Filter */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-          Scraping Dashboard
-        </h2>
+        <div className="flex items-center gap-4">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+            Command Center
+          </h2>
+          <select
+            value={selectedCityId || ''}
+            onChange={(e) => setSelectedCityId(e.target.value ? e.target.value as Id<"cities"> : undefined)}
+            className="px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+          >
+            <option value="">All Markets</option>
+            {cities?.map((city) => (
+              <option key={city._id} value={city._id}>
+                {city.name}
+              </option>
+            ))}
+          </select>
+        </div>
         <span className="text-xs text-slate-500" title="Data updates in real-time via Convex">
-          Live data · Updated {new Date().toLocaleTimeString()}
+          Live data
         </span>
       </div>
 
-      {/* Summary Cards - Row 1: Key Metrics */}
+      {/* Alert Banner */}
+      <AlertBanner
+        criticalCount={alertStats.critical}
+        errorCount={alertStats.error}
+        warningCount={alertStats.warning}
+      />
+
+      {/* Key Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <SummaryCard
-          label="Sources with Data"
+        <StatCard
+          label="Healthy"
           value={dashboard.summary.sourcesWithSessions}
-          subtext={`${dashboard.summary.dataSuccessRate}% of active`}
+          subtext={`${dashboard.summary.dataSuccessRate}% with data`}
           variant="success"
+          href="/admin/sources?tab=active"
         />
-        <SummaryCard
-          label="Active Sessions"
-          value={dashboard.summary.totalActiveSessions}
-          subtext={`${dashboard.summary.totalSessions} total`}
+        <StatCard
+          label="Failing"
+          value={dashboard.summary.sourcesWithErrors}
+          subtext="consecutive failures"
+          variant={dashboard.summary.sourcesWithErrors > 0 ? 'error' : 'default'}
+          href="/admin/sources?tab=failing"
         />
-        <SummaryCard
+        <StatCard
+          label="No Data"
+          value={dashboard.summary.sourcesWithoutSessions}
+          subtext="active but empty"
+          variant={dashboard.summary.sourcesWithoutSessions > 0 ? 'warning' : 'default'}
+          href="/admin/sources?tab=nodata"
+        />
+        <StatCard
           label="Pending Review"
           value={dashboard.summary.pendingReview}
           subtext="incomplete sessions"
           variant={dashboard.summary.pendingReview > 0 ? 'warning' : 'default'}
-          href="/admin/pending"
-        />
-        <SummaryCard
-          label="No Data"
-          value={dashboard.summary.sourcesWithoutSessions}
-          subtext="active but empty"
-          variant={dashboard.summary.sourcesWithoutSessions > 0 ? 'error' : 'default'}
+          href="/admin/data-quality"
         />
       </div>
 
-      {/* Quick Links */}
+      {/* Quick Actions */}
       <div className="flex flex-wrap gap-3">
         <Link
-          href="/admin/scraper-dev"
+          href="/admin/growth"
+          className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium"
+        >
+          + Seed Market
+        </Link>
+        <Link
+          href="/admin/development"
           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
         >
-          Scraper Development
-        </Link>
-        <Link
-          href="/admin/coverage"
-          className="px-4 py-2 bg-slate-600 text-white rounded-md hover:bg-slate-700 text-sm font-medium"
-        >
-          Coverage Analysis
-        </Link>
-        <Link
-          href="/admin/pending"
-          className="px-4 py-2 bg-slate-600 text-white rounded-md hover:bg-slate-700 text-sm font-medium"
-        >
-          Pending Sessions
+          + Request Scraper
         </Link>
         <Link
           href="/admin/sources"
@@ -174,431 +253,225 @@ function AdminContent() {
           All Sources
         </Link>
         <Link
-          href="/admin/locations"
-          className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 text-sm font-medium"
+          href="/admin/data-quality"
+          className="px-4 py-2 bg-slate-600 text-white rounded-md hover:bg-slate-700 text-sm font-medium"
         >
-          Fix Locations
+          Data Quality
         </Link>
       </div>
 
-      {/* Summary Cards - Row 2: Quality & Health */}
+      {/* Secondary Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <SummaryCard
+        <StatCard
           label="High Quality"
           value={dashboard.summary.highQualitySources}
           subtext="complete data"
           variant="success"
           small
         />
-        <SummaryCard
+        <StatCard
           label="Medium Quality"
           value={dashboard.summary.mediumQualitySources}
           subtext="partial data"
           variant="warning"
           small
         />
-        <SummaryCard
+        <StatCard
           label="Low Quality"
           value={dashboard.summary.lowQualitySources}
           subtext="minimal data"
           variant="error"
           small
         />
-        <SummaryCard
+        <StatCard
           label="Total Sources"
           value={dashboard.summary.totalSources}
           subtext={`${dashboard.summary.activeSources} active`}
           small
         />
-        <SummaryCard
-          label="With Errors"
-          value={dashboard.summary.sourcesWithErrors}
-          subtext={`${dashboard.summary.scrapeSuccessRate}% success`}
-          variant={dashboard.summary.sourcesWithErrors > 0 ? 'error' : 'default'}
+        <StatCard
+          label="Active Sessions"
+          value={dashboard.summary.totalActiveSessions}
+          subtext={`${dashboard.summary.totalSessions} total`}
           small
         />
       </div>
 
-      {/* Sources Table */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 dark:bg-slate-900">
-              <tr>
-                <th scope="col" className="text-left px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">
-                  Source
-                </th>
-                <th scope="col" className="text-left px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">
-                  Sessions
-                </th>
-                <th scope="col" className="text-left px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">
-                  Last Scrape
-                </th>
-                <th scope="col" className="text-left px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">
-                  Status
-                </th>
-                <th scope="col" className="text-left px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">
-                  Error
-                </th>
-                <th scope="col" className="text-left px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-              {dashboard.sources.map((source) => (
-                <SourceRow key={source._id} source={source} />
-              ))}
-            </tbody>
-          </table>
+      {/* Needs Attention */}
+      {needsAttention.length > 0 && (
+        <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+            <h3 className="font-semibold text-slate-900 dark:text-white">Needs Attention</h3>
+          </div>
+          <ul className="divide-y divide-slate-200 dark:divide-slate-700">
+            {needsAttention.map((item, index) => (
+              <AttentionRow key={index} item={item} />
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* All Clear State */}
+      {needsAttention.length === 0 && (
+        <div className="bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800 p-8 text-center">
+          <div className="text-green-500 mb-2">
+            <CheckCircleIcon />
+          </div>
+          <h3 className="font-semibold text-green-800 dark:text-green-200">All Systems Healthy</h3>
+          <p className="text-sm text-green-600 dark:text-green-300 mt-1">
+            No immediate issues detected. Great job!
+          </p>
+        </div>
+      )}
+
+      {/* Recent Activity */}
+      <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
+        <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Recent Activity</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+              <DatabaseIcon />
+            </div>
+            <div>
+              <p className="font-medium text-slate-900 dark:text-white">
+                {dashboard.summary.activeSources} sources active
+              </p>
+              <p className="text-slate-500 text-xs">Actively scraping</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
+              <CalendarIcon />
+            </div>
+            <div>
+              <p className="font-medium text-slate-900 dark:text-white">
+                {dashboard.summary.totalActiveSessions} sessions
+              </p>
+              <p className="text-slate-500 text-xs">Active camp sessions</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
+              <ChartIcon />
+            </div>
+            <div>
+              <p className="font-medium text-slate-900 dark:text-white">
+                {dashboard.summary.scrapeSuccessRate}% success rate
+              </p>
+              <p className="text-slate-500 text-xs">Overall scraping health</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function SummaryCard({
-  label,
-  value,
-  subtext,
-  variant = 'default',
-  href,
-  small = false,
-}: {
-  label: string;
-  value: number;
-  subtext: string;
-  variant?: 'default' | 'success' | 'warning' | 'error';
-  href?: string;
-  small?: boolean;
-}) {
-  const variantStyles = {
-    default: 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700',
-    success: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800',
-    warning: 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800',
-    error: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800',
-  };
-
-  const valueStyles = {
-    default: 'text-slate-900 dark:text-white',
-    success: 'text-green-700 dark:text-green-300',
-    warning: 'text-yellow-700 dark:text-yellow-300',
-    error: 'text-red-700 dark:text-red-300',
-  };
-
-  const content = (
-    <>
-      <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
-      <p className={`${small ? 'text-2xl' : 'text-3xl'} font-bold tabular-nums ${valueStyles[variant]}`}>{value}</p>
-      <p className="text-xs text-slate-500 dark:text-slate-400">{subtext}</p>
-    </>
-  );
-
-  if (href) {
-    return (
-      <Link
-        href={href}
-        className={`rounded-lg border ${small ? 'p-3' : 'p-4'} ${variantStyles[variant]} hover:opacity-80 transition-opacity block`}
-      >
-        {content}
-      </Link>
-    );
-  }
-
-  return (
-    <div className={`rounded-lg border ${small ? 'p-3' : 'p-4'} ${variantStyles[variant]}`}>
-      {content}
-    </div>
-  );
+interface AttentionItem {
+  type: 'error' | 'warning' | 'info';
+  title: string;
+  description: string;
+  primaryAction: { label: string; href: string };
+  secondaryAction?: { label: string; href: string };
 }
 
-interface SourceData {
-  _id: string;
-  name: string;
-  url: string;
-  organizationId: string | null;
-  organizationName: string | null;
-  organizationLogoUrl: string | null;
-  organizationWebsite: string | null;
-  scraperModule: string | null | undefined;
-  isActive: boolean;
-  totalSessions: number;
-  activeSessions: number;
-  draftSessions: number;
-  pendingSessions: number;
-  hasData: boolean;
-  dataQualityScore?: number;
-  qualityTier?: 'high' | 'medium' | 'low';
-  lastSessionsFoundAt?: number;
-  health: {
-    lastSuccessAt?: number;
-    lastFailureAt?: number;
-    consecutiveFailures: number;
-    totalRuns: number;
-    successRate: number;
-    lastError?: string;
-    needsRegeneration: boolean;
+function AttentionRow({ item }: { item: AttentionItem }) {
+  const iconStyles = {
+    error: 'text-red-600 dark:text-red-400',
+    warning: 'text-yellow-600 dark:text-yellow-400',
+    info: 'text-blue-600 dark:text-blue-400',
   };
-  lastScrapedAt?: number;
-  lastJobId: string | null;
-  lastJobStatus: string | null;
-  lastJobSessionsFound: number | null;
-  lastJobError: string | null;
-  lastJobCompletedAt: number | null;
-}
-
-function SourceRow({ source }: { source: SourceData }) {
-  // Format last scrape time
-  const lastScrapeTime = source.lastScrapedAt
-    ? formatRelativeTime(source.lastScrapedAt)
-    : 'Never';
-
-  // Get status badge
-  const statusBadge = getStatusBadge(source);
-
-  // Get quality badge
-  const qualityBadge = getQualityBadge(source);
 
   return (
-    <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
-      <td className="px-4 py-3">
-        <div className="flex items-start gap-3">
-          {/* Organization Logo */}
-          {source.organizationLogoUrl ? (
-            <img
-              src={source.organizationLogoUrl}
-              alt={source.organizationName || source.name}
-              className="w-10 h-10 rounded-lg object-contain bg-white border border-slate-200 dark:border-slate-600 flex-shrink-0"
-            />
+    <li className="px-6 py-4 flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div className={`flex-shrink-0 ${iconStyles[item.type]}`}>
+          {item.type === 'error' ? (
+            <ErrorIcon />
+          ) : item.type === 'warning' ? (
+            <WarningIcon />
           ) : (
-            <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
-              <span className="text-xs font-medium text-slate-400">
-                {(source.organizationName || source.name).slice(0, 2).toUpperCase()}
-              </span>
-            </div>
-          )}
-          <div className="space-y-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <Link
-                href={`/admin/sources/${source._id}`}
-                className="font-medium text-slate-900 dark:text-white hover:text-blue-600 hover:underline"
-              >
-                {source.name}
-              </Link>
-              {qualityBadge}
-              {!source.isActive && (
-                <span className="px-1.5 py-0.5 text-xs bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 rounded">
-                  Inactive
-                </span>
-              )}
-            </div>
-            {source.organizationName && (
-              <p className="text-xs text-slate-500">{source.organizationName}</p>
-            )}
-            <a
-              href={source.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-blue-600 hover:underline flex items-center gap-1"
-            >
-              {truncateUrl(source.url)}
-              <ExternalLinkIcon />
-            </a>
-          </div>
-        </div>
-      </td>
-      <td className="px-4 py-3">
-        <div className="space-y-1">
-          <p className="font-medium text-slate-900 dark:text-white">
-            {source.activeSessions}
-            {source.draftSessions > 0 && (
-              <span className="text-yellow-600 dark:text-yellow-400 ml-1" title="Draft sessions">
-                +{source.draftSessions}
-              </span>
-            )}
-          </p>
-          <p className="text-xs text-slate-500">
-            {source.totalSessions} total
-            {source.pendingSessions > 0 && (
-              <span className="text-orange-600 ml-1">
-                ({source.pendingSessions} pending)
-              </span>
-            )}
-          </p>
-        </div>
-      </td>
-      <td className="px-4 py-3">
-        <div className="space-y-1">
-          <p className="text-slate-900 dark:text-white">{lastScrapeTime}</p>
-          {source.lastJobSessionsFound !== null && source.lastJobId && (
-            <Link
-              href={`/admin/jobs/${source.lastJobId}`}
-              className="text-xs text-blue-600 hover:underline"
-            >
-              Found {source.lastJobSessionsFound} sessions
-            </Link>
-          )}
-          {source.lastJobSessionsFound !== null && !source.lastJobId && (
-            <p className="text-xs text-slate-500">
-              Found {source.lastJobSessionsFound} sessions
-            </p>
+            <InfoIcon />
           )}
         </div>
-      </td>
-      <td className="px-4 py-3">
-        <div className="space-y-1">
-          {statusBadge}
-          {source.health.totalRuns > 0 && (
-            <p className="text-xs text-slate-500" title={`${source.health.totalRuns} total runs`}>
-              {Math.round(source.health.successRate * 100)}% success
-            </p>
-          )}
+        <div>
+          <p className="font-medium text-slate-900 dark:text-white">{item.title}</p>
+          <p className="text-sm text-slate-500">{item.description}</p>
         </div>
-      </td>
-      <td className="px-4 py-3 max-w-xs">
-        {source.health.lastError ? (
-          <div className="group relative">
-            <p className="text-xs text-red-600 dark:text-red-400 truncate max-w-[200px]">
-              {source.health.lastError}
-            </p>
-            {/* Tooltip on hover */}
-            <div className="hidden group-hover:block absolute z-10 left-0 top-full mt-1 p-2 bg-slate-900 text-white text-xs rounded shadow-lg max-w-md whitespace-pre-wrap">
-              {source.health.lastError}
-            </div>
-          </div>
-        ) : (
-          <span className="text-xs text-slate-400">-</span>
+      </div>
+      <div className="flex items-center gap-2">
+        {item.secondaryAction && (
+          <Link
+            href={item.secondaryAction.href}
+            className="px-3 py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+          >
+            {item.secondaryAction.label}
+          </Link>
         )}
-      </td>
-      <td className="px-4 py-3">
         <Link
-          href={`/admin/scraper-dev?sourceId=${source._id}&sourceName=${encodeURIComponent(source.name)}&sourceUrl=${encodeURIComponent(source.url)}`}
-          className="text-xs text-blue-600 hover:underline whitespace-nowrap"
+          href={item.primaryAction.href}
+          className="px-3 py-1.5 text-sm bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-md hover:bg-slate-200 dark:hover:bg-slate-600"
         >
-          Improve Scraper
+          {item.primaryAction.label}
         </Link>
-      </td>
-    </tr>
+      </div>
+    </li>
   );
 }
 
-function getQualityBadge(source: SourceData) {
-  if (!source.hasData) {
-    return null;
-  }
-
-  if (source.qualityTier === 'high') {
-    return (
-      <span className="px-1.5 py-0.5 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded" title={`${source.dataQualityScore}% complete`}>
-        High
-      </span>
-    );
-  }
-
-  if (source.qualityTier === 'medium') {
-    return (
-      <span className="px-1.5 py-0.5 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded" title={`${source.dataQualityScore}% complete`}>
-        Med
-      </span>
-    );
-  }
-
-  if (source.qualityTier === 'low') {
-    return (
-      <span className="px-1.5 py-0.5 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded" title={`${source.dataQualityScore}% complete`}>
-        Low
-      </span>
-    );
-  }
-
-  return null;
-}
-
-function getStatusBadge(source: SourceData) {
-  if (!source.isActive) {
-    return (
-      <span className="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 rounded-full">
-        Disabled
-      </span>
-    );
-  }
-
-  if (source.health.needsRegeneration) {
-    return (
-      <span className="px-2 py-1 text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full">
-        Needs Regen
-      </span>
-    );
-  }
-
-  if (source.health.consecutiveFailures > 2) {
-    return (
-      <span className="px-2 py-1 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-full">
-        Failing ({source.health.consecutiveFailures}x)
-      </span>
-    );
-  }
-
-  if (source.health.consecutiveFailures > 0) {
-    return (
-      <span className="px-2 py-1 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded-full">
-        Warning
-      </span>
-    );
-  }
-
-  if (source.health.totalRuns === 0) {
-    return (
-      <span className="px-2 py-1 text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-full">
-        Never Run
-      </span>
-    );
-  }
-
+// Icons
+function ErrorIcon() {
   return (
-    <span className="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full">
-      Healthy
-    </span>
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
   );
 }
 
-function formatRelativeTime(timestamp: number): string {
-  const now = Date.now();
-  const diff = now - timestamp;
-
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-
-  if (minutes < 1) return 'Just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 7) return `${days}d ago`;
-
-  return new Date(timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-function truncateUrl(url: string): string {
-  try {
-    const parsed = new URL(url);
-    const path = parsed.pathname.length > 30
-      ? parsed.pathname.substring(0, 30) + '...'
-      : parsed.pathname;
-    return parsed.hostname + path;
-  } catch {
-    return url.length > 50 ? url.substring(0, 50) + '...' : url;
-  }
-}
-
-function ExternalLinkIcon() {
+function WarningIcon() {
   return (
-    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-      />
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+    </svg>
+  );
+}
+
+function InfoIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  );
+}
+
+function CheckCircleIcon() {
+  return (
+    <svg className="w-12 h-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  );
+}
+
+function DatabaseIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+    </svg>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+  );
+}
+
+function ChartIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
     </svg>
   );
 }

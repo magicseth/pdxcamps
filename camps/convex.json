@@ -22,9 +22,9 @@
     },
     "prod": {
       "configure": {
-        "redirectUris": ["https://${buildEnv.VERCEL_PROJECT_PRODUCTION_URL}/callback"],
-        "appHomepageUrl": "https://${buildEnv.VERCEL_PROJECT_PRODUCTION_URL}",
-        "corsOrigins": ["https://${buildEnv.VERCEL_PROJECT_PRODUCTION_URL}"]
+        "redirectUris": ["https://campweeks.com/callback", "https://campweeks.netlify.app/callback"],
+        "appHomepageUrl": "https://campweeks.com",
+        "corsOrigins": ["https://campweeks.com", "https://campweeks.netlify.app"]
       }
     }
   }
