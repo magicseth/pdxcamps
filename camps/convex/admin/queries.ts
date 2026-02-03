@@ -25,12 +25,96 @@ export const isAdmin = query({
 });
 
 /**
+ * Get lightweight dashboard summary (no source details)
+ * Optimized for the Command Center page
+ */
+export const getDashboardSummary = query({
+  args: {
+    cityId: v.optional(v.id("cities")),
+  },
+  handler: async (ctx, args) => {
+    // Check admin
+    const isAdminUser = await checkIsAdmin(ctx);
+    if (!isAdminUser) {
+      return null;
+    }
+
+    // Get all scrape sources (lightweight)
+    let sources = await ctx.db.query("scrapeSources").collect();
+
+    // Filter by city if provided
+    if (args.cityId) {
+      const organizations = await ctx.db.query("organizations").collect();
+      const orgIdsInCity = new Set(
+        organizations
+          .filter((org) => org.cityIds.includes(args.cityId!))
+          .map((org) => org._id)
+      );
+      sources = sources.filter(
+        (source) => source.organizationId && orgIdsInCity.has(source.organizationId)
+      );
+    }
+
+    // Get pending sessions count
+    const pendingSessions = await ctx.db
+      .query("pendingSessions")
+      .withIndex("by_status", (q) => q.eq("status", "pending_review"))
+      .collect();
+
+    // Use denormalized counts from sources instead of loading all sessions
+    const totalSources = sources.length;
+    const activeSources = sources.filter((s) => s.isActive).length;
+    const totalSessions = sources.reduce((sum, s) => sum + (s.sessionCount ?? 0), 0);
+    const totalActiveSessions = sources.reduce((sum, s) => sum + (s.activeSessionCount ?? 0), 0);
+    const sourcesWithSessions = sources.filter((s) => (s.sessionCount ?? 0) > 0).length;
+    const sourcesWithoutSessions = sources.filter((s) => s.isActive && (s.sessionCount ?? 0) === 0).length;
+    const sourcesWithErrors = sources.filter((s) => s.scraperHealth.consecutiveFailures >= 3).length;
+
+    // Quality breakdown
+    const highQualitySources = sources.filter((s) => s.qualityTier === "high").length;
+    const mediumQualitySources = sources.filter((s) => s.qualityTier === "medium").length;
+    const lowQualitySources = sources.filter((s) => s.qualityTier === "low").length;
+
+    // Calculate success rates
+    const scrapeSuccessRate =
+      activeSources > 0
+        ? Math.round(((activeSources - sourcesWithErrors) / activeSources) * 100)
+        : 0;
+    const dataSuccessRate =
+      activeSources > 0
+        ? Math.round((sourcesWithSessions / activeSources) * 100)
+        : 0;
+
+    return {
+      summary: {
+        totalSources,
+        activeSources,
+        sourcesWithSessions,
+        sourcesWithoutSessions,
+        sourcesWithErrors,
+        totalSessions,
+        totalActiveSessions,
+        pendingReview: pendingSessions.length,
+        highQualitySources,
+        mediumQualitySources,
+        lowQualitySources,
+        scrapeSuccessRate,
+        dataSuccessRate,
+      },
+    };
+  },
+});
+
+/**
  * Get admin scraping dashboard data
  * Shows all scrape sources with stats
+ * Optionally filtered by city
  */
 export const getScrapingDashboard = query({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    cityId: v.optional(v.id("cities")),
+  },
+  handler: async (ctx, args) => {
     // Check admin
     const isAdminUser = await checkIsAdmin(ctx);
     if (!isAdminUser) {
@@ -38,7 +122,23 @@ export const getScrapingDashboard = query({
     }
 
     // Get all scrape sources
-    const sources = await ctx.db.query("scrapeSources").collect();
+    let sources = await ctx.db.query("scrapeSources").collect();
+
+    // Filter by city if provided
+    if (args.cityId) {
+      // Get organizations in this city
+      const organizations = await ctx.db.query("organizations").collect();
+      const orgIdsInCity = new Set(
+        organizations
+          .filter((org) => org.cityIds.includes(args.cityId!))
+          .map((org) => org._id)
+      );
+
+      // Filter sources to only those with organizations in this city
+      sources = sources.filter(
+        (source) => source.organizationId && orgIdsInCity.has(source.organizationId)
+      );
+    }
 
     // Get pending sessions count
     const pendingSessions = await ctx.db
@@ -225,8 +325,8 @@ export const getLocationsNeedingFixes = query({
       return null;
     }
 
-    // Get all locations
-    const locations = await ctx.db.query("locations").collect();
+    // Get locations (limit to prevent memory issues)
+    const locations = await ctx.db.query("locations").take(1000);
 
     // Portland city center coords (the default placeholder)
     const DEFAULT_LAT = 45.5152;
@@ -256,18 +356,22 @@ export const getLocationsNeedingFixes = query({
       orgs.filter((o): o is Doc<"organizations"> => o !== null).map((o) => [o._id, o])
     );
 
-    // Count sessions per location
+    // Limit to first 100 locations to avoid timeout
+    const limitedLocations = locationsNeedingFixes.slice(0, 100);
+
+    // Count sessions per location (just get first few to check if it has sessions)
     const sessionCounts = new Map<string, number>();
-    for (const loc of locationsNeedingFixes) {
+    for (const loc of limitedLocations) {
+      // Use take() instead of collect() to limit data read
       const sessions = await ctx.db
         .query("sessions")
-        .filter((q) => q.eq(q.field("locationId"), loc._id))
-        .collect();
+        .withIndex("by_location", (q) => q.eq("locationId", loc._id))
+        .take(100);
       sessionCounts.set(loc._id, sessions.length);
     }
 
     // Build result with enriched data
-    const result = locationsNeedingFixes.map((loc) => ({
+    const result = limitedLocations.map((loc) => ({
       _id: loc._id,
       name: loc.name,
       address: loc.address,
