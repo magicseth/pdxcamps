@@ -193,11 +193,15 @@ export const getScrapeSource = query({
 
 /**
  * Get sources where nextScheduledScrape is in the past (due for scraping)
+ * Limited to prevent too many concurrent jobs
  */
 export const getSourcesDueForScrape = query({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
     const now = Date.now();
+    const maxSources = args.limit ?? 5; // Default limit of 5 sources per batch
 
     // Get all active sources
     const activeSources = await ctx.db
@@ -222,7 +226,8 @@ export const getSourcesDueForScrape = query({
       return a.nextScheduledScrape - b.nextScheduledScrape;
     });
 
-    return dueForScrape;
+    // Limit the number of sources to prevent job explosion
+    return dueForScrape.slice(0, maxSources);
   },
 });
 

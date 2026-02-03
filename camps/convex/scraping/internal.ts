@@ -105,16 +105,9 @@ export const scheduleNextScrape = internalMutation({
     const now = Date.now();
     const frequencyMs = source.scrapeFrequencyHours * 60 * 60 * 1000;
 
-    // Calculate next scheduled time
-    // If lastScrapedAt exists, schedule from that; otherwise from now
-    const baseTime = source.lastScrapedAt ?? now;
-    let nextScheduledScrape = baseTime + frequencyMs;
-
-    // If the calculated time is in the past (e.g., after a long outage),
-    // schedule for now + a small buffer
-    if (nextScheduledScrape < now) {
-      nextScheduledScrape = now + 60 * 1000; // 1 minute buffer
-    }
+    // Always schedule from NOW + frequency to prevent rapid re-scraping
+    // This ensures we wait the full frequency interval after each scrape
+    const nextScheduledScrape = now + frequencyMs;
 
     await ctx.db.patch(args.sourceId, {
       nextScheduledScrape,
