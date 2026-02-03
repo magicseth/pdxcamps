@@ -166,39 +166,47 @@ function LandingPage() {
         {/* Scrolling Organization Logos - Trust Bar */}
         {organizationsWithLogos && organizationsWithLogos.length > 0 && (
           <section className="bg-slate-50 py-8 border-y border-slate-200 overflow-hidden">
-            <div className="max-w-6xl mx-auto px-4 mb-4">
+            <div className="max-w-6xl mx-auto px-4 mb-6">
               <p className="text-center text-sm text-slate-500 font-medium uppercase tracking-wider">
                 Trusted by {CURRENT_MARKET.name} families for camps from
               </p>
             </div>
             <div className="relative">
-              <div className="flex items-center gap-16 animate-scroll-slow">
+              <div className="flex items-center gap-12 animate-scroll-slow">
                 {organizationsWithLogos.map((org) => (
                   <a
                     key={org._id}
                     href={`/discover/${CURRENT_MARKET.slug}?org=${org.slug}`}
-                    className="flex-shrink-0 h-12 w-28 flex items-center justify-center grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition-all duration-300"
-                    title={org.name}
+                    className="flex-shrink-0 flex flex-col items-center gap-2 grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition-all duration-300 group"
                   >
-                    <img
-                      src={org.logoUrl!}
-                      alt={org.name}
-                      className="max-h-full max-w-full object-contain"
-                    />
+                    <div className="h-12 w-28 flex items-center justify-center">
+                      <img
+                        src={org.logoUrl!}
+                        alt={org.name}
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    </div>
+                    <span className="text-xs text-slate-500 group-hover:text-slate-700 transition-colors text-center whitespace-nowrap max-w-[112px] truncate">
+                      {org.name}
+                    </span>
                   </a>
                 ))}
                 {organizationsWithLogos.map((org) => (
                   <a
                     key={`dup-${org._id}`}
                     href={`/discover/${CURRENT_MARKET.slug}?org=${org.slug}`}
-                    className="flex-shrink-0 h-12 w-28 flex items-center justify-center grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition-all duration-300"
-                    title={org.name}
+                    className="flex-shrink-0 flex flex-col items-center gap-2 grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition-all duration-300 group"
                   >
-                    <img
-                      src={org.logoUrl!}
-                      alt={org.name}
-                      className="max-h-full max-w-full object-contain"
-                    />
+                    <div className="h-12 w-28 flex items-center justify-center">
+                      <img
+                        src={org.logoUrl!}
+                        alt={org.name}
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    </div>
+                    <span className="text-xs text-slate-500 group-hover:text-slate-700 transition-colors text-center whitespace-nowrap max-w-[112px] truncate">
+                      {org.name}
+                    </span>
                   </a>
                 ))}
               </div>
