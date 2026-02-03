@@ -14,6 +14,7 @@ import { CoverageLegend } from '../components/planner/CoverageIndicator';
 import { AddEventModal } from '../components/planner/AddEventModal';
 import { AddChildModal } from '../components/planner/AddChildModal';
 import { BottomNav } from '../components/shared/BottomNav';
+import { useMarket } from '../hooks/useMarket';
 
 export default function Home() {
   const { user, signOut } = useAuth();
@@ -30,25 +31,19 @@ export default function Home() {
   );
 }
 
-// Market configuration
-const CURRENT_MARKET = {
-  slug: 'portland',
-  name: 'Portland',
-  tagline: 'PDX Camps',
-  region: 'Portland Metro Area',
-};
-
 // ============================================================================
 // LANDING PAGE - Conversion-focused design
 // ============================================================================
 function LandingPage() {
+  const market = useMarket();
+
   const featuredSessions = useQuery(api.sessions.queries.getFeaturedSessions, {
-    citySlug: CURRENT_MARKET.slug,
+    citySlug: market.slug,
     limit: 16,
   });
 
   const organizationsWithLogos = useQuery(api.organizations.queries.getOrganizationsWithLogos, {
-    citySlug: CURRENT_MARKET.slug,
+    citySlug: market.slug,
   });
 
   // Count stats
@@ -61,11 +56,11 @@ function LandingPage() {
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-2xl">☀️</span>
-            <span className="font-bold text-xl text-slate-900">{CURRENT_MARKET.tagline}</span>
+            <span className="font-bold text-xl text-slate-900">{market.tagline}</span>
           </div>
           <div className="flex items-center gap-2">
             <a
-              href={`/discover/${CURRENT_MARKET.slug}`}
+              href={`/discover/${market.slug}`}
               className="hidden sm:inline-flex px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
             >
               Browse Camps
@@ -106,7 +101,7 @@ function LandingPage() {
                   ))}
                 </div>
                 <span className="text-sm text-slate-600">
-                  <span className="font-semibold text-slate-900">{campCount}+ camps</span> from trusted {CURRENT_MARKET.name} organizations
+                  <span className="font-semibold text-slate-900">{campCount}+ camps</span> from trusted {market.name} organizations
                 </span>
               </div>
 
@@ -125,8 +120,8 @@ function LandingPage() {
               {/* Subheadline - Focus on parent benefits */}
               <p className="text-xl text-slate-600 mb-8 leading-relaxed">
                 Find camps near home, coordinate with friends for carpools, and see your whole summer at a glance.
-                OMSI, Oregon Zoo, Portland Parks & 100+ more—all in one place.{' '}
-                <span className="font-semibold text-slate-900">Free for Portland families.</span>
+                {market.popularOrgs} & 100+ more—all in one place.{' '}
+                <span className="font-semibold text-slate-900">Free for {market.name} families.</span>
               </p>
 
               {/* CTA buttons */}
@@ -139,7 +134,7 @@ function LandingPage() {
                   <span className="inline-block ml-2 group-hover:translate-x-1 transition-transform">→</span>
                 </a>
                 <a
-                  href={`/discover/${CURRENT_MARKET.slug}`}
+                  href={`/discover/${market.slug}`}
                   className="px-8 py-4 text-lg font-semibold text-slate-700 bg-white border-2 border-slate-200 rounded-xl hover:border-slate-300 hover:bg-slate-50 transition-all"
                 >
                   Browse All Camps
@@ -170,7 +165,7 @@ function LandingPage() {
           <section className="bg-slate-50 py-8 border-y border-slate-200 overflow-hidden">
             <div className="max-w-6xl mx-auto px-4 mb-6">
               <p className="text-center text-sm text-slate-500 font-medium uppercase tracking-wider">
-                Trusted by {CURRENT_MARKET.name} families for camps from
+                Trusted by {market.name} families for camps from
               </p>
             </div>
             <div className="relative">
@@ -178,7 +173,7 @@ function LandingPage() {
                 {organizationsWithLogos.map((org) => (
                   <a
                     key={org._id}
-                    href={`/discover/${CURRENT_MARKET.slug}?org=${org.slug}`}
+                    href={`/discover/${market.slug}?org=${org.slug}`}
                     className="flex-shrink-0 flex flex-col items-center gap-2 grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition-all duration-300 group"
                   >
                     <div className="h-12 w-28 flex items-center justify-center">
@@ -196,7 +191,7 @@ function LandingPage() {
                 {organizationsWithLogos.map((org) => (
                   <a
                     key={`dup-${org._id}`}
-                    href={`/discover/${CURRENT_MARKET.slug}?org=${org.slug}`}
+                    href={`/discover/${market.slug}?org=${org.slug}`}
                     className="flex-shrink-0 flex flex-col items-center gap-2 grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition-all duration-300 group"
                   >
                     <div className="h-12 w-28 flex items-center justify-center">
@@ -248,7 +243,7 @@ function LandingPage() {
                 <div className="text-3xl mb-4">🚗</div>
                 <h3 className="font-semibold text-slate-900 mb-2">"I'm driving across town twice a day"</h3>
                 <p className="text-slate-600">
-                  One kid at OMSI, one at Portland Parks... across town from each other. Your summer is spent in traffic.
+                  One kid at one camp, another across town. Your summer is spent in traffic.
                 </p>
               </div>
               <div className="bg-surface/15 rounded-2xl p-6 border border-surface/30">
@@ -262,7 +257,7 @@ function LandingPage() {
                 <div className="text-3xl mb-4">😫</div>
                 <h3 className="font-semibold text-slate-900 mb-2">"I have 15 browser tabs open..."</h3>
                 <p className="text-slate-600">
-                  OMSI, Portland Parks, Oregon Zoo, Trackers... Each with different dates, prices, and age ranges. Where's the spreadsheet?
+                  {market.popularOrgs}... Each with different dates, prices, and age ranges. Where's the spreadsheet?
                 </p>
               </div>
               <div className="bg-surface/15 rounded-2xl p-6 border border-surface/30">
@@ -296,7 +291,7 @@ function LandingPage() {
                 Plan smarter. Drive less. Enjoy more.
               </h2>
               <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-                {campCount}+ camps from every provider in {CURRENT_MARKET.name}.
+                {campCount}+ camps from every provider in {market.name}.
                 Filter by neighborhood, coordinate with friends, and see your whole summer in one view.
               </p>
             </div>
@@ -457,7 +452,7 @@ function LandingPage() {
                 <p className="text-lg text-slate-700 italic mb-4">
                   "I used to spend entire weekends planning summer camps. Now I can see everything in one place and actually coordinate with other parents. Game changer."
                 </p>
-                <p className="text-sm text-slate-500">— Portland parent of 2</p>
+                <p className="text-sm text-slate-500">— {market.testimonialAttribution}</p>
               </div>
 
               <a
@@ -479,16 +474,16 @@ function LandingPage() {
               <h2 className="text-2xl font-bold text-white">
                 Real camps, real spots available
               </h2>
-              <p className="text-slate-400 mt-1">Browse camps happening this summer in {CURRENT_MARKET.name}</p>
+              <p className="text-slate-400 mt-1">Browse camps happening this summer in {market.name}</p>
             </div>
 
             <div className="relative">
               <div className="flex gap-4 animate-scroll hover:pause-animation">
                 {featuredSessions.map((session) => (
-                  <SessionShowcaseCard key={session._id} session={session} citySlug={CURRENT_MARKET.slug} />
+                  <SessionShowcaseCard key={session._id} session={session} citySlug={market.slug} />
                 ))}
                 {featuredSessions.map((session) => (
-                  <SessionShowcaseCard key={`dup-${session._id}`} session={session} citySlug={CURRENT_MARKET.slug} />
+                  <SessionShowcaseCard key={`dup-${session._id}`} session={session} citySlug={market.slug} />
                 ))}
               </div>
             </div>
@@ -529,7 +524,7 @@ function LandingPage() {
                   <p className="text-slate-500 mt-1">forever</p>
                 </div>
                 <ul className="space-y-3 mb-8">
-                  <PricingFeature included>Browse all {CURRENT_MARKET.name} camps</PricingFeature>
+                  <PricingFeature included>Browse all {market.name} camps</PricingFeature>
                   <PricingFeature included>Plan for all your kids</PricingFeature>
                   <PricingFeature included>See 4 weeks of summer</PricingFeature>
                   <PricingFeature included>Save up to 5 camps</PricingFeature>
@@ -558,7 +553,7 @@ function LandingPage() {
                   <p className="text-sm text-white/60 mt-2">or $5/month</p>
                 </div>
                 <ul className="space-y-3 mb-8">
-                  <PricingFeature included light>Browse all {CURRENT_MARKET.name} camps</PricingFeature>
+                  <PricingFeature included light>Browse all {market.name} camps</PricingFeature>
                   <PricingFeature included light>Plan for all your kids</PricingFeature>
                   <PricingFeature included light>All 12 weeks of summer</PricingFeature>
                   <PricingFeature included light>Unlimited saved camps</PricingFeature>
@@ -593,15 +588,15 @@ function LandingPage() {
             <div className="space-y-4">
               <FAQItem
                 question="Is this really free? What's the catch?"
-                answer="The free plan lets you browse all camps, plan for all your kids, and see 4 weeks of summer. That's enough for many families! If you need to see all 12 weeks, save unlimited camps, or export to your calendar, our Summer Pass is $29 one-time (or $5/month). We're Portland parents too—we keep it affordable."
+                answer={`The free plan lets you browse all camps, plan for all your kids, and see 4 weeks of summer. That's enough for many families! If you need to see all 12 weeks, save unlimited camps, or export to your calendar, our Summer Pass is $25 one-time (or $8.99/month). We're ${market.name} parents too—we keep it affordable.`}
               />
               <FAQItem
                 question="How do I actually book a camp?"
-                answer="You book directly with each camp—OMSI, Portland Parks, Oregon Zoo, whoever. We link you straight to their registration page. We're here to help you find and plan, not to be another middleman."
+                answer={`You book directly with each camp—${market.popularOrgs}, whoever. We link you straight to their registration page. We're here to help you find and plan, not to be another middleman.`}
               />
               <FAQItem
                 question="Can I see camps near my neighborhood?"
-                answer="Yes! Filter by area to find camps close to home, work, or your kids' school. Less driving = more summer. We cover Portland, Beaverton, Lake Oswego, Tigard, West Linn, and surrounding areas."
+                answer={`Yes! Filter by area to find camps close to home, work, or your kids' school. Less driving = more summer. We cover ${market.neighborhoods}, and surrounding areas.`}
               />
               <FAQItem
                 question="How does the friends feature work?"
@@ -613,7 +608,7 @@ function LandingPage() {
               />
               <FAQItem
                 question="What if a camp isn't listed?"
-                answer="We're constantly adding camps, but if you notice one missing, let us know! We want to have every option available to Portland families."
+                answer={`We're constantly adding camps, but if you notice one missing, let us know! We want to have every option available to ${market.name} families.`}
               />
             </div>
           </div>
@@ -648,18 +643,18 @@ function LandingPage() {
             <div className="flex items-center gap-3">
               <span className="text-2xl">☀️</span>
               <div>
-                <span className="font-bold text-lg text-white">{CURRENT_MARKET.tagline}</span>
-                <p className="text-xs text-slate-500">By Portland parents, for Portland parents</p>
+                <span className="font-bold text-lg text-white">{market.tagline}</span>
+                <p className="text-xs text-slate-500">By {market.name} parents, for {market.name} parents</p>
               </div>
             </div>
             <div className="flex items-center gap-6 text-sm">
-              <a href={`/discover/${CURRENT_MARKET.slug}`} className="hover:text-white transition-colors">Browse Camps</a>
+              <a href={`/discover/${market.slug}`} className="hover:text-white transition-colors">Browse Camps</a>
               <a href="/sign-in" className="hover:text-white transition-colors">Sign In</a>
               <a href="/sign-up" className="hover:text-white transition-colors">Get Started</a>
             </div>
           </div>
           <div className="border-t border-slate-800 mt-8 pt-8 text-center text-sm">
-            <p>© {new Date().getFullYear()} {CURRENT_MARKET.tagline}. Made with ☀️ in {CURRENT_MARKET.name}.</p>
+            <p>© {new Date().getFullYear()} {market.tagline}. Made with ☀️ in {market.name}.</p>
             <p className="text-slate-500 mt-1">
               We built this because we needed it too.
             </p>
@@ -941,6 +936,7 @@ function PlannerHub({
   children: { _id: Id<'children'>; firstName: string; lastName?: string; birthdate?: string; currentGrade?: number; shareToken?: string }[];
   cities: { _id: Id<'cities'>; slug: string; name: string }[];
 }) {
+  const market = useMarket();
   const currentYear = new Date().getFullYear();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1061,7 +1057,7 @@ function PlannerHub({
     };
   }, [coverage]);
 
-  const defaultCity = cities.find(c => c.slug === 'portland') || cities[0];
+  const defaultCity = cities.find(c => c.slug === market.slug) || cities[0];
 
   const handleGapClick = useCallback((weekStart: string, weekEnd: string, childId: Id<'children'>) => {
     const child = children.find(c => c._id === childId);
