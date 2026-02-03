@@ -111,9 +111,10 @@ function LandingPage() {
 
               {/* Main headline - Emotional, benefit-focused */}
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 leading-tight mb-6">
-                Give your kids an{' '}
+                Give your kids
+                <br />
                 <span className="relative">
-                  <span className="relative z-10">amazing summer.</span>
+                  <span className="relative z-10">an amazing summer.</span>
                   <span className="absolute bottom-2 left-0 right-0 h-3 bg-amber-300/50 -z-0" />
                 </span>
                 <br />

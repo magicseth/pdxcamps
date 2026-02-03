@@ -1,5 +1,5 @@
 #:schema node_modules/wrangler/config-schema.json
-name = "campweeks"
+name = "pdxcamps"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
 main = ".open-next/worker.js"
@@ -13,8 +13,8 @@ NODE_ENV = "production"
 
 # Custom domain
 routes = [
-  { pattern = "campweeks.com", custom_domain = true },
-  { pattern = "www.campweeks.com", custom_domain = true }
+  { pattern = "pdxcamps.com", custom_domain = true },
+  { pattern = "www.pdxcamps.com", custom_domain = true }
 ]
 
 # Build configuration

@@ -22,9 +22,9 @@
     },
     "prod": {
       "configure": {
-        "redirectUris": ["https://campweeks.com/callback", "https://campweeks.netlify.app/callback"],
-        "appHomepageUrl": "https://campweeks.com",
-        "corsOrigins": ["https://campweeks.com", "https://campweeks.netlify.app"]
+        "redirectUris": ["https://pdxcamps.com/callback", "https://campweeks.netlify.app/callback"],
+        "appHomepageUrl": "https://pdxcamps.com",
+        "corsOrigins": ["https://pdxcamps.com", "https://campweeks.netlify.app"]
       }
     }
   }

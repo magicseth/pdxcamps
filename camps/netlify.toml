@@ -12,6 +12,6 @@
 # Custom domain redirect
 [[redirects]]
   from = "https://campweeks.netlify.app/*"
-  to = "https://campweeks.com/:splat"
+  to = "https://pdxcamps.com/:splat"
   status = 301
   force = true
