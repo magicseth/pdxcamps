@@ -320,7 +320,7 @@ function ControlCenterContent() {
         <div className="max-w-full mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <Link href="/admin" className="text-sm text-blue-600 hover:text-blue-700 mb-1 block rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+              <Link href="/admin" className="text-sm text-primary hover:text-primary-dark mb-1 block rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
                 &larr; Back to Admin
               </Link>
               <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
@@ -332,7 +332,7 @@ function ControlCenterContent() {
               <select
                 value={selectedCityId ?? ''}
                 onChange={(e) => handleCityChange(e.target.value || null)}
-                className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 <option value="">All Markets</option>
                 {cities?.map((city) => (
@@ -349,7 +349,7 @@ function ControlCenterContent() {
                   placeholder="Search sources..."
                   value={searchQuery}
                   onChange={(e) => handleSearchChange(e.target.value)}
-                  className="pl-9 pr-4 py-2 w-64 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="pl-9 pr-4 py-2 w-64 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
               {/* Image Generation Button */}
@@ -417,7 +417,7 @@ function ControlCenterContent() {
               </div>
               <Link
                 href="/admin/growth"
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark text-sm font-medium"
               >
                 + Add Source
               </Link>
@@ -489,7 +489,7 @@ function ControlCenterContent() {
                         }
                       }}
                       className={`w-full text-left px-4 py-3 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer ${
-                        isSelected ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500' : ''
+                        isSelected ? 'bg-primary/10 dark:bg-primary-dark/20 border-l-4 border-l-primary' : ''
                       }`}
                     >
                       <div className="flex items-start gap-3">
@@ -545,7 +545,7 @@ function ControlCenterContent() {
                           className={`px-2 py-1 text-xs rounded ${
                             triggeringSource === source._id || !source.isActive
                               ? 'bg-slate-100 text-slate-400 dark:bg-slate-700 cursor-not-allowed'
-                              : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50'
+                              : 'bg-primary/20 text-primary-dark dark:bg-primary-dark/30 dark:text-primary-light hover:bg-primary/30 dark:hover:bg-primary-dark/50'
                           }`}
                           title={!source.isActive ? 'Source is inactive' : 'Trigger scrape'}
                         >
@@ -743,7 +743,7 @@ function SourceDetailPanel({
                   type="text"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="text-xl font-bold px-2 py-1 border border-blue-500 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="text-xl font-bold px-2 py-1 border border-primary rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleSaveName();
@@ -753,7 +753,7 @@ function SourceDetailPanel({
                     }
                   }}
                 />
-                <button onClick={handleSaveName} className="text-blue-600 hover:text-blue-700">
+                <button onClick={handleSaveName} className="text-primary hover:text-primary-dark">
                   <CheckIcon className="w-5 h-5" />
                 </button>
                 <button onClick={() => { setEditName(source.name); setIsEditingName(false); }} className="text-slate-400 hover:text-slate-600">
@@ -762,7 +762,7 @@ function SourceDetailPanel({
               </div>
             ) : (
               <h2
-                className="text-xl font-bold text-slate-900 dark:text-white cursor-pointer hover:text-blue-600 inline-flex items-center gap-2"
+                className="text-xl font-bold text-slate-900 dark:text-white cursor-pointer hover:text-primary inline-flex items-center gap-2"
                 onClick={() => setIsEditingName(true)}
               >
                 {source.name}
@@ -777,7 +777,7 @@ function SourceDetailPanel({
                   type="text"
                   value={editUrl}
                   onChange={(e) => setEditUrl(e.target.value)}
-                  className="text-sm px-2 py-1 border border-blue-500 rounded bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full max-w-md"
+                  className="text-sm px-2 py-1 border border-primary rounded bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary w-full max-w-md"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleSaveUrl();
@@ -787,7 +787,7 @@ function SourceDetailPanel({
                     }
                   }}
                 />
-                <button onClick={handleSaveUrl} className="text-blue-600 hover:text-blue-700">
+                <button onClick={handleSaveUrl} className="text-primary hover:text-primary-dark">
                   <CheckIcon className="w-4 h-4" />
                 </button>
                 <button onClick={() => { setEditUrl(source.url); setIsEditingUrl(false); }} className="text-slate-400 hover:text-slate-600">
@@ -799,7 +799,7 @@ function SourceDetailPanel({
                 href={source.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-blue-600 hover:text-blue-700 mt-1 inline-flex items-center gap-1 group"
+                className="text-sm text-primary hover:text-primary-dark mt-1 inline-flex items-center gap-1 group"
                 onClick={(e) => {
                   if (e.metaKey || e.ctrlKey) return;
                   e.preventDefault();
@@ -878,7 +878,7 @@ function SourceDetailPanel({
                 className={`px-4 py-2 text-sm font-medium rounded-md ${
                   isTriggeringScrape || !source.isActive
                     ? 'bg-slate-100 text-slate-400 dark:bg-slate-700 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-primary text-white hover:bg-primary-dark'
                 }`}
               >
                 {isTriggeringScrape ? (
@@ -935,7 +935,7 @@ function SourceDetailPanel({
             </h3>
             <Link
               href={`/admin/sources/${source._id}`}
-              className="text-sm text-blue-600 hover:text-blue-700"
+              className="text-sm text-primary hover:text-primary-dark"
             >
               View all sessions &rarr;
             </Link>
@@ -986,7 +986,7 @@ function SourceDetailPanel({
             value={feedbackText}
             onChange={(e) => setFeedbackText(e.target.value)}
             placeholder="Describe issues with the scraper or data quality..."
-            className="w-full h-24 px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            className="w-full h-24 px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary resize-none"
           />
           <div className="flex items-center gap-2 mt-2">
             <button
@@ -995,7 +995,7 @@ function SourceDetailPanel({
               className={`px-4 py-2 text-sm font-medium rounded-md ${
                 !feedbackText.trim() || isSubmittingFeedback
                   ? 'bg-slate-100 text-slate-400 dark:bg-slate-700 cursor-not-allowed'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-primary text-white hover:bg-primary-dark'
               }`}
             >
               {isSubmittingFeedback ? 'Submitting...' : 'Submit Feedback'}
@@ -1022,7 +1022,7 @@ function SourceDetailPanel({
                     <span
                       className={`w-2 h-2 rounded-full ${
                         job.status === 'completed' ? 'bg-green-500' :
-                        job.status === 'running' ? 'bg-blue-500 animate-pulse' :
+                        job.status === 'running' ? 'bg-primary animate-pulse' :
                         job.status === 'pending' ? 'bg-yellow-500' :
                         'bg-red-500'
                       }`}
@@ -1118,7 +1118,7 @@ function SessionDetailCard({ session }: { session: SessionDetail }) {
       case 'draft': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
       case 'sold_out': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
       case 'cancelled': return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300';
-      case 'completed': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+      case 'completed': return 'bg-primary/20 text-primary dark:bg-primary-dark/30 dark:text-white/60';
       default: return 'bg-slate-100 text-slate-800';
     }
   };
@@ -1211,7 +1211,7 @@ function SessionDetailCard({ session }: { session: SessionDetail }) {
               href={session.externalRegistrationUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-700 truncate"
+              className="text-primary hover:text-primary-dark truncate"
             >
               {session.externalRegistrationUrl}
             </a>
@@ -1290,7 +1290,7 @@ function DaemonTasksPanel({ tasks }: { tasks: DaemonTask[] }) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
-      case 'in_progress': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+      case 'in_progress': return 'bg-primary/20 text-primary dark:bg-primary-dark/30 dark:text-white/60';
       case 'testing': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
       case 'needs_feedback': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
       default: return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300';
@@ -1326,7 +1326,7 @@ function DaemonTasksPanel({ tasks }: { tasks: DaemonTask[] }) {
         </h3>
         <Link
           href="/admin/development"
-          className="text-xs text-blue-600 hover:text-blue-700"
+          className="text-xs text-primary hover:text-primary-dark"
         >
           View all &rarr;
         </Link>
@@ -1380,7 +1380,7 @@ function DaemonTasksPanel({ tasks }: { tasks: DaemonTask[] }) {
                 <div className="px-3 py-2 border-t border-slate-200 dark:border-slate-700 text-xs space-y-2">
                   <div className="flex items-center gap-2">
                     <span className="text-slate-500">URL:</span>
-                    <a href={task.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 truncate">
+                    <a href={task.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary-dark truncate">
                       {task.sourceUrl}
                     </a>
                   </div>

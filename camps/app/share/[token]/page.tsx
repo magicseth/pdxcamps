@@ -13,7 +13,7 @@ export default function SharedPlanPage({ params }: { params: Promise<{ token: st
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="animate-pulse flex flex-col items-center gap-4">
-          <div className="w-12 h-12 bg-blue-200 rounded-full" />
+          <div className="w-12 h-12 bg-primary/30 rounded-full" />
           <div className="h-4 w-32 bg-slate-200 rounded" />
         </div>
       </div>
@@ -64,7 +64,7 @@ export default function SharedPlanPage({ params }: { params: Promise<{ token: st
           <h1 className="text-2xl font-bold mb-2">
             {plan.childName}'s Summer {plan.year}
           </h1>
-          <p className="text-blue-100 mb-4">
+          <p className="text-white/80 mb-4">
             Shared by the {plan.familyName} family
           </p>
 
@@ -72,15 +72,15 @@ export default function SharedPlanPage({ params }: { params: Promise<{ token: st
           <div className="grid grid-cols-3 gap-4">
             <div>
               <div className="text-3xl font-bold">{plan.stats.coveredWeeks}</div>
-              <div className="text-sm text-blue-100">Weeks Planned</div>
+              <div className="text-sm text-white/80">Weeks Planned</div>
             </div>
             <div>
               <div className="text-3xl font-bold">{plan.stats.partialWeeks}</div>
-              <div className="text-sm text-blue-100">Partial</div>
+              <div className="text-sm text-white/80">Partial</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-yellow-300">{plan.stats.gapWeeks}</div>
-              <div className="text-sm text-blue-100">Open Weeks</div>
+              <div className="text-sm text-white/80">Open Weeks</div>
             </div>
           </div>
         </div>
@@ -126,7 +126,7 @@ export default function SharedPlanPage({ params }: { params: Promise<{ token: st
                       className="w-8 h-8 rounded object-contain bg-white border border-slate-200"
                     />
                   ) : (
-                    <div className="w-8 h-8 rounded bg-blue-100 flex items-center justify-center text-primary font-bold text-xs">
+                    <div className="w-8 h-8 rounded bg-primary/20 flex items-center justify-center text-primary font-bold text-xs">
                       {camp.organizationName[0]}
                     </div>
                   )}

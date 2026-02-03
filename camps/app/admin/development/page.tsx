@@ -13,7 +13,7 @@ export default function DevelopmentPage() {
   return (
     <>
       <header className="sticky top-0 z-10 bg-background p-4 border-b-2 border-slate-200 dark:border-slate-800 flex flex-row justify-between items-center">
-        <Link href="/admin" className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+        <Link href="/admin" className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
           Admin Dashboard
         </Link>
         <h1 className="text-lg font-semibold">Scraper Development</h1>
@@ -128,7 +128,7 @@ function DevelopmentContent() {
     return (
       <div className="max-w-2xl mx-auto text-center py-16">
         <h2 className="text-xl font-semibold mb-2 text-red-600">Access Denied</h2>
-        <Link href="/" className="inline-block mt-4 text-blue-600 hover:underline">
+        <Link href="/" className="inline-block mt-4 text-primary hover:underline">
           Return to Home
         </Link>
       </div>
@@ -198,7 +198,7 @@ function DevelopmentContent() {
         </div>
         <button
           onClick={() => setShowNewForm(!showNewForm)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark"
         >
           {showNewForm ? 'Cancel' : '+ New Request'}
         </button>
@@ -233,8 +233,8 @@ function DevelopmentContent() {
             {newSourceId ? 'Improve Existing Scraper' : 'Request Scraper Development'}
           </h3>
           {newSourceId && (
-            <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-              <p className="text-sm text-blue-800 dark:text-blue-200">
+            <div className="mb-4 p-3 bg-primary/10 dark:bg-primary-dark/20 border border-primary/30 dark:border-primary-dark rounded-lg">
+              <p className="text-sm text-primary dark:text-white/70">
                 This will improve the scraper for an existing source. Sessions will be deduplicated automatically.
               </p>
             </div>
@@ -300,7 +300,7 @@ function DevelopmentContent() {
             <button
               type="submit"
               disabled={submitting}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+              className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark disabled:opacity-50"
             >
               {submitting ? 'Submitting...' : 'Submit Request'}
             </button>
@@ -424,7 +424,7 @@ function RequestRow({ request }: { request: any }) {
             href={request.sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-blue-600 hover:underline truncate block mt-1"
+            className="text-sm text-primary hover:underline truncate block mt-1"
           >
             {request.sourceUrl}
           </a>
@@ -464,7 +464,7 @@ function RequestRow({ request }: { request: any }) {
               )}
               {request.lastTestSampleData && (
                 <details className="mt-2">
-                  <summary className="text-sm text-blue-600 cursor-pointer">View Sample Data</summary>
+                  <summary className="text-sm text-primary cursor-pointer">View Sample Data</summary>
                   <pre className="mt-2 text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded overflow-auto max-h-48">
                     {request.lastTestSampleData}
                   </pre>
@@ -476,7 +476,7 @@ function RequestRow({ request }: { request: any }) {
           {/* Generated Code */}
           {request.generatedScraperCode && (
             <details>
-              <summary className="text-sm text-blue-600 cursor-pointer">View Generated Code</summary>
+              <summary className="text-sm text-primary cursor-pointer">View Generated Code</summary>
               <pre className="mt-2 text-xs bg-slate-100 dark:bg-slate-800 p-4 rounded overflow-auto max-h-64 font-mono">
                 {request.generatedScraperCode}
               </pre>
@@ -516,7 +516,7 @@ function RequestRow({ request }: { request: any }) {
                 <button
                   onClick={handleSubmitFeedback}
                   disabled={submittingFeedback || !feedback.trim()}
-                  className="px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+                  className="px-3 py-1.5 bg-primary text-white rounded text-sm hover:bg-primary-dark disabled:opacity-50"
                 >
                   {submittingFeedback ? 'Sending...' : 'Send Feedback'}
                 </button>
@@ -584,7 +584,7 @@ function RequestRow({ request }: { request: any }) {
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     pending: 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300',
-    in_progress: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
+    in_progress: 'bg-primary/20 dark:bg-primary-dark/30 text-primary-dark dark:text-white/60',
     testing: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300',
     needs_feedback: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300',
     completed: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',

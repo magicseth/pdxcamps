@@ -60,7 +60,7 @@ export default function UpgradePage() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <Link href="/" className="text-primary hover:text-blue-700 text-sm mb-4 inline-block">
+          <Link href="/" className="text-primary hover:text-primary-dark text-sm mb-4 inline-block">
             &larr; Back to Planner
           </Link>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
@@ -112,7 +112,7 @@ export default function UpgradePage() {
           </div>
 
           {/* Summer Pass */}
-          <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl shadow-lg p-8 relative overflow-hidden">
+          <div className="bg-gradient-to-br from-primary to-indigo-700 rounded-2xl shadow-lg p-8 relative overflow-hidden">
             <div className="absolute top-4 right-4 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full">
               BEST VALUE
             </div>
@@ -123,9 +123,9 @@ export default function UpgradePage() {
               </h2>
               <div className="flex items-baseline justify-center gap-1">
                 <span className="text-4xl font-bold text-white">$29</span>
-                <span className="text-blue-200">/summer</span>
+                <span className="text-white/70">/summer</span>
               </div>
-              <p className="text-sm text-blue-200 mt-2">
+              <p className="text-sm text-white/70 mt-2">
                 One-time payment • Full summer access
               </p>
             </div>
@@ -142,7 +142,7 @@ export default function UpgradePage() {
             <button
               onClick={() => handleUpgrade('summer')}
               disabled={loading !== null}
-              className="w-full py-3 px-4 bg-white text-blue-700 rounded-lg font-medium hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 px-4 bg-white text-primary-dark rounded-lg font-medium hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading === 'summer' ? 'Loading...' : 'Get Summer Pass'}
             </button>
@@ -193,7 +193,7 @@ export default function UpgradePage() {
 function FeatureItem({ children, light }: { children: React.ReactNode; light?: boolean }) {
   return (
     <li className={`flex items-center gap-3 ${light ? 'text-white' : 'text-slate-700 dark:text-slate-300'}`}>
-      <CheckIcon className={`w-5 h-5 flex-shrink-0 ${light ? 'text-blue-200' : 'text-green-500'}`} />
+      <CheckIcon className={`w-5 h-5 flex-shrink-0 ${light ? 'text-white/70' : 'text-green-500'}`} />
       <span>{children}</span>
     </li>
   );

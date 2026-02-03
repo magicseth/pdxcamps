@@ -195,14 +195,14 @@ export function ChildCoverageCard({
                     className="flex-1 min-w-0 cursor-pointer"
                     title="Open in new tab"
                   >
-                    <div className="font-medium text-slate-900 dark:text-white truncate group-hover:text-primary dark:group-hover:text-blue-400" title={camp.campName}>
+                    <div className="font-medium text-slate-900 dark:text-white truncate group-hover:text-primary dark:group-hover:text-primary-light" title={camp.campName}>
                       {camp.campName}
-                      <span className="ml-1 opacity-0 group-hover:opacity-100 text-blue-500">↗</span>
+                      <span className="ml-1 opacity-0 group-hover:opacity-100 text-primary">↗</span>
                     </div>
                     <div className="text-slate-500 truncate" title={`${formatTime(camp.dropOffTime)}-${formatTime(camp.pickUpTime)} · ${camp.locationName}${camp.distanceFromHome ? ` · ${camp.distanceFromHome} mi` : ''}`}>
                       {formatTime(camp.dropOffTime)}-{formatTime(camp.pickUpTime)} · {camp.locationName}
                       {camp.distanceFromHome !== undefined && (
-                        <span className="ml-1 text-primary dark:text-blue-400">{camp.distanceFromHome} mi</span>
+                        <span className="ml-1 text-primary dark:text-primary-light">{camp.distanceFromHome} mi</span>
                       )}
                     </div>
                   </a>

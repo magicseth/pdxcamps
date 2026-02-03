@@ -24,7 +24,7 @@ export function StatCard({
     success: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800',
     warning: 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800',
     error: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800',
-    info: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800',
+    info: 'bg-primary/10 dark:bg-primary-dark/20 border-primary/30 dark:border-primary-dark',
   };
 
   const valueStyles = {
@@ -32,7 +32,7 @@ export function StatCard({
     success: 'text-green-700 dark:text-green-300',
     warning: 'text-yellow-700 dark:text-yellow-300',
     error: 'text-red-700 dark:text-red-300',
-    info: 'text-blue-700 dark:text-blue-300',
+    info: 'text-primary-dark dark:text-white/60',
   };
 
   const content = (

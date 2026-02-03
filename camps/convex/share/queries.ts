@@ -82,6 +82,26 @@ export const getFamilySharedPlan = query({
         );
         const sessionMap = new Map(sessions.map((s) => [s._id, s]));
 
+        // Fetch organizations for camp names
+        const orgIds = [...new Set(sessions.map((s) => s.organizationId))];
+        const orgsRaw = await Promise.all(orgIds.map((id) => ctx.db.get(id)));
+        const orgs = orgsRaw.filter(
+          (o): o is Doc<"organizations"> => o !== null
+        );
+        const orgMap = new Map(orgs.map((o) => [o._id, o]));
+
+        // Fetch camps to get slugs
+        const campIds = [...new Set(sessions.map((s) => s.campId))];
+        const campsRaw = await Promise.all(campIds.map((id) => ctx.db.get(id)));
+        const camps = campsRaw.filter(
+          (c): c is Doc<"camps"> => c !== null
+        );
+        const campMap = new Map(camps.map((c) => [c._id, c]));
+
+        // Get city for URL building
+        const city = await ctx.db.get(family.primaryCityId);
+        const citySlug = city?.slug ?? "portland";
+
         // Get family events for this child
         const familyEvents = await ctx.db
           .query("familyEvents")
@@ -96,9 +116,17 @@ export const getFamilySharedPlan = query({
             doDateRangesOverlap(e.startDate, e.endDate, summerStart, summerEnd)
         );
 
-        // Build week-by-week coverage (preview mode - no camp details)
+        // Build week-by-week coverage with camp details
         const weeklyPlan = weeks.map((week) => {
-          let campCount = 0;
+          const camps: {
+            sessionId: string;
+            campName: string;
+            campSlug: string;
+            organizationName: string;
+            startDate: string;
+            endDate: string;
+            citySlug: string;
+          }[] = [];
           let campDays = 0;
 
           for (const reg of confirmedRegistrations) {
@@ -113,7 +141,17 @@ export const getFamilySharedPlan = query({
             );
 
             if (overlappingDays > 0) {
-              campCount++;
+              const org = orgMap.get(session.organizationId);
+              const camp = campMap.get(session.campId);
+              camps.push({
+                sessionId: session._id,
+                campName: session.campName ?? "Camp",
+                campSlug: camp?.slug ?? "camp",
+                organizationName: org?.name ?? "Unknown",
+                startDate: session.startDate,
+                endDate: session.endDate,
+                citySlug,
+              });
               campDays += overlappingDays;
             }
           }
@@ -137,7 +175,7 @@ export const getFamilySharedPlan = query({
             monthName: week.monthName,
             label: week.label,
             coveredDays,
-            campCount, // How many camps (teaser)
+            camps, // Actual camp details
             hasEvent: eventDays > 0,
             status:
               coveredDays >= 5

@@ -12,7 +12,7 @@ export default function JobDetailPage() {
   return (
     <>
       <header className="sticky top-0 z-10 bg-background p-4 border-b-2 border-slate-200 dark:border-slate-800 flex flex-row justify-between items-center">
-        <Link href="/admin" className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+        <Link href="/admin" className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
           Admin Dashboard
         </Link>
         <h1 className="text-lg font-semibold">Job Detail</h1>
@@ -70,7 +70,7 @@ function JobDetailContent() {
         </p>
         <Link
           href="/"
-          className="inline-block mt-4 text-blue-600 hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          className="inline-block mt-4 text-primary hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           Return to Home
         </Link>
@@ -87,7 +87,7 @@ function JobDetailContent() {
         </p>
         <Link
           href="/admin"
-          className="inline-block mt-4 text-blue-600 hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          className="inline-block mt-4 text-primary hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           Back to Dashboard
         </Link>
@@ -122,7 +122,7 @@ function JobDetailContent() {
                 href={source.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-blue-600 hover:underline"
+                className="text-sm text-primary hover:underline"
               >
                 {source.url}
               </a>
@@ -397,7 +397,7 @@ function CompleteBadge({ score }: { score: number }) {
 function JobStatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     pending: 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300',
-    running: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
+    running: 'bg-primary/20 dark:bg-primary-dark/30 text-primary-dark dark:text-white/60',
     completed: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
     failed: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
   };

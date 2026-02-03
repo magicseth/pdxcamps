@@ -322,7 +322,7 @@ export default function ChildrenSetupPage() {
                       className={`px-3 py-1 text-sm rounded-full border transition-colors ${
                         childForm.interests.includes(interest)
                           ? 'bg-primary text-white border-primary'
-                          : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:border-blue-400'
+                          : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:border-primary-light'
                       }`}
                     >
                       {interest}
@@ -341,7 +341,7 @@ export default function ChildrenSetupPage() {
                 <button
                   type="submit"
                   disabled={isAddingChild}
-                  className="flex-1 py-2 px-4 bg-primary hover:bg-primary-dark disabled:bg-blue-400 text-white font-medium rounded-md transition-colors"
+                  className="flex-1 py-2 px-4 bg-primary hover:bg-primary-dark disabled:bg-primary-light text-white font-medium rounded-md transition-colors"
                 >
                   {isAddingChild ? 'Adding...' : hasChildren ? 'Add Child' : 'Add First Child'}
                 </button>
@@ -364,7 +364,7 @@ export default function ChildrenSetupPage() {
                 setShowForm(true);
                 setError(null);
               }}
-              className="w-full py-2 px-4 border-2 border-dashed border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 font-medium rounded-md hover:border-blue-400 hover:text-primary dark:hover:text-blue-400 transition-colors"
+              className="w-full py-2 px-4 border-2 border-dashed border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 font-medium rounded-md hover:border-primary-light hover:text-primary dark:hover:text-primary-light transition-colors"
             >
               + Add Another Child
             </button>

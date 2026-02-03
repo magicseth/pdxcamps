@@ -122,7 +122,7 @@ function FriendRequests() {
             {received.map((request) => (
               <div
                 key={request.friendshipId}
-                className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg"
+                className="flex items-center justify-between p-3 bg-primary/10 dark:bg-primary-dark/30 rounded-lg"
               >
                 <div>
                   <p className="font-medium">{request.requester?.displayName || 'Unknown'}</p>
@@ -261,8 +261,8 @@ function MyFriends() {
                   className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-600 rounded-lg"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                      <span className="text-primary dark:text-blue-400 font-medium">
+                    <div className="w-10 h-10 bg-primary/20 dark:bg-primary-dark rounded-full flex items-center justify-center">
+                      <span className="text-primary dark:text-primary-light font-medium">
                         {friendship.friend?.displayName?.charAt(0).toUpperCase() || '?'}
                       </span>
                     </div>
@@ -279,7 +279,7 @@ function MyFriends() {
                     {hasSharedWithUs && friendship.friend && (
                       <Link
                         href={`/friends/${friendship.friend._id}/calendar`}
-                        className="px-3 py-1.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-md text-sm font-medium hover:bg-blue-200 dark:hover:bg-blue-800"
+                        className="px-3 py-1.5 bg-primary/20 dark:bg-primary-dark text-primary-dark dark:text-white/60 rounded-md text-sm font-medium hover:bg-primary/30 dark:hover:bg-primary-dark"
                       >
                         View Calendar
                       </Link>
@@ -703,7 +703,7 @@ function CalendarSharingSettings() {
                       className={`px-2.5 py-1 rounded-full text-xs font-medium ${
                         share.permission === 'view_details'
                           ? 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200'
-                          : 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
+                          : 'bg-primary/20 dark:bg-primary-dark text-primary dark:text-white/70'
                       }`}
                     >
                       {share.permission === 'view_details' ? 'View Details' : 'View Sessions'}

@@ -42,6 +42,29 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
 
   const childNames = plan.children.map(c => c.childName).join(' & ');
 
+  // Collect all unique camps for the "sign up your kids" section
+  const allCamps = new Map<string, { campName: string; organizationName: string; campSlug: string; citySlug: string; dates: string[] }>();
+  for (const child of plan.children) {
+    for (const week of child.weeks) {
+      for (const camp of week.camps) {
+        if (!allCamps.has(camp.sessionId)) {
+          allCamps.set(camp.sessionId, {
+            campName: camp.campName,
+            organizationName: camp.organizationName,
+            campSlug: camp.campSlug,
+            citySlug: camp.citySlug,
+            dates: [`${week.label} ${week.monthName}`],
+          });
+        } else {
+          const existing = allCamps.get(camp.sessionId)!;
+          if (!existing.dates.includes(`${week.label} ${week.monthName}`)) {
+            existing.dates.push(`${week.label} ${week.monthName}`);
+          }
+        }
+      }
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
@@ -87,9 +110,32 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
           </div>
         </div>
 
-        {/* Each Child's Preview */}
+        {/* Sign Up Your Kids CTA */}
+        {allCamps.size > 0 && (
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-6 mb-6">
+            <div className="flex items-start gap-4">
+              <div className="text-3xl">👯</div>
+              <div className="flex-1">
+                <h2 className="text-lg font-bold text-slate-900 mb-1">
+                  Want your kids at the same camps?
+                </h2>
+                <p className="text-slate-600 text-sm mb-4">
+                  Sign up free to add these camps to your plan and coordinate with the {plan.familyName}s!
+                </p>
+                <Link
+                  href="/sign-up"
+                  className="inline-block px-6 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-all"
+                >
+                  Sign Up & Add These Camps
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Each Child's Schedule */}
         {plan.children.map((child) => (
-          <div key={child.childId} className="mb-6">
+          <div key={child.childId} className="mb-8">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-bold text-slate-900">
                 {child.childName}'s Schedule
@@ -99,115 +145,115 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
               </div>
             </div>
 
-            {/* Week Grid Preview */}
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-              <div className="grid grid-cols-4 sm:grid-cols-6 gap-px bg-slate-200">
-                {child.weeks.map((week) => (
-                  <div
-                    key={week.weekNumber}
-                    className={`p-3 text-center ${
-                      week.status === 'full'
-                        ? 'bg-green-50'
-                        : week.status === 'partial'
-                        ? 'bg-yellow-50'
-                        : 'bg-white'
-                    }`}
-                  >
-                    <div className="text-xs text-slate-500 mb-1">{week.label}</div>
-                    <div
-                      className={`text-lg font-bold ${
-                        week.status === 'full'
-                          ? 'text-green-600'
-                          : week.status === 'partial'
-                          ? 'text-yellow-600'
-                          : 'text-slate-300'
-                      }`}
-                    >
-                      {week.status === 'full' ? '✓' : week.status === 'partial' ? '◐' : '○'}
+            {/* Week-by-week with camp details */}
+            <div className="space-y-3">
+              {child.weeks.map((week) => (
+                <div
+                  key={week.weekNumber}
+                  className={`bg-white rounded-xl border p-4 ${
+                    week.status === 'full'
+                      ? 'border-green-200 bg-green-50/30'
+                      : week.status === 'partial'
+                      ? 'border-yellow-200 bg-yellow-50/30'
+                      : 'border-slate-200'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <span className="font-medium text-slate-900">{week.label}</span>
+                      <span className="text-sm text-slate-500 ml-2">{week.monthName}</span>
                     </div>
-                    {week.campCount > 0 && (
-                      <div className="text-xs text-slate-400 mt-1">
-                        {week.campCount} camp{week.campCount > 1 ? 's' : ''}
-                      </div>
+                    {week.status === 'full' ? (
+                      <span className="text-green-600 font-medium text-sm">✓ Covered</span>
+                    ) : week.status === 'partial' ? (
+                      <span className="text-yellow-600 font-medium text-sm">
+                        {week.coveredDays}/5 days
+                      </span>
+                    ) : (
+                      <span className="text-slate-400 text-sm">Open</span>
                     )}
                   </div>
-                ))}
-              </div>
-            </div>
 
-            {/* Blurred Preview Teaser */}
-            <div className="mt-3 relative">
-              <div className="bg-slate-100 rounded-lg p-4 blur-sm select-none">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-slate-300 rounded"></div>
-                  <div>
-                    <div className="h-3 w-24 bg-slate-300 rounded mb-1"></div>
-                    <div className="h-2 w-16 bg-slate-200 rounded"></div>
-                  </div>
+                  {/* Camps */}
+                  {week.camps.length > 0 ? (
+                    <div className="space-y-2">
+                      {week.camps.map((camp, i) => (
+                        <div key={i} className="flex items-center justify-between gap-3 bg-white rounded-lg p-2 border border-slate-100">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">
+                              {camp.organizationName[0]}
+                            </div>
+                            <div>
+                              <div className="font-medium text-slate-900 text-sm">{camp.campName}</div>
+                              <div className="text-xs text-slate-500">{camp.organizationName}</div>
+                            </div>
+                          </div>
+                          <Link
+                            href={`/discover/${camp.citySlug}?camp=${camp.campSlug}`}
+                            className="flex-shrink-0 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                          >
+                            View Camp
+                          </Link>
+                        </div>
+                      ))}
+                    </div>
+                  ) : week.hasEvent ? (
+                    <div className="flex items-center gap-3 text-slate-500 text-sm">
+                      <span>📅</span> Family event
+                    </div>
+                  ) : (
+                    <div className="text-slate-400 text-sm italic">
+                      No camps planned yet
+                    </div>
+                  )}
                 </div>
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="bg-white/90 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg text-center">
-                  <p className="text-sm text-slate-600">
-                    Sign up to see which camps {child.childName} is attending
-                  </p>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         ))}
 
-        {/* Legend */}
-        <div className="flex items-center justify-center gap-6 text-sm text-slate-500 mb-8">
-          <div className="flex items-center gap-2">
-            <span className="text-green-600">✓</span> Full week covered
+        {/* All Camps Summary */}
+        {allCamps.size > 0 && (
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-6">
+            <h3 className="font-bold text-slate-900 mb-4">
+              All Camps ({allCamps.size})
+            </h3>
+            <div className="space-y-3">
+              {Array.from(allCamps.values()).map((camp, i) => (
+                <div key={i} className="flex items-center justify-between gap-3 p-3 bg-slate-50 rounded-lg">
+                  <div>
+                    <div className="font-medium text-slate-900">{camp.campName}</div>
+                    <div className="text-sm text-slate-500">{camp.organizationName}</div>
+                  </div>
+                  <Link
+                    href={`/discover/${camp.citySlug}?camp=${camp.campSlug}`}
+                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Add to My Plan
+                  </Link>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-yellow-600">◐</span> Partial coverage
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-slate-300">○</span> Open week
-          </div>
-        </div>
+        )}
 
         {/* Big CTA Section */}
         <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-8 text-center">
           <h2 className="text-2xl font-bold text-slate-900 mb-2">
-            Want to see the full plan?
+            Plan your summer together!
           </h2>
-          <p className="text-slate-600 mb-2 max-w-md mx-auto">
-            Sign up free to see exactly which camps {childNames} {plan.children.length > 1 ? 'are' : 'is'} attending.
-          </p>
-          <p className="text-slate-500 mb-6 max-w-md mx-auto text-sm">
-            Plus, plan your own family's summer with {plan.familyStats.totalCamps > 50 ? '100+' : '50+'} Portland camps!
+          <p className="text-slate-600 mb-6 max-w-md mx-auto">
+            Create your free account to add these camps to your plan, track your coverage, and coordinate with the {plan.familyName}s.
           </p>
           <Link
             href="/sign-up"
             className="inline-block px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-lg rounded-xl hover:from-amber-600 hover:to-orange-600 shadow-lg shadow-orange-500/25 transition-all hover:shadow-xl hover:scale-105"
           >
-            Sign Up Free to See Full Plan
+            Sign Up Free
           </Link>
           <p className="text-sm text-slate-500 mt-3">
             No credit card required
           </p>
-        </div>
-
-        {/* Coordinate Together Section */}
-        <div className="mt-8 bg-purple-50 border border-purple-200 rounded-xl p-6 text-center">
-          <div className="text-3xl mb-3">👯</div>
-          <h3 className="font-bold text-slate-900 mb-2">
-            Planning camps with the {plan.familyName}s?
-          </h3>
-          <p className="text-slate-600 text-sm mb-4">
-            Create your own plan on PDX Camps and coordinate summer schedules together.
-            See which camps your kids' friends are attending!
-          </p>
-          <Link
-            href="/sign-up"
-            className="inline-block px-6 py-3 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700"
-          >
-            Start Planning Together
-          </Link>
         </div>
       </main>
 

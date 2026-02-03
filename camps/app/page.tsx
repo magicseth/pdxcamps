@@ -88,10 +88,10 @@ function LandingPage() {
       <main className="flex-1 pt-16">
         {/* Hero Section */}
         <section className="relative overflow-hidden">
-          {/* Background gradient */}
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-amber-50" />
-          <div className="absolute top-20 right-0 w-96 h-96 bg-blue-200/30 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-amber-200/30 rounded-full blur-3xl" />
+          {/* Background gradient - sky tones from logo */}
+          <div className="absolute inset-0 bg-gradient-to-br from-surface/30 via-white to-accent/10" />
+          <div className="absolute top-20 right-0 w-96 h-96 bg-surface/40 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/20 rounded-full blur-3xl" />
 
           <div className="relative max-w-6xl mx-auto px-4 py-20 md:py-28">
             <div className="max-w-3xl">
@@ -115,7 +115,7 @@ function LandingPage() {
                 <br />
                 <span className="relative">
                   <span className="relative z-10">an amazing summer.</span>
-                  <span className="absolute bottom-2 left-0 right-0 h-3 bg-amber-300/50 -z-0" />
+                  <span className="absolute bottom-2 left-0 right-0 h-3 bg-accent/40 -z-0" />
                 </span>
                 <br />
                 <span className="text-primary">Without losing your mind.</span>
@@ -132,7 +132,7 @@ function LandingPage() {
               <div className="flex flex-wrap gap-4 mb-12">
                 <a
                   href="/sign-up"
-                  className="group px-8 py-4 text-lg font-semibold bg-primary text-white rounded-xl hover:bg-primary-dark shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5"
+                  className="group px-8 py-4 text-lg font-semibold bg-accent text-white rounded-xl hover:bg-accent-dark shadow-lg shadow-accent/25 transition-all hover:shadow-xl hover:shadow-accent/30 hover:-translate-y-0.5"
                 >
                   Start Planning Free
                   <span className="inline-block ml-2 group-hover:translate-x-1 transition-transform">→</span>
@@ -337,11 +337,11 @@ function LandingPage() {
         </section>
 
         {/* Friends & Carpool Section */}
-        <section className="py-20 px-4 bg-gradient-to-br from-purple-50 to-blue-50">
+        <section className="py-20 px-4 bg-gradient-to-br from-surface/20 to-accent/10">
           <div className="max-w-5xl mx-auto">
             <div className="grid md:grid-cols-2 gap-12 items-center">
               <div>
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-medium mb-4">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-surface/30 text-primary rounded-full text-sm font-medium mb-4">
                   <span>👯</span> Coming soon
                 </div>
                 <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
@@ -352,21 +352,21 @@ function LandingPage() {
                 </p>
                 <ul className="space-y-4">
                   <li className="flex items-start gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold text-sm">1</span>
+                    <span className="flex-shrink-0 w-6 h-6 bg-surface/30 rounded-full flex items-center justify-center text-primary font-bold text-sm">1</span>
                     <div>
                       <span className="font-medium text-slate-900">Share your planning link</span>
                       <p className="text-slate-600 text-sm">Send it to other parents from school or the neighborhood.</p>
                     </div>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold text-sm">2</span>
+                    <span className="flex-shrink-0 w-6 h-6 bg-surface/30 rounded-full flex items-center justify-center text-primary font-bold text-sm">2</span>
                     <div>
                       <span className="font-medium text-slate-900">See where friends are going</span>
                       <p className="text-slate-600 text-sm">Camps show how many friends are registered for each week.</p>
                     </div>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold text-sm">3</span>
+                    <span className="flex-shrink-0 w-6 h-6 bg-surface/30 rounded-full flex items-center justify-center text-primary font-bold text-sm">3</span>
                     <div>
                       <span className="font-medium text-slate-900">Coordinate carpools</span>
                       <p className="text-slate-600 text-sm">Same camp + same neighborhood = easy carpooling.</p>
@@ -402,13 +402,13 @@ function LandingPage() {
                       <div className="text-xs text-slate-500">from your circle</div>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg border border-purple-100">
+                  <div className="flex items-center justify-between p-3 bg-surface/20 rounded-lg border border-surface/30">
                     <div>
                       <div className="font-medium text-slate-900">Oregon Zoo Camp</div>
                       <div className="text-sm text-slate-500">Week of June 30</div>
                     </div>
                     <div className="text-right">
-                      <div className="flex items-center gap-1 text-purple-600 font-medium">
+                      <div className="flex items-center gap-1 text-primary font-medium">
                         <span>🚗</span> Carpool available
                       </div>
                       <div className="text-xs text-slate-500">2 families nearby</div>
@@ -545,16 +545,16 @@ function LandingPage() {
               </div>
 
               {/* Premium Plan */}
-              <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-8 text-white relative overflow-hidden">
+              <div className="bg-gradient-to-br from-primary via-primary-dark to-surface-dark rounded-2xl p-8 text-white relative overflow-hidden">
                 {/* Popular badge */}
-                <div className="absolute top-4 right-4 px-3 py-1 bg-amber-400 text-amber-900 text-xs font-bold rounded-full">
+                <div className="absolute top-4 right-4 px-3 py-1 bg-accent text-white text-xs font-bold rounded-full shadow-lg">
                   BEST VALUE
                 </div>
                 <div className="text-center mb-6">
                   <h3 className="text-xl font-bold mb-2">Summer Pass</h3>
                   <div className="text-4xl font-bold">$29</div>
-                  <p className="text-blue-200 mt-1">one-time for summer 2025</p>
-                  <p className="text-sm text-blue-300 mt-2">or $5/month</p>
+                  <p className="text-white/70 mt-1">one-time for summer 2025</p>
+                  <p className="text-sm text-white/60 mt-2">or $5/month</p>
                 </div>
                 <ul className="space-y-3 mb-8">
                   <PricingFeature included light>Browse all {CURRENT_MARKET.name} camps</PricingFeature>
@@ -619,21 +619,21 @@ function LandingPage() {
         </section>
 
         {/* Final CTA Section - Emotional close */}
-        <section className="py-20 px-4 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white">
+        <section className="py-20 px-4 bg-gradient-to-br from-primary via-primary-dark to-surface-dark text-white">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               This summer, be the parent with the plan.
             </h2>
-            <p className="text-xl text-blue-100 mb-8">
+            <p className="text-xl text-white/80 mb-8">
               While other families scramble, you'll have camps booked, carpools arranged, and weekends free to actually enjoy summer with your kids.
             </p>
             <a
               href="/sign-up"
-              className="inline-block px-10 py-5 text-xl font-semibold bg-white text-primary rounded-xl hover:bg-primary/10 shadow-xl transition-all hover:scale-105"
+              className="inline-block px-10 py-5 text-xl font-semibold bg-accent text-white rounded-xl hover:bg-accent-dark shadow-xl shadow-accent/30 transition-all hover:scale-105"
             >
               Start Planning — It's Free
             </a>
-            <p className="text-blue-200 text-sm mt-4">
+            <p className="text-white/70 text-sm mt-4">
               Takes 2 minutes. No credit card. Just less stress.
             </p>
           </div>
@@ -814,7 +814,7 @@ function SessionShowcaseCard({ session, citySlug }: {
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-4xl bg-gradient-to-br from-blue-600 to-purple-600">
+          <div className="w-full h-full flex items-center justify-center text-4xl bg-gradient-to-br from-primary to-purple-600">
             🏕️
           </div>
         )}
@@ -893,7 +893,7 @@ function LoadingState() {
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div role="status" aria-live="polite" className="animate-pulse motion-reduce:animate-none flex flex-col items-center gap-4">
-        <div className="w-12 h-12 bg-blue-200 dark:bg-blue-800 rounded-full" aria-hidden="true"></div>
+        <div className="w-12 h-12 bg-primary/30 dark:bg-primary-dark rounded-full" aria-hidden="true"></div>
         <div className="h-4 w-32 bg-slate-200 dark:bg-slate-700 rounded" aria-hidden="true"></div>
         <span className="sr-only">Loading...</span>
       </div>
@@ -1102,7 +1102,7 @@ function PlannerHub({
 
       <main id="main-content" className="flex-1 pb-20">
         <div className="max-w-4xl mx-auto px-4 py-6">
-          <div className="bg-gradient-to-br from-primary to-primary-dark rounded-2xl p-6 mb-6 text-white">
+          <div className="bg-gradient-to-br from-primary via-primary-dark to-surface-dark rounded-2xl p-6 mb-6 text-white">
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-2xl font-bold">Summer {selectedYear}</h1>
               <div className="flex items-center gap-2">
@@ -1149,32 +1149,32 @@ function PlannerHub({
                       {stats.coverage === 100 && '🎉 '}
                       {stats.coverage}%
                     </div>
-                    <div className="text-sm text-blue-100">Planned</div>
+                    <div className="text-sm text-white/80">Planned</div>
                   </div>
                   <div>
                     <div className="text-3xl font-bold">{stats.fullyPlannedWeeks}</div>
-                    <div className="text-sm text-blue-100">Weeks Covered</div>
+                    <div className="text-sm text-white/80">Weeks Covered</div>
                   </div>
                   <div title={stats.totalGaps > 0 ? `${stats.totalGaps} child-weeks need camps` : 'All covered!'}>
                     <div className={`text-3xl font-bold ${stats.weeksWithGaps > 0 ? 'text-yellow-300' : ''}`}>
                       {stats.weeksWithGaps}
                     </div>
-                    <div className="text-sm text-blue-100">
+                    <div className="text-sm text-white/80">
                       Gaps to Fill
                       {stats.totalGaps > stats.weeksWithGaps && (
-                        <span className="text-blue-200/70"> ({stats.totalGaps} slots)</span>
+                        <span className="text-white/70/70"> ({stats.totalGaps} slots)</span>
                       )}
                     </div>
                   </div>
                 </div>
                 <div className="mb-4">
-                  <div className="h-3 bg-blue-900/50 rounded-full overflow-hidden">
+                  <div className="h-3 bg-primary-dark/50 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-500 ${
                         stats.coverage === 100
                           ? 'bg-green-400'
                           : stats.coverage >= 75
-                          ? 'bg-blue-300'
+                          ? 'bg-accent'
                           : stats.coverage >= 50
                           ? 'bg-yellow-400'
                           : 'bg-orange-400'
@@ -1182,26 +1182,26 @@ function PlannerHub({
                       style={{ width: `${stats.coverage}%` }}
                     />
                   </div>
-                  <div className="flex justify-between text-xs text-blue-200 mt-1">
+                  <div className="flex justify-between text-xs text-white/70 mt-1">
                     <span>June</span>
                     <span>July</span>
                     <span>August</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-4 text-sm text-blue-100 border-t border-blue-500/30 pt-3">
+                <div className="flex items-center gap-4 text-sm text-white/80 border-t border-primary/30 pt-3">
                   <Link href="/saved" className="hover:text-white hover:underline transition-colors">
                     {stats.registeredCount} camp{stats.registeredCount !== 1 ? 's' : ''} registered
                   </Link>
                   {stats.savedCount > 0 && (
                     <>
-                      <span className="text-blue-300">•</span>
+                      <span className="text-white/60">•</span>
                       <Link href="/saved" className="hover:text-white hover:underline transition-colors">
                         {stats.savedCount} saved for later
                       </Link>
                     </>
                   )}
                 </div>
-                <p className="mt-3 text-sm text-blue-200 italic">
+                <p className="mt-3 text-sm text-white/70 italic">
                   {stats.coverage === 100
                     ? "🎉 Amazing! Summer is fully planned!"
                     : stats.coverage >= 75
@@ -1219,7 +1219,7 @@ function PlannerHub({
               {stats && stats.weeksWithGaps > 0 && defaultCity && (
                 <Link
                   href={`/discover/${defaultCity.slug}`}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-white text-primary rounded-lg font-medium text-sm hover:bg-primary/10 transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-lg font-medium text-sm hover:bg-accent-dark shadow-md shadow-accent/20 transition-colors"
                 >
                   <SearchIcon />
                   Find Camps
@@ -1236,13 +1236,13 @@ function PlannerHub({
           </div>
 
           {/* Share Your Plan - Big CTA */}
-          <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-6 mb-6 text-white">
+          <div className="bg-gradient-to-r from-surface-dark to-surface rounded-2xl p-6 mb-6 text-white">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-4 text-center sm:text-left">
                 <div className="text-4xl">🔗</div>
                 <div>
                   <h3 className="text-xl font-bold">Share Your Summer Plan!</h3>
-                  <p className="text-purple-100">
+                  <p className="text-white/80">
                     Send your plan to friends & family. Coordinate camps together!
                   </p>
                 </div>

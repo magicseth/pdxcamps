@@ -24,7 +24,7 @@ export default function SourcesManagementPage() {
           </p>
           <a
             href="/sign-in"
-            className="inline-block bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
+            className="inline-block bg-primary text-white px-6 py-2 rounded-md hover:bg-primary-dark"
           >
             Sign In
           </a>
@@ -176,7 +176,7 @@ function SourcesManagementContent() {
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <Link href="/admin" className="text-sm text-blue-600 hover:text-blue-700 mb-1 block rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+              <Link href="/admin" className="text-sm text-primary hover:text-primary-dark mb-1 block rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
                 &larr; Back to Admin
               </Link>
               <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
@@ -188,7 +188,7 @@ function SourcesManagementContent() {
             </div>
             <Link
               href="/admin/growth"
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+              className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark text-sm font-medium"
             >
               + Add Source
             </Link>
@@ -323,7 +323,7 @@ function SourcesManagementContent() {
                               href={source.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-sm text-blue-600 hover:text-blue-700 line-clamp-1"
+                              className="text-sm text-primary hover:text-primary-dark line-clamp-1"
                             >
                               {source.url}
                             </a>
@@ -410,7 +410,7 @@ function SourcesManagementContent() {
                             className={`px-3 py-1.5 text-sm font-medium rounded-md ${
                               triggeringSource === source._id || !source.isActive
                                 ? 'bg-slate-100 text-slate-400 dark:bg-slate-700 dark:text-slate-500 cursor-not-allowed'
-                                : 'bg-blue-600 text-white hover:bg-blue-700'
+                                : 'bg-primary text-white hover:bg-primary-dark'
                             }`}
                           >
                             {triggeringSource === source._id ? (

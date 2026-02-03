@@ -418,7 +418,7 @@ function WeekDetailContent() {
         >
           <PlusIcon />
           Add Event
-          <kbd className="hidden sm:inline ml-1 px-1.5 py-0.5 bg-blue-700 rounded text-[10px]">E</kbd>
+          <kbd className="hidden sm:inline ml-1 px-1.5 py-0.5 bg-primary-dark rounded text-[10px]">E</kbd>
         </button>
       </div>
 
@@ -426,7 +426,7 @@ function WeekDetailContent() {
       <div className="flex items-center justify-between">
         <Link
           href={`/planner/week/${getPreviousMonday(weekDetail.weekStartDate)}`}
-          className="flex items-center gap-1 text-sm text-primary hover:text-blue-700 dark:text-blue-400"
+          className="flex items-center gap-1 text-sm text-primary hover:text-primary-dark dark:text-primary-light"
           title="Previous week (← arrow key)"
         >
           <ChevronLeftIcon />
@@ -442,7 +442,7 @@ function WeekDetailContent() {
         </span>
         <Link
           href={`/planner/week/${getNextMonday(weekDetail.weekStartDate)}`}
-          className="flex items-center gap-1 text-sm text-primary hover:text-blue-700 dark:text-blue-400"
+          className="flex items-center gap-1 text-sm text-primary hover:text-primary-dark dark:text-primary-light"
           title="Next week (→ arrow key)"
         >
           Next Week
@@ -452,13 +452,13 @@ function WeekDetailContent() {
 
       {/* Organization Filter Chips - only show when there are gaps to fill */}
       {childrenWithGaps.length > 0 && organizations.length > 0 && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 p-4 space-y-4">
+        <div className="bg-primary/10 dark:bg-primary-dark/20 rounded-lg border border-primary/30 dark:border-primary-dark p-4 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+              <p className="text-sm font-medium text-primary-dark dark:text-white/80">
                 Find camps to fill gaps
               </p>
-              <p className="text-xs text-blue-700 dark:text-blue-300">
+              <p className="text-xs text-primary-dark dark:text-white/60">
                 {childrenWithGaps.map(c => c.child.firstName).join(', ')} need{childrenWithGaps.length === 1 ? 's' : ''} coverage
               </p>
             </div>
@@ -469,7 +469,7 @@ function WeekDetailContent() {
                   setSelectedLocations([]);
                   setMaxDistanceMiles(undefined);
                 }}
-                className="text-xs text-primary hover:text-blue-700 dark:text-blue-400"
+                className="text-xs text-primary hover:text-primary-dark dark:text-primary-light"
               >
                 Clear filters
               </button>
@@ -479,7 +479,7 @@ function WeekDetailContent() {
           {/* Distance Filter */}
           {hasHomeCoords && (
             <div>
-              <p className="text-xs font-medium text-blue-800 dark:text-blue-200 mb-2">Distance from Home</p>
+              <p className="text-xs font-medium text-primary dark:text-white/70 mb-2">Distance from Home</p>
               <div className="flex flex-wrap gap-2">
                 {[5, 10, 15, 25].map((distance) => (
                   <button
@@ -501,7 +501,7 @@ function WeekDetailContent() {
 
           {/* Organization chips */}
           <div>
-            <p className="text-xs font-medium text-blue-800 dark:text-blue-200 mb-2">Organizations</p>
+            <p className="text-xs font-medium text-primary dark:text-white/70 mb-2">Organizations</p>
             <div className="flex flex-wrap gap-2">
               {organizations.map((org) => (
                 <button
@@ -523,7 +523,7 @@ function WeekDetailContent() {
           {/* Location chips - only show when organizations are selected and there are multiple locations */}
           {selectedOrganizations.length > 0 && locations.length > 1 && (
             <div>
-              <p className="text-xs font-medium text-blue-800 dark:text-blue-200 mb-2">Locations</p>
+              <p className="text-xs font-medium text-primary dark:text-white/70 mb-2">Locations</p>
               <div className="flex flex-wrap gap-2">
                 {locations.map((location) => (
                   <button
@@ -544,7 +544,7 @@ function WeekDetailContent() {
           )}
 
           {(selectedOrganizations.length > 0 || selectedLocations.length > 0 || maxDistanceMiles !== undefined) && (
-            <p className="text-xs text-blue-700 dark:text-blue-300">
+            <p className="text-xs text-primary-dark dark:text-white/60">
               Showing {totalCamps} camp{totalCamps === 1 ? '' : 's'}
               {selectedOrganizations.length > 0 && ` from ${selectedOrganizations.length} organization${selectedOrganizations.length > 1 ? 's' : ''}`}
               {selectedLocations.length > 0 && ` at ${selectedLocations.length} location${selectedLocations.length > 1 ? 's' : ''}`}
@@ -668,14 +668,14 @@ function WeekDetailContent() {
       <div className="flex flex-wrap gap-3 border-t border-slate-200 dark:border-slate-700 pt-4">
         <Link
           href="/"
-          className="text-sm text-primary hover:text-blue-700 dark:text-blue-400 flex items-center gap-1"
+          className="text-sm text-primary hover:text-primary-dark dark:text-primary-light flex items-center gap-1"
         >
           <GridIcon />
           Back to Overview
         </Link>
         <Link
           href="/discover/portland"
-          className="text-sm text-primary hover:text-blue-700 dark:text-blue-400 flex items-center gap-1"
+          className="text-sm text-primary hover:text-primary-dark dark:text-primary-light flex items-center gap-1"
         >
           <SearchIcon />
           Browse All Camps

@@ -17,7 +17,7 @@ const EVENT_TYPES: { value: EventType; label: string; icon: string }[] = [
 
 const COLORS = [
   { value: 'purple', label: 'Purple', class: 'bg-purple-500' },
-  { value: 'blue', label: 'Blue', class: 'bg-blue-500' },
+  { value: 'blue', label: 'Blue', class: 'bg-primary' },
   { value: 'green', label: 'Green', class: 'bg-green-500' },
   { value: 'yellow', label: 'Yellow', class: 'bg-yellow-500' },
   { value: 'pink', label: 'Pink', class: 'bg-pink-500' },
@@ -252,7 +252,7 @@ export function EditEventModal({ isOpen, onClose, event }: EditEventModalProps) 
                     onClick={() => setEventType(type.value)}
                     className={`flex items-center gap-2 px-3 py-2 rounded-md border text-sm ${
                       eventType === type.value
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                        ? 'border-primary bg-primary/10 dark:bg-primary-dark/30 text-primary-dark dark:text-white/60'
                         : 'border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
                     }`}
                   >
@@ -320,7 +320,7 @@ export function EditEventModal({ isOpen, onClose, event }: EditEventModalProps) 
                       aria-pressed={selectedChildIds.includes(child._id)}
                       className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm border ${
                         selectedChildIds.includes(child._id)
-                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                          ? 'border-primary bg-primary/10 dark:bg-primary-dark/30 text-primary-dark dark:text-white/60'
                           : 'border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
                       }`}
                     >
@@ -329,7 +329,7 @@ export function EditEventModal({ isOpen, onClose, event }: EditEventModalProps) 
                       </span>
                       {child.firstName}
                       {selectedChildIds.includes(child._id) && (
-                        <span className="text-blue-500">✓</span>
+                        <span className="text-primary">✓</span>
                       )}
                     </button>
                   ))}

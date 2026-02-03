@@ -13,7 +13,7 @@ export default function DataQualityPage() {
   return (
     <>
       <header className="sticky top-0 z-10 bg-background p-4 border-b-2 border-slate-200 dark:border-slate-800 flex flex-row justify-between items-center">
-        <Link href="/admin" className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+        <Link href="/admin" className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
           Admin Dashboard
         </Link>
         <h1 className="text-lg font-semibold">Data Quality</h1>
@@ -95,7 +95,7 @@ function DataQualityContent() {
         <p className="text-slate-600 dark:text-slate-400">
           You don't have permission to access the admin dashboard.
         </p>
-        <Link href="/" className="inline-block mt-4 text-blue-600 hover:underline">
+        <Link href="/" className="inline-block mt-4 text-primary hover:underline">
           Return to Home
         </Link>
       </div>
@@ -324,7 +324,7 @@ function PendingSessionRow({ session, onDiscard }: { session: PendingSession; on
               href={partialData.registrationUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
+              className="px-3 py-1 text-sm text-primary hover:bg-primary/10 dark:hover:bg-primary-dark/20 rounded"
             >
               View Page
             </a>
@@ -353,7 +353,7 @@ function CompleteBadge({ score }: { score: number }) {
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     pending_review: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300',
-    manually_fixed: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
+    manually_fixed: 'bg-primary/20 dark:bg-primary-dark/30 text-primary-dark dark:text-white/60',
     imported: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
     discarded: 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400',
   };
@@ -484,7 +484,7 @@ function LocationsTab() {
           <button
             onClick={handleBulkGeocode}
             disabled={bulkGeocoding || summary.needingFixes === 0}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {bulkGeocoding ? 'Geocoding...' : 'Geocode Next 10 Locations'}
           </button>
@@ -617,7 +617,7 @@ function LocationDisplay({
       <div className="flex-1">
         <div className="flex items-center gap-2">
           <h4 className="font-medium text-slate-900 dark:text-white">{location.name}</h4>
-          <span className="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">
+          <span className="text-xs px-2 py-0.5 bg-primary/20 dark:bg-primary-dark/30 text-primary-dark dark:text-white/60 rounded">
             {location.sessionCount} sessions
           </span>
         </div>
@@ -716,7 +716,7 @@ function CoverageStatsTab() {
             : ' Many sources need fixing.'}
         </p>
         <div className="mt-4">
-          <Link href="/admin/sources?tab=failing" className="text-blue-600 hover:underline text-sm">
+          <Link href="/admin/sources?tab=failing" className="text-primary hover:underline text-sm">
             View failing sources &rarr;
           </Link>
         </div>

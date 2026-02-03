@@ -75,7 +75,7 @@ export function WeekRow({ data, isFirstOfMonth = false }: WeekRowProps) {
       ref={rowRef}
       className={`flex items-center gap-4 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-200 hover:shadow-sm cursor-pointer ${
         isFirstOfMonth ? 'border-t border-slate-200 dark:border-slate-700' : ''
-      } ${isCurrentWeek ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500' : ''} ${
+      } ${isCurrentWeek ? 'bg-primary/10 dark:bg-primary-dark/20 border-l-4 border-l-primary' : ''} ${
         isPastWeek ? 'opacity-50 hover:opacity-70' : ''
       }`}
     >
@@ -132,7 +132,7 @@ export function WeekRow({ data, isFirstOfMonth = false }: WeekRowProps) {
       {hasGap ? (
         <Link
           href={`/planner/week/${week.startDate}`}
-          className="flex-shrink-0 text-xs text-primary dark:text-blue-400 font-medium hover:underline animate-pulse motion-reduce:animate-none rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="flex-shrink-0 text-xs text-primary dark:text-primary-light font-medium hover:underline animate-pulse motion-reduce:animate-none rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           title={`Find camps for ${week.label} (${week.startDate} to ${week.endDate})`}
         >
           {childrenWithGaps > 1 ? `${childrenWithGaps} need camps` : 'Find camps'} →

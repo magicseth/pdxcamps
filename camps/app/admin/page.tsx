@@ -12,7 +12,7 @@ export default function AdminPage() {
   return (
     <>
       <header className="sticky top-0 z-10 bg-background p-4 border-b-2 border-slate-200 dark:border-slate-800 flex flex-row justify-between items-center">
-        <Link href="/" className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+        <Link href="/" className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
           PDX Camps
         </Link>
         <h1 className="text-lg font-semibold">Command Center</h1>
@@ -74,7 +74,7 @@ function AdminContent() {
         </p>
         <Link
           href="/"
-          className="inline-block mt-4 text-blue-600 hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          className="inline-block mt-4 text-primary hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           Return to Home
         </Link>
@@ -108,7 +108,7 @@ function AdminContent() {
         </p>
         <Link
           href="/"
-          className="inline-block mt-4 text-blue-600 hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          className="inline-block mt-4 text-primary hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           Return to Home
         </Link>
@@ -242,7 +242,7 @@ function AdminContent() {
         </Link>
         <Link
           href="/admin/development"
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+          className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark text-sm font-medium"
         >
           + Request Scraper
         </Link>
@@ -329,7 +329,7 @@ function AdminContent() {
         <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Recent Activity</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+            <div className="w-10 h-10 rounded-lg bg-primary/20 dark:bg-primary-dark/30 flex items-center justify-center text-primary dark:text-primary-light">
               <DatabaseIcon />
             </div>
             <div>
@@ -379,7 +379,7 @@ function AttentionRow({ item }: { item: AttentionItem }) {
   const iconStyles = {
     error: 'text-red-600 dark:text-red-400',
     warning: 'text-yellow-600 dark:text-yellow-400',
-    info: 'text-blue-600 dark:text-blue-400',
+    info: 'text-primary dark:text-primary-light',
   };
 
   return (

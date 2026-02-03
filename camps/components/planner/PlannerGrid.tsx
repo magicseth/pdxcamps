@@ -109,7 +109,7 @@ export function PlannerGrid({ coverage, children, citySlug, onGapClick }: Planne
                     key={week.week.startDate}
                     className={`px-1 py-1.5 text-center text-xs border-b border-l border-slate-200 dark:border-slate-700 ${
                       current
-                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-bold'
+                        ? 'bg-primary/20 dark:bg-primary-dark/30 text-primary-dark dark:text-white/60 font-bold'
                         : past
                         ? 'text-slate-400 dark:text-slate-500'
                         : 'text-slate-500 dark:text-slate-400'
@@ -132,7 +132,7 @@ export function PlannerGrid({ coverage, children, citySlug, onGapClick }: Planne
                 {/* Child name - sticky left column */}
                 <td className="sticky left-0 z-10 px-4 py-3 text-sm font-medium text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-700/50 bg-inherit">
                   <div className="flex items-center gap-2">
-                    <span className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
+                    <span className="w-7 h-7 rounded-full bg-gradient-to-br from-primary/100 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
                       {child.firstName[0]}
                     </span>
                     {child.firstName}
@@ -214,7 +214,7 @@ function CoverageCell({ data, week, childId, isCurrentWeek, isPastWeek, citySlug
     <div
       className={`w-full h-full min-h-[48px] flex flex-col items-center justify-center ${bgColor} ${
         isPastWeek ? 'opacity-50' : ''
-      } ${isCurrentWeek ? 'ring-2 ring-blue-500 ring-inset' : ''}`}
+      } ${isCurrentWeek ? 'ring-2 ring-primary ring-inset' : ''}`}
       title={tooltip}
     >
       {logoUrl ? (

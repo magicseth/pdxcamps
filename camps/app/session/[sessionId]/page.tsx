@@ -134,7 +134,7 @@ export default function SessionDetailPage() {
           </p>
           <Link
             href="/"
-            className="inline-block bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
+            className="inline-block bg-primary text-white px-6 py-2 rounded-md hover:bg-primary-dark"
           >
             Back to Home
           </Link>
@@ -298,7 +298,7 @@ export default function SessionDetailPage() {
       {/* Skip to main content link for keyboard users */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg focus:font-medium"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-white focus:rounded-lg focus:font-medium"
       >
         Skip to main content
       </a>
@@ -320,7 +320,7 @@ export default function SessionDetailPage() {
               <ShareButton title={camp?.name ?? 'Check out this camp!'} />
               <Link
                 href="/settings"
-                className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 aria-label="Settings"
                 title="Settings"
               >
@@ -351,13 +351,13 @@ export default function SessionDetailPage() {
 
         {/* Breadcrumb Navigation */}
         <nav aria-label="Breadcrumb" className="mb-4 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-          <Link href="/" className="hover:text-slate-700 dark:hover:text-slate-300 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+          <Link href="/" className="hover:text-slate-700 dark:hover:text-slate-300 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
             Home
           </Link>
           <ChevronRightIcon className="w-4 h-4" />
           <Link
             href="/discover/portland"
-            className="hover:text-slate-700 dark:hover:text-slate-300 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="hover:text-slate-700 dark:hover:text-slate-300 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             Discover
           </Link>
@@ -416,7 +416,7 @@ export default function SessionDetailPage() {
             </div>
           ) : (
             /* Fallback when no image - show colored header */
-            <div className="relative h-32 md:h-40 bg-gradient-to-r from-blue-600 to-blue-700">
+            <div className="relative h-32 md:h-40 bg-gradient-to-r from-primary to-primary-dark">
               <div className="absolute bottom-0 left-0 right-0 p-6">
                 <div className="flex items-end gap-4">
                   {organization?.resolvedLogoUrl && (
@@ -577,12 +577,12 @@ export default function SessionDetailPage() {
                         href={getMapUrl()!}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 mt-2 text-blue-600 hover:text-blue-700 group"
+                        className="inline-flex items-center gap-1 mt-2 text-primary hover:text-primary-dark group"
                         title="Opens in new tab"
                       >
                         <MapIcon className="w-4 h-4" />
                         View on Map
-                        <span className="text-blue-400 group-hover:text-blue-600">↗</span>
+                        <span className="text-primary-light group-hover:text-primary">↗</span>
                       </a>
                     )}
                     {location.parkingNotes && (
@@ -609,7 +609,7 @@ export default function SessionDetailPage() {
                 <div className="space-y-4">
                   {friendsAtSession.map((friend) => (
                     <div key={friend.family._id} className="flex items-start gap-3">
-                      <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 font-medium">
+                      <div className="w-10 h-10 bg-primary/20 dark:bg-primary-dark rounded-full flex items-center justify-center text-primary dark:text-primary-light font-medium">
                         {friend.family.displayName[0].toUpperCase()}
                       </div>
                       <div>
@@ -670,16 +670,16 @@ export default function SessionDetailPage() {
                   href={session.externalRegistrationUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-primary text-white font-medium rounded-md hover:bg-primary-dark"
                   title="Opens provider's registration page in new tab"
                 >
                   Register on Provider Site
-                  <span className="text-blue-200">↗</span>
+                  <span className="text-white/70">↗</span>
                 </a>
               ) : sessionStatus.available ? (
                 <button
                   onClick={() => setShowRegisterModal(true)}
-                  className="w-full px-4 py-3 bg-blue-600 text-white text-center font-medium rounded-md hover:bg-blue-700"
+                  className="w-full px-4 py-3 bg-primary text-white text-center font-medium rounded-md hover:bg-primary-dark"
                 >
                   Register Now
                 </button>
@@ -791,7 +791,7 @@ END:VCALENDAR`;
                       href={organization.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                      className="text-sm text-primary hover:text-primary-dark flex items-center gap-1"
                     >
                       <ExternalLinkIcon className="w-4 h-4" />
                       Visit Website
@@ -805,7 +805,7 @@ END:VCALENDAR`;
                   {organization.email && (
                     <a
                       href={`mailto:${organization.email}`}
-                      className="text-sm text-blue-600 hover:text-blue-700"
+                      className="text-sm text-primary hover:text-primary-dark"
                     >
                       {organization.email}
                     </a>
@@ -1017,7 +1017,7 @@ function RegisterModal({
                 </p>
                 <Link
                   href="/onboarding/children"
-                  className="text-blue-600 hover:text-blue-700 font-medium"
+                  className="text-primary hover:text-primary-dark font-medium"
                 >
                   Add a child
                 </Link>
@@ -1036,7 +1036,7 @@ function RegisterModal({
                           key={child._id}
                           className={`flex items-center gap-3 p-3 rounded-md border cursor-pointer ${
                             selectedChildId === child._id
-                              ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                              ? 'border-primary bg-primary/10 dark:bg-primary-dark/30'
                               : eligibility.eligible
                                 ? 'border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
                                 : 'border-slate-200 dark:border-slate-600 opacity-50'
@@ -1084,7 +1084,7 @@ function RegisterModal({
                   <button
                     onClick={handleRegister}
                     disabled={!selectedChildId || isSubmitting}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSubmitting ? 'Registering...' : 'Confirm Registration'}
                   </button>
@@ -1238,7 +1238,7 @@ function WaitlistModal({
                 </p>
                 <Link
                   href="/onboarding/children"
-                  className="text-blue-600 hover:text-blue-700 font-medium"
+                  className="text-primary hover:text-primary-dark font-medium"
                 >
                   Add a child
                 </Link>

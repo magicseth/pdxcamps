@@ -13,7 +13,7 @@ export default function GrowthPage() {
   return (
     <>
       <header className="sticky top-0 z-10 bg-background p-4 border-b-2 border-slate-200 dark:border-slate-800 flex flex-row justify-between items-center">
-        <Link href="/admin" className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+        <Link href="/admin" className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
           Admin Dashboard
         </Link>
         <h1 className="text-lg font-semibold">Growth & Expansion</h1>
@@ -96,7 +96,7 @@ function GrowthContent() {
         <p className="text-slate-600 dark:text-slate-400">
           You don't have permission to access the admin dashboard.
         </p>
-        <Link href="/" className="inline-block mt-4 text-blue-600 hover:underline">
+        <Link href="/" className="inline-block mt-4 text-primary hover:underline">
           Return to Home
         </Link>
       </div>
@@ -381,7 +381,7 @@ function MarketSeedingTab({ cities }: { cities: any[] | undefined }) {
           <button
             onClick={handleScrapeDirectory}
             disabled={isLoading || !directoryUrl}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark disabled:opacity-50"
           >
             {isLoading ? 'Scraping...' : 'Scrape Directory'}
           </button>
@@ -417,7 +417,7 @@ function MarketSeedingTab({ cities }: { cities: any[] | undefined }) {
                 key={org.domain}
                 className={`p-4 rounded-lg border ${
                   org.included
-                    ? 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20'
+                    ? 'border-primary/30 dark:border-primary-dark bg-primary/10 dark:bg-primary-dark/20'
                     : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 opacity-60'
                 }`}
               >
@@ -434,7 +434,7 @@ function MarketSeedingTab({ cities }: { cities: any[] | undefined }) {
                         type="text"
                         value={org.customName ?? org.suggestedName}
                         onChange={(e) => updateOrgName(org.domain, e.target.value)}
-                        className="font-medium bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:outline-none px-1 -ml-1"
+                        className="font-medium bg-transparent border-b border-transparent hover:border-slate-300 focus:border-primary focus:outline-none px-1 -ml-1"
                       />
                       <span className="text-xs text-slate-500">{org.domain}</span>
                     </div>
@@ -442,7 +442,7 @@ function MarketSeedingTab({ cities }: { cities: any[] | undefined }) {
                       href={org.bestUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm text-blue-600 hover:underline break-all"
+                      className="text-sm text-primary hover:underline break-all"
                     >
                       {org.bestUrl}
                     </a>
@@ -503,8 +503,8 @@ function MarketSeedingTab({ cities }: { cities: any[] | undefined }) {
               <p className="text-2xl font-bold text-green-600">{seedingResult.summary.created}</p>
               <p className="text-sm text-slate-500">Created</p>
             </div>
-            <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded">
-              <p className="text-2xl font-bold text-blue-600">{seedingResult.summary.existing}</p>
+            <div className="text-center p-3 bg-primary/10 dark:bg-primary-dark/20 rounded">
+              <p className="text-2xl font-bold text-primary">{seedingResult.summary.existing}</p>
               <p className="text-sm text-slate-500">Already Existed</p>
             </div>
             <div className="text-center p-3 bg-red-50 dark:bg-red-900/20 rounded">
@@ -529,7 +529,7 @@ function MarketSeedingTab({ cities }: { cities: any[] | undefined }) {
           )}
 
           <div className="mt-4">
-            <Link href="/admin/development" className="text-blue-600 hover:underline">
+            <Link href="/admin/development" className="text-primary hover:underline">
               View Scraper Development Queue &rarr;
             </Link>
           </div>
@@ -605,7 +605,7 @@ function DiscoveryQueueTab({ cities }: { cities: any[] | undefined }) {
             onClick={() => setStatusFilter(filter.value)}
             className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
               statusFilter === filter.value
-                ? 'bg-blue-600 text-white'
+                ? 'bg-primary text-white'
                 : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
             }`}
           >
@@ -681,7 +681,7 @@ function DiscoverySourceRow({
             href={source.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-blue-600 hover:text-blue-700 line-clamp-1 mb-2"
+            className="text-sm text-primary hover:text-primary-dark line-clamp-1 mb-2"
           >
             {source.url}
           </a>
@@ -744,7 +744,7 @@ function DiscoverySourceRow({
                     {source.aiAnalysis.detectedCampNames.map((name: string, i: number) => (
                       <span
                         key={i}
-                        className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded"
+                        className="px-2 py-0.5 bg-primary/20 dark:bg-primary-dark/30 text-primary-dark dark:text-white/60 text-xs rounded"
                       >
                         {name}
                       </span>
@@ -791,7 +791,7 @@ function getStatusBadgeClass(status: string): string {
     case 'pending_analysis':
       return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
     case 'pending_review':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+      return 'bg-primary/20 text-primary dark:bg-primary-dark/30 dark:text-white/60';
     case 'approved':
       return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
     case 'rejected':
@@ -914,7 +914,7 @@ function OrganizationsTab({ cities }: { cities: any[] | undefined }) {
                           href={org.website}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-sm text-blue-600 hover:underline"
+                          className="text-sm text-primary hover:underline"
                         >
                           {org.website}
                         </a>
@@ -935,7 +935,7 @@ function OrganizationsTab({ cities }: { cities: any[] | undefined }) {
                           </span>
                         )}
                         {org.isVerified && (
-                          <span className="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">
+                          <span className="px-2 py-0.5 text-xs bg-primary/20 dark:bg-primary-dark/30 text-primary-dark dark:text-white/60 rounded">
                             Verified
                           </span>
                         )}

@@ -17,12 +17,12 @@ export function UpgradeModal({ isOpen, onClose, savedCount = 4 }: UpgradeModalPr
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white text-center">
+        <div className="bg-gradient-to-r from-primary to-indigo-600 p-6 text-white text-center">
           <div className="text-4xl mb-2">🎉</div>
           <h2 className="text-xl font-bold">
             You've saved {savedCount} camps!
           </h2>
-          <p className="text-blue-100 text-sm mt-1">
+          <p className="text-white/80 text-sm mt-1">
             Nice planning! You're on a roll.
           </p>
         </div>

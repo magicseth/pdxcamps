@@ -488,7 +488,7 @@ export default function DiscoverPage() {
                   {hasActiveFilters && (
                     <button
                       onClick={clearFilters}
-                      className={`text-sm text-primary hover:text-blue-700 ${
+                      className={`text-sm text-primary hover:text-primary-dark ${
                         activeFilterCount > 3 ? 'font-medium animate-pulse motion-reduce:animate-none' : ''
                       }`}
                     >
@@ -864,7 +864,7 @@ export default function DiscoverPage() {
                         {org.name}
                         <span className={`text-xs ${
                           selectedOrganizations.includes(org._id)
-                            ? 'text-blue-200'
+                            ? 'text-white/70'
                             : 'text-slate-400 dark:text-slate-500'
                         }`}>
                           {sessionCount}
@@ -916,7 +916,7 @@ export default function DiscoverPage() {
                   </p>
                   <button
                     onClick={clearFilters}
-                    className="text-xs text-primary hover:text-blue-700 font-medium"
+                    className="text-xs text-primary hover:text-primary-dark font-medium"
                   >
                     Clear all
                   </button>
@@ -1563,8 +1563,8 @@ function SessionCard({
     const styles: Record<string, { bg: string; icon: string }> = {
       sports: { bg: 'from-green-500 to-emerald-600', icon: '⚽' },
       arts: { bg: 'from-purple-500 to-pink-600', icon: '🎨' },
-      stem: { bg: 'from-blue-500 to-cyan-600', icon: '🔬' },
-      technology: { bg: 'from-blue-500 to-indigo-600', icon: '💻' },
+      stem: { bg: 'from-primary/100 to-cyan-600', icon: '🔬' },
+      technology: { bg: 'from-primary/100 to-indigo-600', icon: '💻' },
       nature: { bg: 'from-green-600 to-teal-600', icon: '🌲' },
       music: { bg: 'from-pink-500 to-rose-600', icon: '🎵' },
       academic: { bg: 'from-amber-500 to-orange-600', icon: '📚' },
@@ -1746,7 +1746,7 @@ function SessionCard({
               <div className="flex-1 min-w-0">
                 <Link
                   href={`/session/${session._id}`}
-                  className="text-base font-semibold text-white hover:text-blue-200 hover:underline line-clamp-1 drop-shadow-md"
+                  className="text-base font-semibold text-white hover:text-white/70 hover:underline line-clamp-1 drop-shadow-md"
                 >
                   {camp?.name ?? 'Loading...'}
                 </Link>
@@ -1855,7 +1855,7 @@ function SessionCard({
                     className={`ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
                       dayType.isHalfDay
                         ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                        : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                        : 'bg-primary/20 text-primary-dark dark:bg-primary-dark/30 dark:text-primary-light'
                     }`}
                   >
                     {dayType.label}
@@ -1899,7 +1899,7 @@ function SessionCard({
                 {location.address?.city && ` - ${location.address.city}`}
               </span>
               {distanceFromHome !== undefined && (
-                <span className="flex-shrink-0 text-primary dark:text-blue-400 font-medium">
+                <span className="flex-shrink-0 text-primary dark:text-primary-light font-medium">
                   {distanceFromHome} mi
                 </span>
               )}
@@ -1910,7 +1910,7 @@ function SessionCard({
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-shrink-0 text-primary dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                  className="flex-shrink-0 text-primary dark:text-primary-light hover:text-primary-dark dark:hover:text-white/60"
                   title="View on map"
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -2141,7 +2141,7 @@ function SaveSessionModal({
                 </p>
                 <Link
                   href="/onboarding"
-                  className="text-primary hover:text-blue-700 font-medium"
+                  className="text-primary hover:text-primary-dark font-medium"
                 >
                   Add a child
                 </Link>
@@ -2158,7 +2158,7 @@ function SaveSessionModal({
                         key={child._id}
                         className={`flex items-center gap-3 p-3 rounded-md border cursor-pointer ${
                           selectedChildId === child._id
-                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                            ? 'border-primary bg-primary/10 dark:bg-primary-dark/30'
                             : 'border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
                         }`}
                       >
@@ -2321,11 +2321,11 @@ function FilterChip({
   onRemove: () => void;
 }) {
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium transition-transform hover:scale-105">
+    <span className="inline-flex items-center gap-1 px-2 py-1 bg-primary/20 dark:bg-primary-dark/30 text-primary-dark dark:text-white/60 rounded-full text-xs font-medium transition-transform hover:scale-105">
       {label}
       <button
         onClick={onRemove}
-        className="ml-0.5 hover:text-blue-900 dark:hover:text-blue-100 transition-colors"
+        className="ml-0.5 hover:text-primary-dark dark:hover:text-white/80 transition-colors"
         title="Remove filter"
         aria-label={`Remove ${label} filter`}
       >

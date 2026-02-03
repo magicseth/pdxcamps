@@ -183,7 +183,7 @@ function FamilyProfileSection({
           <button
             type="button"
             onClick={() => setIsEditing(true)}
-            className="text-sm text-primary hover:text-blue-700"
+            className="text-sm text-primary hover:text-primary-dark"
           >
             Edit
           </button>
@@ -560,7 +560,7 @@ function HomeAddressSection({
           <button
             type="button"
             onClick={() => setIsEditing(true)}
-            className="text-sm text-primary hover:text-blue-700"
+            className="text-sm text-primary hover:text-primary-dark"
           >
             {family.homeAddress ? 'Edit' : 'Add'}
           </button>
@@ -950,12 +950,12 @@ function CancelSubscriptionModal({
           Before you cancel, would you like to switch to our discounted plan instead?
         </p>
 
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+        <div className="bg-gradient-to-br from-primary/10 to-indigo-50 dark:from-primary-dark/20 dark:to-indigo-900/20 border border-primary/30 dark:border-primary-dark rounded-lg p-4 mb-6">
           <div className="flex items-center justify-between mb-2">
-            <span className="font-semibold text-blue-900 dark:text-blue-100">Lite Plan</span>
-            <span className="text-2xl font-bold text-primary dark:text-blue-400">$3<span className="text-sm font-normal">/mo</span></span>
+            <span className="font-semibold text-primary-dark dark:text-white/80">Lite Plan</span>
+            <span className="text-2xl font-bold text-primary dark:text-primary-light">$3<span className="text-sm font-normal">/mo</span></span>
           </div>
-          <p className="text-sm text-blue-700 dark:text-blue-300">
+          <p className="text-sm text-primary-dark dark:text-white/60">
             Keep all your premium features at a reduced price. Same great planning tools, friendlier on the wallet.
           </p>
         </div>
@@ -1017,7 +1017,7 @@ function ChildrenSection({
         <button
           type="button"
           onClick={() => setShowAddChild(true)}
-          className="text-sm text-primary hover:text-blue-700 flex items-center gap-1"
+          className="text-sm text-primary hover:text-primary-dark flex items-center gap-1"
         >
           <PlusIcon />
           Add Child
@@ -1088,7 +1088,7 @@ function ChildCard({
   return (
     <div className="flex items-center justify-between p-3 border border-slate-200 dark:border-slate-700 rounded-lg">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-primary dark:text-blue-400 font-medium">
+        <div className="w-10 h-10 rounded-full bg-primary/20 dark:bg-primary-dark flex items-center justify-center text-primary dark:text-primary-light font-medium">
           {child.firstName[0]}
         </div>
         <div>
@@ -1103,7 +1103,7 @@ function ChildCard({
       <button
         type="button"
         onClick={onEdit}
-        className="text-sm text-primary hover:text-blue-700"
+        className="text-sm text-primary hover:text-primary-dark"
       >
         Edit
       </button>

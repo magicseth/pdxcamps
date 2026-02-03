@@ -12,7 +12,7 @@ export default function SourceDetailPage() {
   return (
     <>
       <header className="sticky top-0 z-10 bg-background p-4 border-b-2 border-slate-200 dark:border-slate-800 flex flex-row justify-between items-center">
-        <Link href="/admin" className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+        <Link href="/admin" className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
           Admin Dashboard
         </Link>
         <h1 className="text-lg font-semibold">Source Detail</h1>
@@ -90,7 +90,7 @@ function SourceDetailContent() {
     return (
       <div className="max-w-2xl mx-auto text-center py-16">
         <h2 className="text-xl font-semibold mb-2 text-red-600">Access Denied</h2>
-        <Link href="/" className="inline-block mt-4 text-blue-600 hover:underline">
+        <Link href="/" className="inline-block mt-4 text-primary hover:underline">
           Return to Home
         </Link>
       </div>
@@ -101,7 +101,7 @@ function SourceDetailContent() {
     return (
       <div className="max-w-2xl mx-auto text-center py-16">
         <h2 className="text-xl font-semibold mb-2 text-red-600">Source Not Found</h2>
-        <Link href="/admin" className="inline-block mt-4 text-blue-600 hover:underline">
+        <Link href="/admin" className="inline-block mt-4 text-primary hover:underline">
           Back to Dashboard
         </Link>
       </div>
@@ -178,7 +178,7 @@ function SourceDetailContent() {
               href={source.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm text-blue-600 hover:underline mt-1 inline-block"
+              className="text-sm text-primary hover:underline mt-1 inline-block"
             >
               {source.url}
             </a>
@@ -245,7 +245,7 @@ function SourceDetailContent() {
               href={source.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-3 py-2 text-sm text-blue-600 hover:underline"
+              className="px-3 py-2 text-sm text-primary hover:underline"
             >
               Open
             </a>
@@ -266,7 +266,7 @@ function SourceDetailContent() {
                   href={urlInfo.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-3 py-2 text-sm text-blue-600 hover:underline"
+                  className="px-3 py-2 text-sm text-primary hover:underline"
                 >
                   Open
                 </a>
@@ -302,7 +302,7 @@ function SourceDetailContent() {
             <button
               onClick={handleAddUrl}
               disabled={addingUrl || !newUrlInput}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm"
+              className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark disabled:opacity-50 text-sm"
             >
               {addingUrl ? 'Adding...' : 'Add'}
             </button>
@@ -375,7 +375,7 @@ function SourceDetailContent() {
           <button
             onClick={handleSaveNotes}
             disabled={savingNotes}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark disabled:opacity-50"
           >
             {savingNotes ? 'Saving...' : 'Save Notes'}
           </button>
@@ -455,7 +455,7 @@ function SourceDetailContent() {
                 </div>
                 <Link
                   href={`/admin/jobs/${job._id}`}
-                  className="text-sm text-blue-600 hover:underline"
+                  className="text-sm text-primary hover:underline"
                 >
                   View Details
                 </Link>
@@ -537,7 +537,7 @@ function StatItem({
 function JobStatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     pending: 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300',
-    running: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
+    running: 'bg-primary/20 dark:bg-primary-dark/30 text-primary-dark dark:text-white/60',
     completed: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
     failed: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
   };
