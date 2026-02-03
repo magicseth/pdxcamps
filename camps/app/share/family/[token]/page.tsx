@@ -4,9 +4,12 @@ import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import Link from 'next/link';
 import { use } from 'react';
+import { useAuth } from '@workos-inc/authkit-nextjs/components';
 
 export default function FamilySharedPlanPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params);
+  const { user, loading: authLoading } = useAuth();
+  const isLoggedIn = !!user;
   const plan = useQuery(api.share.queries.getFamilySharedPlan, { shareToken: token });
 
   if (plan === undefined) {
@@ -82,16 +85,25 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
       {/* Header */}
       <header className="bg-white border-b border-slate-200 px-4 py-4 sticky top-0 z-20">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <span className="text-xl">☀️</span>
             <span className="font-bold text-lg text-slate-900">PDX Camps</span>
-          </div>
-          <Link
-            href="/sign-up"
-            className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 text-sm"
-          >
-            Create Your Plan
           </Link>
+          {isLoggedIn ? (
+            <Link
+              href="/"
+              className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 text-sm"
+            >
+              My Plan
+            </Link>
+          ) : (
+            <Link
+              href="/sign-up"
+              className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 text-sm"
+            >
+              Create Your Plan
+            </Link>
+          )}
         </div>
       </header>
 
@@ -122,7 +134,7 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
           </div>
         </div>
 
-        {/* Sign Up Your Kids CTA */}
+        {/* Add to Your Plan CTA */}
         {allCamps.size > 0 && (
           <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-6 mb-6">
             <div className="flex items-start gap-4">
@@ -132,14 +144,19 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
                   Want your kids at the same camps?
                 </h2>
                 <p className="text-slate-600 text-sm mb-4">
-                  Sign up free to add these camps to your plan and coordinate with the {plan.familyName}s!
+                  {isLoggedIn
+                    ? `Browse the camps below and add them to your plan to coordinate with the ${plan.familyName}s!`
+                    : `Sign up free to add these camps to your plan and coordinate with the ${plan.familyName}s!`
+                  }
                 </p>
-                <Link
-                  href="/sign-up"
-                  className="inline-block px-6 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-all"
-                >
-                  Sign Up & Add These Camps
-                </Link>
+                {!isLoggedIn && (
+                  <Link
+                    href="/sign-up"
+                    className="inline-block px-6 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-all"
+                  >
+                    Sign Up Free
+                  </Link>
+                )}
               </div>
             </div>
           </div>
@@ -260,23 +277,40 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
         )}
 
         {/* Big CTA Section */}
-        <div className="bg-gradient-to-br from-accent/10 to-accent/5 border-2 border-accent/30 rounded-2xl p-8 text-center">
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">
-            Plan your summer together!
-          </h2>
-          <p className="text-slate-600 mb-6 max-w-md mx-auto">
-            Create your free account to add these camps to your plan, track your coverage, and coordinate with the {plan.familyName}s.
-          </p>
-          <Link
-            href="/sign-up"
-            className="inline-block px-8 py-4 bg-gradient-to-r from-accent to-accent-dark text-white font-bold text-lg rounded-xl hover:from-accent-dark hover:to-primary shadow-lg shadow-orange-500/25 transition-all hover:shadow-xl hover:scale-105"
-          >
-            Sign Up Free
-          </Link>
-          <p className="text-sm text-slate-500 mt-3">
-            No credit card required
-          </p>
-        </div>
+        {isLoggedIn ? (
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-8 text-center">
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">
+              Ready to coordinate?
+            </h2>
+            <p className="text-slate-600 mb-6 max-w-md mx-auto">
+              Click on any camp above to view details and add it to your plan. Coordinate your summer with the {plan.familyName}s!
+            </p>
+            <Link
+              href="/"
+              className="inline-block px-8 py-4 bg-blue-600 text-white font-bold text-lg rounded-xl hover:bg-blue-700 shadow-lg transition-all hover:shadow-xl hover:scale-105"
+            >
+              View My Plan
+            </Link>
+          </div>
+        ) : (
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-8 text-center">
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">
+              Plan your summer together!
+            </h2>
+            <p className="text-slate-600 mb-6 max-w-md mx-auto">
+              Create your free account to add these camps to your plan, track your coverage, and coordinate with the {plan.familyName}s.
+            </p>
+            <Link
+              href="/sign-up"
+              className="inline-block px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-lg rounded-xl hover:from-amber-600 hover:to-orange-600 shadow-lg shadow-orange-500/25 transition-all hover:shadow-xl hover:scale-105"
+            >
+              Sign Up Free
+            </Link>
+            <p className="text-sm text-slate-500 mt-3">
+              No credit card required
+            </p>
+          </div>
+        )}
       </main>
 
       {/* Footer */}

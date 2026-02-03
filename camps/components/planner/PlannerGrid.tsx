@@ -132,7 +132,7 @@ export function PlannerGrid({ coverage, children, citySlug, onGapClick }: Planne
                 {/* Child name - sticky left column */}
                 <td className="sticky left-0 z-10 px-4 py-3 text-sm font-medium text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-700/50 bg-inherit">
                   <div className="flex items-center gap-2">
-                    <span className="w-7 h-7 rounded-full bg-gradient-to-br from-primary/100 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
+                    <span className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-surface-dark flex items-center justify-center text-white text-xs font-bold">
                       {child.firstName[0]}
                     </span>
                     {child.firstName}

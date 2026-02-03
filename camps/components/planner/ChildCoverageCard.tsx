@@ -126,8 +126,8 @@ export function ChildCoverageCard({
               coveredDays === 5
                 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                 : coveredDays > 0
-                ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                ? 'bg-accent/20 text-accent-dark dark:bg-accent/30 dark:text-accent'
+                : 'bg-accent/10 text-accent-dark dark:bg-accent/20 dark:text-accent'
             }`}
             title={`${coveredDays} out of 5 weekdays covered`}
           >
@@ -143,11 +143,11 @@ export function ChildCoverageCard({
         {events.length > 0 && (
           <button
             onClick={() => onEditEvent?.(events[0])}
-            className="text-xs text-primary-dark dark:text-purple-300 font-medium flex items-center gap-1 hover:text-purple-900 dark:hover:text-white/80 group"
+            className="text-xs text-primary dark:text-surface-light font-medium flex items-center gap-1 hover:text-primary-dark dark:hover:text-white group"
             title="Click to edit event"
           >
             <span>✈</span> {events[0].title}
-            <span className="opacity-0 group-hover:opacity-100 text-purple-500">✎</span>
+            <span className="opacity-0 group-hover:opacity-100 text-surface-dark">✎</span>
           </button>
         )}
       </div>
