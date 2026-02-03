@@ -70,7 +70,7 @@ function CampCard({
           {/* Camp name */}
           <Link
             href={`/session/${session?._id}`}
-            className="font-medium text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 block truncate"
+            className="font-medium text-slate-900 dark:text-white hover:text-primary dark:hover:text-blue-400 block truncate"
           >
             {campInfo?.name ?? 'Unknown Camp'}
           </Link>
@@ -82,7 +82,7 @@ function CampCard({
 
           {/* Child */}
           {camp.child && (
-            <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
+            <p className="text-sm text-primary dark:text-blue-400 mt-1">
               for {camp.child.firstName}
             </p>
           )}
@@ -126,7 +126,7 @@ function CampCard({
               href={session.externalRegistrationUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors text-center"
+              className="px-3 py-1.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-dark transition-colors text-center"
             >
               Register
             </a>
@@ -292,7 +292,7 @@ export default function SavedCampsPage() {
             </p>
             <Link
               href="/discover/portland"
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center px-4 py-2 bg-primary text-white font-medium rounded-lg hover:bg-primary-dark transition-colors"
             >
               Browse Camps
             </Link>
@@ -367,16 +367,16 @@ export default function SavedCampsPage() {
       {/* Bottom nav link */}
       <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 px-4 py-3">
         <div className="max-w-3xl mx-auto flex justify-around">
-          <Link href="/" className="text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 text-sm font-medium">
+          <Link href="/" className="text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-blue-400 text-sm font-medium">
             Home
           </Link>
-          <Link href="/discover/portland" className="text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 text-sm font-medium">
+          <Link href="/discover/portland" className="text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-blue-400 text-sm font-medium">
             Discover
           </Link>
-          <Link href="/saved" className="text-blue-600 dark:text-blue-400 text-sm font-medium">
+          <Link href="/saved" className="text-primary dark:text-blue-400 text-sm font-medium">
             My Camps
           </Link>
-          <Link href="/planner" className="text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 text-sm font-medium">
+          <Link href="/planner" className="text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-blue-400 text-sm font-medium">
             Planner
           </Link>
         </div>

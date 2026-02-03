@@ -20,21 +20,21 @@ export default function WeekDetailPage() {
       {/* Skip to main content link for keyboard users */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg focus:font-medium"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-white focus:rounded-lg focus:font-medium"
       >
         Skip to main content
       </a>
 
       <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3 sticky top-0 z-20">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+          <Link href="/" className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
             <BackIcon />
             <span className="font-medium">Back to Planner</span>
           </Link>
           <div className="flex items-center gap-3">
             <Link
               href="/settings"
-              className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               aria-label="Settings"
               title="Settings"
             >
@@ -58,7 +58,7 @@ export default function WeekDetailPage() {
             </p>
             <a
               href="/sign-in"
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+              className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark"
             >
               Sign in
             </a>
@@ -362,7 +362,7 @@ function WeekDetailContent() {
         </p>
         <Link
           href="/"
-          className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700"
+          className="inline-block bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-primary-dark"
         >
           Back to Planner
         </Link>
@@ -413,7 +413,7 @@ function WeekDetailContent() {
         </div>
         <button
           onClick={() => setShowAddEventModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark text-sm font-medium"
           title="Add family event (E key)"
         >
           <PlusIcon />
@@ -426,7 +426,7 @@ function WeekDetailContent() {
       <div className="flex items-center justify-between">
         <Link
           href={`/planner/week/${getPreviousMonday(weekDetail.weekStartDate)}`}
-          className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
+          className="flex items-center gap-1 text-sm text-primary hover:text-blue-700 dark:text-blue-400"
           title="Previous week (← arrow key)"
         >
           <ChevronLeftIcon />
@@ -442,7 +442,7 @@ function WeekDetailContent() {
         </span>
         <Link
           href={`/planner/week/${getNextMonday(weekDetail.weekStartDate)}`}
-          className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
+          className="flex items-center gap-1 text-sm text-primary hover:text-blue-700 dark:text-blue-400"
           title="Next week (→ arrow key)"
         >
           Next Week
@@ -469,7 +469,7 @@ function WeekDetailContent() {
                   setSelectedLocations([]);
                   setMaxDistanceMiles(undefined);
                 }}
-                className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                className="text-xs text-primary hover:text-blue-700 dark:text-blue-400"
               >
                 Clear filters
               </button>
@@ -487,7 +487,7 @@ function WeekDetailContent() {
                     onClick={() => setMaxDistanceMiles(maxDistanceMiles === distance ? undefined : distance)}
                     className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                       maxDistanceMiles === distance
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-primary text-white'
                         : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
                     }`}
                   >
@@ -509,7 +509,7 @@ function WeekDetailContent() {
                   onClick={() => handleOrganizationToggle(org.id)}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                     selectedOrganizations.includes(org.id)
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-primary text-white'
                       : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
                   }`}
                 >
@@ -668,14 +668,14 @@ function WeekDetailContent() {
       <div className="flex flex-wrap gap-3 border-t border-slate-200 dark:border-slate-700 pt-4">
         <Link
           href="/"
-          className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1"
+          className="text-sm text-primary hover:text-blue-700 dark:text-blue-400 flex items-center gap-1"
         >
           <GridIcon />
           Back to Overview
         </Link>
         <Link
           href="/discover/portland"
-          className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1"
+          className="text-sm text-primary hover:text-blue-700 dark:text-blue-400 flex items-center gap-1"
         >
           <SearchIcon />
           Browse All Camps

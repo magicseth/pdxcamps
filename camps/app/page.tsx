@@ -77,7 +77,7 @@ function LandingPage() {
             </a>
             <a
               href="/sign-up"
-              className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+              className="px-4 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors shadow-sm"
             >
               Get Started Free
             </a>
@@ -118,7 +118,7 @@ function LandingPage() {
                   <span className="absolute bottom-2 left-0 right-0 h-3 bg-amber-300/50 -z-0" />
                 </span>
                 <br />
-                <span className="text-blue-600">Without losing your mind.</span>
+                <span className="text-primary">Without losing your mind.</span>
               </h1>
 
               {/* Subheadline - Focus on parent benefits */}
@@ -132,7 +132,7 @@ function LandingPage() {
               <div className="flex flex-wrap gap-4 mb-12">
                 <a
                   href="/sign-up"
-                  className="group px-8 py-4 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-600/25 transition-all hover:shadow-xl hover:shadow-blue-600/30 hover:-translate-y-0.5"
+                  className="group px-8 py-4 text-lg font-semibold bg-primary text-white rounded-xl hover:bg-primary-dark shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5"
                 >
                   Start Planning Free
                   <span className="inline-block ml-2 group-hover:translate-x-1 transition-transform">→</span>
@@ -452,7 +452,7 @@ function LandingPage() {
 
             <div className="text-center mt-16">
               {/* Testimonial-style quote */}
-              <div className="bg-blue-50 rounded-2xl p-8 mb-8 max-w-2xl mx-auto">
+              <div className="bg-surface/20 rounded-2xl p-8 mb-8 max-w-2xl mx-auto">
                 <p className="text-lg text-slate-700 italic mb-4">
                   "I used to spend entire weekends planning summer camps. Now I can see everything in one place and actually coordinate with other parents. Game changer."
                 </p>
@@ -461,7 +461,7 @@ function LandingPage() {
 
               <a
                 href="/sign-up"
-                className="inline-flex items-center gap-2 px-8 py-4 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-600/25 transition-all hover:shadow-xl"
+                className="inline-flex items-center gap-2 px-8 py-4 text-lg font-semibold bg-primary text-white rounded-xl hover:bg-primary-dark shadow-lg shadow-primary/25 transition-all hover:shadow-xl"
               >
                 Start Planning Now
                 <span>→</span>
@@ -567,7 +567,7 @@ function LandingPage() {
                 </ul>
                 <a
                   href="/sign-up"
-                  className="block w-full py-3 px-6 text-center font-semibold bg-white text-blue-700 rounded-xl hover:bg-blue-50 transition-colors shadow-lg"
+                  className="block w-full py-3 px-6 text-center font-semibold bg-white text-primary rounded-xl hover:bg-primary/10 transition-colors shadow-lg"
                 >
                   Start Free, Upgrade Anytime
                 </a>
@@ -629,7 +629,7 @@ function LandingPage() {
             </p>
             <a
               href="/sign-up"
-              className="inline-block px-10 py-5 text-xl font-semibold bg-white text-blue-700 rounded-xl hover:bg-blue-50 shadow-xl transition-all hover:scale-105"
+              className="inline-block px-10 py-5 text-xl font-semibold bg-white text-primary rounded-xl hover:bg-primary/10 shadow-xl transition-all hover:scale-105"
             >
               Start Planning — It's Free
             </a>
@@ -675,7 +675,7 @@ function LandingPage() {
 
 function FeatureCard({ icon, title, description }: { icon: string; title: string; description: string }) {
   return (
-    <div className="bg-white rounded-2xl p-6 border border-slate-200 hover:border-blue-200 hover:shadow-lg transition-all">
+    <div className="bg-white rounded-2xl p-6 border border-slate-200 hover:border-primary/30 hover:shadow-lg transition-all">
       <div className="text-4xl mb-4">{icon}</div>
       <h3 className="font-semibold text-lg text-slate-900 mb-2">{title}</h3>
       <p className="text-slate-600">{description}</p>
@@ -701,7 +701,7 @@ function PricingFeature({ children, included = false, light = false }: { childre
 function StepCard({ number, title, description }: { number: number; title: string; description: string }) {
   return (
     <div className="flex gap-6 items-start">
-      <div className="flex-shrink-0 w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
+      <div className="flex-shrink-0 w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold text-xl">
         {number}
       </div>
       <div>
@@ -804,7 +804,7 @@ function SessionShowcaseCard({ session, citySlug }: {
   return (
     <a
       href={`/discover/${citySlug}?camp=${session.campSlug}`}
-      className="flex-shrink-0 w-72 bg-slate-800 rounded-xl overflow-hidden border border-slate-700 hover:border-blue-500 transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-blue-500/20 group"
+      className="flex-shrink-0 w-72 bg-slate-800 rounded-xl overflow-hidden border border-slate-700 hover:border-accent transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-accent/20 group"
     >
       <div className="aspect-[16/10] bg-slate-700 relative overflow-hidden">
         {session.imageUrl ? (
@@ -842,7 +842,7 @@ function SessionShowcaseCard({ session, citySlug }: {
       </div>
 
       <div className="p-4">
-        <h3 className="font-semibold text-white text-sm line-clamp-1 group-hover:text-blue-400 transition-colors">
+        <h3 className="font-semibold text-white text-sm line-clamp-1 group-hover:text-accent transition-colors">
           {session.campName}
         </h3>
         {session.organizationName && (
@@ -919,7 +919,7 @@ function OnboardingPrompt({ user, onSignOut, hasFamily }: { user: User | null; o
           </p>
           <Link
             href={hasFamily ? "/onboarding/children" : "/onboarding"}
-            className="inline-block px-8 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700"
+            className="inline-block px-8 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary-dark"
           >
             {hasFamily ? "Add Children" : "Complete Setup"}
           </Link>
@@ -1093,7 +1093,7 @@ function PlannerHub({
     <div className="min-h-screen flex flex-col">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg focus:font-medium"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-white focus:rounded-lg focus:font-medium"
       >
         Skip to main content
       </a>
@@ -1102,7 +1102,7 @@ function PlannerHub({
 
       <main id="main-content" className="flex-1 pb-20">
         <div className="max-w-4xl mx-auto px-4 py-6">
-          <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 mb-6 text-white">
+          <div className="bg-gradient-to-br from-primary to-primary-dark rounded-2xl p-6 mb-6 text-white">
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-2xl font-bold">Summer {selectedYear}</h1>
               <div className="flex items-center gap-2">
@@ -1219,7 +1219,7 @@ function PlannerHub({
               {stats && stats.weeksWithGaps > 0 && defaultCity && (
                 <Link
                   href={`/discover/${defaultCity.slug}`}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-white text-blue-600 rounded-lg font-medium text-sm hover:bg-blue-50 transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-white text-primary rounded-lg font-medium text-sm hover:bg-primary/10 transition-colors"
                 >
                   <SearchIcon />
                   Find Camps
@@ -1471,9 +1471,9 @@ function SharePlanModal({
   onClose: () => void;
   children: { _id: Id<'children'>; firstName: string; shareToken?: string }[];
 }) {
-  const generateToken = useMutation(api.children.mutations.generateShareToken);
+  const generateFamilyToken = useMutation(api.children.mutations.generateFamilyShareToken);
   const [selectedChildIds, setSelectedChildIds] = useState<Set<Id<'children'>>>(new Set());
-  const [generatedUrls, setGeneratedUrls] = useState<Map<Id<'children'>, string>>(new Map());
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -1484,16 +1484,10 @@ function SharePlanModal({
     }
   }, [isOpen, children, selectedChildIds.size]);
 
-  // Load existing share tokens into generatedUrls
+  // Reset share URL when selection changes
   useEffect(() => {
-    const urls = new Map<Id<'children'>, string>();
-    for (const child of children) {
-      if (child.shareToken) {
-        urls.set(child._id, `${window.location.origin}/share/${child.shareToken}`);
-      }
-    }
-    setGeneratedUrls(urls);
-  }, [children]);
+    setShareUrl(null);
+  }, [selectedChildIds]);
 
   const toggleChild = (childId: Id<'children'>) => {
     const newSet = new Set(selectedChildIds);
@@ -1505,61 +1499,46 @@ function SharePlanModal({
     setSelectedChildIds(newSet);
   };
 
-  const handleGenerateLinks = async () => {
+  const handleGenerateLink = async () => {
+    if (selectedChildIds.size === 0) return;
     setIsGenerating(true);
-    const newUrls = new Map(generatedUrls);
 
     try {
-      for (const childId of selectedChildIds) {
-        if (!newUrls.has(childId)) {
-          const token = await generateToken({ childId });
-          newUrls.set(childId, `${window.location.origin}/share/${token}`);
-        }
-      }
-      setGeneratedUrls(newUrls);
+      const childIds = Array.from(selectedChildIds);
+      const token = await generateFamilyToken({ childIds });
+      setShareUrl(`${window.location.origin}/share/family/${token}`);
     } catch (error) {
-      console.error('Failed to generate share links:', error);
+      console.error('Failed to generate share link:', error);
     } finally {
       setIsGenerating(false);
     }
   };
 
   const selectedChildren = children.filter(c => selectedChildIds.has(c._id));
-  const allSelectedHaveUrls = selectedChildren.every(c => generatedUrls.has(c._id));
 
-  const getShareText = () => {
-    const lines: string[] = [];
-    for (const child of selectedChildren) {
-      const url = generatedUrls.get(child._id);
-      if (url) {
-        lines.push(`${child.firstName}'s Summer Plan: ${url}`);
-      }
-    }
-    return lines.join('\n\n');
-  };
-
-  const handleCopyAll = async () => {
-    const text = getShareText();
-    await navigator.clipboard.writeText(text);
+  const handleCopy = async () => {
+    if (!shareUrl) return;
+    await navigator.clipboard.writeText(shareUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleShare = async () => {
-    const text = getShareText();
+    if (!shareUrl) return;
     const names = selectedChildren.map(c => c.firstName).join(' & ');
 
     if (navigator.share) {
       try {
         await navigator.share({
           title: `${names}'s Summer Camp Plans`,
-          text: text,
+          text: `Check out our summer camp plans!`,
+          url: shareUrl,
         });
       } catch (error) {
-        handleCopyAll();
+        handleCopy();
       }
     } else {
-      handleCopyAll();
+      handleCopy();
     }
   };
 
@@ -1584,80 +1563,69 @@ function SharePlanModal({
         </div>
 
         {/* Child Selection */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            {children.length > 1 ? 'Select kids to share' : 'Share plan for'}
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {children.map((child) => (
-              <button
-                key={child._id}
-                onClick={() => toggleChild(child._id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                  selectedChildIds.has(child._id)
-                    ? 'bg-purple-600 text-white shadow-md'
-                    : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
-                }`}
-              >
-                {selectedChildIds.has(child._id) && (
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                )}
-                {child.firstName}
-                {generatedUrls.has(child._id) && (
-                  <span className="text-xs opacity-75">🔗</span>
-                )}
-              </button>
-            ))}
+        {children.length > 1 && (
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Select kids to include
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {children.map((child) => (
+                <button
+                  key={child._id}
+                  onClick={() => toggleChild(child._id)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                    selectedChildIds.has(child._id)
+                      ? 'bg-purple-600 text-white shadow-md'
+                      : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
+                  }`}
+                >
+                  {selectedChildIds.has(child._id) && (
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                  {child.firstName}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-slate-500 mt-2">
+              One link will show all selected kids' schedules
+            </p>
           </div>
-        </div>
+        )}
 
-        {/* Generated Links */}
-        {allSelectedHaveUrls && selectedChildren.length > 0 ? (
+        {/* Share Link */}
+        {shareUrl ? (
           <div className="space-y-4">
-            <div className="space-y-3">
-              {selectedChildren.map((child) => {
-                const url = generatedUrls.get(child._id);
-                return (
-                  <div key={child._id} className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3">
-                    <div className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                      {child.firstName}'s Plan
-                    </div>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={url || ''}
-                        readOnly
-                        className="flex-1 px-2 py-1.5 bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded text-xs text-slate-900 dark:text-white"
-                      />
-                      <button
-                        onClick={async () => {
-                          if (url) {
-                            await navigator.clipboard.writeText(url);
-                            setCopied(true);
-                            setTimeout(() => setCopied(false), 2000);
-                          }
-                        }}
-                        className="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-500 rounded hover:bg-slate-300 dark:hover:bg-slate-400"
-                      >
-                        Copy
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Share link for {selectedChildren.map(c => c.firstName).join(' & ')}
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={shareUrl}
+                  readOnly
+                  className="flex-1 px-3 py-2 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white"
+                />
+                <button
+                  onClick={handleCopy}
+                  className="px-4 py-2 bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-white rounded-lg hover:bg-slate-300 dark:hover:bg-slate-500 font-medium"
+                >
+                  {copied ? '✓' : 'Copy'}
+                </button>
+              </div>
             </div>
 
             <button
               onClick={handleShare}
               className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg"
             >
-              {copied ? '✓ Copied!' : '📤 Share All Plans'}
+              📤 Share with Friends & Family
             </button>
 
             <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
-              Anyone with these links can view the summer plans (camps only, no personal details)
+              Friends will see a preview of your summer plans and can sign up to see details
             </p>
           </div>
         ) : (
@@ -1665,15 +1633,15 @@ function SharePlanModal({
             <p className="text-slate-600 dark:text-slate-400 mb-4">
               {selectedChildren.length === 0
                 ? 'Select at least one child to share'
-                : `Generate shareable links for ${selectedChildren.map(c => c.firstName).join(' & ')}`
+                : `Create a shareable link for ${selectedChildren.map(c => c.firstName).join(' & ')}'s summer`
               }
             </p>
             <button
-              onClick={handleGenerateLinks}
+              onClick={handleGenerateLink}
               disabled={isGenerating || selectedChildren.length === 0}
               className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isGenerating ? 'Generating...' : `🔗 Generate ${selectedChildren.length > 1 ? 'Share Links' : 'Share Link'}`}
+              {isGenerating ? 'Generating...' : '🔗 Generate Share Link'}
             </button>
           </div>
         )}
@@ -1709,7 +1677,7 @@ function AppHeader({ user, onSignOut, isPremium }: { user: User | null; onSignOu
           )}
           <Link
             href="/settings"
-            className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             title="Settings - Manage children, preferences"
             aria-label="Settings"
           >

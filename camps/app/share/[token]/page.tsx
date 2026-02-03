@@ -31,7 +31,7 @@ export default function SharedPlanPage({ params }: { params: Promise<{ token: st
           </p>
           <Link
             href="/"
-            className="inline-block px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700"
+            className="inline-block px-6 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary-dark"
           >
             Create Your Own Plan
           </Link>
@@ -51,7 +51,7 @@ export default function SharedPlanPage({ params }: { params: Promise<{ token: st
           </div>
           <Link
             href="/sign-up"
-            className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 text-sm"
+            className="px-4 py-2 bg-primary text-white font-medium rounded-lg hover:bg-primary-dark text-sm"
           >
             Create Your Plan
           </Link>
@@ -60,7 +60,7 @@ export default function SharedPlanPage({ params }: { params: Promise<{ token: st
 
       <main className="max-w-3xl mx-auto px-4 py-8">
         {/* Plan Header */}
-        <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 mb-6 text-white">
+        <div className="bg-gradient-to-br from-primary to-primary-dark rounded-2xl p-6 mb-6 text-white">
           <h1 className="text-2xl font-bold mb-2">
             {plan.childName}'s Summer {plan.year}
           </h1>
@@ -126,7 +126,7 @@ export default function SharedPlanPage({ params }: { params: Promise<{ token: st
                       className="w-8 h-8 rounded object-contain bg-white border border-slate-200"
                     />
                   ) : (
-                    <div className="w-8 h-8 rounded bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
+                    <div className="w-8 h-8 rounded bg-blue-100 flex items-center justify-center text-primary font-bold text-xs">
                       {camp.organizationName[0]}
                     </div>
                   )}

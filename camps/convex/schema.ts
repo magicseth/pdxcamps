@@ -75,6 +75,16 @@ export default defineSchema({
     .index("by_email", ["email"])
     .index("by_primary_city", ["primaryCityId"]),
 
+  // Family share links - allows sharing multiple children's plans via single URL
+  familyShares: defineTable({
+    familyId: v.id("families"),
+    shareToken: v.string(),
+    childIds: v.array(v.id("children")), // Which children are included in this share
+    createdAt: v.number(),
+  })
+    .index("by_token", ["shareToken"])
+    .index("by_family", ["familyId"]),
+
   children: defineTable({
     familyId: v.id("families"),
     firstName: v.string(),

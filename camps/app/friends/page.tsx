@@ -13,7 +13,7 @@ export default function FriendsPage() {
       {/* Skip to main content link for keyboard users */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg focus:font-medium"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-white focus:rounded-lg focus:font-medium"
       >
         Skip to main content
       </a>
@@ -21,7 +21,7 @@ export default function FriendsPage() {
       <header className="sticky top-0 z-20 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+            <Link href="/" className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
               <BackIcon />
               <span className="text-sm font-medium hidden sm:inline">Planner</span>
             </Link>
@@ -31,7 +31,7 @@ export default function FriendsPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/settings"
-              className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               title="Settings"
               aria-label="Settings"
             >
@@ -262,7 +262,7 @@ function MyFriends() {
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                      <span className="text-blue-600 dark:text-blue-400 font-medium">
+                      <span className="text-primary dark:text-blue-400 font-medium">
                         {friendship.friend?.displayName?.charAt(0).toUpperCase() || '?'}
                       </span>
                     </div>
@@ -477,7 +477,7 @@ function ShareCalendarModal({
                       type="checkbox"
                       checked={selectedChildren.includes(child._id)}
                       onChange={() => toggleChild(child._id)}
-                      className="w-4 h-4 text-blue-600 rounded"
+                      className="w-4 h-4 text-primary rounded"
                     />
                     <span className="font-medium">{child.firstName}</span>
                   </label>
@@ -524,7 +524,7 @@ function ShareCalendarModal({
                 onClick={handleSubmit}
                 disabled={isSubmitting || selectedChildren.length === 0}
                 aria-busy={isSubmitting}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? 'Saving...' : existingShare ? 'Update Share' : 'Share Calendar'}
               </button>
@@ -574,14 +574,14 @@ function AddFriend() {
             placeholder="Enter friend's email address"
             autoComplete="email"
             enterKeyHint="send"
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent"
             required
           />
         </div>
         <button
           type="submit"
           disabled={isSubmitting || !email.trim()}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting ? 'Sending...' : 'Send Request'}
         </button>

@@ -305,7 +305,7 @@ export default function DiscoverPage() {
           </p>
           <Link
             href="/"
-            className="inline-block bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
+            className="inline-block bg-primary text-white px-6 py-2 rounded-md hover:bg-primary-dark"
           >
             Back to Home
           </Link>
@@ -377,7 +377,7 @@ export default function DiscoverPage() {
       {/* Skip to main content link for keyboard users */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg focus:font-medium"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-white focus:rounded-lg focus:font-medium"
       >
         Skip to main content
       </a>
@@ -387,7 +387,7 @@ export default function DiscoverPage() {
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link href="/" className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+              <Link href="/" className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
@@ -406,7 +406,7 @@ export default function DiscoverPage() {
                   onClick={() => setViewMode('list')}
                   className={`px-3 py-1.5 text-sm font-medium flex items-center gap-1 ${
                     viewMode === 'list'
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-primary text-white'
                       : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                   }`}
                   title="List view"
@@ -419,7 +419,7 @@ export default function DiscoverPage() {
                   onClick={() => setViewMode('map')}
                   className={`px-3 py-1.5 text-sm font-medium flex items-center gap-1 ${
                     viewMode === 'map'
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-primary text-white'
                       : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                   }`}
                   title="Map view (M key)"
@@ -445,14 +445,14 @@ export default function DiscoverPage() {
                   )}
                 </span>
                 {activeFilterCount > 0 && (
-                  <span className="min-w-5 h-5 px-1 bg-blue-600 text-white text-xs font-medium rounded-full flex items-center justify-center">
+                  <span className="min-w-5 h-5 px-1 bg-primary text-white text-xs font-medium rounded-full flex items-center justify-center">
                     {activeFilterCount}
                   </span>
                 )}
               </button>
               <Link
                 href="/settings"
-                className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 aria-label="Settings"
                 title="Settings"
               >
@@ -488,7 +488,7 @@ export default function DiscoverPage() {
                   {hasActiveFilters && (
                     <button
                       onClick={clearFilters}
-                      className={`text-sm text-blue-600 hover:text-blue-700 ${
+                      className={`text-sm text-primary hover:text-blue-700 ${
                         activeFilterCount > 3 ? 'font-medium animate-pulse motion-reduce:animate-none' : ''
                       }`}
                     >
@@ -619,7 +619,7 @@ export default function DiscoverPage() {
                             }}
                             className={`px-2 py-1 text-xs rounded-md font-medium transition-colors ${
                               (age !== null && childAge === age) || (grade !== undefined && childGrade === grade)
-                                ? 'bg-blue-600 text-white'
+                                ? 'bg-primary text-white'
                                 : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
                             }`}
                           >
@@ -681,7 +681,7 @@ export default function DiscoverPage() {
                         type="checkbox"
                         checked={selectedCategories.includes(category)}
                         onChange={() => handleCategoryToggle(category)}
-                        className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary"
                       />
                       <span className="text-sm text-slate-700 dark:text-slate-300">{category}</span>
                     </label>
@@ -702,7 +702,7 @@ export default function DiscoverPage() {
                       onClick={() => setMaxPrice(maxPrice === price ? undefined : price)}
                       className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
                         maxPrice === price
-                          ? 'bg-blue-600 text-white border-blue-600'
+                          ? 'bg-primary text-white border-primary'
                           : 'border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                       }`}
                     >
@@ -747,7 +747,7 @@ export default function DiscoverPage() {
                     type="checkbox"
                     checked={hideSoldOut}
                     onChange={(e) => setHideSoldOut(e.target.checked)}
-                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary"
                   />
                   <span className="text-sm text-slate-700 dark:text-slate-300">Hide sold out</span>
                 </label>
@@ -760,7 +760,7 @@ export default function DiscoverPage() {
                     type="checkbox"
                     checked={extendedCareOnly}
                     onChange={(e) => setExtendedCareOnly(e.target.checked)}
-                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary"
                   />
                   <span className="text-sm text-slate-700 dark:text-slate-300">Extended care available</span>
                 </label>
@@ -781,7 +781,7 @@ export default function DiscoverPage() {
                           onClick={() => setMaxDistanceMiles(maxDistanceMiles === distance ? undefined : distance)}
                           className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
                             maxDistanceMiles === distance
-                              ? 'bg-blue-600 text-white border-blue-600'
+                              ? 'bg-primary text-white border-primary'
                               : 'border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                           }`}
                         >
@@ -822,7 +822,7 @@ export default function DiscoverPage() {
                 ) : (
                   <div className="p-3 bg-slate-100 dark:bg-slate-700/50 rounded-md">
                     <p className="text-sm text-slate-600 dark:text-slate-400">
-                      <Link href="/settings" className="text-blue-600 hover:underline">
+                      <Link href="/settings" className="text-primary hover:underline">
                         Add your home address
                       </Link>{' '}
                       in Settings to filter by distance.
@@ -856,7 +856,7 @@ export default function DiscoverPage() {
                         onClick={() => handleOrganizationToggle(org._id)}
                         className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                           selectedOrganizations.includes(org._id)
-                            ? 'bg-blue-600 text-white'
+                            ? 'bg-primary text-white'
                             : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
                         }`}
                       >
@@ -916,7 +916,7 @@ export default function DiscoverPage() {
                   </p>
                   <button
                     onClick={clearFilters}
-                    className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                    className="text-xs text-primary hover:text-blue-700 font-medium"
                   >
                     Clear all
                   </button>
@@ -1129,7 +1129,7 @@ export default function DiscoverPage() {
                     <>
                       <button
                         onClick={clearFilters}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 flex items-center gap-2"
+                        className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 flex items-center gap-2"
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1160,7 +1160,7 @@ export default function DiscoverPage() {
                   {!hasActiveFilters && (
                     <Link
                       href="/"
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+                      className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-dark"
                     >
                       Back to Planner
                     </Link>
@@ -1247,7 +1247,7 @@ function BackToTopButton() {
   return (
     <button
       onClick={scrollToTop}
-      className={`fixed bottom-24 right-4 p-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 z-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
+      className={`fixed bottom-24 right-4 p-3 bg-primary text-white rounded-full shadow-lg hover:bg-primary-dark transition-all duration-300 z-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
         isVisible
           ? 'opacity-100 translate-y-0'
           : 'opacity-0 translate-y-4 pointer-events-none'
@@ -1899,7 +1899,7 @@ function SessionCard({
                 {location.address?.city && ` - ${location.address.city}`}
               </span>
               {distanceFromHome !== undefined && (
-                <span className="flex-shrink-0 text-blue-600 dark:text-blue-400 font-medium">
+                <span className="flex-shrink-0 text-primary dark:text-blue-400 font-medium">
                   {distanceFromHome} mi
                 </span>
               )}
@@ -1910,7 +1910,7 @@ function SessionCard({
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-shrink-0 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                  className="flex-shrink-0 text-primary dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                   title="View on map"
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -1944,14 +1944,14 @@ function SessionCard({
           ) : (
             <Link
               href={`/session/${session._id}`}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white text-center text-sm font-medium rounded-md hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              className="flex-1 px-4 py-2 bg-primary text-white text-center text-sm font-medium rounded-md hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             >
               View Details
             </Link>
           )}
           <button
             onClick={() => setShowSaveModal(true)}
-            className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             title="Save for later"
             aria-label="Save for later"
           >
@@ -2141,7 +2141,7 @@ function SaveSessionModal({
                 </p>
                 <Link
                   href="/onboarding"
-                  className="text-blue-600 hover:text-blue-700 font-medium"
+                  className="text-primary hover:text-blue-700 font-medium"
                 >
                   Add a child
                 </Link>
@@ -2212,7 +2212,7 @@ function SaveSessionModal({
                   <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSaving ? 'Saving...' : 'Save'}
                   </button>
@@ -2303,7 +2303,7 @@ function QuickDateButton({
       onClick={onClick}
       className={`px-2 py-1 text-xs rounded-md font-medium transition-colors ${
         isActive
-          ? 'bg-blue-600 text-white'
+          ? 'bg-primary text-white'
           : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
       }`}
     >
@@ -2754,7 +2754,7 @@ function StyleEditorModal({
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+            className="flex-1 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark disabled:opacity-50"
           >
             {isSaving ? 'Saving...' : 'Save'}
           </button>

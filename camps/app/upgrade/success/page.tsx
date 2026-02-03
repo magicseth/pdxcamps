@@ -34,7 +34,7 @@ export default function UpgradeSuccessPage() {
         <div className="space-y-4">
           <Link
             href="/"
-            className="block w-full py-3 px-4 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+            className="block w-full py-3 px-4 bg-primary text-white rounded-lg font-medium hover:bg-primary-dark"
           >
             Go to Planner
           </Link>

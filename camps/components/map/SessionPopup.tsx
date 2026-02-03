@@ -54,7 +54,7 @@ export function SessionPopup({ session }: SessionPopupProps) {
             {formatPrice(session.price, session.currency)}
           </span>
           {session.distanceFromHome !== undefined && (
-            <span className="text-blue-600">{session.distanceFromHome} mi</span>
+            <span className="text-primary">{session.distanceFromHome} mi</span>
           )}
         </div>
         {session.spotsLeft !== undefined && session.spotsLeft > 0 && (
@@ -67,7 +67,7 @@ export function SessionPopup({ session }: SessionPopupProps) {
 
       <Link
         href={`/session/${session._id}`}
-        className="block w-full text-center px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 transition-colors"
+        className="block w-full text-center px-3 py-1.5 bg-primary text-white text-xs font-medium rounded hover:bg-primary-dark transition-colors"
       >
         View Details
       </Link>

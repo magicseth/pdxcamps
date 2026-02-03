@@ -36,7 +36,7 @@ export function UpgradeModal({ isOpen, onClose, savedCount = 4 }: UpgradeModalPr
           <div className="space-y-3">
             <button
               onClick={() => router.push('/upgrade')}
-              className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              className="w-full py-3 px-4 bg-primary text-white rounded-lg font-medium hover:bg-primary-dark transition-colors"
             >
               Get Summer Pass — $29
             </button>

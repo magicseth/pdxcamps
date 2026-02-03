@@ -46,7 +46,7 @@ export default function UpgradePage() {
           </p>
           <Link
             href="/"
-            className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+            className="inline-block px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary-dark"
           >
             Go to Planner
           </Link>
@@ -60,7 +60,7 @@ export default function UpgradePage() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <Link href="/" className="text-blue-600 hover:text-blue-700 text-sm mb-4 inline-block">
+          <Link href="/" className="text-primary hover:text-blue-700 text-sm mb-4 inline-block">
             &larr; Back to Planner
           </Link>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
@@ -142,7 +142,7 @@ export default function UpgradePage() {
             <button
               onClick={() => handleUpgrade('summer')}
               disabled={loading !== null}
-              className="w-full py-3 px-4 bg-white text-blue-700 rounded-lg font-medium hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 px-4 bg-white text-blue-700 rounded-lg font-medium hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading === 'summer' ? 'Loading...' : 'Get Summer Pass'}
             </button>

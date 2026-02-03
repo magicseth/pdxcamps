@@ -186,6 +186,49 @@ export const removeShareToken = mutation({
 });
 
 /**
+ * Generate a family share link for multiple children's summer plans.
+ * Creates a single URL that shows all selected children's schedules.
+ */
+export const generateFamilyShareToken = mutation({
+  args: {
+    childIds: v.array(v.id("children")),
+  },
+  handler: async (ctx, args) => {
+    const family = await requireFamily(ctx);
+
+    if (args.childIds.length === 0) {
+      throw new Error("At least one child must be selected");
+    }
+
+    // Verify all children belong to this family
+    for (const childId of args.childIds) {
+      const child = await ctx.db.get(childId);
+      if (!child) {
+        throw new Error("Child not found");
+      }
+      if (child.familyId !== family._id) {
+        throw new Error("Child does not belong to this family");
+      }
+    }
+
+    // Generate a random token
+    const token = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
+    // Create the family share record
+    await ctx.db.insert("familyShares", {
+      familyId: family._id,
+      shareToken: token,
+      childIds: args.childIds,
+      createdAt: Date.now(),
+    });
+
+    return token;
+  },
+});
+
+/**
  * Soft delete a child by marking them as inactive.
  * Verifies the child belongs to the current family.
  */

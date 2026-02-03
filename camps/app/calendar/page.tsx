@@ -106,7 +106,7 @@ export default function CalendarPage() {
       {/* Skip to main content link for keyboard users */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg focus:font-medium"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-white focus:rounded-lg focus:font-medium"
       >
         Skip to main content
       </a>
@@ -114,7 +114,7 @@ export default function CalendarPage() {
       <header className="sticky top-0 z-20 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+            <Link href="/" className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
               <BackIcon />
               <span className="text-sm font-medium hidden sm:inline">Planner</span>
             </Link>
@@ -124,7 +124,7 @@ export default function CalendarPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/settings"
-              className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               aria-label="Settings"
               title="Settings"
             >
@@ -367,7 +367,7 @@ function CalendarContent() {
         <div className="flex items-center gap-2">
           <button
             onClick={handlePrevMonth}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             aria-label="Previous month"
             title="Previous month (← arrow key)"
           >
@@ -378,7 +378,7 @@ function CalendarContent() {
           <h2 className="text-xl font-semibold min-w-[180px] text-center">{monthName}</h2>
           <button
             onClick={handleNextMonth}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             aria-label="Next month"
             title="Next month (→ arrow key)"
           >
@@ -388,7 +388,7 @@ function CalendarContent() {
           </button>
           <button
             onClick={handleToday}
-            className="ml-2 px-3 py-1.5 text-sm font-medium border border-slate-300 dark:border-slate-600 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="ml-2 px-3 py-1.5 text-sm font-medium border border-slate-300 dark:border-slate-600 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             title="Jump to today (T key)"
           >
             Today
@@ -481,7 +481,7 @@ function CalendarContent() {
           </p>
           <Link
             href="/discover/portland"
-            className="inline-block bg-blue-600 text-white px-6 py-2 rounded-md font-medium hover:bg-blue-700"
+            className="inline-block bg-primary text-white px-6 py-2 rounded-md font-medium hover:bg-primary-dark"
           >
             Discover Camps
           </Link>
@@ -517,7 +517,7 @@ function CalendarContent() {
                 >
                   <div className={`text-sm mb-1 ${
                     isToday
-                      ? 'bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center'
+                      ? 'bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center'
                       : isCurrentMonth
                         ? 'text-slate-900 dark:text-slate-100'
                         : 'text-slate-400'
@@ -694,7 +694,7 @@ function RegistrationCard({
               <div className="flex gap-2">
                 <button
                   onClick={onSaveNotes}
-                  className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  className="px-3 py-1 text-sm bg-primary text-white rounded-md hover:bg-primary-dark"
                 >
                   Save
                 </button>

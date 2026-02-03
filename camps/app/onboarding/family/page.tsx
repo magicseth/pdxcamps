@@ -68,7 +68,7 @@ export default function FamilySetupPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div role="status" aria-live="polite" className="text-center">
-          <div className="animate-spin motion-reduce:animate-none rounded-full h-8 w-8 border-b-2 border-blue-600" aria-hidden="true"></div>
+          <div className="animate-spin motion-reduce:animate-none rounded-full h-8 w-8 border-b-2 border-primary" aria-hidden="true"></div>
           <span className="sr-only">Loading...</span>
         </div>
       </div>
@@ -80,7 +80,7 @@ export default function FamilySetupPage() {
       {/* Skip to main content link for keyboard users */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg focus:font-medium"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-white focus:rounded-lg focus:font-medium"
       >
         Skip to main content
       </a>
@@ -107,7 +107,7 @@ export default function FamilySetupPage() {
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
           <div className="mb-6">
             <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-              <span className="flex items-center justify-center w-6 h-6 bg-blue-600 text-white rounded-full text-xs font-semibold">1</span>
+              <span className="flex items-center justify-center w-6 h-6 bg-primary text-white rounded-full text-xs font-semibold">1</span>
               <span>Family Profile</span>
               <span className="mx-2">-</span>
               <span className="flex items-center justify-center w-6 h-6 bg-slate-200 dark:bg-slate-700 text-slate-500 rounded-full text-xs font-semibold">2</span>
@@ -129,7 +129,7 @@ export default function FamilySetupPage() {
                 autoCapitalize="words"
                 enterKeyHint="done"
                 aria-describedby="displayName-help"
-                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white"
+                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-primary focus:border-primary dark:bg-slate-700 dark:text-white"
                 disabled={isSubmitting}
                 autoFocus
               />
@@ -147,7 +147,7 @@ export default function FamilySetupPage() {
                 value={primaryCityId}
                 onChange={(e) => setPrimaryCityId(e.target.value as Id<'cities'>)}
                 aria-describedby="primaryCity-help"
-                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white"
+                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-primary focus:border-primary dark:bg-slate-700 dark:text-white"
                 disabled={isSubmitting}
               >
                 <option value="">Select a city</option>
@@ -171,7 +171,7 @@ export default function FamilySetupPage() {
                 value={calendarSharingDefault}
                 onChange={(e) => setCalendarSharingDefault(e.target.value as CalendarSharingDefault)}
                 aria-describedby="calendarSharing-help"
-                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white"
+                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-primary focus:border-primary dark:bg-slate-700 dark:text-white"
                 disabled={isSubmitting}
               >
                 <option value="private">Private - Only visible to you</option>
@@ -193,7 +193,7 @@ export default function FamilySetupPage() {
               type="submit"
               disabled={isSubmitting}
               aria-busy={isSubmitting}
-              className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-md transition-colors"
+              className="w-full py-3 px-4 bg-primary hover:bg-primary-dark disabled:bg-blue-400 text-white font-medium rounded-md transition-colors"
             >
               {isSubmitting ? 'Creating...' : 'Continue'}
             </button>

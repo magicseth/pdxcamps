@@ -3,13 +3,78 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* PDX Camps brand palette (from logo) */
+  --pdx-sky: #8BA4B4;
+  --pdx-sky-light: #A8BDC9;
+  --pdx-sky-dark: #6E8A9C;
+  --pdx-sun: #E5A33B;
+  --pdx-sun-light: #F0B960;
+  --pdx-sun-dark: #C78A2A;
+  --pdx-mountain: #344658;
+  --pdx-mountain-light: #4A6070;
+  --pdx-mountain-dark: #232F3A;
+  --pdx-snow: #FFFFFF;
+  --pdx-text: #6B8494;
+
+  /* Semantic theme colors - defaults to PDX palette */
+  --theme-primary: var(--pdx-mountain);
+  --theme-primary-light: var(--pdx-mountain-light);
+  --theme-primary-dark: var(--pdx-mountain-dark);
+  --theme-accent: var(--pdx-sun);
+  --theme-accent-light: var(--pdx-sun-light);
+  --theme-accent-dark: var(--pdx-sun-dark);
+  --theme-surface: var(--pdx-sky);
+  --theme-surface-light: var(--pdx-sky-light);
+  --theme-surface-dark: var(--pdx-sky-dark);
+  --theme-muted: var(--pdx-text);
 }
+
+/* Example: Seattle market theme (uncomment to preview)
+[data-theme="seattle"] {
+  --theme-primary: #2D5A27;
+  --theme-primary-light: #3D7A37;
+  --theme-primary-dark: #1D3A17;
+  --theme-accent: #4A90A4;
+  --theme-accent-light: #6AB0C4;
+  --theme-accent-dark: #2A7084;
+  --theme-surface: #87A96B;
+  --theme-surface-light: #A7C98B;
+  --theme-surface-dark: #67894B;
+  --theme-muted: #5A7A4B;
+}
+*/
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Semantic theme colors (use these in components) */
+  --color-primary: var(--theme-primary);
+  --color-primary-light: var(--theme-primary-light);
+  --color-primary-dark: var(--theme-primary-dark);
+  --color-accent: var(--theme-accent);
+  --color-accent-light: var(--theme-accent-light);
+  --color-accent-dark: var(--theme-accent-dark);
+  --color-surface: var(--theme-surface);
+  --color-surface-light: var(--theme-surface-light);
+  --color-surface-dark: var(--theme-surface-dark);
+  --color-muted: var(--theme-muted);
+
+  /* PDX Camps brand colors (for direct access) */
+  --color-pdx-sky: var(--pdx-sky);
+  --color-pdx-sky-light: var(--pdx-sky-light);
+  --color-pdx-sky-dark: var(--pdx-sky-dark);
+  --color-pdx-sun: var(--pdx-sun);
+  --color-pdx-sun-light: var(--pdx-sun-light);
+  --color-pdx-sun-dark: var(--pdx-sun-dark);
+  --color-pdx-mountain: var(--pdx-mountain);
+  --color-pdx-mountain-light: var(--pdx-mountain-light);
+  --color-pdx-mountain-dark: var(--pdx-mountain-dark);
+  --color-pdx-snow: var(--pdx-snow);
+  --color-pdx-text: var(--pdx-text);
 }
 
 @media (prefers-color-scheme: dark) {

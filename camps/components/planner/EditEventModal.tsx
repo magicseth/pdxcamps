@@ -174,7 +174,7 @@ export function EditEventModal({ isOpen, onClose, event }: EditEventModalProps) 
           <button
             type="button"
             onClick={onClose}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             aria-label="Close"
             title="Close (Esc)"
           >
@@ -417,7 +417,7 @@ export function EditEventModal({ isOpen, onClose, event }: EditEventModalProps) 
                 type="submit"
                 disabled={isSubmitting}
                 aria-busy={isSubmitting}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? 'Saving...' : 'Save Changes'}
               </button>

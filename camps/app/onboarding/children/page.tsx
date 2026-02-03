@@ -134,7 +134,7 @@ export default function ChildrenSetupPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div role="status" aria-live="polite" className="text-center">
-          <div className="animate-spin motion-reduce:animate-none rounded-full h-8 w-8 border-b-2 border-blue-600" aria-hidden="true"></div>
+          <div className="animate-spin motion-reduce:animate-none rounded-full h-8 w-8 border-b-2 border-primary" aria-hidden="true"></div>
           <span className="sr-only">Loading...</span>
         </div>
       </div>
@@ -148,7 +148,7 @@ export default function ChildrenSetupPage() {
       {/* Skip to main content link for keyboard users */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg focus:font-medium"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-white focus:rounded-lg focus:font-medium"
       >
         Skip to main content
       </a>
@@ -182,7 +182,7 @@ export default function ChildrenSetupPage() {
               </span>
               <span>Family Profile</span>
               <span className="mx-2">-</span>
-              <span className="flex items-center justify-center w-6 h-6 bg-blue-600 text-white rounded-full text-xs font-semibold">2</span>
+              <span className="flex items-center justify-center w-6 h-6 bg-primary text-white rounded-full text-xs font-semibold">2</span>
               <span>Add Children</span>
             </div>
           </div>
@@ -245,7 +245,7 @@ export default function ChildrenSetupPage() {
                     spellCheck="false"
                     required
                     aria-required="true"
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white text-sm"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-primary focus:border-primary dark:bg-slate-700 dark:text-white text-sm"
                     disabled={isAddingChild}
                     autoFocus
                   />
@@ -263,7 +263,7 @@ export default function ChildrenSetupPage() {
                     autoCapitalize="words"
                     enterKeyHint="done"
                     spellCheck="false"
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white text-sm"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-primary focus:border-primary dark:bg-slate-700 dark:text-white text-sm"
                     disabled={isAddingChild}
                   />
                 </div>
@@ -282,7 +282,7 @@ export default function ChildrenSetupPage() {
                     max={new Date().toISOString().split('T')[0]}
                     required
                     aria-required="true"
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white text-sm"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-primary focus:border-primary dark:bg-slate-700 dark:text-white text-sm"
                     disabled={isAddingChild}
                   />
                 </div>
@@ -294,7 +294,7 @@ export default function ChildrenSetupPage() {
                     id="grade"
                     value={childForm.currentGrade}
                     onChange={(e) => setChildForm({ ...childForm, currentGrade: e.target.value === '' ? '' : parseInt(e.target.value) })}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white text-sm"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-primary focus:border-primary dark:bg-slate-700 dark:text-white text-sm"
                     disabled={isAddingChild}
                   >
                     <option value="">Select grade</option>
@@ -321,7 +321,7 @@ export default function ChildrenSetupPage() {
                       aria-pressed={childForm.interests.includes(interest)}
                       className={`px-3 py-1 text-sm rounded-full border transition-colors ${
                         childForm.interests.includes(interest)
-                          ? 'bg-blue-600 text-white border-blue-600'
+                          ? 'bg-primary text-white border-primary'
                           : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:border-blue-400'
                       }`}
                     >
@@ -341,7 +341,7 @@ export default function ChildrenSetupPage() {
                 <button
                   type="submit"
                   disabled={isAddingChild}
-                  className="flex-1 py-2 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-md transition-colors"
+                  className="flex-1 py-2 px-4 bg-primary hover:bg-primary-dark disabled:bg-blue-400 text-white font-medium rounded-md transition-colors"
                 >
                   {isAddingChild ? 'Adding...' : hasChildren ? 'Add Child' : 'Add First Child'}
                 </button>
@@ -364,7 +364,7 @@ export default function ChildrenSetupPage() {
                 setShowForm(true);
                 setError(null);
               }}
-              className="w-full py-2 px-4 border-2 border-dashed border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 font-medium rounded-md hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              className="w-full py-2 px-4 border-2 border-dashed border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 font-medium rounded-md hover:border-blue-400 hover:text-primary dark:hover:text-blue-400 transition-colors"
             >
               + Add Another Child
             </button>

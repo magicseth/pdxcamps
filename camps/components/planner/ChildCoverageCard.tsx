@@ -195,14 +195,14 @@ export function ChildCoverageCard({
                     className="flex-1 min-w-0 cursor-pointer"
                     title="Open in new tab"
                   >
-                    <div className="font-medium text-slate-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400" title={camp.campName}>
+                    <div className="font-medium text-slate-900 dark:text-white truncate group-hover:text-primary dark:group-hover:text-blue-400" title={camp.campName}>
                       {camp.campName}
                       <span className="ml-1 opacity-0 group-hover:opacity-100 text-blue-500">↗</span>
                     </div>
                     <div className="text-slate-500 truncate" title={`${formatTime(camp.dropOffTime)}-${formatTime(camp.pickUpTime)} · ${camp.locationName}${camp.distanceFromHome ? ` · ${camp.distanceFromHome} mi` : ''}`}>
                       {formatTime(camp.dropOffTime)}-{formatTime(camp.pickUpTime)} · {camp.locationName}
                       {camp.distanceFromHome !== undefined && (
-                        <span className="ml-1 text-blue-600 dark:text-blue-400">{camp.distanceFromHome} mi</span>
+                        <span className="ml-1 text-primary dark:text-blue-400">{camp.distanceFromHome} mi</span>
                       )}
                     </div>
                   </a>
@@ -215,7 +215,7 @@ export function ChildCoverageCard({
                   {onSaveForChild && (
                     <button
                       onClick={() => onSaveForChild(camp.sessionId)}
-                      className="shrink-0 px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                      className="shrink-0 px-2 py-1 text-xs bg-primary text-white rounded hover:bg-primary-dark"
                     >
                       Save
                     </button>

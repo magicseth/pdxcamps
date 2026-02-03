@@ -14,7 +14,7 @@ export default function SettingsPage() {
       {/* Skip to main content link for keyboard users */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg focus:font-medium"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-white focus:rounded-lg focus:font-medium"
       >
         Skip to main content
       </a>
@@ -44,7 +44,7 @@ export default function SettingsPage() {
             </p>
             <a
               href="/sign-in"
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+              className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark"
             >
               Sign in
             </a>
@@ -165,7 +165,7 @@ function FamilyProfileSection({
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
         <p className="text-slate-600 dark:text-slate-400">
           No family profile found.{' '}
-          <Link href="/onboarding" className="text-blue-600 hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+          <Link href="/onboarding" className="text-primary hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
             Complete setup
           </Link>
         </p>
@@ -183,7 +183,7 @@ function FamilyProfileSection({
           <button
             type="button"
             onClick={() => setIsEditing(true)}
-            className="text-sm text-blue-600 hover:text-blue-700"
+            className="text-sm text-primary hover:text-blue-700"
           >
             Edit
           </button>
@@ -259,7 +259,7 @@ function FamilyProfileSection({
               type="button"
               onClick={handleSave}
               disabled={isSaving}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSaving ? 'Saving...' : 'Save'}
             </button>
@@ -560,7 +560,7 @@ function HomeAddressSection({
           <button
             type="button"
             onClick={() => setIsEditing(true)}
-            className="text-sm text-blue-600 hover:text-blue-700"
+            className="text-sm text-primary hover:text-blue-700"
           >
             {family.homeAddress ? 'Edit' : 'Add'}
           </button>
@@ -749,7 +749,7 @@ function HomeAddressSection({
               type="button"
               onClick={handleSave}
               disabled={isSaving}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSaving ? 'Saving...' : 'Save'}
             </button>
@@ -953,7 +953,7 @@ function CancelSubscriptionModal({
         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
           <div className="flex items-center justify-between mb-2">
             <span className="font-semibold text-blue-900 dark:text-blue-100">Lite Plan</span>
-            <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">$3<span className="text-sm font-normal">/mo</span></span>
+            <span className="text-2xl font-bold text-primary dark:text-blue-400">$3<span className="text-sm font-normal">/mo</span></span>
           </div>
           <p className="text-sm text-blue-700 dark:text-blue-300">
             Keep all your premium features at a reduced price. Same great planning tools, friendlier on the wallet.
@@ -965,7 +965,7 @@ function CancelSubscriptionModal({
             type="button"
             onClick={handleDowngrade}
             disabled={isLoading}
-            className="w-full px-4 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-4 py-3 bg-primary text-white font-medium rounded-md hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? 'Loading...' : 'Switch to $3/month'}
           </button>
@@ -1017,7 +1017,7 @@ function ChildrenSection({
         <button
           type="button"
           onClick={() => setShowAddChild(true)}
-          className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+          className="text-sm text-primary hover:text-blue-700 flex items-center gap-1"
         >
           <PlusIcon />
           Add Child
@@ -1033,7 +1033,7 @@ function ChildrenSection({
           <button
             type="button"
             onClick={() => setShowAddChild(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -1088,7 +1088,7 @@ function ChildCard({
   return (
     <div className="flex items-center justify-between p-3 border border-slate-200 dark:border-slate-700 rounded-lg">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-400 font-medium">
+        <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-primary dark:text-blue-400 font-medium">
           {child.firstName[0]}
         </div>
         <div>
@@ -1103,7 +1103,7 @@ function ChildCard({
       <button
         type="button"
         onClick={onEdit}
-        className="text-sm text-blue-600 hover:text-blue-700"
+        className="text-sm text-primary hover:text-blue-700"
       >
         Edit
       </button>
@@ -1302,7 +1302,7 @@ function EditChildForm({
           type="button"
           onClick={handleSave}
           disabled={isSaving}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+          className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed text-sm"
         >
           {isSaving ? 'Saving...' : 'Save'}
         </button>
@@ -1384,7 +1384,7 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
           <button
             type="button"
             onClick={onClose}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             aria-label="Close"
             title="Close (Esc)"
           >
@@ -1488,7 +1488,7 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
             type="button"
             onClick={handleSave}
             disabled={isSaving}
-            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSaving ? 'Adding...' : 'Add Child'}
           </button>
