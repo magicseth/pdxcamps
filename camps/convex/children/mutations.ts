@@ -13,6 +13,7 @@ export const addChild = mutation({
     currentGrade: v.optional(v.number()),
     interests: v.array(v.string()),
     notes: v.optional(v.string()),
+    color: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const family = await requireFamily(ctx);
@@ -40,6 +41,7 @@ export const addChild = mutation({
       currentGrade: args.currentGrade,
       interests: args.interests,
       notes: args.notes,
+      color: args.color,
       isActive: true,
     });
 
@@ -60,6 +62,7 @@ export const updateChild = mutation({
     currentGrade: v.optional(v.number()),
     interests: v.optional(v.array(v.string())),
     notes: v.optional(v.string()),
+    color: v.optional(v.string()),
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -114,6 +117,10 @@ export const updateChild = mutation({
 
     if (args.notes !== undefined) {
       updates.notes = args.notes;
+    }
+
+    if (args.color !== undefined) {
+      updates.color = args.color;
     }
 
     if (args.isActive !== undefined) {

@@ -95,6 +95,8 @@ export default defineSchema({
     notes: v.optional(v.string()),
     avatarStorageId: v.optional(v.id("_storage")),
     isActive: v.boolean(),
+    // Display color for calendar/planner views
+    color: v.optional(v.string()),
     // Shareable plan token - allows public viewing of this child's summer plan
     shareToken: v.optional(v.string()),
   })

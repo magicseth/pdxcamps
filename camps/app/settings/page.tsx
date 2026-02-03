@@ -991,6 +991,18 @@ function CancelSubscriptionModal({
   );
 }
 
+// Preset colors for children
+const CHILD_COLORS = [
+  { value: '#3B82F6', label: 'Blue' },
+  { value: '#10B981', label: 'Green' },
+  { value: '#F59E0B', label: 'Orange' },
+  { value: '#EF4444', label: 'Red' },
+  { value: '#8B5CF6', label: 'Purple' },
+  { value: '#EC4899', label: 'Pink' },
+  { value: '#14B8A6', label: 'Teal' },
+  { value: '#F97316', label: 'Tangerine' },
+];
+
 function ChildrenSection({
   children,
 }: {
@@ -1001,6 +1013,7 @@ function ChildrenSection({
     birthdate: string;
     currentGrade?: number;
     interests: string[];
+    color?: string;
   }[];
 }) {
   const [editingChildId, setEditingChildId] = useState<Id<'children'> | null>(
@@ -1079,16 +1092,21 @@ function ChildCard({
     birthdate: string;
     currentGrade?: number;
     interests: string[];
+    color?: string;
   };
   onEdit: () => void;
 }) {
   const age = calculateAge(child.birthdate);
   const gradeLabel = child.currentGrade !== undefined ? getGradeLabel(child.currentGrade) : null;
+  const childColor = child.color || '#3B82F6'; // Default to blue
 
   return (
     <div className="flex items-center justify-between p-3 border border-slate-200 dark:border-slate-700 rounded-lg">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-primary/20 dark:bg-primary-dark flex items-center justify-center text-primary dark:text-primary-light font-medium">
+        <div
+          className="w-10 h-10 rounded-full flex items-center justify-center text-white font-medium"
+          style={{ backgroundColor: childColor }}
+        >
           {child.firstName[0]}
         </div>
         <div>
@@ -1122,6 +1140,7 @@ function EditChildForm({
     birthdate: string;
     currentGrade?: number;
     interests: string[];
+    color?: string;
   };
   onClose: () => void;
 }) {
@@ -1131,6 +1150,7 @@ function EditChildForm({
   const [currentGrade, setCurrentGrade] = useState<number | undefined>(
     child.currentGrade
   );
+  const [color, setColor] = useState(child.color || '#3B82F6');
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -1157,6 +1177,7 @@ function EditChildForm({
         lastName: lastName.trim() || undefined,
         birthdate,
         currentGrade,
+        color,
       });
       onClose();
     } catch (err) {
@@ -1282,6 +1303,27 @@ function EditChildForm({
         </div>
       </div>
 
+      <div>
+        <label className="block text-xs text-slate-500 mb-2">Color</label>
+        <div className="flex gap-2 flex-wrap">
+          {CHILD_COLORS.map((c) => (
+            <button
+              key={c.value}
+              type="button"
+              onClick={() => setColor(c.value)}
+              className={`w-8 h-8 rounded-full border-2 transition-all ${
+                color === c.value
+                  ? 'border-slate-900 dark:border-white scale-110'
+                  : 'border-transparent hover:scale-105'
+              }`}
+              style={{ backgroundColor: c.value }}
+              title={c.label}
+              aria-label={`Select ${c.label}`}
+            />
+          ))}
+        </div>
+      </div>
+
       <div className="flex gap-3 pt-2">
         <button
           type="button"
@@ -1316,6 +1358,7 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
   const [lastName, setLastName] = useState('');
   const [birthdate, setBirthdate] = useState('');
   const [currentGrade, setCurrentGrade] = useState<number | undefined>();
+  const [color, setColor] = useState('#3B82F6');
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -1359,6 +1402,7 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
         birthdate,
         currentGrade,
         interests: [],
+        color,
       });
       onClose();
     } catch (err) {
@@ -1472,6 +1516,27 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
                   </option>
                 ))}
               </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm text-slate-700 dark:text-slate-300 mb-2">Color</label>
+            <div className="flex gap-2 flex-wrap">
+              {CHILD_COLORS.map((c) => (
+                <button
+                  key={c.value}
+                  type="button"
+                  onClick={() => setColor(c.value)}
+                  className={`w-8 h-8 rounded-full border-2 transition-all ${
+                    color === c.value
+                      ? 'border-slate-900 dark:border-white scale-110'
+                      : 'border-transparent hover:scale-105'
+                  }`}
+                  style={{ backgroundColor: c.value }}
+                  title={c.label}
+                  aria-label={`Select ${c.label}`}
+                />
+              ))}
             </div>
           </div>
         </div>
