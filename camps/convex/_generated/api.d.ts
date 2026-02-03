@@ -67,6 +67,7 @@ import type * as scraping_validation from "../scraping/validation.js";
 import type * as seed from "../seed.js";
 import type * as sessions_mutations from "../sessions/mutations.js";
 import type * as sessions_queries from "../sessions/queries.js";
+import type * as share_queries from "../share/queries.js";
 import type * as social_mutations from "../social/mutations.js";
 import type * as social_queries from "../social/queries.js";
 import type * as subscriptions from "../subscriptions.js";
@@ -137,6 +138,7 @@ declare const fullApi: ApiFromModules<{
   seed: typeof seed;
   "sessions/mutations": typeof sessions_mutations;
   "sessions/queries": typeof sessions_queries;
+  "share/queries": typeof share_queries;
   "social/mutations": typeof social_mutations;
   "social/queries": typeof social_queries;
   subscriptions: typeof subscriptions;

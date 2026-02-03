@@ -85,9 +85,12 @@ export default defineSchema({
     notes: v.optional(v.string()),
     avatarStorageId: v.optional(v.id("_storage")),
     isActive: v.boolean(),
+    // Shareable plan token - allows public viewing of this child's summer plan
+    shareToken: v.optional(v.string()),
   })
     .index("by_family", ["familyId"])
-    .index("by_family_and_active", ["familyId", "isActive"]),
+    .index("by_family_and_active", ["familyId", "isActive"])
+    .index("by_share_token", ["shareToken"]),
 
   // ============ ORGANIZATIONS & CAMPS ============
 

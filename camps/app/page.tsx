@@ -954,6 +954,7 @@ function PlannerHub({
   });
   const [showOnlyGaps, setShowOnlyGaps] = useState(false);
   const [showAddEventModal, setShowAddEventModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   useEffect(() => {
@@ -1225,6 +1226,27 @@ function PlannerHub({
             )}
           </div>
 
+          {/* Share Your Plan - Big CTA */}
+          <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-6 mb-6 text-white">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-4 text-center sm:text-left">
+                <div className="text-4xl">🔗</div>
+                <div>
+                  <h3 className="text-xl font-bold">Share Your Summer Plan!</h3>
+                  <p className="text-purple-100">
+                    Send your plan to friends & family. Coordinate camps together!
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowShareModal(true)}
+                className="flex-shrink-0 px-8 py-4 bg-white text-purple-600 font-bold text-lg rounded-xl hover:bg-purple-50 transition-all shadow-lg hover:shadow-xl hover:scale-105"
+              >
+                Share Plan →
+              </button>
+            </div>
+          </div>
+
           {/* Upgrade Banner for Free Users */}
           {!isPremium && subscription !== undefined && (
             <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-6">
@@ -1421,6 +1443,179 @@ function PlannerHub({
         onClose={() => setShowAddEventModal(false)}
         defaultChildIds={children.map((c) => c._id)}
       />
+
+      <SharePlanModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        children={children}
+      />
+    </div>
+  );
+}
+
+function SharePlanModal({
+  isOpen,
+  onClose,
+  children,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  children: { _id: Id<'children'>; firstName: string; shareToken?: string }[];
+}) {
+  const generateToken = useMutation(api.children.mutations.generateShareToken);
+  const [selectedChildId, setSelectedChildId] = useState<Id<'children'> | null>(null);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && children.length > 0 && !selectedChildId) {
+      setSelectedChildId(children[0]._id);
+    }
+  }, [isOpen, children, selectedChildId]);
+
+  useEffect(() => {
+    // Check if selected child already has a share token
+    const child = children.find((c) => c._id === selectedChildId);
+    if (child?.shareToken) {
+      setShareUrl(`${window.location.origin}/share/${child.shareToken}`);
+    } else {
+      setShareUrl(null);
+    }
+  }, [selectedChildId, children]);
+
+  const handleGenerateLink = async () => {
+    if (!selectedChildId) return;
+    setIsGenerating(true);
+    try {
+      const token = await generateToken({ childId: selectedChildId });
+      setShareUrl(`${window.location.origin}/share/${token}`);
+    } catch (error) {
+      console.error('Failed to generate share link:', error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleCopy = async () => {
+    if (!shareUrl) return;
+    await navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleShare = async () => {
+    if (!shareUrl) return;
+    const child = children.find((c) => c._id === selectedChildId);
+    const title = `${child?.firstName}'s Summer Camp Plan`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title,
+          text: `Check out ${child?.firstName}'s summer camp plan!`,
+          url: shareUrl,
+        });
+      } catch (error) {
+        // User cancelled or share failed, fall back to copy
+        handleCopy();
+      }
+    } else {
+      handleCopy();
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Share Summer Plan</h2>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"
+          >
+            <svg className="w-5 h-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {children.length > 1 && (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Select child to share
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {children.map((child) => (
+                <button
+                  key={child._id}
+                  onClick={() => setSelectedChildId(child._id)}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    selectedChildId === child._id
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
+                  }`}
+                >
+                  {child.firstName}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {shareUrl ? (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Share link
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={shareUrl}
+                  readOnly
+                  className="flex-1 px-3 py-2 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white"
+                />
+                <button
+                  onClick={handleCopy}
+                  className="px-4 py-2 bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-white rounded-lg hover:bg-slate-300 dark:hover:bg-slate-500 font-medium"
+                >
+                  {copied ? '✓ Copied!' : 'Copy'}
+                </button>
+              </div>
+            </div>
+
+            <button
+              onClick={handleShare}
+              className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg"
+            >
+              📤 Share with Friends & Family
+            </button>
+
+            <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
+              Anyone with this link can view the summer plan (camps only, no personal details)
+            </p>
+          </div>
+        ) : (
+          <div className="text-center py-4">
+            <p className="text-slate-600 dark:text-slate-400 mb-4">
+              Generate a shareable link for {children.find((c) => c._id === selectedChildId)?.firstName}'s summer plan
+            </p>
+            <button
+              onClick={handleGenerateLink}
+              disabled={isGenerating}
+              className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg disabled:opacity-50"
+            >
+              {isGenerating ? 'Generating...' : '🔗 Generate Share Link'}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

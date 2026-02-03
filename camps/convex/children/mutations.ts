@@ -130,6 +130,62 @@ export const updateChild = mutation({
 });
 
 /**
+ * Generate or regenerate a share token for a child's summer plan.
+ * This allows the plan to be viewed publicly via a shareable URL.
+ */
+export const generateShareToken = mutation({
+  args: {
+    childId: v.id("children"),
+  },
+  handler: async (ctx, args) => {
+    const family = await requireFamily(ctx);
+
+    const child = await ctx.db.get(args.childId);
+    if (!child) {
+      throw new Error("Child not found");
+    }
+
+    if (child.familyId !== family._id) {
+      throw new Error("Child does not belong to this family");
+    }
+
+    // Generate a random token
+    const token = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
+    await ctx.db.patch(args.childId, { shareToken: token });
+
+    return token;
+  },
+});
+
+/**
+ * Remove share token to disable public sharing.
+ */
+export const removeShareToken = mutation({
+  args: {
+    childId: v.id("children"),
+  },
+  handler: async (ctx, args) => {
+    const family = await requireFamily(ctx);
+
+    const child = await ctx.db.get(args.childId);
+    if (!child) {
+      throw new Error("Child not found");
+    }
+
+    if (child.familyId !== family._id) {
+      throw new Error("Child does not belong to this family");
+    }
+
+    await ctx.db.patch(args.childId, { shareToken: undefined });
+
+    return true;
+  },
+});
+
+/**
  * Soft delete a child by marking them as inactive.
  * Verifies the child belongs to the current family.
  */
