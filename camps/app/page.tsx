@@ -12,6 +12,7 @@ import { WeekRow, MonthHeader } from '../components/planner/WeekRow';
 import { PlannerGrid } from '../components/planner/PlannerGrid';
 import { CoverageLegend } from '../components/planner/CoverageIndicator';
 import { AddEventModal } from '../components/planner/AddEventModal';
+import { AddChildModal } from '../components/planner/AddChildModal';
 import { BottomNav } from '../components/shared/BottomNav';
 
 export default function Home() {
@@ -243,28 +244,28 @@ function LandingPage() {
 
             <div className="grid md:grid-cols-2 gap-6 mb-16">
               {/* Pain points - real parent problems */}
-              <div className="bg-red-50 rounded-2xl p-6 border border-red-100">
+              <div className="bg-surface/15 rounded-2xl p-6 border border-surface/30">
                 <div className="text-3xl mb-4">🚗</div>
                 <h3 className="font-semibold text-slate-900 mb-2">"I'm driving across town twice a day"</h3>
                 <p className="text-slate-600">
                   One kid at OMSI, one at Portland Parks... across town from each other. Your summer is spent in traffic.
                 </p>
               </div>
-              <div className="bg-red-50 rounded-2xl p-6 border border-red-100">
+              <div className="bg-surface/15 rounded-2xl p-6 border border-surface/30">
                 <div className="text-3xl mb-4">😢</div>
                 <h3 className="font-semibold text-slate-900 mb-2">"But none of my friends are going!"</h3>
                 <p className="text-slate-600">
                   You finally found a camp, but your kid doesn't know anyone there. Coordinating with other parents is a nightmare.
                 </p>
               </div>
-              <div className="bg-red-50 rounded-2xl p-6 border border-red-100">
+              <div className="bg-surface/15 rounded-2xl p-6 border border-surface/30">
                 <div className="text-3xl mb-4">😫</div>
                 <h3 className="font-semibold text-slate-900 mb-2">"I have 15 browser tabs open..."</h3>
                 <p className="text-slate-600">
                   OMSI, Portland Parks, Oregon Zoo, Trackers... Each with different dates, prices, and age ranges. Where's the spreadsheet?
                 </p>
               </div>
-              <div className="bg-red-50 rounded-2xl p-6 border border-red-100">
+              <div className="bg-surface/15 rounded-2xl p-6 border border-surface/30">
                 <div className="text-3xl mb-4">😰</div>
                 <h3 className="font-semibold text-slate-900 mb-2">"Wait, what about that week?"</h3>
                 <p className="text-slate-600">
@@ -955,6 +956,7 @@ function PlannerHub({
   const [showOnlyGaps, setShowOnlyGaps] = useState(false);
   const [showAddEventModal, setShowAddEventModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showAddChildModal, setShowAddChildModal] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   useEffect(() => {
@@ -1156,7 +1158,7 @@ function PlannerHub({
                     <div className="text-sm text-white/80">Weeks Covered</div>
                   </div>
                   <div title={stats.totalGaps > 0 ? `${stats.totalGaps} child-weeks need camps` : 'All covered!'}>
-                    <div className={`text-3xl font-bold ${stats.weeksWithGaps > 0 ? 'text-yellow-300' : ''}`}>
+                    <div className={`text-3xl font-bold ${stats.weeksWithGaps > 0 ? 'text-accent-light' : ''}`}>
                       {stats.weeksWithGaps}
                     </div>
                     <div className="text-sm text-white/80">
@@ -1176,8 +1178,8 @@ function PlannerHub({
                           : stats.coverage >= 75
                           ? 'bg-accent'
                           : stats.coverage >= 50
-                          ? 'bg-yellow-400'
-                          : 'bg-orange-400'
+                          ? 'bg-accent-light'
+                          : 'bg-accent/70'
                       }`}
                       style={{ width: `${stats.coverage}%` }}
                     />
@@ -1283,7 +1285,7 @@ function PlannerHub({
 
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              {children.length > 1 && (
+              {children.length > 1 ? (
                 <div className="flex items-center bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-1">
                   <button
                     onClick={() => setSelectedChildId('all')}
@@ -1318,7 +1320,28 @@ function PlannerHub({
                       {child.firstName}
                     </button>
                   ))}
+                  <button
+                    onClick={() => setShowAddChildModal(true)}
+                    className="flex items-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                    title="Add another child"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span className="hidden sm:inline">Add</span>
+                  </button>
                 </div>
+              ) : (
+                <button
+                  onClick={() => setShowAddChildModal(true)}
+                  className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:border-slate-300 transition-colors"
+                  title="Add another child"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add Child
+                </button>
               )}
             </div>
 
@@ -1366,7 +1389,7 @@ function PlannerHub({
                 htmlFor="show-only-gaps"
                 className={`flex items-center gap-2 cursor-pointer select-none px-3 py-1.5 rounded-lg transition-colors ${
                   showOnlyGaps
-                    ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                    ? 'bg-accent/20 dark:bg-accent/30 text-accent-dark dark:text-accent'
                     : 'hover:bg-slate-100 dark:hover:bg-slate-700'
                 }`}
                 title="Toggle gaps filter (G key)"
@@ -1376,7 +1399,7 @@ function PlannerHub({
                   type="checkbox"
                   checked={showOnlyGaps}
                   onChange={(e) => setShowOnlyGaps(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-300 text-red-600 focus:ring-red-500"
+                  className="w-4 h-4 rounded border-slate-300 text-accent focus:ring-accent"
                 />
                 <span className={`text-sm ${showOnlyGaps ? 'font-medium' : 'text-slate-600 dark:text-slate-400'}`}>
                   Show only gaps ({stats.weeksWithGaps})
@@ -1451,6 +1474,11 @@ function PlannerHub({
         isOpen={showAddEventModal}
         onClose={() => setShowAddEventModal(false)}
         defaultChildIds={children.map((c) => c._id)}
+      />
+
+      <AddChildModal
+        isOpen={showAddChildModal}
+        onClose={() => setShowAddChildModal(false)}
       />
 
       <SharePlanModal
