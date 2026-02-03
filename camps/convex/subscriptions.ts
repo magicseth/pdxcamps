@@ -24,11 +24,10 @@ import { v } from "convex/values";
 // Initialize Stripe client
 const stripeClient = new StripeSubscriptions(components.stripe, {});
 
-// Price IDs - set these in Stripe Dashboard and update here
-// These are placeholders - replace with actual Stripe price IDs
+// Price IDs from Stripe Dashboard
 const PRICES = {
-  monthly: process.env.STRIPE_PRICE_MONTHLY || "price_monthly_placeholder",
-  summer: process.env.STRIPE_PRICE_SUMMER || "price_summer_placeholder",
+  monthly: "price_1SwdYiAOaA3WFe0KMiXaSSr6", // $5/month
+  summer: "price_1SwdZOAOaA3WFe0Kv1cQZC3O", // $29 one-time Summer Pass
 };
 
 // Free tier limits
