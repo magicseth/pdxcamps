@@ -4,7 +4,7 @@
  * Uses @convex-dev/stripe component for subscription handling.
  *
  * FREE tier limits:
- * - 1 child in planner
+ * - Unlimited children
  * - 4 weeks visible
  * - 5 saved camps
  *
@@ -12,7 +12,6 @@
  * - Unlimited children
  * - All 12 weeks
  * - Unlimited saved camps
- * - Deadline reminders
  * - Calendar export
  */
 
@@ -24,15 +23,24 @@ import { v } from "convex/values";
 // Initialize Stripe client
 const stripeClient = new StripeSubscriptions(components.stripe, {});
 
-// Price IDs from Stripe Dashboard
-const PRICES = {
+// Price IDs from Stripe Dashboard (test vs live)
+const LIVE_PRICES = {
   monthly: "price_1SwdYiAOaA3WFe0KMiXaSSr6", // $5/month
   summer: "price_1SwdZOAOaA3WFe0Kv1cQZC3O", // $29 one-time Summer Pass
 };
 
+const TEST_PRICES = {
+  monthly: "price_1SweagA8NcUZvwFV3wqpcPLf", // $5/month test
+  summer: "price_1SweatA8NcUZvwFVu7yBk3cu", // $29 Summer Pass test
+};
+
+// Select prices based on Stripe key
+const isTestMode = () => process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_");
+const PRICES = isTestMode() ? TEST_PRICES : LIVE_PRICES;
+
 // Free tier limits
 export const FREE_LIMITS = {
-  maxChildren: 1,
+  maxChildren: Infinity, // Unlimited children in free tier
   maxWeeks: 4,
   maxSavedCamps: 5,
 };

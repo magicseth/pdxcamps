@@ -519,12 +519,11 @@ function LandingPage() {
                 </div>
                 <ul className="space-y-3 mb-8">
                   <PricingFeature included>Browse all {CURRENT_MARKET.name} camps</PricingFeature>
-                  <PricingFeature included>Plan for 1 child</PricingFeature>
+                  <PricingFeature included>Plan for all your kids</PricingFeature>
                   <PricingFeature included>See 4 weeks of summer</PricingFeature>
                   <PricingFeature included>Save up to 5 camps</PricingFeature>
-                  <PricingFeature>All 12 weeks</PricingFeature>
-                  <PricingFeature>Unlimited children</PricingFeature>
-                  <PricingFeature>Registration deadline reminders</PricingFeature>
+                  <PricingFeature>All 12 weeks visible</PricingFeature>
+                  <PricingFeature>Unlimited saved camps</PricingFeature>
                   <PricingFeature>Calendar export</PricingFeature>
                 </ul>
                 <a
@@ -549,10 +548,9 @@ function LandingPage() {
                 </div>
                 <ul className="space-y-3 mb-8">
                   <PricingFeature included light>Browse all {CURRENT_MARKET.name} camps</PricingFeature>
-                  <PricingFeature included light>Unlimited children</PricingFeature>
+                  <PricingFeature included light>Plan for all your kids</PricingFeature>
                   <PricingFeature included light>All 12 weeks of summer</PricingFeature>
                   <PricingFeature included light>Unlimited saved camps</PricingFeature>
-                  <PricingFeature included light>Registration deadline reminders</PricingFeature>
                   <PricingFeature included light>Export to Google/Apple Calendar</PricingFeature>
                   <PricingFeature included light>Share calendar with co-parent</PricingFeature>
                   <PricingFeature included light>Priority support</PricingFeature>
@@ -584,7 +582,7 @@ function LandingPage() {
             <div className="space-y-4">
               <FAQItem
                 question="Is this really free? What's the catch?"
-                answer="The free plan lets you browse all camps, plan for one child, and see 4 weeks of summer. That's enough for many families! If you need to plan for multiple kids, see all 12 weeks, or want deadline reminders, our Summer Pass is $29 one-time (or $5/month). We're Portland parents too—we keep it affordable."
+                answer="The free plan lets you browse all camps, plan for all your kids, and see 4 weeks of summer. That's enough for many families! If you need to see all 12 weeks, save unlimited camps, or export to your calendar, our Summer Pass is $29 one-time (or $5/month). We're Portland parents too—we keep it affordable."
               />
               <FAQItem
                 question="How do I actually book a camp?"
