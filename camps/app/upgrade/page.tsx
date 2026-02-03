@@ -86,7 +86,7 @@ export default function UpgradePage() {
                 Monthly
               </h2>
               <div className="flex items-baseline justify-center gap-1">
-                <span className="text-4xl font-bold text-slate-900 dark:text-white">$5</span>
+                <span className="text-4xl font-bold text-slate-900 dark:text-white">$8.99</span>
                 <span className="text-slate-500 dark:text-slate-400">/month</span>
               </div>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
@@ -122,7 +122,7 @@ export default function UpgradePage() {
                 Summer Pass
               </h2>
               <div className="flex items-baseline justify-center gap-1">
-                <span className="text-4xl font-bold text-white">$29</span>
+                <span className="text-4xl font-bold text-white">$25</span>
                 <span className="text-white/70">/summer</span>
               </div>
               <p className="text-sm text-white/70 mt-2">
@@ -176,7 +176,7 @@ export default function UpgradePage() {
               You'll retain access until the end of your billing period.
             </FAQItem>
             <FAQItem question="What's the difference between Monthly and Summer Pass?">
-              Monthly is a recurring subscription at $5/month. Summer Pass is a one-time $29
+              Monthly is a recurring subscription at $8.99/month. Summer Pass is a one-time $25
               payment that gives you full access for the entire summer season (May through August).
             </FAQItem>
             <FAQItem question="Do I need Premium to browse camps?">
