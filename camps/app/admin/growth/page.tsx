@@ -527,7 +527,8 @@ function MarketSeedingTab({ cities }: { cities: any[] | undefined }) {
             </div>
           )}
         </div>
-      </div>
+        </div>
+      </details>
 
       {/* Manual Directory Scraping (Legacy) */}
       <details className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
