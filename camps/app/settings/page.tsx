@@ -85,6 +85,9 @@ function SettingsContent() {
       {/* Children */}
       <ChildrenSection children={children} />
 
+      {/* Subscription */}
+      <SubscriptionSection />
+
       {/* Account Actions */}
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
         <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
@@ -776,6 +779,218 @@ function HomeAddressSection({
   );
 }
 
+function SubscriptionSection() {
+  const subscription = useQuery(api.subscriptions.getSubscription);
+  const createPortalSession = useAction(api.subscriptions.createPortalSession);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleManageSubscription = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const session = await createPortalSession();
+      if (session.url) {
+        window.location.href = session.url;
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to open subscription portal');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (subscription === undefined) {
+    return (
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
+        <div className="animate-pulse space-y-3">
+          <div className="h-6 w-32 bg-slate-200 dark:bg-slate-700 rounded" />
+          <div className="h-4 w-48 bg-slate-200 dark:bg-slate-700 rounded" />
+        </div>
+      </div>
+    );
+  }
+
+  const isPremium = subscription.isPremium;
+
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
+      <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+        Subscription
+      </h2>
+
+      {error && (
+        <div role="alert" className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm">
+          {error}
+        </div>
+      )}
+
+      {isPremium ? (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+              <CrownIcon />
+            </div>
+            <div>
+              <p className="font-semibold text-slate-900 dark:text-white">Summer Pass</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Premium member</p>
+            </div>
+          </div>
+
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+            <p className="text-sm text-green-700 dark:text-green-400 font-medium mb-2">Your benefits:</p>
+            <ul className="text-sm text-green-600 dark:text-green-500 space-y-1">
+              <li className="flex items-center gap-2">
+                <CheckIcon />
+                All 12 weeks visible
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckIcon />
+                Unlimited saved camps
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckIcon />
+                Calendar export
+              </li>
+            </ul>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={handleManageSubscription}
+              disabled={isLoading}
+              className="flex-1 px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-md hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? 'Loading...' : 'Manage Billing'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowCancelModal(true)}
+              className="px-4 py-2 text-red-600 border border-red-200 dark:border-red-800 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400">
+              <UserIcon />
+            </div>
+            <div>
+              <p className="font-semibold text-slate-900 dark:text-white">Free Plan</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Limited features</p>
+            </div>
+          </div>
+
+          <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">Your current limits:</p>
+            <ul className="text-sm text-slate-500 dark:text-slate-500 space-y-1">
+              <li>4 weeks visible</li>
+              <li>5 saved camps</li>
+            </ul>
+          </div>
+
+          <Link
+            href="/upgrade"
+            className="block w-full px-4 py-3 text-center bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium rounded-md hover:from-amber-600 hover:to-orange-600 transition-all"
+          >
+            Upgrade to Summer Pass - $29
+          </Link>
+        </div>
+      )}
+
+      {showCancelModal && (
+        <CancelSubscriptionModal
+          onClose={() => setShowCancelModal(false)}
+          onManageBilling={handleManageSubscription}
+        />
+      )}
+    </div>
+  );
+}
+
+function CancelSubscriptionModal({
+  onClose,
+  onManageBilling,
+}: {
+  onClose: () => void;
+  onManageBilling: () => Promise<void>;
+}) {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleDowngrade = async () => {
+    // Redirect to a special checkout for $3/month plan
+    // For now, direct to billing portal where they can switch plans
+    setIsLoading(true);
+    await onManageBilling();
+  };
+
+  const handleCancel = async () => {
+    setIsLoading(true);
+    await onManageBilling();
+  };
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="cancel-modal-title"
+    >
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full p-6">
+        <h3 id="cancel-modal-title" className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+          We&apos;d hate to see you go!
+        </h3>
+        <p className="text-slate-600 dark:text-slate-400 mb-6">
+          Before you cancel, would you like to switch to our discounted plan instead?
+        </p>
+
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="font-semibold text-blue-900 dark:text-blue-100">Lite Plan</span>
+            <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">$3<span className="text-sm font-normal">/mo</span></span>
+          </div>
+          <p className="text-sm text-blue-700 dark:text-blue-300">
+            Keep all your premium features at a reduced price. Same great planning tools, friendlier on the wallet.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          <button
+            type="button"
+            onClick={handleDowngrade}
+            disabled={isLoading}
+            className="w-full px-4 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? 'Loading...' : 'Switch to $3/month'}
+          </button>
+          <button
+            type="button"
+            onClick={handleCancel}
+            disabled={isLoading}
+            className="w-full px-4 py-3 text-red-600 border border-red-200 dark:border-red-800 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? 'Loading...' : 'Continue to cancel'}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isLoading}
+            className="w-full px-4 py-3 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+          >
+            Never mind, keep my subscription
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ChildrenSection({
   children,
 }: {
@@ -1356,6 +1571,22 @@ function CheckIcon() {
   return (
     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+    </svg>
+  );
+}
+
+function CrownIcon() {
+  return (
+    <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5z" />
+    </svg>
+  );
+}
+
+function UserIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
     </svg>
   );
 }
