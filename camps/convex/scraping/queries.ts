@@ -59,6 +59,100 @@ export const listScrapeSources = query({
 });
 
 /**
+ * List scrape sources filtered by tab status with pagination
+ * Also returns counts for all tabs (single query for both)
+ */
+export const listSourcesFiltered = query({
+  args: {
+    filter: v.union(
+      v.literal("all"),
+      v.literal("active"),
+      v.literal("failing"),
+      v.literal("nodata")
+    ),
+    limit: v.optional(v.number()),
+    cityId: v.optional(v.id("cities")),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 50;
+
+    // Fetch sources, optionally filtered by city
+    let sources;
+    if (args.cityId) {
+      sources = await ctx.db
+        .query("scrapeSources")
+        .withIndex("by_city", (q) => q.eq("cityId", args.cityId!))
+        .collect();
+    } else {
+      sources = await ctx.db.query("scrapeSources").collect();
+    }
+
+    // Calculate counts for all tabs (once, from same data)
+    const counts = {
+      all: sources.length,
+      active: sources.filter((s) => s.isActive && s.scraperHealth.consecutiveFailures < 3).length,
+      failing: sources.filter((s) => s.scraperHealth.consecutiveFailures >= 3).length,
+      nodata: sources.filter((s) => s.isActive && s.scraperHealth.totalRuns > 0 && s.scraperHealth.successRate === 0).length,
+    };
+
+    // Filter based on tab
+    let filtered;
+    switch (args.filter) {
+      case "active":
+        filtered = sources.filter(
+          (s) => s.isActive && s.scraperHealth.consecutiveFailures < 3
+        );
+        break;
+      case "failing":
+        filtered = sources.filter(
+          (s) => s.scraperHealth.consecutiveFailures >= 3
+        );
+        break;
+      case "nodata":
+        filtered = sources.filter(
+          (s) =>
+            s.isActive &&
+            s.scraperHealth.totalRuns > 0 &&
+            s.scraperHealth.successRate === 0
+        );
+        break;
+      default:
+        filtered = sources;
+    }
+
+    // Paginate
+    const paginated = filtered.slice(0, limit);
+
+    // Enrich with organization data including logos
+    const enrichedSources = await Promise.all(
+      paginated.map(async (source) => {
+        const organization = source.organizationId
+          ? await ctx.db.get(source.organizationId)
+          : null;
+
+        const orgLogoUrl = organization?.logoStorageId
+          ? await ctx.storage.getUrl(organization.logoStorageId)
+          : null;
+
+        return {
+          ...source,
+          organizationName: organization?.name ?? null,
+          organizationLogoUrl: orgLogoUrl,
+          organizationWebsite: organization?.website ?? null,
+        };
+      })
+    );
+
+    return {
+      sources: enrichedSources,
+      counts,
+      totalCount: filtered.length,
+      hasMore: filtered.length > limit,
+    };
+  },
+});
+
+/**
  * Get a scrape source with health info
  */
 export const getScrapeSource = query({
@@ -174,6 +268,55 @@ export const listScrapeJobs = query({
     const jobs = await jobsQuery.order("desc").take(limit);
 
     return jobs;
+  },
+});
+
+/**
+ * Get all currently running scrape jobs with source details
+ */
+export const getRunningJobs = query({
+  args: {},
+  handler: async (ctx) => {
+    const runningJobs = await ctx.db
+      .query("scrapeJobs")
+      .withIndex("by_status", (q) => q.eq("status", "running"))
+      .collect();
+
+    const pendingJobs = await ctx.db
+      .query("scrapeJobs")
+      .withIndex("by_status", (q) => q.eq("status", "pending"))
+      .collect();
+
+    const enrichedRunning = await Promise.all(
+      runningJobs.map(async (job) => {
+        const source = await ctx.db.get(job.sourceId);
+        return {
+          ...job,
+          sourceName: source?.name,
+          sourceUrl: source?.url,
+        };
+      })
+    );
+
+    const enrichedPending = await Promise.all(
+      pendingJobs.map(async (job) => {
+        const source = await ctx.db.get(job.sourceId);
+        return {
+          ...job,
+          sourceName: source?.name,
+          sourceUrl: source?.url,
+        };
+      })
+    );
+
+    return {
+      running: enrichedRunning,
+      pending: enrichedPending,
+      summary: {
+        runningCount: runningJobs.length,
+        pendingCount: pendingJobs.length,
+      },
+    };
   },
 });
 
@@ -520,28 +663,113 @@ export const getSessionsBySource = query({
   handler: async (ctx, args) => {
     const limit = args.limit ?? 100;
 
-    let sessions = await ctx.db
+    // Get all sessions to count total
+    const allSessions = await ctx.db
       .query("sessions")
       .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
-      .order("desc")
-      .take(limit);
+      .collect();
 
     // Filter by status if provided
+    let filteredSessions = allSessions;
     if (args.status) {
-      sessions = sessions.filter((s) => s.status === args.status);
+      filteredSessions = allSessions.filter((s) => s.status === args.status);
     }
 
-    // Get camp names
+    // Sort and limit
+    const sortedSessions = filteredSessions
+      .sort((a, b) => (b._creationTime ?? 0) - (a._creationTime ?? 0))
+      .slice(0, limit);
+
+    // Enrich with camp and location data
     const enriched = await Promise.all(
-      sessions.map(async (session) => {
+      sortedSessions.map(async (session) => {
         const camp = await ctx.db.get(session.campId);
+        const location = await ctx.db.get(session.locationId);
         return {
           ...session,
           campName: camp?.name ?? session.campName ?? "Unknown",
+          campCategories: camp?.categories ?? session.campCategories ?? [],
+          locationName: location?.name ?? session.locationName ?? undefined,
         };
       })
     );
 
-    return enriched;
+    return {
+      sessions: enriched,
+      totalCount: filteredSessions.length,
+    };
+  },
+});
+
+/**
+ * Get data quality issues for a source's sessions
+ * Returns counts of sessions missing key fields
+ */
+export const getSourceDataQualityIssues = query({
+  args: {
+    sourceId: v.id("scrapeSources"),
+  },
+  handler: async (ctx, args) => {
+    const sessions = await ctx.db
+      .query("sessions")
+      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .collect();
+
+    const issues: {
+      type: "missing_price" | "missing_dates" | "missing_age" | "missing_location" | "low_completeness";
+      count: number;
+      sessionIds: string[];
+    }[] = [];
+
+    // Check for missing prices
+    const missingPrice = sessions.filter((s) => !s.price || s.price === 0);
+    if (missingPrice.length > 0) {
+      issues.push({
+        type: "missing_price",
+        count: missingPrice.length,
+        sessionIds: missingPrice.map((s) => s._id),
+      });
+    }
+
+    // Check for missing dates
+    const missingDates = sessions.filter((s) => !s.startDate || !s.endDate);
+    if (missingDates.length > 0) {
+      issues.push({
+        type: "missing_dates",
+        count: missingDates.length,
+        sessionIds: missingDates.map((s) => s._id),
+      });
+    }
+
+    // Check for missing age requirements
+    const missingAge = sessions.filter(
+      (s) =>
+        !s.ageRequirements ||
+        (s.ageRequirements.minAge === undefined &&
+          s.ageRequirements.maxAge === undefined &&
+          s.ageRequirements.minGrade === undefined &&
+          s.ageRequirements.maxGrade === undefined)
+    );
+    if (missingAge.length > 0) {
+      issues.push({
+        type: "missing_age",
+        count: missingAge.length,
+        sessionIds: missingAge.map((s) => s._id),
+      });
+    }
+
+    // Check for low completeness score
+    const lowCompleteness = sessions.filter(
+      (s) => s.completenessScore !== undefined && s.completenessScore < 50
+    );
+    if (lowCompleteness.length > 0) {
+      issues.push({
+        type: "low_completeness",
+        count: lowCompleteness.length,
+        sessionIds: lowCompleteness.map((s) => s._id),
+      });
+    }
+
+    return issues;
   },
 });

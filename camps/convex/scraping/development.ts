@@ -546,3 +546,94 @@ export const saveExploration = mutation({
     return args.requestId;
   },
 });
+
+/**
+ * Submit scraper feedback from Control Center
+ * Creates or updates a development request for a source with feedback
+ */
+export const submitScraperFeedbackFromSource = mutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+    feedback: v.string(),
+    requestRescan: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const source = await ctx.db.get(args.sourceId);
+    if (!source) {
+      throw new Error("Source not found");
+    }
+
+    // Check for existing development request for this source
+    const existing = await ctx.db
+      .query("scraperDevelopmentRequests")
+      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .filter((q) =>
+        q.or(
+          q.eq(q.field("status"), "pending"),
+          q.eq(q.field("status"), "in_progress"),
+          q.eq(q.field("status"), "testing"),
+          q.eq(q.field("status"), "needs_feedback")
+        )
+      )
+      .first();
+
+    if (existing) {
+      // Add feedback to existing request
+      const feedbackHistory = existing.feedbackHistory || [];
+      feedbackHistory.push({
+        feedbackAt: Date.now(),
+        feedbackBy: "control-center",
+        feedback: args.feedback,
+        scraperVersionBefore: existing.scraperVersion || 0,
+      });
+
+      await ctx.db.patch(existing._id, {
+        feedbackHistory,
+        status: "pending", // Reset to pending so daemon picks it up
+      });
+
+      // Optionally flag source for rescan
+      if (args.requestRescan) {
+        await ctx.db.patch(args.sourceId, {
+          needsRescan: true,
+          rescanRequestedAt: Date.now(),
+          rescanReason: args.feedback,
+        });
+      }
+
+      return existing._id;
+    }
+
+    // Create new development request
+    const requestId = await ctx.db.insert("scraperDevelopmentRequests", {
+      sourceName: source.name,
+      sourceUrl: source.url,
+      cityId: source.cityId,
+      sourceId: args.sourceId,
+      notes: args.feedback,
+      requestedBy: "control-center",
+      requestedAt: Date.now(),
+      status: "pending",
+      scraperVersion: 0,
+      feedbackHistory: [
+        {
+          feedbackAt: Date.now(),
+          feedbackBy: "control-center",
+          feedback: args.feedback,
+          scraperVersionBefore: 0,
+        },
+      ],
+    });
+
+    // Optionally flag source for rescan
+    if (args.requestRescan) {
+      await ctx.db.patch(args.sourceId, {
+        needsRescan: true,
+        rescanRequestedAt: Date.now(),
+        rescanReason: args.feedback,
+      });
+    }
+
+    return requestId;
+  },
+});

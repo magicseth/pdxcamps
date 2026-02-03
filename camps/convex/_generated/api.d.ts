@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as admin_migrations from "../admin/migrations.js";
 import type * as admin_mutations from "../admin/mutations.js";
 import type * as admin_queries from "../admin/queries.js";
 import type * as camps_mutations from "../camps/mutations.js";
@@ -18,6 +19,7 @@ import type * as cities_mutations from "../cities/mutations.js";
 import type * as cities_queries from "../cities/queries.js";
 import type * as cleanup from "../cleanup.js";
 import type * as crons from "../crons.js";
+import type * as dataCleanup from "../dataCleanup.js";
 import type * as discovery_actions from "../discovery/actions.js";
 import type * as discovery_mutations from "../discovery/mutations.js";
 import type * as discovery_queries from "../discovery/queries.js";
@@ -46,6 +48,7 @@ import type * as scraping_images from "../scraping/images.js";
 import type * as scraping_import from "../scraping/import.js";
 import type * as scraping_importMutations from "../scraping/importMutations.js";
 import type * as scraping_internal from "../scraping/internal.js";
+import type * as scraping_marketSeeding from "../scraping/marketSeeding.js";
 import type * as scraping_mutations from "../scraping/mutations.js";
 import type * as scraping_omsi from "../scraping/omsi.js";
 import type * as scraping_populateCampImages from "../scraping/populateCampImages.js";
@@ -73,6 +76,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "admin/migrations": typeof admin_migrations;
   "admin/mutations": typeof admin_mutations;
   "admin/queries": typeof admin_queries;
   "camps/mutations": typeof camps_mutations;
@@ -83,6 +87,7 @@ declare const fullApi: ApiFromModules<{
   "cities/queries": typeof cities_queries;
   cleanup: typeof cleanup;
   crons: typeof crons;
+  dataCleanup: typeof dataCleanup;
   "discovery/actions": typeof discovery_actions;
   "discovery/mutations": typeof discovery_mutations;
   "discovery/queries": typeof discovery_queries;
@@ -111,6 +116,7 @@ declare const fullApi: ApiFromModules<{
   "scraping/import": typeof scraping_import;
   "scraping/importMutations": typeof scraping_importMutations;
   "scraping/internal": typeof scraping_internal;
+  "scraping/marketSeeding": typeof scraping_marketSeeding;
   "scraping/mutations": typeof scraping_mutations;
   "scraping/omsi": typeof scraping_omsi;
   "scraping/populateCampImages": typeof scraping_populateCampImages;

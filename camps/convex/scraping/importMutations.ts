@@ -285,12 +285,11 @@ export const createPendingSession = internalMutation({
 
 /**
  * Update source session counts and quality metrics
+ * Now queries actual session counts from database for accuracy
  */
 export const updateSourceSessionCounts = internalMutation({
   args: {
     sourceId: v.id("scrapeSources"),
-    sessionCount: v.number(),
-    activeSessionCount: v.number(),
     dataQualityScore: v.number(),
     qualityTier: v.union(
       v.literal("high"),
@@ -299,12 +298,21 @@ export const updateSourceSessionCounts = internalMutation({
     ),
   },
   handler: async (ctx, args) => {
+    // Query actual session counts from database
+    const allSessions = await ctx.db
+      .query("sessions")
+      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .collect();
+
+    const sessionCount = allSessions.length;
+    const activeSessionCount = allSessions.filter(s => s.status === "active").length;
+
     await ctx.db.patch(args.sourceId, {
-      sessionCount: args.sessionCount,
-      activeSessionCount: args.activeSessionCount,
+      sessionCount,
+      activeSessionCount,
       dataQualityScore: args.dataQualityScore,
       qualityTier: args.qualityTier,
-      lastSessionsFoundAt: args.sessionCount > 0 ? Date.now() : undefined,
+      lastSessionsFoundAt: sessionCount > 0 ? Date.now() : undefined,
     });
   },
 });

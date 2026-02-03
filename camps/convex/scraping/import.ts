@@ -292,9 +292,9 @@ export const importFromJob = action({
           api.scraping.importMutations.createOrganization,
           {
             name: orgData.name,
-            description: orgData.description,
+            description: "description" in orgData ? orgData.description : undefined,
             website: orgData.website,
-            logoUrl: orgData.logoUrl,
+            logoUrl: "logoUrl" in orgData ? orgData.logoUrl : undefined,
             cityId: portland._id,
           }
         );
@@ -557,6 +557,7 @@ export const importFromJob = action({
       }
 
       // Update source session counts and quality
+      // Note: sessionCount is now queried from DB in the mutation for accuracy
       const quality = calculateSourceQuality(
         allCompletenessScores.map((score) => ({ completenessScore: score }))
       );
@@ -565,8 +566,6 @@ export const importFromJob = action({
         internal.scraping.importMutations.updateSourceSessionCounts,
         {
           sourceId: rawData.sourceId,
-          sessionCount: sessionsCreated + sessionsAsDraft,
-          activeSessionCount: sessionsCreated,
           dataQualityScore: quality.score,
           qualityTier: quality.tier,
         }

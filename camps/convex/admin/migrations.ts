@@ -470,3 +470,77 @@ export const populateDevRequestsCityId = mutation({
     };
   },
 });
+
+/**
+ * Recalculate session counts for all scrapeSources
+ * Fixes the denormalized sessionCount and activeSessionCount fields
+ */
+export const recalculateSourceSessionCounts = mutation({
+  args: {
+    dryRun: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const dryRun = args.dryRun ?? true;
+
+    const sources = await ctx.db.query("scrapeSources").collect();
+    const updates: Array<{
+      sourceId: string;
+      sourceName: string;
+      oldCount: number;
+      newCount: number;
+      oldActiveCount: number;
+      newActiveCount: number;
+    }> = [];
+
+    for (const source of sources) {
+      // Count actual sessions for this source
+      const sessions = await ctx.db
+        .query("sessions")
+        .withIndex("by_source", (q) => q.eq("sourceId", source._id))
+        .collect();
+
+      const sessionCount = sessions.length;
+      const activeSessionCount = sessions.filter(s => s.status === "active").length;
+
+      // Only include if counts differ
+      if (sessionCount !== (source.sessionCount ?? 0) || activeSessionCount !== (source.activeSessionCount ?? 0)) {
+        updates.push({
+          sourceId: source._id,
+          sourceName: source.name,
+          oldCount: source.sessionCount ?? 0,
+          newCount: sessionCount,
+          oldActiveCount: source.activeSessionCount ?? 0,
+          newActiveCount: activeSessionCount,
+        });
+      }
+    }
+
+    if (dryRun) {
+      return {
+        dryRun: true,
+        totalSources: sources.length,
+        wouldUpdate: updates.length,
+        sampleUpdates: updates.slice(0, 20).map(u => ({
+          name: u.sourceName,
+          old: `${u.oldCount} (${u.oldActiveCount} active)`,
+          new: `${u.newCount} (${u.newActiveCount} active)`,
+        })),
+      };
+    }
+
+    // Apply updates
+    for (const update of updates) {
+      await ctx.db.patch(update.sourceId as any, {
+        sessionCount: update.newCount,
+        activeSessionCount: update.newActiveCount,
+        lastSessionsFoundAt: update.newCount > 0 ? Date.now() : undefined,
+      });
+    }
+
+    return {
+      dryRun: false,
+      totalSources: sources.length,
+      updated: updates.length,
+    };
+  },
+});

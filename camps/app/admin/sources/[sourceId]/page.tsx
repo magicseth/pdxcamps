@@ -56,10 +56,12 @@ function SourceDetailContent() {
   const source = useQuery(api.scraping.queries.getScrapeSource, {
     sourceId: sourceId as Id<"scrapeSources">,
   });
-  const sessions = useQuery(api.scraping.queries.getSessionsBySource, {
+  const sessionsData = useQuery(api.scraping.queries.getSessionsBySource, {
     sourceId: sourceId as Id<"scrapeSources">,
     limit: 20,
   });
+  const sessions = sessionsData?.sessions;
+  const sessionsCount = sessionsData?.totalCount ?? 0;
 
   const updateNotes = useMutation(api.scraping.mutations.updateParsingNotes);
   const flagForRescan = useMutation(api.scraping.mutations.flagForRescan);
@@ -467,7 +469,7 @@ function SourceDetailContent() {
       {sessions && sessions.length > 0 && (
         <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-            <h2 className="text-lg font-semibold">Sessions ({sessions.length})</h2>
+            <h2 className="text-lg font-semibold">Sessions ({sessionsCount})</h2>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

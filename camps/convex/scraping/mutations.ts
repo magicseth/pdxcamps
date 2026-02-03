@@ -939,3 +939,169 @@ export const createScrapeSourceSimple = mutation({
     return sourceId;
   },
 });
+
+/**
+ * Update source details (name and/or URL)
+ * Used for inline editing in Control Center
+ */
+export const updateSourceDetails = mutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+    name: v.optional(v.string()),
+    url: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const source = await ctx.db.get(args.sourceId);
+    if (!source) {
+      throw new Error("Scrape source not found");
+    }
+
+    const updates: Record<string, string> = {};
+    if (args.name !== undefined) {
+      updates.name = args.name;
+    }
+    if (args.url !== undefined) {
+      updates.url = args.url;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await ctx.db.patch(args.sourceId, updates);
+    }
+
+    return args.sourceId;
+  },
+});
+
+/**
+ * Refresh the organization logo for a source
+ * This queues a job to re-fetch the logo from the organization's website
+ */
+export const refreshSourceLogo = mutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+  },
+  handler: async (ctx, args) => {
+    const source = await ctx.db.get(args.sourceId);
+    if (!source) {
+      throw new Error("Scrape source not found");
+    }
+
+    if (!source.organizationId) {
+      throw new Error("Source has no linked organization");
+    }
+
+    const organization = await ctx.db.get(source.organizationId);
+    if (!organization) {
+      throw new Error("Organization not found");
+    }
+
+    // Clear existing logo to trigger re-fetch
+    await ctx.db.patch(source.organizationId, {
+      logoUrl: undefined,
+      logoStorageId: undefined,
+    });
+
+    return args.sourceId;
+  },
+});
+
+/**
+ * Delete a source and optionally its associated data
+ */
+export const deleteSourceWithData = mutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+    deleteJobs: v.optional(v.boolean()), // Default: true
+    deleteSessions: v.optional(v.boolean()), // Default: false (dangerous)
+  },
+  handler: async (ctx, args) => {
+    const source = await ctx.db.get(args.sourceId);
+    if (!source) {
+      throw new Error("Scrape source not found");
+    }
+
+    const deleteJobs = args.deleteJobs !== false; // Default true
+    const deleteSessions = args.deleteSessions === true; // Default false
+
+    // Delete associated scrape jobs
+    if (deleteJobs) {
+      const jobs = await ctx.db
+        .query("scrapeJobs")
+        .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+        .collect();
+
+      for (const job of jobs) {
+        // Delete raw data for each job
+        const rawData = await ctx.db
+          .query("scrapeRawData")
+          .withIndex("by_job", (q) => q.eq("jobId", job._id))
+          .collect();
+        for (const raw of rawData) {
+          await ctx.db.delete(raw._id);
+        }
+        await ctx.db.delete(job._id);
+      }
+    }
+
+    // Delete pending sessions
+    const pendingSessions = await ctx.db
+      .query("pendingSessions")
+      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .collect();
+    for (const pending of pendingSessions) {
+      await ctx.db.delete(pending._id);
+    }
+
+    // Delete alerts for this source
+    const alerts = await ctx.db
+      .query("scraperAlerts")
+      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .collect();
+    for (const alert of alerts) {
+      await ctx.db.delete(alert._id);
+    }
+
+    // Delete scraper versions
+    const versions = await ctx.db
+      .query("scraperVersions")
+      .withIndex("by_source", (q) => q.eq("scrapeSourceId", args.sourceId))
+      .collect();
+    for (const version of versions) {
+      await ctx.db.delete(version._id);
+    }
+
+    // Delete scrape changes
+    const changes = await ctx.db
+      .query("scrapeChanges")
+      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .collect();
+    for (const change of changes) {
+      await ctx.db.delete(change._id);
+    }
+
+    // Optionally delete sessions (dangerous!)
+    if (deleteSessions) {
+      const sessions = await ctx.db
+        .query("sessions")
+        .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+        .collect();
+      for (const session of sessions) {
+        await ctx.db.delete(session._id);
+      }
+    } else {
+      // Just unlink sessions from this source
+      const sessions = await ctx.db
+        .query("sessions")
+        .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+        .collect();
+      for (const session of sessions) {
+        await ctx.db.patch(session._id, { sourceId: undefined });
+      }
+    }
+
+    // Delete the source itself
+    await ctx.db.delete(args.sourceId);
+
+    return { deleted: true };
+  },
+});
