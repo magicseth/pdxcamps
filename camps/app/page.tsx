@@ -109,21 +109,21 @@ function LandingPage() {
                 </span>
               </div>
 
-              {/* Main headline */}
+              {/* Main headline - Emotional, benefit-focused */}
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 leading-tight mb-6">
-                Stop juggling{' '}
+                Give your kids an{' '}
                 <span className="relative">
-                  <span className="relative z-10">20 camp websites.</span>
+                  <span className="relative z-10">amazing summer.</span>
                   <span className="absolute bottom-2 left-0 right-0 h-3 bg-amber-300/50 -z-0" />
                 </span>
                 <br />
-                <span className="text-blue-600">Plan your summer in one place.</span>
+                <span className="text-blue-600">Without losing your mind.</span>
               </h1>
 
-              {/* Subheadline */}
+              {/* Subheadline - Focus on parent benefits */}
               <p className="text-xl text-slate-600 mb-8 leading-relaxed">
-                See every camp from OMSI, Oregon Zoo, Portland Parks & 100+ more providers.
-                Track coverage week-by-week for all your kids. Fill gaps instantly.{' '}
+                Find camps near home, coordinate with friends for carpools, and see your whole summer at a glance.
+                OMSI, Oregon Zoo, Portland Parks & 100+ more—all in one place.{' '}
                 <span className="font-semibold text-slate-900">Free for Portland families.</span>
               </p>
 
@@ -218,12 +218,13 @@ function LandingPage() {
           </section>
         )}
 
-        {/* Pain Point Section */}
+        {/* Pain Point Section - Parent-focused */}
         <section className="py-20 px-4">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-                Summer planning shouldn't feel like a second job
+                Summer should be fun for everyone.<br />
+                <span className="text-slate-500">Including you.</span>
               </h2>
               <p className="text-xl text-slate-600">
                 Sound familiar?
@@ -231,127 +232,139 @@ function LandingPage() {
             </div>
 
             <div className="grid md:grid-cols-2 gap-6 mb-16">
-              {/* Pain points */}
+              {/* Pain points - real parent problems */}
+              <div className="bg-red-50 rounded-2xl p-6 border border-red-100">
+                <div className="text-3xl mb-4">🚗</div>
+                <h3 className="font-semibold text-slate-900 mb-2">"I'm driving across town twice a day"</h3>
+                <p className="text-slate-600">
+                  One kid at OMSI, one at Portland Parks... across town from each other. Your summer is spent in traffic.
+                </p>
+              </div>
+              <div className="bg-red-50 rounded-2xl p-6 border border-red-100">
+                <div className="text-3xl mb-4">😢</div>
+                <h3 className="font-semibold text-slate-900 mb-2">"But none of my friends are going!"</h3>
+                <p className="text-slate-600">
+                  You finally found a camp, but your kid doesn't know anyone there. Coordinating with other parents is a nightmare.
+                </p>
+              </div>
               <div className="bg-red-50 rounded-2xl p-6 border border-red-100">
                 <div className="text-3xl mb-4">😫</div>
-                <h3 className="font-semibold text-slate-900 mb-2">"I have 15 tabs open..."</h3>
+                <h3 className="font-semibold text-slate-900 mb-2">"I have 15 browser tabs open..."</h3>
                 <p className="text-slate-600">
-                  Checking OMSI, then Portland Parks, then the Zoo, then Trackers... each with different dates, prices, and age ranges.
+                  OMSI, Portland Parks, Oregon Zoo, Trackers... Each with different dates, prices, and age ranges. Where's the spreadsheet?
                 </p>
               </div>
               <div className="bg-red-50 rounded-2xl p-6 border border-red-100">
                 <div className="text-3xl mb-4">😰</div>
-                <h3 className="font-semibold text-slate-900 mb-2">"Wait, what about week 7?"</h3>
+                <h3 className="font-semibold text-slate-900 mb-2">"Wait, what about that week?"</h3>
                 <p className="text-slate-600">
-                  You thought summer was planned, but there's a gap. And the good camps are already full.
-                </p>
-              </div>
-              <div className="bg-red-50 rounded-2xl p-6 border border-red-100">
-                <div className="text-3xl mb-4">🤯</div>
-                <h3 className="font-semibold text-slate-900 mb-2">"My kids are different ages..."</h3>
-                <p className="text-slate-600">
-                  One's 6, one's 10. Different camps, different requirements. Endless spreadsheets.
-                </p>
-              </div>
-              <div className="bg-red-50 rounded-2xl p-6 border border-red-100">
-                <div className="text-3xl mb-4">😤</div>
-                <h3 className="font-semibold text-slate-900 mb-2">"Registration opened WHEN?"</h3>
-                <p className="text-slate-600">
-                  Popular camps fill in hours. Miss the email, miss the camp.
+                  You thought summer was planned, but there's a gap. The good camps are already full. Time to scramble.
                 </p>
               </div>
             </div>
 
-            {/* The stat */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-8 text-center text-white">
-              <div className="text-5xl font-bold mb-2">69%</div>
-              <p className="text-blue-100 text-lg">
-                of parents say they <span className="font-semibold text-white">can't easily find camps</span> with the features they want.
+            {/* Empathy statement */}
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-8 text-center border border-amber-200">
+              <p className="text-xl text-slate-700 leading-relaxed">
+                Planning summer shouldn't take more time than <em>enjoying</em> summer.
+                <br />
+                <span className="font-semibold text-slate-900">You deserve easier.</span>
               </p>
-              <p className="text-blue-200 text-sm mt-2">— American Camp Association Research</p>
             </div>
           </div>
         </section>
 
-        {/* Solution Section */}
+        {/* Solution Section - Focus on real benefits */}
         <section className="py-20 px-4 bg-slate-50">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16">
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-medium mb-4">
-                <span>✨</span> The better way
+                <span>✨</span> A better way
               </div>
               <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-                Your entire summer. One simple view.
+                Plan smarter. Drive less. Enjoy more.
               </h2>
               <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-                PDX Camps aggregates {campCount}+ camps from every provider in {CURRENT_MARKET.name} and shows you exactly what weeks are covered—and what gaps need filling.
+                {campCount}+ camps from every provider in {CURRENT_MARKET.name}.
+                Filter by neighborhood, coordinate with friends, and see your whole summer in one view.
               </p>
             </div>
 
-            {/* Feature grid */}
+            {/* Feature grid - parent benefits focused */}
             <div className="grid md:grid-cols-3 gap-8">
               <FeatureCard
-                icon="📅"
-                title="Week-by-Week Planner"
-                description="See your entire summer at a glance. Each child gets a row. Red means gap, green means covered. Simple."
+                icon="📍"
+                title="Find Camps Near You"
+                description="Filter by neighborhood to cut commute time. Find camps near home, work, or your kids' school."
               />
               <FeatureCard
-                icon="🔍"
-                title="Smart Search"
-                description="Filter by age, price, dates, category, and location. Find the perfect camp in seconds, not hours."
+                icon="👯"
+                title="Coordinate with Friends"
+                description="Share your calendar link with other parents. See which camps your kids' friends are attending. Plan together."
+              />
+              <FeatureCard
+                icon="🚗"
+                title="Carpool Ready"
+                description="When friends are at the same camp, carpooling is easy. Less driving, more summer for everyone."
+              />
+              <FeatureCard
+                icon="📅"
+                title="See Every Week"
+                description="Visual planner shows your whole summer. Green = covered. Red = needs a camp. No spreadsheets needed."
               />
               <FeatureCard
                 icon="👨‍👩‍👧‍👦"
-                title="Multi-Child Planning"
-                description="Different ages? Different interests? See coverage for everyone in your family, side by side."
-              />
-              <FeatureCard
-                icon="🎯"
-                title="Gap Detection"
-                description="Instantly see which weeks need camps. Click a gap to see available options that fit."
+                title="All Your Kids, One View"
+                description="Different ages, different interests? Plan for everyone side by side. Find camps that work for siblings."
               />
               <FeatureCard
                 icon="✈️"
-                title="Family Events"
-                description="Add vacations, trips, or camp-free weeks. They count as covered so you plan around what matters."
-              />
-              <FeatureCard
-                icon="🏕️"
-                title="All Providers, One Place"
-                description="OMSI, Oregon Zoo, Portland Parks, Trackers, Steve & Kate's, and 100+ more. All searchable together."
+                title="Vacations Built In"
+                description="Add family trips and camp-free weeks. Your planner works around what matters to your family."
               />
             </div>
           </div>
         </section>
 
-        {/* Social Proof - How It Works */}
+        {/* How It Works - Outcome focused */}
         <section className="py-20 px-4">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-                Plan your summer in 3 steps
+                From chaos to planned in minutes
               </h2>
+              <p className="text-xl text-slate-600">
+                No spreadsheets. No 20 browser tabs. Just clarity.
+              </p>
             </div>
 
             <div className="space-y-12">
               <StepCard
                 number={1}
-                title="Add your kids"
-                description="Enter their ages and grades. We'll automatically filter camps to show only what's appropriate."
+                title="Add your kids and your neighborhood"
+                description="Tell us their ages and where you live. We'll show camps nearby that actually fit."
               />
               <StepCard
                 number={2}
-                title="See your coverage"
-                description="The planner shows every week of summer. Green = covered. Red = needs a camp. It's that simple."
+                title="See your whole summer"
+                description="A visual calendar shows every week. Green means covered, red means you need to find something. No more guessing."
               />
               <StepCard
                 number={3}
-                title="Fill the gaps"
-                description="Click any red week to see camps that fit. Filter by price, location, and category. Register directly with the camp."
+                title="Fill gaps with camps your kids will love"
+                description="Click any open week to see options. Filter by what matters—location, price, what their friends are doing. Book directly with the camp."
               />
             </div>
 
-            <div className="text-center mt-12">
+            <div className="text-center mt-16">
+              {/* Testimonial-style quote */}
+              <div className="bg-blue-50 rounded-2xl p-8 mb-8 max-w-2xl mx-auto">
+                <p className="text-lg text-slate-700 italic mb-4">
+                  "I used to spend entire weekends planning summer camps. Now I can see everything in one place and actually coordinate with other parents. Game changer."
+                </p>
+                <p className="text-sm text-slate-500">— Portland parent of 2</p>
+              </div>
+
               <a
                 href="/sign-up"
                 className="inline-flex items-center gap-2 px-8 py-4 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-600/25 transition-all hover:shadow-xl"
@@ -438,23 +451,23 @@ function LandingPage() {
           </div>
         </section>
 
-        {/* Final CTA Section */}
+        {/* Final CTA Section - Emotional close */}
         <section className="py-20 px-4 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Ready to take the stress out of summer?
+              This summer, be the parent with the plan.
             </h2>
             <p className="text-xl text-blue-100 mb-8">
-              Join hundreds of {CURRENT_MARKET.name} families who plan their summers with PDX Camps.
+              While other families scramble, you'll have camps booked, carpools arranged, and weekends free to actually enjoy summer with your kids.
             </p>
             <a
               href="/sign-up"
               className="inline-block px-10 py-5 text-xl font-semibold bg-white text-blue-700 rounded-xl hover:bg-blue-50 shadow-xl transition-all hover:scale-105"
             >
-              Get Started — It's Free
+              Start Planning — It's Free
             </a>
             <p className="text-blue-200 text-sm mt-4">
-              No credit card required. Plan your entire summer in minutes.
+              Takes 2 minutes. No credit card. Just less stress.
             </p>
           </div>
         </section>
