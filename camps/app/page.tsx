@@ -1235,6 +1235,27 @@ function PlannerHub({
             </div>
           </div>
 
+          {/* Share Your Plan - Big CTA */}
+          <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-6 mb-6 text-white">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-4 text-center sm:text-left">
+                <div className="text-4xl">🔗</div>
+                <div>
+                  <h3 className="text-xl font-bold">Share Your Summer Plan!</h3>
+                  <p className="text-purple-100">
+                    Send your plan to friends & family. Coordinate camps together!
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowShareModal(true)}
+                className="flex-shrink-0 px-8 py-4 bg-white text-purple-600 font-bold text-lg rounded-xl hover:bg-purple-50 transition-all shadow-lg hover:shadow-xl hover:scale-105"
+              >
+                Share Plan →
+              </button>
+            </div>
+          </div>
+
           {/* Upgrade Banner for Free Users */}
           {!isPremium && subscription !== undefined && (
             <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-6">
@@ -1451,65 +1472,94 @@ function SharePlanModal({
   children: { _id: Id<'children'>; firstName: string; shareToken?: string }[];
 }) {
   const generateToken = useMutation(api.children.mutations.generateShareToken);
-  const [selectedChildId, setSelectedChildId] = useState<Id<'children'> | null>(null);
-  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [selectedChildIds, setSelectedChildIds] = useState<Set<Id<'children'>>>(new Set());
+  const [generatedUrls, setGeneratedUrls] = useState<Map<Id<'children'>, string>>(new Map());
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // Initialize with all children selected
   useEffect(() => {
-    if (isOpen && children.length > 0 && !selectedChildId) {
-      setSelectedChildId(children[0]._id);
+    if (isOpen && children.length > 0 && selectedChildIds.size === 0) {
+      setSelectedChildIds(new Set(children.map(c => c._id)));
     }
-  }, [isOpen, children, selectedChildId]);
+  }, [isOpen, children, selectedChildIds.size]);
 
+  // Load existing share tokens into generatedUrls
   useEffect(() => {
-    // Check if selected child already has a share token
-    const child = children.find((c) => c._id === selectedChildId);
-    if (child?.shareToken) {
-      setShareUrl(`${window.location.origin}/share/${child.shareToken}`);
+    const urls = new Map<Id<'children'>, string>();
+    for (const child of children) {
+      if (child.shareToken) {
+        urls.set(child._id, `${window.location.origin}/share/${child.shareToken}`);
+      }
+    }
+    setGeneratedUrls(urls);
+  }, [children]);
+
+  const toggleChild = (childId: Id<'children'>) => {
+    const newSet = new Set(selectedChildIds);
+    if (newSet.has(childId)) {
+      newSet.delete(childId);
     } else {
-      setShareUrl(null);
+      newSet.add(childId);
     }
-  }, [selectedChildId, children]);
+    setSelectedChildIds(newSet);
+  };
 
-  const handleGenerateLink = async () => {
-    if (!selectedChildId) return;
+  const handleGenerateLinks = async () => {
     setIsGenerating(true);
+    const newUrls = new Map(generatedUrls);
+
     try {
-      const token = await generateToken({ childId: selectedChildId });
-      setShareUrl(`${window.location.origin}/share/${token}`);
+      for (const childId of selectedChildIds) {
+        if (!newUrls.has(childId)) {
+          const token = await generateToken({ childId });
+          newUrls.set(childId, `${window.location.origin}/share/${token}`);
+        }
+      }
+      setGeneratedUrls(newUrls);
     } catch (error) {
-      console.error('Failed to generate share link:', error);
+      console.error('Failed to generate share links:', error);
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const handleCopy = async () => {
-    if (!shareUrl) return;
-    await navigator.clipboard.writeText(shareUrl);
+  const selectedChildren = children.filter(c => selectedChildIds.has(c._id));
+  const allSelectedHaveUrls = selectedChildren.every(c => generatedUrls.has(c._id));
+
+  const getShareText = () => {
+    const lines: string[] = [];
+    for (const child of selectedChildren) {
+      const url = generatedUrls.get(child._id);
+      if (url) {
+        lines.push(`${child.firstName}'s Summer Plan: ${url}`);
+      }
+    }
+    return lines.join('\n\n');
+  };
+
+  const handleCopyAll = async () => {
+    const text = getShareText();
+    await navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleShare = async () => {
-    if (!shareUrl) return;
-    const child = children.find((c) => c._id === selectedChildId);
-    const title = `${child?.firstName}'s Summer Camp Plan`;
+    const text = getShareText();
+    const names = selectedChildren.map(c => c.firstName).join(' & ');
 
     if (navigator.share) {
       try {
         await navigator.share({
-          title,
-          text: `Check out ${child?.firstName}'s summer camp plan!`,
-          url: shareUrl,
+          title: `${names}'s Summer Camp Plans`,
+          text: text,
         });
       } catch (error) {
-        // User cancelled or share failed, fall back to copy
-        handleCopy();
+        handleCopyAll();
       }
     } else {
-      handleCopy();
+      handleCopyAll();
     }
   };
 
@@ -1520,9 +1570,9 @@ function SharePlanModal({
       className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Share Summer Plan</h2>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Share Summer Plans</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"
@@ -1533,73 +1583,97 @@ function SharePlanModal({
           </button>
         </div>
 
-        {children.length > 1 && (
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Select child to share
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {children.map((child) => (
-                <button
-                  key={child._id}
-                  onClick={() => setSelectedChildId(child._id)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    selectedChildId === child._id
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
-                  }`}
-                >
-                  {child.firstName}
-                </button>
-              ))}
-            </div>
+        {/* Child Selection */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            {children.length > 1 ? 'Select kids to share' : 'Share plan for'}
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {children.map((child) => (
+              <button
+                key={child._id}
+                onClick={() => toggleChild(child._id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                  selectedChildIds.has(child._id)
+                    ? 'bg-purple-600 text-white shadow-md'
+                    : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
+                }`}
+              >
+                {selectedChildIds.has(child._id) && (
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                )}
+                {child.firstName}
+                {generatedUrls.has(child._id) && (
+                  <span className="text-xs opacity-75">🔗</span>
+                )}
+              </button>
+            ))}
           </div>
-        )}
+        </div>
 
-        {shareUrl ? (
+        {/* Generated Links */}
+        {allSelectedHaveUrls && selectedChildren.length > 0 ? (
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Share link
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={shareUrl}
-                  readOnly
-                  className="flex-1 px-3 py-2 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white"
-                />
-                <button
-                  onClick={handleCopy}
-                  className="px-4 py-2 bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-white rounded-lg hover:bg-slate-300 dark:hover:bg-slate-500 font-medium"
-                >
-                  {copied ? '✓ Copied!' : 'Copy'}
-                </button>
-              </div>
+            <div className="space-y-3">
+              {selectedChildren.map((child) => {
+                const url = generatedUrls.get(child._id);
+                return (
+                  <div key={child._id} className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3">
+                    <div className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      {child.firstName}'s Plan
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={url || ''}
+                        readOnly
+                        className="flex-1 px-2 py-1.5 bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded text-xs text-slate-900 dark:text-white"
+                      />
+                      <button
+                        onClick={async () => {
+                          if (url) {
+                            await navigator.clipboard.writeText(url);
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 2000);
+                          }
+                        }}
+                        className="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-500 rounded hover:bg-slate-300 dark:hover:bg-slate-400"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             <button
               onClick={handleShare}
               className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg"
             >
-              📤 Share with Friends & Family
+              {copied ? '✓ Copied!' : '📤 Share All Plans'}
             </button>
 
             <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
-              Anyone with this link can view the summer plan (camps only, no personal details)
+              Anyone with these links can view the summer plans (camps only, no personal details)
             </p>
           </div>
         ) : (
           <div className="text-center py-4">
             <p className="text-slate-600 dark:text-slate-400 mb-4">
-              Generate a shareable link for {children.find((c) => c._id === selectedChildId)?.firstName}'s summer plan
+              {selectedChildren.length === 0
+                ? 'Select at least one child to share'
+                : `Generate shareable links for ${selectedChildren.map(c => c.firstName).join(' & ')}`
+              }
             </p>
             <button
-              onClick={handleGenerateLink}
-              disabled={isGenerating}
-              className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg disabled:opacity-50"
+              onClick={handleGenerateLinks}
+              disabled={isGenerating || selectedChildren.length === 0}
+              className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isGenerating ? 'Generating...' : '🔗 Generate Share Link'}
+              {isGenerating ? 'Generating...' : `🔗 Generate ${selectedChildren.length > 1 ? 'Share Links' : 'Share Link'}`}
             </button>
           </div>
         )}
