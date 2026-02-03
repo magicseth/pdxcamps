@@ -16,6 +16,9 @@ crons.interval(
   {}
 );
 
+// Directory queue is processed by local daemon (Claude Code)
+// Not using cron - call api.scraping.directoryDaemon.processDirectoryQueue manually
+
 // ============================================
 // DISCOVERY CRONS
 // ============================================

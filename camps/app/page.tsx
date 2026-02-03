@@ -9,7 +9,8 @@ import Link from 'next/link';
 import { useAuth } from '@workos-inc/authkit-nextjs/components';
 import type { User } from '@workos-inc/node';
 import { WeekRow, MonthHeader } from '../components/planner/WeekRow';
-import { PlannerGrid } from '../components/planner/PlannerGrid';
+import { PlannerGrid, RegistrationClickData } from '../components/planner/PlannerGrid';
+import { RegistrationModal } from '../components/planner/RegistrationModal';
 import { CoverageLegend } from '../components/planner/CoverageIndicator';
 import { AddEventModal } from '../components/planner/AddEventModal';
 import { AddChildModal } from '../components/planner/AddChildModal';
@@ -954,6 +955,7 @@ function PlannerHub({
   const [showShareModal, setShowShareModal] = useState(false);
   const [showAddChildModal, setShowAddChildModal] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [selectedRegistration, setSelectedRegistration] = useState<RegistrationClickData | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -1086,6 +1088,10 @@ function PlannerHub({
 
     router.push(`/discover/${defaultCity.slug}?${params.toString()}`);
   }, [children, defaultCity, router]);
+
+  const handleRegistrationClick = useCallback((data: RegistrationClickData) => {
+    setSelectedRegistration(data);
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -1446,6 +1452,7 @@ function PlannerHub({
               children={selectedChildId === 'all' ? children : children.filter(c => c._id === selectedChildId)}
               citySlug={defaultCity?.slug}
               onGapClick={handleGapClick}
+              onRegistrationClick={handleRegistrationClick}
             />
           ) : (
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
@@ -1481,6 +1488,24 @@ function PlannerHub({
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
         children={children}
+      />
+
+      <RegistrationModal
+        isOpen={selectedRegistration !== null}
+        onClose={() => setSelectedRegistration(null)}
+        registration={selectedRegistration ? {
+          registrationId: selectedRegistration.registrationId as Id<'registrations'>,
+          sessionId: selectedRegistration.sessionId as Id<'sessions'>,
+          childId: selectedRegistration.childId,
+          childName: selectedRegistration.childName,
+          campName: selectedRegistration.campName,
+          organizationName: selectedRegistration.organizationName,
+          organizationLogoUrl: selectedRegistration.organizationLogoUrl,
+          status: selectedRegistration.status as 'interested' | 'waitlisted' | 'registered' | 'cancelled',
+          weekLabel: selectedRegistration.weekLabel,
+          registrationUrl: selectedRegistration.registrationUrl,
+        } : null}
+        citySlug={defaultCity?.slug}
       />
     </div>
   );

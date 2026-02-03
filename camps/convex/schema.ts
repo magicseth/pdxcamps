@@ -392,6 +392,28 @@ export default defineSchema({
 
   // ============ SCRAPING ============
 
+  // Queue for directory URLs to be scraped and seeded
+  directoryQueue: defineTable({
+    cityId: v.id("cities"),
+    url: v.string(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("processing"),
+      v.literal("completed"),
+      v.literal("failed")
+    ),
+    linkPattern: v.optional(v.string()), // Regex to filter links
+    baseUrlFilter: v.optional(v.string()), // Domain filter
+    error: v.optional(v.string()),
+    // Results
+    linksFound: v.optional(v.number()),
+    orgsCreated: v.optional(v.number()),
+    orgsExisted: v.optional(v.number()),
+    processedAt: v.optional(v.number()),
+  })
+    .index("by_status", ["status"])
+    .index("by_city", ["cityId"]),
+
   scrapeSources: defineTable({
     organizationId: v.optional(v.id("organizations")),
     cityId: v.id("cities"), // Market this source belongs to (required)

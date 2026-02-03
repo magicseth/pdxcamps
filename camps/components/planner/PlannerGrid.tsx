@@ -13,9 +13,12 @@ interface ChildCoverage {
   availableSessionCount?: number;
   registrations: {
     registrationId: string;
+    sessionId: string;
     campName: string;
+    organizationName?: string;
     organizationLogoUrl?: string | null;
     status: string;
+    registrationUrl?: string | null;
   }[];
   events: {
     eventId: Id<'familyEvents'>;
@@ -36,14 +39,28 @@ interface WeekData {
   hasFamilyEvent: boolean;
 }
 
+export interface RegistrationClickData {
+  registrationId: string;
+  sessionId: string;
+  childId: Id<'children'>;
+  childName: string;
+  campName: string;
+  organizationName?: string;
+  organizationLogoUrl?: string | null;
+  status: string;
+  weekLabel: string;
+  registrationUrl?: string | null;
+}
+
 interface PlannerGridProps {
   coverage: WeekData[];
   children: { _id: Id<'children'>; firstName: string; birthdate?: string; currentGrade?: number }[];
   citySlug?: string;
   onGapClick?: (weekStart: string, weekEnd: string, childId: Id<'children'>) => void;
+  onRegistrationClick?: (data: RegistrationClickData) => void;
 }
 
-export function PlannerGrid({ coverage, children, citySlug, onGapClick }: PlannerGridProps) {
+export function PlannerGrid({ coverage, children, citySlug, onGapClick, onRegistrationClick }: PlannerGridProps) {
   // Group weeks by month
   const weeksByMonth = useMemo(() => {
     const groups: Map<string, WeekData[]> = new Map();
@@ -150,10 +167,12 @@ export function PlannerGrid({ coverage, children, citySlug, onGapClick }: Planne
                       data={cellData}
                       week={week}
                       childId={child._id}
+                      childName={child.firstName}
                       isCurrentWeek={current}
                       isPastWeek={past}
                       citySlug={citySlug}
                       onGapClick={onGapClick}
+                      onRegistrationClick={onRegistrationClick}
                     />
                   );
                 })}
@@ -170,13 +189,15 @@ interface CoverageCellProps {
   data: ChildCoverage | null;
   week: WeekData;
   childId: Id<'children'>;
+  childName: string;
   isCurrentWeek: boolean;
   isPastWeek: boolean;
   citySlug?: string;
   onGapClick?: (weekStart: string, weekEnd: string, childId: Id<'children'>) => void;
+  onRegistrationClick?: (data: RegistrationClickData) => void;
 }
 
-function CoverageCell({ data, week, childId, isCurrentWeek, isPastWeek, citySlug, onGapClick }: CoverageCellProps) {
+function CoverageCell({ data, week, childId, childName, isCurrentWeek, isPastWeek, citySlug, onGapClick, onRegistrationClick }: CoverageCellProps) {
   const status = data?.status || 'gap';
   const hasEvent = data?.events && data.events.length > 0;
   const hasRegistration = data?.registrations && data.registrations.length > 0;
@@ -272,6 +293,36 @@ function CoverageCell({ data, week, childId, isCurrentWeek, isPastWeek, citySlug
         >
           {cellContent}
         </Link>
+      </td>
+    );
+  }
+
+  // Make cells with registrations clickable
+  if (hasRegistration && onRegistrationClick && data?.registrations?.[0]) {
+    const reg = data.registrations[0];
+    const handleRegistrationClick = () => {
+      onRegistrationClick({
+        registrationId: reg.registrationId,
+        sessionId: reg.sessionId,
+        childId,
+        childName,
+        campName: reg.campName,
+        organizationName: reg.organizationName,
+        organizationLogoUrl: reg.organizationLogoUrl,
+        status: reg.status,
+        weekLabel: `${week.week.monthName} ${week.week.label}`,
+        registrationUrl: reg.registrationUrl,
+      });
+    };
+
+    return (
+      <td className="border-b border-l border-slate-100 dark:border-slate-700/50 p-0">
+        <button
+          onClick={handleRegistrationClick}
+          className="block w-full h-full hover:bg-green-200 dark:hover:bg-green-800/40 transition-colors cursor-pointer"
+        >
+          {cellContent}
+        </button>
       </td>
     );
   }

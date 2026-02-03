@@ -42,6 +42,8 @@ import type * as scraping_actions from "../scraping/actions.js";
 import type * as scraping_coverage from "../scraping/coverage.js";
 import type * as scraping_deduplication from "../scraping/deduplication.js";
 import type * as scraping_development from "../scraping/development.js";
+import type * as scraping_directoryDaemon from "../scraping/directoryDaemon.js";
+import type * as scraping_directoryDaemonActions from "../scraping/directoryDaemonActions.js";
 import type * as scraping_fixOrgWebsites from "../scraping/fixOrgWebsites.js";
 import type * as scraping_generateImages from "../scraping/generateImages.js";
 import type * as scraping_imageWorkflow from "../scraping/imageWorkflow.js";
@@ -113,6 +115,8 @@ declare const fullApi: ApiFromModules<{
   "scraping/coverage": typeof scraping_coverage;
   "scraping/deduplication": typeof scraping_deduplication;
   "scraping/development": typeof scraping_development;
+  "scraping/directoryDaemon": typeof scraping_directoryDaemon;
+  "scraping/directoryDaemonActions": typeof scraping_directoryDaemonActions;
   "scraping/fixOrgWebsites": typeof scraping_fixOrgWebsites;
   "scraping/generateImages": typeof scraping_generateImages;
   "scraping/imageWorkflow": typeof scraping_imageWorkflow;

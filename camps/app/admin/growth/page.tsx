@@ -152,6 +152,11 @@ interface OrganizedOrg {
 }
 
 function MarketSeedingTab({ cities }: { cities: any[] | undefined }) {
+  // New automated workflow
+  const queueDirectoryUrls = useMutation(api.scraping.directoryDaemon.queueDirectoryUrls);
+  const queueStatus = useQuery(api.scraping.directoryDaemon.getQueueStatus, {});
+
+  // Legacy manual workflow
   const scrapeDirectory = useAction(api.scraping.marketSeeding.scrapeDirectoryForCampUrls);
   const organizeUrls = useAction(api.scraping.marketSeeding.organizeExtractedUrls);
   const seedMarket = useAction(api.scraping.marketSeeding.seedMarket);
@@ -169,6 +174,9 @@ function MarketSeedingTab({ cities }: { cities: any[] | undefined }) {
   const [organizations, setOrganizations] = useState<OrganizedOrg[]>([]);
   const [marketStatus, setMarketStatus] = useState<Awaited<ReturnType<typeof getMarketStatus>> | null>(null);
   const [seedingResult, setSeedingResult] = useState<Awaited<ReturnType<typeof seedMarket>> | null>(null);
+
+  // Manual URL input
+  const [manualUrls, setManualUrls] = useState('');
 
   const handleScrapeDirectory = async () => {
     if (!directoryUrl) {
@@ -209,6 +217,60 @@ function MarketSeedingTab({ cities }: { cities: any[] | undefined }) {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleAddManualUrls = () => {
+    if (!manualUrls.trim()) {
+      setError('Please enter at least one URL');
+      return;
+    }
+
+    setError(null);
+
+    // Parse URLs (one per line, skip empty lines)
+    const urls = manualUrls
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line && line.startsWith('http'));
+
+    if (urls.length === 0) {
+      setError('No valid URLs found. URLs must start with http:// or https://');
+      return;
+    }
+
+    // Convert URLs to organization format
+    const newOrgs: OrganizedOrg[] = urls.map((url) => {
+      let domain = '';
+      let suggestedName = '';
+      try {
+        const parsed = new URL(url);
+        domain = parsed.hostname.replace(/^www\./, '');
+        // Generate name from domain
+        suggestedName = domain
+          .replace(/\.(com|org|edu|net|gov|co|io)$/i, '')
+          .split(/[.-]/)
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+      } catch {
+        domain = url;
+        suggestedName = 'Unknown';
+      }
+
+      return {
+        domain,
+        suggestedName,
+        bestUrl: url,
+        alternateUrls: [],
+        included: true,
+      };
+    });
+
+    // Merge with existing orgs (avoid duplicates by domain)
+    const existingDomains = new Set(organizations.map((o) => o.domain));
+    const uniqueNewOrgs = newOrgs.filter((o) => !existingDomains.has(o.domain));
+
+    setOrganizations([...organizations, ...uniqueNewOrgs]);
+    setManualUrls('');
   };
 
   const handleSeedMarket = async () => {
@@ -336,9 +398,78 @@ function MarketSeedingTab({ cities }: { cities: any[] | undefined }) {
         )}
       </div>
 
-      {/* Directory Scraping */}
+      {/* Automated Queue */}
       <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
-        <h3 className="text-lg font-semibold mb-4">2. Scrape Directory</h3>
+        <h3 className="text-lg font-semibold mb-4">2. Queue Directory URLs (Automated)</h3>
+        <p className="text-sm text-slate-500 mb-4">
+          Paste directory URLs below (one per line). The daemon will automatically scrape them and create organizations.
+        </p>
+        <div className="space-y-4">
+          <textarea
+            value={manualUrls}
+            onChange={(e) => setManualUrls(e.target.value)}
+            placeholder="https://example.com/summer-camps&#10;https://another-site.com/camps"
+            rows={5}
+            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white font-mono text-sm"
+          />
+          <div className="flex gap-4">
+            <button
+              onClick={async () => {
+                if (!selectedCitySlug || !manualUrls.trim()) {
+                  setError('Select a city and enter at least one URL');
+                  return;
+                }
+                setIsLoading(true);
+                setError(null);
+                try {
+                  const urls = manualUrls.split('\n').map(u => u.trim()).filter(u => u.startsWith('http'));
+                  const result = await queueDirectoryUrls({ citySlug: selectedCitySlug, urls });
+                  setManualUrls('');
+                  alert(`Queued ${result.queued} URLs for processing`);
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : 'Failed to queue URLs');
+                } finally {
+                  setIsLoading(false);
+                }
+              }}
+              disabled={isLoading || !selectedCitySlug}
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+            >
+              {isLoading ? 'Queuing...' : 'Queue for Processing'}
+            </button>
+          </div>
+
+          {/* Queue Status */}
+          {queueStatus && (
+            <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
+              <h4 className="font-medium mb-2">Queue Status</h4>
+              <div className="grid grid-cols-4 gap-4 text-sm">
+                <div>
+                  <p className="text-slate-500">Pending</p>
+                  <p className="text-xl font-bold text-amber-600">{queueStatus.pending}</p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Processing</p>
+                  <p className="text-xl font-bold text-blue-600">{queueStatus.processing}</p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Completed</p>
+                  <p className="text-xl font-bold text-green-600">{queueStatus.completed}</p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Failed</p>
+                  <p className="text-xl font-bold text-red-600">{queueStatus.failed}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Manual Directory Scraping (Legacy) */}
+      <details className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+        <summary className="p-6 cursor-pointer text-lg font-semibold">Manual Scraping (Legacy)</summary>
+        <div className="p-6 pt-0">
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
@@ -392,7 +523,8 @@ function MarketSeedingTab({ cities }: { cities: any[] | undefined }) {
             Found {extractedLinks.length} links, organized into {organizations.length} organizations
           </div>
         )}
-      </div>
+        </div>
+      </details>
 
       {/* Error Display */}
       {error && (
