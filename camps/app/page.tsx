@@ -987,6 +987,9 @@ function PlannerHub({
     year: selectedYear,
   });
 
+  const subscription = useQuery(api.subscriptions.getSubscription);
+  const isPremium = subscription?.isPremium ?? false;
+
   const filteredCoverage = useMemo(() => {
     if (!coverage) return [];
     let result = coverage;
@@ -1094,7 +1097,7 @@ function PlannerHub({
         Skip to main content
       </a>
 
-      <AppHeader user={user} onSignOut={onSignOut} />
+      <AppHeader user={user} onSignOut={onSignOut} isPremium={isPremium} />
 
       <main id="main-content" className="flex-1 pb-20">
         <div className="max-w-4xl mx-auto px-4 py-6">
@@ -1221,6 +1224,31 @@ function PlannerHub({
               </Link>
             )}
           </div>
+
+          {/* Upgrade Banner for Free Users */}
+          {!isPremium && subscription !== undefined && (
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-6">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="text-2xl">✨</div>
+                  <div>
+                    <p className="font-medium text-slate-900 dark:text-white">
+                      You're viewing 4 of 12 summer weeks
+                    </p>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                      Upgrade to see all weeks, save unlimited camps & export to calendar
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  href="/upgrade"
+                  className="flex-shrink-0 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium rounded-lg hover:from-amber-600 hover:to-orange-600 transition-all shadow-sm"
+                >
+                  Upgrade — $29
+                </Link>
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
@@ -1397,7 +1425,7 @@ function PlannerHub({
   );
 }
 
-function AppHeader({ user, onSignOut }: { user: User | null; onSignOut: () => void }) {
+function AppHeader({ user, onSignOut, isPremium }: { user: User | null; onSignOut: () => void; isPremium?: boolean }) {
   const ADMIN_EMAILS = ['seth@magicseth.com'];
   const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email);
 
@@ -1409,6 +1437,14 @@ function AppHeader({ user, onSignOut }: { user: User | null; onSignOut: () => vo
           <span className="font-bold text-lg">PDX Camps</span>
         </div>
         <div className="flex items-center gap-4">
+          {!isPremium && isPremium !== undefined && (
+            <Link
+              href="/upgrade"
+              className="text-sm px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium rounded-lg hover:from-amber-600 hover:to-orange-600 transition-all shadow-sm"
+            >
+              Upgrade
+            </Link>
+          )}
           {isAdmin && (
             <Link href="/admin" className="text-sm text-orange-600 hover:underline font-medium rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">
               Admin

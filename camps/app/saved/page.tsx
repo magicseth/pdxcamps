@@ -181,10 +181,15 @@ function SectionHeader({
 
 export default function SavedCampsPage() {
   const savedCamps = useQuery(api.registrations.queries.getSavedCamps);
+  const subscription = useQuery(api.subscriptions.getSubscription);
   const register = useMutation(api.registrations.mutations.register);
   const cancelRegistration = useMutation(api.registrations.mutations.cancelRegistration);
 
   const [processingId, setProcessingId] = useState<string | null>(null);
+
+  const isPremium = subscription?.isPremium ?? false;
+  const savedCount = savedCamps ? savedCamps.interested.length + savedCamps.waitlisted.length : 0;
+  const FREE_LIMIT = 5;
 
   const handleMarkRegistered = async (registrationId: Id<"registrations">) => {
     setProcessingId(registrationId);
@@ -249,6 +254,33 @@ export default function SavedCampsPage() {
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-8">
+        {/* Upgrade Banner for Free Users */}
+        {!isPremium && subscription !== undefined && savedCount >= FREE_LIMIT - 1 && (
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="text-2xl">💾</div>
+                <div>
+                  <p className="font-medium text-slate-900 dark:text-white">
+                    {savedCount >= FREE_LIMIT
+                      ? `You've hit the free limit (${FREE_LIMIT} camps)`
+                      : `${savedCount}/${FREE_LIMIT} camps saved`}
+                  </p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Upgrade to save unlimited camps and never lose track of your favorites
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/upgrade"
+                className="flex-shrink-0 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium rounded-lg hover:from-amber-600 hover:to-orange-600 transition-all shadow-sm"
+              >
+                Upgrade
+              </Link>
+            </div>
+          </div>
+        )}
+
         {!hasAnySaved ? (
           <div className="text-center py-12">
             <div className="text-4xl mb-4">💭</div>
