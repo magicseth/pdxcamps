@@ -224,6 +224,25 @@ async function main() {
     console.log("TEST PASSED ✅");
     console.log("=".repeat(60) + "\n");
 
+    // Output JSON for daemon parsing (marked with special delimiters)
+    console.log("__JSON_START__");
+    console.log(JSON.stringify({
+      success: true,
+      sessionCount: sessions.length,
+      samples: sessions.slice(0, 5).map(s => ({
+        name: s.name,
+        startDate: s.startDate,
+        endDate: s.endDate,
+        location: s.location,
+        minAge: s.minAge,
+        maxAge: s.maxAge,
+        priceInCents: s.priceInCents,
+        priceRaw: s.priceRaw,
+        isAvailable: s.isAvailable,
+      })),
+    }));
+    console.log("__JSON_END__");
+
   } catch (error) {
     if (stagehand) {
       try {

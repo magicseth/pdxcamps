@@ -236,6 +236,7 @@ export const seedPortlandSources = mutation({
 
       await ctx.db.insert("scrapeSources", {
         organizationId: undefined, // Will be linked when organization is created
+        cityId: args.cityId, // Market this source belongs to
         name: provider.name,
         url: provider.url,
         scraperConfig,
@@ -263,6 +264,7 @@ export const addScrapeSource = mutation({
   args: {
     name: v.string(),
     url: v.string(),
+    cityId: v.id("cities"), // Required: market this source belongs to
     organizationId: v.optional(v.id("organizations")),
     scrapeType: v.union(v.literal("html"), v.literal("visualforce_api"), v.literal("stagehand")),
     notes: v.optional(v.string()),
@@ -322,6 +324,7 @@ export const addScrapeSource = mutation({
 
     const sourceId = await ctx.db.insert("scrapeSources", {
       organizationId: args.organizationId,
+      cityId: args.cityId,
       name: args.name,
       url: args.url,
       scraperConfig,

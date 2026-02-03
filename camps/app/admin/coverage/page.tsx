@@ -41,10 +41,12 @@ function CoverageContent() {
   const isAdmin = useQuery(api.admin.queries.isAdmin);
   const coverageStats = useQuery(api.scraping.coverage.getCoverageStats);
   const needsAttention = useQuery(api.scraping.coverage.getSourcesNeedingAttention);
+  const cities = useQuery(api.cities.queries.listActiveCities);
   const addSource = useMutation(api.scraping.coverage.addSourceFromReference);
 
   const [newSourceName, setNewSourceName] = useState('');
   const [newSourceUrl, setNewSourceUrl] = useState('');
+  const [newCityId, setNewCityId] = useState('');
   const [addingSource, setAddingSource] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
 
@@ -76,13 +78,22 @@ function CoverageContent() {
 
   const handleAddSource = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!newCityId) {
+      setAddError('Please select a market');
+      return;
+    }
     setAddingSource(true);
     setAddError(null);
 
     try {
-      await addSource({ name: newSourceName, url: newSourceUrl });
+      await addSource({
+        name: newSourceName,
+        url: newSourceUrl,
+        cityId: newCityId as any // Cast to Id<"cities">
+      });
       setNewSourceName('');
       setNewSourceUrl('');
+      setNewCityId('');
     } catch (err) {
       setAddError(err instanceof Error ? err.message : 'Failed to add source');
     } finally {
@@ -188,10 +199,28 @@ function CoverageContent() {
       <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
         <h3 className="text-lg font-semibold mb-4">Add New Source</h3>
         <form onSubmit={handleAddSource} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Camp Name
+                Market *
+              </label>
+              <select
+                value={newCityId}
+                onChange={(e) => setNewCityId(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900"
+                required
+              >
+                <option value="">Select Market</option>
+                {cities?.map((city) => (
+                  <option key={city._id} value={city._id}>
+                    {city.name}, {city.state}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Camp Name *
               </label>
               <input
                 type="text"
@@ -204,7 +233,7 @@ function CoverageContent() {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                URL
+                URL *
               </label>
               <input
                 type="url"

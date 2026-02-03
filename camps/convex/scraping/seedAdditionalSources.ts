@@ -373,6 +373,7 @@ export const seedAdditionalSources = mutation({
 
       await ctx.db.insert("scrapeSources", {
         organizationId: undefined,
+        cityId: args.cityId,
         name: provider.name,
         url: provider.url,
         scraperConfig,

@@ -125,6 +125,7 @@ export const addSourceFromReference = mutation({
   args: {
     name: v.string(),
     url: v.string(),
+    cityId: v.id("cities"), // Required: market this source belongs to
   },
   handler: async (ctx, args) => {
     // Check if source already exists
@@ -141,6 +142,7 @@ export const addSourceFromReference = mutation({
     const sourceId = await ctx.db.insert("scrapeSources", {
       name: args.name,
       url: args.url,
+      cityId: args.cityId,
       scraperConfig: {
         version: 1,
         generatedAt: Date.now(),

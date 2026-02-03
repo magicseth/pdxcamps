@@ -199,7 +199,7 @@ interface ScrapedSession {
 
   // Other
   location?: string;
-  isAvailable?: boolean;
+  isAvailable?: boolean;  // Only set if explicitly shown on page - do NOT default to true
   registrationUrl?: string;
   imageUrls?: string[];
   description?: string;

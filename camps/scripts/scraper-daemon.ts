@@ -97,17 +97,40 @@ interface DevelopmentRequest {
   };
 }
 
-let isProcessing = false;
-let currentProcess: ChildProcess | null = null;
+// Worker state tracking
+interface WorkerState {
+  id: string;
+  busy: boolean;
+  currentRequest?: DevelopmentRequest;
+  process?: ChildProcess;
+}
+
+const workers: Map<string, WorkerState> = new Map();
+let shutdownRequested = false;
+
+// Parse --workers N flag (default 1)
+function getWorkerCount(): number {
+  const idx = process.argv.findIndex(arg => arg === "--workers" || arg === "-w");
+  if (idx !== -1 && process.argv[idx + 1]) {
+    const count = parseInt(process.argv[idx + 1], 10);
+    if (!isNaN(count) && count > 0 && count <= 10) {
+      return count;
+    }
+  }
+  return 1;
+}
 
 async function main() {
   const verbose = process.argv.includes("--verbose") || process.argv.includes("-v");
+  const workerCount = getWorkerCount();
 
   // Clear log file
   fs.writeFileSync(LOG_FILE, `=== Scraper Daemon Started ${new Date().toISOString()} ===\n`);
+  writeLog(`Starting with ${workerCount} worker(s)`);
 
   console.log("🤖 Scraper Development Daemon Started");
   console.log(`   Convex: ${CONVEX_URL}`);
+  console.log(`   Workers: ${workerCount}`);
   console.log(`   Logs: tail -f ${LOG_FILE}`);
   if (verbose) {
     console.log("   Mode: Verbose");
@@ -115,31 +138,87 @@ async function main() {
   console.log("   Running autonomously. Submit requests & feedback via /admin/scraper-dev");
   console.log("   Press Ctrl+C to stop.\n");
 
+  // Initialize workers
+  for (let i = 0; i < workerCount; i++) {
+    const workerId = `worker-${i + 1}-${Date.now()}`;
+    workers.set(workerId, { id: workerId, busy: false });
+  }
+
   // Handle graceful shutdown
   process.on("SIGINT", () => {
     console.log("\nShutting down...");
-    if (currentProcess) {
-      currentProcess.kill();
+    shutdownRequested = true;
+    for (const worker of workers.values()) {
+      if (worker.process) {
+        worker.process.kill();
+      }
     }
-    process.exit(0);
+    // Give processes time to clean up
+    setTimeout(() => process.exit(0), 1000);
   });
 
-  // Main polling loop
-  while (true) {
+  // Main polling loop - check for available workers and pending work
+  while (!shutdownRequested) {
     try {
-      if (!isProcessing) {
-        const pending = await client.query(api.scraping.development.getPendingRequests, {});
+      // Find idle workers
+      const idleWorkers = Array.from(workers.values()).filter(w => !w.busy);
 
-        if (pending.length > 0) {
-          const request = pending[0] as DevelopmentRequest;
-          await processRequest(request, verbose);
+      // For each idle worker, try to claim work
+      for (const worker of idleWorkers) {
+        if (shutdownRequested) break;
+
+        try {
+          // Atomically get and claim next request
+          const request = await client.mutation(api.scraping.development.getNextAndClaim, {
+            workerId: worker.id,
+          });
+
+          if (request) {
+            // Start processing in background (don't await)
+            worker.busy = true;
+            worker.currentRequest = request as DevelopmentRequest;
+
+            console.log(`[${worker.id}] 🚀 Starting: ${request.sourceName}`);
+            writeLog(`[${worker.id}] Claimed: ${request.sourceName}`);
+
+            processRequestAsync(worker, request as DevelopmentRequest, verbose);
+          }
+        } catch (error) {
+          // Claim failed (probably race condition or no work) - that's ok
+          if (verbose) {
+            console.log(`[${worker.id}] No work available`);
+          }
         }
+      }
+
+      // Log status periodically
+      const busyCount = Array.from(workers.values()).filter(w => w.busy).length;
+      if (busyCount > 0 && verbose) {
+        console.log(`   Active workers: ${busyCount}/${workerCount}`);
       }
     } catch (error) {
       console.error("Error:", error instanceof Error ? error.message : error);
     }
 
     await sleep(POLL_INTERVAL_MS);
+  }
+}
+
+/**
+ * Process a request asynchronously (doesn't block the main loop)
+ */
+async function processRequestAsync(worker: WorkerState, request: DevelopmentRequest, verbose: boolean) {
+  try {
+    await processRequest(request, verbose, worker.id);
+  } catch (error) {
+    console.error(`[${worker.id}] Error:`, error instanceof Error ? error.message : error);
+    writeLog(`[${worker.id}] Error: ${error instanceof Error ? error.message : error}`);
+  } finally {
+    worker.busy = false;
+    worker.currentRequest = undefined;
+    worker.process = undefined;
+    console.log(`[${worker.id}] ✅ Finished: ${request.sourceName}`);
+    writeLog(`[${worker.id}] Finished: ${request.sourceName}`);
   }
 }
 
@@ -469,26 +548,22 @@ function formatExplorationForPrompt(exploration: SiteExplorationResult): string 
   return lines.join('');
 }
 
-async function processRequest(request: DevelopmentRequest, verbose: boolean = false) {
-  isProcessing = true;
+async function processRequest(request: DevelopmentRequest, verbose: boolean = false, workerId?: string) {
   const requestId = request._id;
+  const prefix = workerId ? `[${workerId}]` : "";
 
   const log = (msg: string) => {
-    writeLog(msg);
-    if (verbose) console.log(msg);
+    const prefixedMsg = prefix ? `${prefix} ${msg}` : msg;
+    writeLog(prefixedMsg);
+    if (verbose) console.log(prefixedMsg);
   };
 
-  console.log(`📋 Processing: ${request.sourceName}`);
-  writeLog(`\n=== Processing: ${request.sourceName} ===`);
-  writeLog(`URL: ${request.sourceUrl}`);
+  console.log(`${prefix} 📋 Processing: ${request.sourceName}`);
+  writeLog(`\n=== ${prefix} Processing: ${request.sourceName} ===`);
+  writeLog(`${prefix} URL: ${request.sourceUrl}`);
 
   try {
-    // Claim the request
-    log(`   Claiming request ${requestId}...`);
-    await client.mutation(api.scraping.development.claimRequest, {
-      requestId: requestId as any,
-      claudeSessionId: `daemon-${Date.now()}`,
-    });
+    // Request already claimed by getNextAndClaim - no need to claim again
 
     // STEP 1: Explore the site navigation structure BEFORE building the scraper
     let explorationResult: SiteExplorationResult | null = null;
@@ -580,8 +655,6 @@ async function processRequest(request: DevelopmentRequest, verbose: boolean = fa
       }
     );
 
-    currentProcess = claudeProcess;
-
     // Stream stdout and parse JSON events
     let stdout = "";
     let lastAssistantMessage = "";
@@ -649,9 +722,7 @@ async function processRequest(request: DevelopmentRequest, verbose: boolean = fa
         writeLog(`Timeout after ${CLAUDE_TIMEOUT_MS / 60000} minutes`);
         claudeProcess.kill("SIGTERM");
         setTimeout(() => {
-          if (currentProcess) {
-            claudeProcess.kill("SIGKILL");
-          }
+          claudeProcess.kill("SIGKILL");
         }, 5000);
         resolve(124);
       }, CLAUDE_TIMEOUT_MS);
@@ -662,8 +733,6 @@ async function processRequest(request: DevelopmentRequest, verbose: boolean = fa
         resolve(code ?? 1);
       });
     });
-
-    currentProcess = null;
     const duration = Math.round((Date.now() - startTime) / 1000);
 
     console.log(`\n${"=".repeat(60)}`);
@@ -732,11 +801,16 @@ async function processRequest(request: DevelopmentRequest, verbose: boolean = fa
       const testResult = await runTestScript(outputFile, request.sourceUrl, verbose);
 
       // Record test results
+      // Filter out internal placeholders, keep only real sample data
+      const visibleSamples = testResult.sessions
+        .filter((s: any) => !s._index) // Remove hidden count placeholders
+        .slice(0, 5);
+
       await client.mutation(api.scraping.development.recordTestResults, {
         requestId: requestId as any,
         sessionsFound: testResult.sessions.length,
-        sampleData: testResult.sessions.length > 0
-          ? JSON.stringify(testResult.sessions.slice(0, 5), null, 2)
+        sampleData: visibleSamples.length > 0
+          ? JSON.stringify(visibleSamples, null, 2)
           : undefined,
         error: testResult.error,
       });
@@ -787,9 +861,8 @@ async function processRequest(request: DevelopmentRequest, verbose: boolean = fa
       });
     }
   } catch (error) {
-    console.error(`   Error:`, error instanceof Error ? error.message : error);
-  } finally {
-    isProcessing = false;
+    console.error(`${prefix}    Error:`, error instanceof Error ? error.message : error);
+    throw error; // Re-throw so processRequestAsync can handle cleanup
   }
 }
 
@@ -995,39 +1068,61 @@ async function runTestScript(
       }
     );
 
-    log(`   Test output:\n${output.slice(-1000)}`);
+    log(`   Test output:\n${output.slice(-1500)}`);
 
-    // Parse output to extract session count
+    // Try to parse JSON output first (most reliable)
+    const jsonMatch = output.match(/__JSON_START__([\s\S]*?)__JSON_END__/);
+    if (jsonMatch) {
+      try {
+        const jsonData = JSON.parse(jsonMatch[1].trim());
+        if (jsonData.success && jsonData.sessionCount > 0) {
+          // Use the actual sample data from the scraper
+          const sessions = jsonData.samples.map((s: any) => ({
+            name: s.name || "(no name)",
+            dates: s.startDate && s.endDate ? `${s.startDate} - ${s.endDate}` : s.startDate,
+            location: s.location,
+            ages: s.minAge || s.maxAge ? `${s.minAge || '?'}-${s.maxAge || '?'}` : undefined,
+            price: s.priceInCents ? `$${(s.priceInCents / 100).toFixed(2)}` : s.priceRaw,
+            available: s.isAvailable,
+          }));
+
+          // Add count indicator if there are more
+          if (jsonData.sessionCount > sessions.length) {
+            sessions.push({
+              name: `... and ${jsonData.sessionCount - sessions.length} more sessions`,
+              _isPlaceholder: true,
+            });
+          }
+
+          // Return sessions with actual count for recording
+          const fullSessions = [];
+          for (let i = 0; i < jsonData.sessionCount; i++) {
+            if (i < sessions.length) {
+              fullSessions.push(sessions[i]);
+            } else {
+              fullSessions.push({ _index: i + 1 }); // Hidden placeholder for count
+            }
+          }
+
+          return { sessions: fullSessions, error: undefined };
+        }
+      } catch (e) {
+        log(`   Warning: Failed to parse JSON output: ${e}`);
+      }
+    }
+
+    // Fallback: Parse text output
     const successMatch = output.match(/SUCCESS: Found (\d+) sessions/);
     if (successMatch) {
       const sessionCount = parseInt(successMatch[1]);
+      const sessions: any[] = [{
+        name: `Found ${sessionCount} sessions`,
+        note: "JSON parsing failed - see test output for details"
+      }];
 
-      // Create placeholder sessions with the ACTUAL count
-      // The sampleData will contain actual session info from the output
-      const sessions: any[] = [];
-
-      // Try to extract sample session names from output for sampleData
-      const sampleMatch = output.match(/Sample sessions:([\s\S]*?)(?:Field coverage:|$)/);
-      if (sampleMatch) {
-        const sampleText = sampleMatch[1];
-        // Split by [1], [2], etc. - first element is content BEFORE [1] (separator), so skip it
-        const sessionBlocks = sampleText.split(/\[\d+\]/).slice(1).filter(Boolean);
-        for (const block of sessionBlocks.slice(0, 5)) {
-          // Get first line that isn't just dashes or whitespace
-          const lines = block.split('\n').map((l: string) => l.trim()).filter((l: string) => l && !/^-+$/.test(l));
-          if (lines[0]) {
-            sessions.push({ name: lines[0], note: "sample from test output" });
-          }
-        }
-      }
-
-      // Ensure we return the correct count by padding if needed
-      // This is important because sessions.length is what gets recorded
+      // Pad to correct count
       while (sessions.length < sessionCount) {
-        sessions.push({
-          name: `Session ${sessions.length + 1}`,
-          note: `(placeholder - total: ${sessionCount})`
-        });
+        sessions.push({ _index: sessions.length + 1 });
       }
 
       return { sessions, error: undefined };

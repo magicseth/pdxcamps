@@ -44,7 +44,19 @@ export default function ScraperDevPage() {
 function ScraperDevContent() {
   const searchParams = useSearchParams();
   const isAdmin = useQuery(api.admin.queries.isAdmin);
-  const requests = useQuery(api.scraping.development.listRequests, { limit: 50 });
+  const cities = useQuery(api.cities.queries.listActiveCities);
+
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [cityFilter, setCityFilter] = useState<string>('');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [limit, setLimit] = useState(100);
+
+  const requests = useQuery(api.scraping.development.listRequests, {
+    limit,
+    sortOrder,
+    status: statusFilter as any || undefined,
+    cityId: cityFilter as any || undefined,
+  });
 
   // Pre-fill from query params (when coming from "Improve Scraper" link)
   const prefillSourceId = searchParams.get('sourceId');
@@ -55,6 +67,7 @@ function ScraperDevContent() {
   const [newSourceName, setNewSourceName] = useState(prefillSourceName || '');
   const [newSourceUrl, setNewSourceUrl] = useState(prefillSourceUrl || '');
   const [newSourceId, setNewSourceId] = useState(prefillSourceId || '');
+  const [newCityId, setNewCityId] = useState('');
   const [newNotes, setNewNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -95,17 +108,23 @@ function ScraperDevContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!newCityId) {
+      alert('Please select a market');
+      return;
+    }
     setSubmitting(true);
     try {
       await requestDevelopment({
         sourceName: newSourceName,
         sourceUrl: newSourceUrl,
+        cityId: newCityId as Id<"cities">,
         sourceId: newSourceId ? (newSourceId as Id<"scrapeSources">) : undefined,
         notes: newNotes || undefined,
       });
       setNewSourceName('');
       setNewSourceUrl('');
       setNewSourceId('');
+      setNewCityId('');
       setNewNotes('');
       setShowNewForm(false);
       // Clear query params from URL
@@ -173,10 +192,28 @@ function ScraperDevContent() {
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Camp/Organization Name
+                  Market *
+                </label>
+                <select
+                  value={newCityId}
+                  onChange={(e) => setNewCityId(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900"
+                  required
+                >
+                  <option value="">Select Market</option>
+                  {cities?.map((city) => (
+                    <option key={city._id} value={city._id}>
+                      {city.name}, {city.state}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Camp/Organization Name *
                 </label>
                 <input
                   type="text"
@@ -189,7 +226,7 @@ function ScraperDevContent() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Website URL
+                  Website URL *
                 </label>
                 <input
                   type="url"
@@ -225,8 +262,64 @@ function ScraperDevContent() {
 
       {/* Request List */}
       <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between flex-wrap gap-4">
           <h3 className="text-lg font-semibold">Development Requests</h3>
+          <div className="flex items-center gap-3">
+            {/* City/Market Filter */}
+            <select
+              value={cityFilter}
+              onChange={(e) => setCityFilter(e.target.value)}
+              className="px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700"
+            >
+              <option value="">All Markets</option>
+              {cities?.map((city) => (
+                <option key={city._id} value={city._id}>
+                  {city.name}
+                </option>
+              ))}
+            </select>
+
+            {/* Status Filter */}
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700"
+            >
+              <option value="">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="in_progress">In Progress</option>
+              <option value="testing">Testing</option>
+              <option value="needs_feedback">Needs Feedback</option>
+              <option value="completed">Completed</option>
+              <option value="failed">Failed</option>
+            </select>
+
+            {/* Sort Order */}
+            <select
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+              className="px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700"
+            >
+              <option value="asc">Oldest First</option>
+              <option value="desc">Newest First</option>
+            </select>
+
+            {/* Limit */}
+            <select
+              value={limit}
+              onChange={(e) => setLimit(parseInt(e.target.value))}
+              className="px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700"
+            >
+              <option value="50">Show 50</option>
+              <option value="100">Show 100</option>
+              <option value="200">Show 200</option>
+              <option value="500">Show All</option>
+            </select>
+
+            <span className="text-sm text-slate-500">
+              {requests.length} shown
+            </span>
+          </div>
         </div>
 
         {requests.length === 0 ? (
@@ -292,6 +385,11 @@ function RequestRow({ request }: { request: any }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <StatusBadge status={request.status} />
+            {request.cityName && (
+              <span className="px-1.5 py-0.5 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded">
+                {request.cityName}
+              </span>
+            )}
             <h4 className="font-medium truncate">{request.sourceName}</h4>
           </div>
           <a

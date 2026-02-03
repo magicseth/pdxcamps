@@ -14,7 +14,7 @@ import { Id } from "../_generated/dataModel";
 // Create workflow manager
 export const workflow = new WorkflowManager(components.workflow, {
   workpoolOptions: {
-    maxParallelism: 2, // Limit concurrent scrapes to avoid rate limits
+    maxParallelism: 10, // Allow up to 10 concurrent scrapes
   },
 });
 

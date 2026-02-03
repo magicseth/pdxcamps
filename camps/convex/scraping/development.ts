@@ -17,6 +17,7 @@ export const requestScraperDevelopment = mutation({
   args: {
     sourceName: v.string(),
     sourceUrl: v.string(),
+    cityId: v.id("cities"), // Required: market this request is for
     sourceId: v.optional(v.id("scrapeSources")),
     notes: v.optional(v.string()),
     requestedBy: v.optional(v.string()),
@@ -43,6 +44,7 @@ export const requestScraperDevelopment = mutation({
     return ctx.db.insert("scraperDevelopmentRequests", {
       sourceName: args.sourceName,
       sourceUrl: args.sourceUrl,
+      cityId: args.cityId,
       sourceId: args.sourceId,
       notes: args.notes,
       requestedBy: args.requestedBy,
@@ -82,22 +84,54 @@ export const listRequests = query({
       )
     ),
     limit: v.optional(v.number()),
+    sortOrder: v.optional(v.union(v.literal("asc"), v.literal("desc"))),
+    cityId: v.optional(v.id("cities")), // Filter by city/market
   },
   handler: async (ctx, args) => {
-    const limit = args.limit ?? 50;
+    const limit = args.limit ?? 100;
+    const order = args.sortOrder ?? "asc"; // Default to oldest first
 
-    if (args.status) {
-      return ctx.db
+    let requests;
+
+    // Use index for filtering when possible
+    if (args.cityId) {
+      // Filter by city using the index
+      requests = await ctx.db
+        .query("scraperDevelopmentRequests")
+        .withIndex("by_city", (q) => q.eq("cityId", args.cityId!))
+        .order(order)
+        .take(limit * 2);
+
+      // Post-filter by status if needed
+      if (args.status) {
+        requests = requests.filter(r => r.status === args.status);
+      }
+    } else if (args.status) {
+      requests = await ctx.db
         .query("scraperDevelopmentRequests")
         .withIndex("by_status", (q) => q.eq("status", args.status!))
-        .order("desc")
+        .order(order)
+        .take(limit);
+    } else {
+      requests = await ctx.db
+        .query("scraperDevelopmentRequests")
+        .order(order)
         .take(limit);
     }
 
-    return ctx.db
-      .query("scraperDevelopmentRequests")
-      .order("desc")
-      .take(limit);
+    // Enrich with city name (now just a simple lookup since cityId is directly on the request)
+    const enrichedRequests = await Promise.all(
+      requests.map(async (request) => {
+        const city = await ctx.db.get(request.cityId);
+        return {
+          ...request,
+          cityName: city?.name,
+          citySlug: city?.slug,
+        };
+      })
+    );
+
+    return enrichedRequests.slice(0, limit);
   },
 });
 
@@ -138,6 +172,36 @@ export const claimRequest = mutation({
     });
 
     return args.requestId;
+  },
+});
+
+/**
+ * Atomically get next pending request AND claim it
+ * Safe for parallel workers - only one worker will get each request
+ */
+export const getNextAndClaim = mutation({
+  args: {
+    workerId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Get the first pending request
+    const pending = await ctx.db
+      .query("scraperDevelopmentRequests")
+      .withIndex("by_status", (q) => q.eq("status", "pending"))
+      .first();
+
+    if (!pending) {
+      return null; // No work available
+    }
+
+    // Claim it atomically
+    await ctx.db.patch(pending._id, {
+      status: "in_progress",
+      claudeSessionId: args.workerId,
+      claudeSessionStartedAt: Date.now(),
+    });
+
+    return pending;
   },
 });
 

@@ -1,0 +1,472 @@
+/**
+ * Admin migrations for data cleanup and updates
+ */
+import { mutation, query, internalMutation } from "../_generated/server";
+import { v } from "convex/values";
+
+/**
+ * Check which organizations are missing city data
+ */
+export const checkMissingCityData = query({
+  args: {},
+  handler: async (ctx) => {
+    const orgs = await ctx.db.query("organizations").collect();
+    const sources = await ctx.db.query("scrapeSources").collect();
+
+    const orgsWithoutCity = orgs.filter(o => !o.cityIds || o.cityIds.length === 0);
+
+    // Find Portland city
+    const portland = await ctx.db
+      .query("cities")
+      .withIndex("by_slug", q => q.eq("slug", "portland"))
+      .first();
+
+    return {
+      totalOrganizations: orgs.length,
+      organizationsWithoutCity: orgsWithoutCity.length,
+      organizationsWithCity: orgs.length - orgsWithoutCity.length,
+      totalScrapeSources: sources.length,
+      portlandCity: portland ? { id: portland._id, name: portland.name } : null,
+      sampleOrgsWithoutCity: orgsWithoutCity.slice(0, 5).map(o => ({
+        id: o._id,
+        name: o.name,
+        cityIds: o.cityIds,
+      })),
+    };
+  },
+});
+
+/**
+ * Set Portland as the city for all organizations without city data
+ */
+export const populatePortlandCity = mutation({
+  args: {
+    dryRun: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const dryRun = args.dryRun ?? true;
+
+    // Find Portland city
+    const portland = await ctx.db
+      .query("cities")
+      .withIndex("by_slug", q => q.eq("slug", "portland"))
+      .first();
+
+    if (!portland) {
+      throw new Error("Portland city not found. Create the Portland city first.");
+    }
+
+    // Find all organizations without city data
+    const orgs = await ctx.db.query("organizations").collect();
+    const orgsWithoutCity = orgs.filter(o => !o.cityIds || o.cityIds.length === 0);
+
+    if (dryRun) {
+      return {
+        dryRun: true,
+        wouldUpdate: orgsWithoutCity.length,
+        portlandCityId: portland._id,
+        sampleOrgs: orgsWithoutCity.slice(0, 10).map(o => o.name),
+      };
+    }
+
+    // Update each organization
+    let updated = 0;
+    for (const org of orgsWithoutCity) {
+      await ctx.db.patch(org._id, {
+        cityIds: [portland._id],
+      });
+      updated++;
+    }
+
+    return {
+      dryRun: false,
+      updated,
+      portlandCityId: portland._id,
+    };
+  },
+});
+
+/**
+ * Ensure all locations have a cityId
+ * (locations should already have cityId from the session's city)
+ */
+export const checkLocationCityData = query({
+  args: {},
+  handler: async (ctx) => {
+    const locations = await ctx.db.query("locations").collect();
+
+    // Locations already require cityId in schema, so just count
+    const cities = new Map<string, number>();
+    for (const loc of locations) {
+      const city = await ctx.db.get(loc.cityId);
+      const cityName = city?.name || "unknown";
+      cities.set(cityName, (cities.get(cityName) || 0) + 1);
+    }
+
+    return {
+      totalLocations: locations.length,
+      byCity: Object.fromEntries(cities),
+    };
+  },
+});
+
+/**
+ * Check sessions by city
+ */
+export const checkSessionCityData = query({
+  args: {},
+  handler: async (ctx) => {
+    const sessions = await ctx.db.query("sessions").collect();
+
+    const cities = new Map<string, number>();
+    for (const session of sessions) {
+      const city = await ctx.db.get(session.cityId);
+      const cityName = city?.name || "unknown";
+      cities.set(cityName, (cities.get(cityName) || 0) + 1);
+    }
+
+    return {
+      totalSessions: sessions.length,
+      byCity: Object.fromEntries(cities),
+    };
+  },
+});
+
+/**
+ * List all cities
+ */
+export const listCities = query({
+  args: {},
+  handler: async (ctx) => {
+    const cities = await ctx.db.query("cities").collect();
+    return cities.map(c => ({
+      id: c._id,
+      name: c.name,
+      slug: c.slug,
+      state: c.state,
+      isActive: c.isActive,
+    }));
+  },
+});
+
+/**
+ * Count organizations by city
+ */
+export const organizationsByCity = query({
+  args: {},
+  handler: async (ctx) => {
+    const orgs = await ctx.db.query("organizations").collect();
+    const cities = await ctx.db.query("cities").collect();
+
+    const cityCounts = new Map<string, { name: string; count: number }>();
+
+    // Initialize all cities
+    for (const city of cities) {
+      cityCounts.set(city._id, { name: city.name, count: 0 });
+    }
+
+    // Count orgs per city
+    for (const org of orgs) {
+      for (const cityId of org.cityIds || []) {
+        const existing = cityCounts.get(cityId);
+        if (existing) {
+          existing.count++;
+        }
+      }
+    }
+
+    return {
+      totalOrganizations: orgs.length,
+      byCity: Object.fromEntries(
+        Array.from(cityCounts.entries()).map(([id, data]) => [data.name, data.count])
+      ),
+    };
+  },
+});
+
+/**
+ * Check scrapeSources missing direct cityId
+ */
+export const checkScrapeSourcesCityData = query({
+  args: {},
+  handler: async (ctx) => {
+    const sources = await ctx.db.query("scrapeSources").collect();
+
+    const withCity = sources.filter(s => s.cityId);
+    const withoutCity = sources.filter(s => !s.cityId);
+
+    // Check which ones have organizationId we can derive from
+    const derivable = await Promise.all(
+      withoutCity.map(async (source) => {
+        if (!source.organizationId) return null;
+        const org = await ctx.db.get(source.organizationId);
+        if (!org || !org.cityIds || org.cityIds.length === 0) return null;
+        return {
+          sourceId: source._id,
+          sourceName: source.name,
+          orgId: org._id,
+          orgName: org.name,
+          cityId: org.cityIds[0],
+        };
+      })
+    );
+
+    const canDerive = derivable.filter(Boolean);
+    const cannotDerive = withoutCity.filter(
+      s => !canDerive.some(d => d?.sourceId === s._id)
+    );
+
+    return {
+      totalSources: sources.length,
+      withDirectCityId: withCity.length,
+      withoutDirectCityId: withoutCity.length,
+      canDeriveFromOrg: canDerive.length,
+      cannotDerive: cannotDerive.length,
+      sampleCannotDerive: cannotDerive.slice(0, 5).map(s => ({
+        id: s._id,
+        name: s.name,
+        url: s.url,
+        hasOrg: !!s.organizationId,
+      })),
+    };
+  },
+});
+
+/**
+ * Populate cityId on scrapeSources from their organization
+ */
+export const populateScrapeSourcesCityId = mutation({
+  args: {
+    dryRun: v.optional(v.boolean()),
+    defaultCitySlug: v.optional(v.string()), // For sources without org
+  },
+  handler: async (ctx, args) => {
+    const dryRun = args.dryRun ?? true;
+    const defaultCitySlug = args.defaultCitySlug ?? "portland";
+
+    // Get default city
+    const defaultCity = await ctx.db
+      .query("cities")
+      .withIndex("by_slug", q => q.eq("slug", defaultCitySlug))
+      .first();
+
+    if (!defaultCity) {
+      throw new Error(`Default city '${defaultCitySlug}' not found`);
+    }
+
+    const sources = await ctx.db.query("scrapeSources").collect();
+    const sourcesWithoutCity = sources.filter(s => !s.cityId);
+
+    const updates: Array<{
+      sourceId: string;
+      sourceName: string;
+      cityId: string;
+      cityName: string;
+      derivedFrom: string;
+    }> = [];
+
+    for (const source of sourcesWithoutCity) {
+      let cityId = defaultCity._id;
+      let cityName = defaultCity.name;
+      let derivedFrom = "default";
+
+      if (source.organizationId) {
+        const org = await ctx.db.get(source.organizationId);
+        if (org && org.cityIds && org.cityIds.length > 0) {
+          const city = await ctx.db.get(org.cityIds[0]);
+          if (city) {
+            cityId = city._id;
+            cityName = city.name;
+            derivedFrom = `organization: ${org.name}`;
+          }
+        }
+      }
+
+      updates.push({
+        sourceId: source._id,
+        sourceName: source.name,
+        cityId,
+        cityName,
+        derivedFrom,
+      });
+    }
+
+    if (dryRun) {
+      return {
+        dryRun: true,
+        wouldUpdate: updates.length,
+        defaultCity: defaultCity.name,
+        sampleUpdates: updates.slice(0, 10),
+      };
+    }
+
+    // Apply updates
+    for (const update of updates) {
+      await ctx.db.patch(update.sourceId as any, {
+        cityId: update.cityId as any,
+      });
+    }
+
+    return {
+      dryRun: false,
+      updated: updates.length,
+      defaultCity: defaultCity.name,
+    };
+  },
+});
+
+/**
+ * Check scraperDevelopmentRequests missing direct cityId
+ */
+export const checkDevRequestsCityData = query({
+  args: {},
+  handler: async (ctx) => {
+    const requests = await ctx.db.query("scraperDevelopmentRequests").collect();
+
+    const withCity = requests.filter(r => r.cityId);
+    const withoutCity = requests.filter(r => !r.cityId);
+
+    return {
+      totalRequests: requests.length,
+      withDirectCityId: withCity.length,
+      withoutDirectCityId: withoutCity.length,
+      sampleWithoutCity: withoutCity.slice(0, 5).map(r => ({
+        id: r._id,
+        name: r.sourceName,
+        url: r.sourceUrl,
+        hasSourceId: !!r.sourceId,
+      })),
+    };
+  },
+});
+
+/**
+ * Count scrapeSources by city
+ */
+export const scrapeSourcesByCity = query({
+  args: {},
+  handler: async (ctx) => {
+    const sources = await ctx.db.query("scrapeSources").collect();
+    const cities = await ctx.db.query("cities").collect();
+
+    const cityCounts = new Map<string, { name: string; count: number }>();
+
+    for (const city of cities) {
+      cityCounts.set(city._id, { name: city.name, count: 0 });
+    }
+
+    for (const source of sources) {
+      if (source.cityId) {
+        const existing = cityCounts.get(source.cityId);
+        if (existing) {
+          existing.count++;
+        }
+      }
+    }
+
+    return {
+      totalSources: sources.length,
+      byCity: Object.fromEntries(
+        Array.from(cityCounts.entries()).map(([id, data]) => [data.name, data.count])
+      ),
+    };
+  },
+});
+
+/**
+ * Populate cityId on scraperDevelopmentRequests from their source/organization
+ */
+export const populateDevRequestsCityId = mutation({
+  args: {
+    dryRun: v.optional(v.boolean()),
+    defaultCitySlug: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const dryRun = args.dryRun ?? true;
+    const defaultCitySlug = args.defaultCitySlug ?? "portland";
+
+    // Get default city
+    const defaultCity = await ctx.db
+      .query("cities")
+      .withIndex("by_slug", q => q.eq("slug", defaultCitySlug))
+      .first();
+
+    if (!defaultCity) {
+      throw new Error(`Default city '${defaultCitySlug}' not found`);
+    }
+
+    const requests = await ctx.db.query("scraperDevelopmentRequests").collect();
+    const requestsWithoutCity = requests.filter(r => !r.cityId);
+
+    const updates: Array<{
+      requestId: string;
+      requestName: string;
+      cityId: string;
+      cityName: string;
+      derivedFrom: string;
+    }> = [];
+
+    for (const request of requestsWithoutCity) {
+      let cityId = defaultCity._id;
+      let cityName = defaultCity.name;
+      let derivedFrom = "default";
+
+      // Try to derive from sourceId -> organization -> city
+      if (request.sourceId) {
+        const source = await ctx.db.get(request.sourceId);
+        if (source) {
+          // First check if source has direct cityId
+          if (source.cityId) {
+            const city = await ctx.db.get(source.cityId);
+            if (city) {
+              cityId = city._id;
+              cityName = city.name;
+              derivedFrom = `source: ${source.name}`;
+            }
+          } else if (source.organizationId) {
+            // Fall back to organization
+            const org = await ctx.db.get(source.organizationId);
+            if (org && org.cityIds && org.cityIds.length > 0) {
+              const city = await ctx.db.get(org.cityIds[0]);
+              if (city) {
+                cityId = city._id;
+                cityName = city.name;
+                derivedFrom = `organization: ${org.name}`;
+              }
+            }
+          }
+        }
+      }
+
+      updates.push({
+        requestId: request._id,
+        requestName: request.sourceName,
+        cityId,
+        cityName,
+        derivedFrom,
+      });
+    }
+
+    if (dryRun) {
+      return {
+        dryRun: true,
+        wouldUpdate: updates.length,
+        defaultCity: defaultCity.name,
+        sampleUpdates: updates.slice(0, 10),
+      };
+    }
+
+    // Apply updates
+    for (const update of updates) {
+      await ctx.db.patch(update.requestId as any, {
+        cityId: update.cityId as any,
+      });
+    }
+
+    return {
+      dryRun: false,
+      updated: updates.length,
+      defaultCity: defaultCity.name,
+    };
+  },
+});

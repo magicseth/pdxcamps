@@ -130,9 +130,13 @@ export default defineSchema({
     // Custom style prompt for AI image generation (overrides auto-generated style)
     imageStylePrompt: v.optional(v.string()),
     isActive: v.boolean(),
+    // Featured camps show on the landing page
+    isFeatured: v.optional(v.boolean()),
   })
     .index("by_organization", ["organizationId"])
     .index("by_slug", ["slug"])
+    .index("by_featured", ["isFeatured", "isActive"])
+    .index("by_is_active", ["isActive"])
     .searchIndex("search_camps", {
       searchField: "description",
       filterFields: ["organizationId", "isActive"],
@@ -377,6 +381,7 @@ export default defineSchema({
 
   scrapeSources: defineTable({
     organizationId: v.optional(v.id("organizations")),
+    cityId: v.id("cities"), // Market this source belongs to (required)
     name: v.string(),
     url: v.string(),
 
@@ -396,7 +401,8 @@ export default defineSchema({
     scraperCode: v.optional(v.string()),
 
     // AI-generated scraper configuration (legacy/fallback)
-    scraperConfig: v.object({
+    // Optional - daemon will generate this for new sources
+    scraperConfig: v.optional(v.object({
       version: v.number(),
       generatedAt: v.number(),
       generatedBy: v.union(v.literal("claude"), v.literal("manual")),
@@ -445,7 +451,7 @@ export default defineSchema({
 
       requiresJavaScript: v.boolean(),
       waitForSelector: v.optional(v.string()),
-    }),
+    })),
 
     // Health tracking
     scraperHealth: v.object({
@@ -500,6 +506,7 @@ export default defineSchema({
     rescanReason: v.optional(v.string()),
   })
     .index("by_organization", ["organizationId"])
+    .index("by_city", ["cityId"])
     .index("by_next_scheduled_scrape", ["nextScheduledScrape"])
     .index("by_is_active", ["isActive"]),
 
@@ -512,6 +519,7 @@ export default defineSchema({
     sourceName: v.string(),
     sourceUrl: v.string(),
     sourceId: v.optional(v.id("scrapeSources")), // Link to existing source if updating
+    cityId: v.id("cities"), // Market this request is for (required)
 
     // Request details
     requestedBy: v.optional(v.string()),
@@ -579,7 +587,8 @@ export default defineSchema({
     finalScraperCode: v.optional(v.string()),
   })
     .index("by_status", ["status"])
-    .index("by_source", ["sourceId"]),
+    .index("by_source", ["sourceId"])
+    .index("by_city", ["cityId"]),
 
   pendingSessions: defineTable({
     jobId: v.id("scrapeJobs"),

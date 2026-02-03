@@ -28,7 +28,7 @@ The scraper should export a function that:
    - minAge/maxAge or minGrade/maxGrade
    - priceInCents (price * 100)
    - registrationUrl
-   - isAvailable (boolean)
+   - isAvailable (boolean, only if explicitly shown on page - do NOT default to true)
 3. Returns an array of session objects
 
 ## Steps
@@ -161,7 +161,7 @@ export interface ExtractedSession {
   priceInCents?: number;
   priceRaw?: string;
   registrationUrl?: string;
-  isAvailable?: boolean;
+  isAvailable?: boolean;  // Only set if explicitly shown (e.g., "Sold Out", "Spots Available") - leave undefined otherwise
   isFlexible?: boolean;  // True for drop-in camps with generated weekly sessions
   flexibleDateRange?: string;  // Original date range like "June 15 - August 21"
   imageUrls?: string[];
@@ -241,6 +241,7 @@ function generateWeeklySessions(
 - Include raw text fields (dateRaw, timeRaw, etc.) for debugging
 - Make the scraper robust to minor HTML changes
 - Add comments explaining your extraction logic
+- **Do NOT assume isAvailable: true** - only set `isAvailable` if the page explicitly shows availability status (e.g., "Sold Out", "Register Now", "Spots Available"). Leave it undefined otherwise.
 
 ## CRITICAL: Test Your Scraper Before Finishing
 
