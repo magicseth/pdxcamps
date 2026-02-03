@@ -5,12 +5,14 @@ import { api } from '@/convex/_generated/api';
 import Link from 'next/link';
 import { use } from 'react';
 import { useAuth } from '@workos-inc/authkit-nextjs/components';
+import { useMarket } from '@/hooks/useMarket';
 
 export default function FamilySharedPlanPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params);
   const { user, loading: authLoading } = useAuth();
   const isLoggedIn = !!user;
   const plan = useQuery(api.share.queries.getFamilySharedPlan, { shareToken: token });
+  const market = useMarket();
 
   if (plan === undefined) {
     return (
@@ -89,7 +91,7 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <span className="text-xl">☀️</span>
-            <span className="font-bold text-lg text-slate-900">PDX Camps</span>
+            <span className="font-bold text-lg text-slate-900">{market.tagline}</span>
           </Link>
           {isLoggedIn ? (
             <Link
@@ -367,7 +369,7 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
       {/* Footer */}
       <footer className="bg-white border-t border-slate-200 py-8 mt-12">
         <div className="max-w-3xl mx-auto px-4 text-center text-slate-500 text-sm">
-          <p className="mb-2">© {new Date().getFullYear()} PDX Camps. Made in Portland.</p>
+          <p className="mb-2">© {new Date().getFullYear()} {market.tagline}. Made in {market.madeIn}.</p>
           <div className="flex justify-center gap-4">
             <Link href="/terms" className="hover:text-slate-700">Terms</Link>
             <Link href="/privacy" className="hover:text-slate-700">Privacy</Link>

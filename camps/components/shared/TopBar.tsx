@@ -1,17 +1,20 @@
 'use client';
 
 import Link from 'next/link';
+import { useMarket } from '@/hooks/useMarket';
 
 interface TopBarProps {
   title?: string;
 }
 
-export function TopBar({ title = 'PDX Camps' }: TopBarProps) {
+export function TopBar({ title }: TopBarProps) {
+  const market = useMarket();
+  const displayTitle = title ?? market.tagline;
   return (
     <header className="sticky top-0 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3 z-20">
       <div className="max-w-4xl mx-auto flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
-          <span className="text-lg font-bold text-slate-900 dark:text-white">{title}</span>
+          <span className="text-lg font-bold text-slate-900 dark:text-white">{displayTitle}</span>
         </Link>
 
         <Link

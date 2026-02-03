@@ -4,10 +4,12 @@ import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import Link from 'next/link';
 import { use } from 'react';
+import { useMarket } from '@/hooks/useMarket';
 
 export default function SharedPlanPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params);
   const plan = useQuery(api.share.queries.getSharedPlan, { shareToken: token });
+  const market = useMarket();
 
   if (plan === undefined) {
     return (
@@ -47,7 +49,7 @@ export default function SharedPlanPage({ params }: { params: Promise<{ token: st
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xl">☀️</span>
-            <span className="font-bold text-lg text-slate-900">PDX Camps</span>
+            <span className="font-bold text-lg text-slate-900">{market.tagline}</span>
           </div>
           <Link
             href="/sign-up"
@@ -159,7 +161,7 @@ export default function SharedPlanPage({ params }: { params: Promise<{ token: st
             Plan Your Family's Summer Too!
           </h2>
           <p className="text-slate-600 mb-6 max-w-md mx-auto">
-            Join thousands of Portland families using PDX Camps to organize their summer.
+            Join thousands of {market.name} families using {market.tagline} to organize their summer.
             Find camps near you, coordinate with friends, and never miss a deadline.
           </p>
           <Link
@@ -177,7 +179,7 @@ export default function SharedPlanPage({ params }: { params: Promise<{ token: st
       {/* Footer */}
       <footer className="bg-white border-t border-slate-200 py-8 mt-12">
         <div className="max-w-3xl mx-auto px-4 text-center text-slate-500 text-sm">
-          <p>© {new Date().getFullYear()} PDX Camps. Made in Portland.</p>
+          <p>© {new Date().getFullYear()} {market.tagline}. Made in {market.madeIn}.</p>
         </div>
       </footer>
     </div>

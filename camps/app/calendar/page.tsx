@@ -7,6 +7,7 @@ import { Id } from '../../convex/_generated/dataModel';
 import Link from 'next/link';
 import { Authenticated, Unauthenticated } from 'convex/react';
 import { BottomNav } from '../../components/shared/BottomNav';
+import { useMarket } from '../../hooks/useMarket';
 
 type ViewMode = 'month' | 'list';
 type RegistrationStatus = 'interested' | 'waitlisted' | 'registered' | 'cancelled';
@@ -101,6 +102,8 @@ function getCalendarDays(year: number, month: number): Date[] {
 }
 
 export default function CalendarPage() {
+  const market = useMarket();
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 pb-20">
       {/* Skip to main content link for keyboard users */}
@@ -132,7 +135,7 @@ export default function CalendarPage() {
             </Link>
             <Link href="/" className="flex items-center gap-2">
               <span className="text-xl">☀️</span>
-              <span className="font-bold hidden sm:inline">PDX Camps</span>
+              <span className="font-bold hidden sm:inline">{market.tagline}</span>
             </Link>
           </div>
         </div>

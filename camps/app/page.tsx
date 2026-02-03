@@ -1675,6 +1675,7 @@ function SharePlanModal({
 }
 
 function AppHeader({ user, onSignOut, isPremium }: { user: User | null; onSignOut: () => void; isPremium?: boolean }) {
+  const market = useMarket();
   const ADMIN_EMAILS = ['seth@magicseth.com'];
   const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email);
 
@@ -1683,7 +1684,7 @@ function AppHeader({ user, onSignOut, isPremium }: { user: User | null; onSignOu
       <div className="max-w-4xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-xl">☀️</span>
-          <span className="font-bold text-lg">PDX Camps</span>
+          <span className="font-bold text-lg">{market.tagline}</span>
         </div>
         <div className="flex items-center gap-4">
           {!isPremium && isPremium !== undefined && (

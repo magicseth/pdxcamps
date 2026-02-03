@@ -9,12 +9,15 @@ import { Id } from '../../../../convex/_generated/dataModel';
 import { Authenticated, Unauthenticated } from 'convex/react';
 import { ChildCoverageCard } from '../../../../components/planner/ChildCoverageCard';
 import { AddEventModal } from '../../../../components/planner/AddEventModal';
+import { useMarket } from '../../../../hooks/useMarket';
 import { EditEventModal } from '../../../../components/planner/EditEventModal';
 import { BottomNav } from '../../../../components/shared/BottomNav';
 import { MapWrapper, MapSession } from '../../../../components/map';
 import { calculateAge, isAgeInRange, isGradeInRange, doDateRangesOverlap } from '../../../../convex/lib/helpers';
 
 export default function WeekDetailPage() {
+  const market = useMarket();
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       {/* Skip to main content link for keyboard users */}
@@ -42,7 +45,7 @@ export default function WeekDetailPage() {
             </Link>
             <div className="flex items-center gap-2">
               <span className="text-xl">☀️</span>
-              <span className="font-bold text-lg">PDX Camps</span>
+              <span className="font-bold text-lg">{market.tagline}</span>
             </div>
           </div>
         </div>

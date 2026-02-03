@@ -5,10 +5,12 @@ import { useQuery, useAction } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useMarket } from '../../hooks/useMarket';
 
 export default function UpgradePage() {
   const searchParams = useSearchParams();
   const canceled = searchParams.get('canceled') === 'true';
+  const market = useMarket();
 
   const subscription = useQuery(api.subscriptions.getSubscription);
   const createCheckout = useAction(api.subscriptions.createCheckoutSession);
@@ -42,7 +44,7 @@ export default function UpgradePage() {
             You're a Premium Member!
           </h1>
           <p className="text-slate-600 dark:text-slate-400 mb-8">
-            You have full access to all features. Thank you for supporting PDX Camps!
+            You have full access to all features. Thank you for supporting {market.tagline}!
           </p>
           <Link
             href="/"

@@ -7,12 +7,14 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@workos-inc/authkit-nextjs/components';
 import { Id } from '../../../convex/_generated/dataModel';
 import Link from 'next/link';
+import { useMarket } from '../../../hooks/useMarket';
 
 type CalendarSharingDefault = 'private' | 'friends_only' | 'public';
 
 export default function FamilySetupPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const market = useMarket();
   const cities = useQuery(api.cities.queries.listActiveCities);
   const existingFamily = useQuery(api.families.queries.getCurrentFamily);
   const createFamily = useMutation(api.families.mutations.createFamily);
@@ -98,7 +100,7 @@ export default function FamilySetupPage() {
         </Link>
 
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Welcome to PDX Camps</h1>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Welcome to {market.tagline}</h1>
           <p className="mt-2 text-slate-600 dark:text-slate-400">
             Let&apos;s set up your family profile
           </p>

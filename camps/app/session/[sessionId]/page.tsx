@@ -8,6 +8,7 @@ import { api } from '../../../convex/_generated/api';
 import { Id } from '../../../convex/_generated/dataModel';
 import { OrgLogo } from '../../../components/shared/OrgLogo';
 import { BottomNav } from '../../../components/shared/BottomNav';
+import { useMarket } from '../../../hooks/useMarket';
 
 // Grade mapping for display
 const GRADE_LABELS: Record<number, string> = {
@@ -31,6 +32,7 @@ const GRADE_LABELS: Record<number, string> = {
 export default function SessionDetailPage() {
   const params = useParams();
   const sessionId = params.sessionId as string;
+  const market = useMarket();
 
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showWaitlistModal, setShowWaitlistModal] = useState(false);
@@ -74,14 +76,14 @@ export default function SessionDetailPage() {
   // Update document title with camp name
   useEffect(() => {
     if (session?.camp?.name) {
-      document.title = `${session.camp.name} | PDX Camps`;
+      document.title = `${session.camp.name} | ${market.tagline}`;
     } else {
-      document.title = 'Camp Session | PDX Camps';
+      document.title = `Camp Session | ${market.tagline}`;
     }
     return () => {
-      document.title = 'PDX Camps';
+      document.title = market.tagline;
     };
-  }, [session?.camp?.name]);
+  }, [session?.camp?.name, market.tagline]);
 
   // Mutations
   const markInterested = useMutation(api.registrations.mutations.markInterested);
@@ -328,7 +330,7 @@ export default function SessionDetailPage() {
               </Link>
               <Link href="/" className="flex items-center gap-2">
                 <span className="text-xl">☀️</span>
-                <span className="font-bold">PDX Camps</span>
+                <span className="font-bold">{market.tagline}</span>
               </Link>
             </div>
           </div>
@@ -740,7 +742,7 @@ export default function SessionDetailPage() {
 
                   const icsContent = `BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//PDX Camps//Camp Session//EN
+PRODID:-//${market.tagline}//Camp Session//EN
 BEGIN:VEVENT
 DTSTART:${startDateTime}
 DTEND:${endDateTime}

@@ -11,6 +11,7 @@ import { OrgLogo } from '../../../components/shared/OrgLogo';
 import { BottomNav } from '../../../components/shared/BottomNav';
 import { MapWrapper, MapSession } from '../../../components/map';
 import { UpgradeModal } from '../../../components/shared/UpgradeModal';
+import { useMarket } from '../../../hooks/useMarket';
 
 // Categories for filtering
 const CATEGORIES = [
@@ -50,6 +51,7 @@ export default function DiscoverPage() {
   const citySlug = params.citySlug as string;
   const router = useRouter();
   const searchParams = useSearchParams();
+  const market = useMarket();
 
   // Parse initial state from URL
   const getInitialState = useCallback(() => {
@@ -152,9 +154,9 @@ export default function DiscoverPage() {
   // Update document title
   useEffect(() => {
     const cityName = city?.name || 'Discover';
-    document.title = `${cityName} Summer Camps | PDX Camps`;
+    document.title = `${cityName} Summer Camps | ${market.tagline}`;
     return () => {
-      document.title = 'PDX Camps';
+      document.title = market.tagline;
     };
   }, [city?.name]);
 
@@ -460,7 +462,7 @@ export default function DiscoverPage() {
               </Link>
               <Link href="/" className="flex items-center gap-2">
                 <span className="text-xl">☀️</span>
-                <span className="font-bold hidden sm:inline">PDX Camps</span>
+                <span className="font-bold hidden sm:inline">{market.tagline}</span>
               </Link>
             </div>
           </div>
@@ -2566,13 +2568,14 @@ function SpinnerIcon() {
 
 function ShareSearchButton() {
   const [copied, setCopied] = useState(false);
+  const market = useMarket();
 
   const handleShare = async () => {
     const url = window.location.href;
     try {
       if (typeof navigator !== 'undefined' && navigator.share) {
         await navigator.share({
-          title: 'Camp Search - PDX Camps',
+          title: `Camp Search - ${market.tagline}`,
           text: 'Check out these camps I found!',
           url,
         });
