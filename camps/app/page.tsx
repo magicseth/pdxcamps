@@ -1215,34 +1215,22 @@ function PlannerHub({
               </>
             )}
 
-            {stats && stats.weeksWithGaps > 0 && defaultCity && (
-              <Link
-                href={`/discover/${defaultCity.slug}`}
-                className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-white text-blue-600 rounded-lg font-medium text-sm hover:bg-blue-50 transition-colors"
-              >
-                <SearchIcon />
-                Find Camps to Fill Gaps
-              </Link>
-            )}
-          </div>
-
-          {/* Share Your Plan - Big CTA */}
-          <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-6 mb-6 text-white">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-4 text-center sm:text-left">
-                <div className="text-4xl">🔗</div>
-                <div>
-                  <h3 className="text-xl font-bold">Share Your Summer Plan!</h3>
-                  <p className="text-purple-100">
-                    Send your plan to friends & family. Coordinate camps together!
-                  </p>
-                </div>
-              </div>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              {stats && stats.weeksWithGaps > 0 && defaultCity && (
+                <Link
+                  href={`/discover/${defaultCity.slug}`}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-white text-blue-600 rounded-lg font-medium text-sm hover:bg-blue-50 transition-colors"
+                >
+                  <SearchIcon />
+                  Find Camps
+                </Link>
+              )}
               <button
                 onClick={() => setShowShareModal(true)}
-                className="flex-shrink-0 px-8 py-4 bg-white text-purple-600 font-bold text-lg rounded-xl hover:bg-purple-50 transition-all shadow-lg hover:shadow-xl hover:scale-105"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 border border-white/40 text-white rounded-lg font-medium text-sm hover:bg-white/30 transition-colors"
               >
-                Share Plan →
+                <ShareIcon />
+                Share Plan
               </button>
             </div>
           </div>
@@ -1704,6 +1692,14 @@ function ListIcon() {
   return (
     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  );
+}
+
+function ShareIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
     </svg>
   );
 }
