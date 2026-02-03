@@ -232,7 +232,8 @@ function LandingPage() {
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-                Summer should be fun for everyone.<br />
+                Summer should be<br />
+                fun for everyone.<br />
                 <span className="text-slate-500">Including you.</span>
               </h2>
               <p className="text-xl text-slate-600">
