@@ -19,6 +19,7 @@ import { query, action, mutation } from "./_generated/server";
 import { components } from "./_generated/api";
 import { StripeSubscriptions } from "@convex-dev/stripe";
 import { v } from "convex/values";
+import Stripe from "stripe";
 
 // Initialize Stripe client
 const stripeClient = new StripeSubscriptions(components.stripe, {});
@@ -104,6 +105,7 @@ export const getSubscription = query({
 
 /**
  * Create a checkout session for subscription
+ * Uses Stripe SDK directly to support promotion codes
  */
 export const createCheckoutSession = action({
   args: {
@@ -115,7 +117,7 @@ export const createCheckoutSession = action({
       throw new Error("Not authenticated");
     }
 
-    // Get or create Stripe customer
+    // Get or create Stripe customer using the component
     const customer = await stripeClient.getOrCreateCustomer(ctx, {
       userId: identity.subject,
       email: identity.email || undefined,
@@ -131,20 +133,36 @@ export const createCheckoutSession = action({
 
     const baseUrl = process.env.SITE_URL || "http://localhost:3000";
 
-    const session = await stripeClient.createCheckoutSession(ctx, {
-      priceId,
-      customerId: customer.customerId,
+    // Use Stripe SDK directly to enable promotion codes
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
+    const session = await stripe.checkout.sessions.create({
+      customer: customer.customerId,
       mode,
-      successUrl: `${baseUrl}/upgrade/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancelUrl: `${baseUrl}/upgrade?canceled=true`,
-      subscriptionMetadata: {
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${baseUrl}/upgrade/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/upgrade?canceled=true`,
+      allow_promotion_codes: true,
+      metadata: {
         userId: identity.subject,
         plan: args.plan,
       },
+      subscription_data: mode === "subscription" ? {
+        metadata: {
+          userId: identity.subject,
+          plan: args.plan,
+        },
+      } : undefined,
+      payment_intent_data: mode === "payment" ? {
+        metadata: {
+          userId: identity.subject,
+          plan: args.plan,
+        },
+      } : undefined,
     });
 
     return {
-      sessionId: session.sessionId,
+      sessionId: session.id,
       url: session.url,
     };
   },

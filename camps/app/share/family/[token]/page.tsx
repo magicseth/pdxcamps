@@ -49,6 +49,7 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
   const allCamps = new Map<string, {
     campName: string;
     organizationName: string;
+    organizationLogoUrl: string | null;
     campSlug: string;
     citySlug: string;
     startDate: string;
@@ -61,6 +62,7 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
           allCamps.set(camp.sessionId, {
             campName: camp.campName,
             organizationName: camp.organizationName,
+            organizationLogoUrl: camp.organizationLogoUrl,
             campSlug: camp.campSlug,
             citySlug: camp.citySlug,
             startDate: camp.startDate,
@@ -111,7 +113,7 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
         {/* Plan Header */}
         <div className="bg-gradient-to-br from-accent to-accent-dark rounded-2xl p-6 mb-6 text-white">
           <h1 className="text-2xl font-bold mb-2">
-            {childNames}'s Summer {plan.year}
+            <span className={!isLoggedIn ? 'blur-sm select-none' : ''}>{childNames}</span>'s Summer {plan.year}
           </h1>
           <p className="text-white/80 mb-4">
             Shared by the {plan.familyName} family
@@ -162,12 +164,28 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
           </div>
         )}
 
+        {/* Sign in prompt for non-logged-in users */}
+        {!isLoggedIn && (
+          <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🔒</span>
+              <span className="font-medium text-slate-900">Sign in to see the full schedule</span>
+            </div>
+            <Link
+              href="/sign-in"
+              className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Sign In
+            </Link>
+          </div>
+        )}
+
         {/* Each Child's Schedule */}
         {plan.children.map((child) => (
           <div key={child.childId} className="mb-8">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-bold text-slate-900">
-                {child.childName}'s Schedule
+                <span className={!isLoggedIn ? 'blur-sm select-none' : ''}>{child.childName}</span>'s Schedule
               </h2>
               <div className="text-sm text-slate-500">
                 {child.stats.coveredWeeks} of {child.stats.totalWeeks} weeks covered
@@ -212,24 +230,44 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
                           return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                         };
                         return (
-                          <div key={i} className="flex items-center justify-between gap-3 bg-white rounded-lg p-2 border border-slate-100">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">
-                                {camp.organizationName[0]}
-                              </div>
-                              <div>
-                                <div className="font-medium text-slate-900 text-sm">{camp.campName}</div>
-                                <div className="text-xs text-slate-500">
-                                  {camp.organizationName} · {formatDate(camp.startDate)} - {formatDate(camp.endDate)}
+                          <div key={i} className="relative">
+                            <div className={`flex items-center justify-between gap-3 bg-white rounded-lg p-2 border border-slate-100 ${!isLoggedIn ? 'blur-sm select-none' : ''}`}>
+                              <div className="flex items-center gap-3">
+                                {camp.organizationLogoUrl ? (
+                                  <img
+                                    src={camp.organizationLogoUrl}
+                                    alt={camp.organizationName}
+                                    className="w-10 h-10 rounded-lg object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">
+                                    {camp.organizationName[0]}
+                                  </div>
+                                )}
+                                <div>
+                                  <div className="font-medium text-slate-900 text-sm">{camp.campName}</div>
+                                  <div className="text-xs text-slate-500">
+                                    {camp.organizationName} · {formatDate(camp.startDate)} - {formatDate(camp.endDate)}
+                                  </div>
                                 </div>
                               </div>
+                              {isLoggedIn && (
+                                <Link
+                                  href={`/discover/${camp.citySlug}?camp=${camp.campSlug}&from=${camp.startDate}&to=${camp.endDate}`}
+                                  className="flex-shrink-0 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                                >
+                                  Join Session
+                                </Link>
+                              )}
                             </div>
-                            <Link
-                              href={`/discover/${camp.citySlug}?camp=${camp.campSlug}&from=${camp.startDate}&to=${camp.endDate}`}
-                              className="flex-shrink-0 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors"
-                            >
-                              View Session
-                            </Link>
+                            {!isLoggedIn && (
+                              <Link
+                                href="/sign-in"
+                                className="absolute inset-0 flex items-center justify-center text-sm font-medium text-blue-600 hover:text-blue-700"
+                              >
+                                Sign in to see camp
+                              </Link>
+                            )}
                           </div>
                         );
                       })}
@@ -250,7 +288,7 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
         ))}
 
         {/* All Sessions Summary */}
-        {allCamps.size > 0 && (
+        {allCamps.size > 0 && isLoggedIn && (
           <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-6">
             <h3 className="font-bold text-slate-900 mb-4">
               All Sessions ({allCamps.size})
@@ -258,17 +296,30 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
             <div className="space-y-3">
               {Array.from(allCamps.values()).map((camp, i) => (
                 <div key={i} className="flex items-center justify-between gap-3 p-3 bg-slate-50 rounded-lg">
-                  <div>
-                    <div className="font-medium text-slate-900">{camp.campName}</div>
-                    <div className="text-sm text-slate-500">
-                      {camp.organizationName} · {formatDateRange(camp.startDate, camp.endDate)}
+                  <div className="flex items-center gap-3">
+                    {camp.organizationLogoUrl ? (
+                      <img
+                        src={camp.organizationLogoUrl}
+                        alt={camp.organizationName}
+                        className="w-10 h-10 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">
+                        {camp.organizationName[0]}
+                      </div>
+                    )}
+                    <div>
+                      <div className="font-medium text-slate-900">{camp.campName}</div>
+                      <div className="text-sm text-slate-500">
+                        {camp.organizationName} · {formatDateRange(camp.startDate, camp.endDate)}
+                      </div>
                     </div>
                   </div>
                   <Link
                     href={`/discover/${camp.citySlug}?camp=${camp.campSlug}&from=${camp.startDate}&to=${camp.endDate}`}
                     className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
                   >
-                    Add to My Plan
+                    Join Session
                   </Link>
                 </div>
               ))}

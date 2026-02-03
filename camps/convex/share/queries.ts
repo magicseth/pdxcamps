@@ -90,6 +90,15 @@ export const getFamilySharedPlan = query({
         );
         const orgMap = new Map(orgs.map((o) => [o._id, o]));
 
+        // Resolve org logos
+        const orgLogoUrls = new Map<string, string | null>();
+        for (const org of orgs) {
+          if (org.logoStorageId) {
+            const url = await ctx.storage.getUrl(org.logoStorageId);
+            orgLogoUrls.set(org._id, url);
+          }
+        }
+
         // Fetch camps to get slugs
         const campIds = [...new Set(sessions.map((s) => s.campId))];
         const campsRaw = await Promise.all(campIds.map((id) => ctx.db.get(id)));
@@ -123,6 +132,7 @@ export const getFamilySharedPlan = query({
             campName: string;
             campSlug: string;
             organizationName: string;
+            organizationLogoUrl: string | null;
             startDate: string;
             endDate: string;
             citySlug: string;
@@ -148,6 +158,7 @@ export const getFamilySharedPlan = query({
                 campName: session.campName ?? "Camp",
                 campSlug: camp?.slug ?? "camp",
                 organizationName: org?.name ?? "Unknown",
+                organizationLogoUrl: orgLogoUrls.get(session.organizationId) ?? null,
                 startDate: session.startDate,
                 endDate: session.endDate,
                 citySlug,
