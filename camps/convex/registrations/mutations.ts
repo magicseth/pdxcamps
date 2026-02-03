@@ -1,6 +1,10 @@
 import { mutation, internalMutation } from "../_generated/server";
 import { v } from "convex/values";
 import { requireFamily } from "../lib/auth";
+import { components } from "../_generated/api";
+
+// Free tier limit for saved camps
+const FREE_SAVED_CAMPS_LIMIT = 4;
 
 /**
  * Internal mutation to update session capacity counts.
@@ -39,6 +43,8 @@ export const updateSessionCounts = internalMutation({
 /**
  * Mark a session as interested (bookmark).
  * Creates a registration with status "interested".
+ *
+ * PAYWALL: Free users can only save 4 camps. Premium users get unlimited.
  */
 export const markInterested = mutation({
   args: {
@@ -75,6 +81,37 @@ export const markInterested = mutation({
     if (existingRegistration) {
       throw new Error("Registration already exists for this child and session");
     }
+
+    // === PAYWALL CHECK ===
+    // Count existing saved camps for this family (interested, registered, waitlisted)
+    const existingRegistrations = await ctx.db
+      .query("registrations")
+      .withIndex("by_family", (q) => q.eq("familyId", family._id))
+      .collect();
+
+    const activeSavedCamps = existingRegistrations.filter(
+      (r) => r.status === "interested" || r.status === "registered" || r.status === "waitlisted"
+    ).length;
+
+    // Check if user has premium subscription
+    const identity = await ctx.auth.getUserIdentity();
+    let isPremium = false;
+
+    if (identity) {
+      const subscriptions = await ctx.runQuery(
+        components.stripe.public.listSubscriptionsByUserId,
+        { userId: identity.subject }
+      );
+      isPremium = subscriptions.some(
+        (sub) => sub.status === "active" || sub.status === "trialing"
+      );
+    }
+
+    // Block if at limit and not premium
+    if (activeSavedCamps >= FREE_SAVED_CAMPS_LIMIT && !isPremium) {
+      throw new Error("PAYWALL:CAMP_LIMIT");
+    }
+    // === END PAYWALL CHECK ===
 
     const registrationId = await ctx.db.insert("registrations", {
       familyId: family._id,

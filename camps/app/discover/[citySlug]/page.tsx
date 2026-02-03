@@ -9,6 +9,7 @@ import { Id } from '../../../convex/_generated/dataModel';
 import { OrgLogo } from '../../../components/shared/OrgLogo';
 import { BottomNav } from '../../../components/shared/BottomNav';
 import { MapWrapper, MapSession } from '../../../components/map';
+import { UpgradeModal } from '../../../components/shared/UpgradeModal';
 
 // Categories for filtering
 const CATEGORIES = [
@@ -1293,6 +1294,7 @@ function SessionCard({
   distanceFromHome?: number;
 }) {
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showStyleEditor, setShowStyleEditor] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
@@ -1958,8 +1960,15 @@ function SessionCard({
           sessionId={session._id}
           campName={camp?.name ?? 'Camp'}
           onClose={() => setShowSaveModal(false)}
+          onPaywallHit={() => setShowUpgradeModal(true)}
         />
       )}
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+      />
 
       {/* Style Editor Modal */}
       {showStyleEditor && camp && (
@@ -1983,10 +1992,12 @@ function SaveSessionModal({
   sessionId,
   campName,
   onClose,
+  onPaywallHit,
 }: {
   sessionId: Id<'sessions'>;
   campName: string;
   onClose: () => void;
+  onPaywallHit: () => void;
 }) {
   const [selectedChildId, setSelectedChildId] = useState<Id<'children'> | null>(null);
   const [notes, setNotes] = useState('');
@@ -2027,6 +2038,12 @@ function SaveSessionModal({
         onClose();
       }, 1500);
     } catch (err) {
+      // Check for paywall error
+      if (err instanceof Error && err.message.includes('PAYWALL:')) {
+        onClose();
+        onPaywallHit();
+        return;
+      }
       setError(err instanceof Error ? err.message : 'Failed to save session');
     } finally {
       setIsSaving(false);
