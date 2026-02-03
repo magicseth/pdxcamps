@@ -155,6 +155,7 @@ function MarketSeedingTab({ cities }: { cities: any[] | undefined }) {
   // New automated workflow
   const queueDirectoryUrls = useMutation(api.scraping.directoryDaemon.queueDirectoryUrls);
   const seedCampUrls = useMutation(api.scraping.directoryDaemon.seedCampUrls);
+  const processQueue = useAction(api.scraping.directoryDaemonActions.processDirectoryQueue);
   const queueStatus = useQuery(api.scraping.directoryDaemon.getQueueStatus, {});
 
   // Legacy manual workflow
@@ -505,7 +506,29 @@ function MarketSeedingTab({ cities }: { cities: any[] | undefined }) {
           {/* Queue Status */}
           {queueStatus && (
             <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
-              <h4 className="font-medium mb-2">Queue Status</h4>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-medium">Queue Status</h4>
+                {queueStatus.pending > 0 && (
+                  <button
+                    onClick={async () => {
+                      setIsLoading(true);
+                      setError(null);
+                      try {
+                        const result = await processQueue({});
+                        alert(`Processed ${result.processed} directories, ${result.errors} errors`);
+                      } catch (err) {
+                        setError(err instanceof Error ? err.message : 'Failed to process queue');
+                      } finally {
+                        setIsLoading(false);
+                      }
+                    }}
+                    disabled={isLoading}
+                    className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {isLoading ? 'Processing...' : 'Process Queue Now'}
+                  </button>
+                )}
+              </div>
               <div className="grid grid-cols-4 gap-4 text-sm">
                 <div>
                   <p className="text-slate-500">Pending</p>
