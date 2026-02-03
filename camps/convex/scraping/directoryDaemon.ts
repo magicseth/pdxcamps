@@ -131,6 +131,129 @@ export const updateQueueItem = internalMutation({
   },
 });
 
+// Public mutation for local daemon to claim and update queue items
+export const claimQueueItem = mutation({
+  args: {
+    id: v.id("directoryQueue"),
+  },
+  handler: async (ctx, args) => {
+    const item = await ctx.db.get(args.id);
+    if (!item || item.status !== "pending") {
+      return null;
+    }
+    await ctx.db.patch(args.id, {
+      status: "processing",
+    });
+    return item;
+  },
+});
+
+export const completeQueueItem = mutation({
+  args: {
+    id: v.id("directoryQueue"),
+    success: v.boolean(),
+    error: v.optional(v.string()),
+    linksFound: v.optional(v.number()),
+    extractedUrls: v.optional(v.array(v.string())),
+  },
+  handler: async (ctx, args) => {
+    const item = await ctx.db.get(args.id);
+    if (!item) {
+      throw new Error("Queue item not found");
+    }
+
+    if (!args.success) {
+      await ctx.db.patch(args.id, {
+        status: "failed",
+        error: args.error,
+        processedAt: Date.now(),
+      });
+      return { created: 0, existed: 0 };
+    }
+
+    // Get city
+    const city = await ctx.db.get(item.cityId);
+    if (!city) {
+      throw new Error("City not found");
+    }
+
+    let created = 0;
+    let existed = 0;
+
+    // Create organizations from extracted URLs
+    if (args.extractedUrls) {
+      for (const url of args.extractedUrls) {
+        try {
+          const parsed = new URL(url);
+          const domain = parsed.hostname.replace(/^www\./, "");
+          const name = domain
+            .replace(/\.(com|org|edu|net|gov|co|io)$/i, "")
+            .split(/[.-]/)
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(" ");
+
+          // Check if org already exists
+          const existingOrgs = await ctx.db.query("organizations").collect();
+          const existingOrg = existingOrgs.find((o) => {
+            if (!o.website) return false;
+            try {
+              const orgDomain = new URL(o.website).hostname.replace(/^www\./, "");
+              return orgDomain === domain;
+            } catch {
+              return false;
+            }
+          });
+
+          if (existingOrg) {
+            existed++;
+            continue;
+          }
+
+          // Create organization
+          const orgId = await ctx.db.insert("organizations", {
+            name,
+            slug: domain.replace(/\./g, "-"),
+            website: url,
+            cityIds: [item.cityId],
+            isActive: true,
+            isVerified: false,
+          });
+
+          // Create scrape source
+          await ctx.db.insert("scrapeSources", {
+            organizationId: orgId,
+            cityId: item.cityId,
+            name,
+            url,
+            scrapeFrequencyHours: 168,
+            isActive: false,
+            scraperHealth: {
+              consecutiveFailures: 0,
+              totalRuns: 0,
+              successRate: 0,
+              needsRegeneration: false,
+            },
+          });
+
+          created++;
+        } catch {
+          // Skip invalid URLs
+        }
+      }
+    }
+
+    await ctx.db.patch(args.id, {
+      status: "completed",
+      linksFound: args.linksFound,
+      orgsCreated: created,
+      orgsExisted: existed,
+      processedAt: Date.now(),
+    });
+
+    return { created, existed };
+  },
+});
+
 // Action to process directory queue is in directoryDaemonActions.ts
 // Call api.scraping.directoryDaemonActions.processDirectoryQueue
 

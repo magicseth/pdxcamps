@@ -1816,5 +1816,239 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// Run the daemon
-main().catch(console.error);
+// ============================================
+// DIRECTORY QUEUE PROCESSING
+// ============================================
+
+interface DirectoryQueueItem {
+  _id: string;
+  cityId: string;
+  url: string;
+  status: string;
+  linkPattern?: string;
+  baseUrlFilter?: string;
+}
+
+/**
+ * Process pending directory queue items by fetching locally
+ */
+async function processDirectoryQueue(verbose: boolean = false) {
+  const log = (msg: string) => {
+    writeLog(msg);
+    if (verbose) console.log(msg);
+  };
+
+  log("📂 Checking directory queue...");
+
+  // Get pending items
+  const pending = await client.query(api.scraping.directoryDaemon.getPendingDirectories, { limit: 3 });
+
+  if (!pending || pending.length === 0) {
+    log("   No pending directory items");
+    return;
+  }
+
+  log(`   Found ${pending.length} pending directory items`);
+
+  for (const item of pending as DirectoryQueueItem[]) {
+    log(`\n   Processing: ${item.url}`);
+
+    try {
+      // Claim the item
+      const claimed = await client.mutation(api.scraping.directoryDaemon.claimQueueItem, {
+        id: item._id as any,
+      });
+
+      if (!claimed) {
+        log(`   Already claimed by another worker`);
+        continue;
+      }
+
+      // Fetch the URL locally (from this machine, not Convex servers)
+      log(`   Fetching locally...`);
+      const result = await fetchDirectoryLocally(item.url, item.linkPattern, item.baseUrlFilter, log);
+
+      if (!result.success) {
+        // Report failure
+        await client.mutation(api.scraping.directoryDaemon.completeQueueItem, {
+          id: item._id as any,
+          success: false,
+          error: result.error,
+        });
+        log(`   ❌ Failed: ${result.error}`);
+        continue;
+      }
+
+      log(`   Found ${result.urls.length} camp URLs`);
+
+      // Report success with extracted URLs
+      const completion = await client.mutation(api.scraping.directoryDaemon.completeQueueItem, {
+        id: item._id as any,
+        success: true,
+        linksFound: result.urls.length,
+        extractedUrls: result.urls,
+      });
+
+      log(`   ✅ Created ${completion.created} orgs, ${completion.existed} already existed`);
+
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      log(`   ❌ Error: ${errorMsg}`);
+
+      try {
+        await client.mutation(api.scraping.directoryDaemon.completeQueueItem, {
+          id: item._id as any,
+          success: false,
+          error: errorMsg,
+        });
+      } catch {
+        // Ignore error reporting errors
+      }
+    }
+  }
+}
+
+/**
+ * Fetch a directory URL locally and extract camp links
+ */
+async function fetchDirectoryLocally(
+  url: string,
+  linkPattern?: string,
+  baseUrlFilter?: string,
+  log: (msg: string) => void = console.log
+): Promise<{ success: boolean; urls: string[]; error?: string }> {
+  try {
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
+    });
+
+    if (!response.ok) {
+      return { success: false, urls: [], error: `HTTP ${response.status}: ${response.statusText}` };
+    }
+
+    const html = await response.text();
+
+    // Extract all links
+    const linkRegex = /<a[^>]*href=["']([^"']+)["'][^>]*>([^<]*)</gi;
+    const urls: string[] = [];
+    const seenDomains = new Set<string>();
+
+    let match;
+    while ((match = linkRegex.exec(html)) !== null) {
+      let linkUrl = match[1];
+      const text = match[2].trim();
+
+      // Skip empty, anchors, javascript, mailto, tel
+      if (!linkUrl || linkUrl.startsWith("#") || linkUrl.startsWith("javascript:") ||
+          linkUrl.startsWith("mailto:") || linkUrl.startsWith("tel:")) {
+        continue;
+      }
+
+      // Make absolute
+      try {
+        const absoluteUrl = new URL(linkUrl, url);
+        linkUrl = absoluteUrl.href;
+      } catch {
+        continue;
+      }
+
+      // Get domain
+      let domain: string;
+      try {
+        domain = new URL(linkUrl).hostname.replace(/^www\./, "");
+      } catch {
+        continue;
+      }
+
+      // Skip the source domain itself
+      const sourceHost = new URL(url).hostname.replace(/^www\./, "");
+      if (domain === sourceHost) continue;
+
+      // Apply filters
+      if (baseUrlFilter) {
+        const filterDomain = baseUrlFilter.replace(/^www\./, "");
+        if (!domain.includes(filterDomain)) continue;
+      }
+
+      if (linkPattern) {
+        try {
+          const pattern = new RegExp(linkPattern, "i");
+          if (!pattern.test(linkUrl) && !pattern.test(text)) continue;
+        } catch {
+          // Invalid regex, skip filter
+        }
+      }
+
+      // Skip common non-camp links
+      const skipPatterns = [
+        /\.(pdf|doc|docx|xls|xlsx|jpg|jpeg|png|gif|svg|css|js)$/i,
+        /facebook\.com|twitter\.com|instagram\.com|linkedin\.com|youtube\.com/i,
+        /login|signin|signup|account|cart|checkout|privacy|terms$/i,
+      ];
+
+      if (skipPatterns.some((p) => p.test(linkUrl))) continue;
+
+      // Dedupe by domain - only keep one URL per domain
+      if (seenDomains.has(domain)) continue;
+      seenDomains.add(domain);
+
+      urls.push(linkUrl);
+    }
+
+    log(`   Extracted ${urls.length} unique camp URLs`);
+    return { success: true, urls };
+
+  } catch (error) {
+    return {
+      success: false,
+      urls: [],
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+// Check for --directory flag to only process directory queue
+const directoryOnly = process.argv.includes("--directory") || process.argv.includes("-d");
+
+if (directoryOnly) {
+  // One-shot directory processing
+  console.log("📂 Processing directory queue only...");
+  processDirectoryQueue(true).then(() => {
+    console.log("Done.");
+    process.exit(0);
+  }).catch((err) => {
+    console.error("Error:", err);
+    process.exit(1);
+  });
+} else {
+  // Run the full daemon (scraper development + directory queue)
+  // Add directory queue check to the main loop
+  const originalMain = main;
+  main = async function() {
+    // Start the original main loop
+    const mainPromise = originalMain();
+
+    // Also periodically check directory queue
+    const directoryInterval = setInterval(async () => {
+      if (!shutdownRequested) {
+        try {
+          await processDirectoryQueue(process.argv.includes("-v") || process.argv.includes("--verbose"));
+        } catch (err) {
+          console.error("Directory queue error:", err);
+        }
+      }
+    }, 30000); // Check every 30 seconds
+
+    // Initial check
+    setTimeout(() => processDirectoryQueue(process.argv.includes("-v")), 5000);
+
+    await mainPromise;
+    clearInterval(directoryInterval);
+  };
+
+  main().catch(console.error);
+}
