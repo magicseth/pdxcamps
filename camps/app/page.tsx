@@ -326,6 +326,90 @@ function LandingPage() {
           </div>
         </section>
 
+        {/* Friends & Carpool Section */}
+        <section className="py-20 px-4 bg-gradient-to-br from-purple-50 to-blue-50">
+          <div className="max-w-5xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-12 items-center">
+              <div>
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-medium mb-4">
+                  <span>👯</span> Coming soon
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+                  "Are any of Emma's friends going?"
+                </h2>
+                <p className="text-xl text-slate-600 mb-6">
+                  The hardest part of camp isn't finding one—it's finding one where your kid knows someone.
+                </p>
+                <ul className="space-y-4">
+                  <li className="flex items-start gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold text-sm">1</span>
+                    <div>
+                      <span className="font-medium text-slate-900">Share your planning link</span>
+                      <p className="text-slate-600 text-sm">Send it to other parents from school or the neighborhood.</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold text-sm">2</span>
+                    <div>
+                      <span className="font-medium text-slate-900">See where friends are going</span>
+                      <p className="text-slate-600 text-sm">Camps show how many friends are registered for each week.</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold text-sm">3</span>
+                    <div>
+                      <span className="font-medium text-slate-900">Coordinate carpools</span>
+                      <p className="text-slate-600 text-sm">Same camp + same neighborhood = easy carpooling.</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+              <div className="bg-white rounded-2xl p-6 shadow-xl border border-slate-200">
+                {/* Mock UI preview */}
+                <div className="text-sm font-medium text-slate-500 mb-3">Camp Preview</div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-100">
+                    <div>
+                      <div className="font-medium text-slate-900">OMSI Science Camp</div>
+                      <div className="text-sm text-slate-500">Week of June 16</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="flex items-center gap-1 text-green-600 font-medium">
+                        <span>👯</span> 3 friends going
+                      </div>
+                      <div className="text-xs text-slate-500">from your circle</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
+                    <div>
+                      <div className="font-medium text-slate-900">Trackers Earth</div>
+                      <div className="text-sm text-slate-500">Week of June 23</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="flex items-center gap-1 text-slate-600 font-medium">
+                        <span>👤</span> 1 friend going
+                      </div>
+                      <div className="text-xs text-slate-500">from your circle</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg border border-purple-100">
+                    <div>
+                      <div className="font-medium text-slate-900">Oregon Zoo Camp</div>
+                      <div className="text-sm text-slate-500">Week of June 30</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="flex items-center gap-1 text-purple-600 font-medium">
+                        <span>🚗</span> Carpool available
+                      </div>
+                      <div className="text-xs text-slate-500">2 families nearby</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* How It Works - Outcome focused */}
         <section className="py-20 px-4">
           <div className="max-w-4xl mx-auto">
