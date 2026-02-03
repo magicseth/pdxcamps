@@ -10,6 +10,9 @@ export interface Market {
   neighborhoods: string; // e.g., "Portland, Beaverton, Lake Oswego"
   testimonialAttribution: string; // e.g., "Portland parent of 2"
   madeIn: string; // e.g., "Portland"
+  // Branding
+  iconPath: string; // e.g., "/icons/pdx" - will have /icon.png, /icon-192.png, /apple-icon.png
+  themeColor: string;
 }
 
 export const MARKETS: Market[] = [
@@ -24,6 +27,8 @@ export const MARKETS: Market[] = [
     neighborhoods: 'Portland, Beaverton, Lake Oswego, Tigard, West Linn',
     testimonialAttribution: 'Portland parent of 2',
     madeIn: 'Portland',
+    iconPath: '/icons/pdx',
+    themeColor: '#2563eb',
   },
   {
     slug: 'boston',
@@ -36,6 +41,8 @@ export const MARKETS: Market[] = [
     neighborhoods: 'Boston, Cambridge, Brookline, Newton, Somerville',
     testimonialAttribution: 'Boston parent of 2',
     madeIn: 'Boston',
+    iconPath: '/icons/bos',
+    themeColor: '#dc2626',
   },
 ];
 
