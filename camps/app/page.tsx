@@ -21,10 +21,15 @@ import { useMarket } from '../hooks/useMarket';
 export default function Home() {
   const { user, signOut } = useAuth();
 
+  // Custom signOut that returns to the current domain
+  const handleSignOut = useCallback(() => {
+    signOut({ returnTo: window.location.origin });
+  }, [signOut]);
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <Authenticated>
-        <AuthenticatedHub user={user} onSignOut={signOut} />
+        <AuthenticatedHub user={user} onSignOut={handleSignOut} />
       </Authenticated>
       <Unauthenticated>
         <LandingPage />
