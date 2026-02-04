@@ -17,11 +17,12 @@ export function TopBar({ title }: TopBarProps) {
           <Image
             src={`${market.iconPath}/icon.png`}
             alt={market.tagline}
-            width={100}
+            width={32}
             height={32}
-            className="h-8 w-auto"
+            className="h-8 w-8"
             priority
           />
+          <span className="font-bold text-lg text-slate-900 dark:text-white">{market.tagline}</span>
         </Link>
 
         <Link
