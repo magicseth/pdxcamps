@@ -22,24 +22,17 @@ export const forwardToSeth = internalAction({
 
     const resend = new Resend(resendApiKey);
 
-    // Fetch the email content first
-    const emailData = await resend.emails.receiving.get(args.emailId);
-    if (emailData.error) {
-      console.error("Failed to fetch email:", emailData.error);
-      throw new Error(`Fetch failed: ${emailData.error.message}`);
-    }
-
     // Tag subject with original sender for reply routing
     const taggedSubject = `[From: ${args.originalFrom}] ${args.originalSubject}`;
 
-    // Send fresh email with tagged subject
-    const { data, error } = await resend.emails.send({
+    // Use the SDK's forward helper - handles fetching content + attachments
+    const { data, error } = await resend.emails.receiving.forward({
+      emailId: args.emailId,
       to: "seth@magicseth.com",
       from: "PDX Camps <hello@pdxcamps.com>",
-      subject: taggedSubject,
-      text: emailData.data?.text || "(no content)",
-      html: emailData.data?.html || undefined,
-      replyTo: ["hello@pdxcamps.com"],
+      // Add custom text that includes the tagged subject for reply routing
+      passthrough: false,
+      text: `[Reply routing: ${args.originalFrom}]\nOriginal subject: ${args.originalSubject}\n\n---\n`,
     });
 
     if (error) {
