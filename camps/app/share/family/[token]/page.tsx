@@ -115,7 +115,7 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
         {/* Plan Header */}
         <div className="bg-gradient-to-br from-accent to-accent-dark rounded-2xl p-6 mb-6 text-white">
           <h1 className="text-2xl font-bold mb-2">
-            <span className={!isLoggedIn ? 'blur-sm select-none' : ''}>{childNames}</span>'s Summer {plan.year}
+            {childNames}'s Summer {plan.year}
           </h1>
           <p className="text-white/80 mb-4">
             Shared by the {plan.familyName} family
@@ -187,7 +187,7 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
           <div key={child.childId} className="mb-8">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-bold text-slate-900">
-                <span className={!isLoggedIn ? 'blur-sm select-none' : ''}>{child.childName}</span>'s Schedule
+                {child.childName}'s Schedule
               </h2>
               <div className="text-sm text-slate-500">
                 {child.stats.coveredWeeks} of {child.stats.totalWeeks} weeks covered
