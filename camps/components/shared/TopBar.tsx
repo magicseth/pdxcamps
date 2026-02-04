@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useMarket } from '@/hooks/useMarket';
 
 interface TopBarProps {
@@ -9,12 +10,18 @@ interface TopBarProps {
 
 export function TopBar({ title }: TopBarProps) {
   const market = useMarket();
-  const displayTitle = title ?? market.tagline;
   return (
     <header className="sticky top-0 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3 z-20">
       <div className="max-w-4xl mx-auto flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
-          <span className="text-lg font-bold text-slate-900 dark:text-white">{displayTitle}</span>
+          <Image
+            src={`${market.iconPath}/icon.png`}
+            alt={market.tagline}
+            width={100}
+            height={32}
+            className="h-8 w-auto"
+            priority
+          />
         </Link>
 
         <Link

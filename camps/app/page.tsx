@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '../convex/_generated/api';
 import { Id } from '../convex/_generated/dataModel';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@workos-inc/authkit-nextjs/components';
 import type { User } from '@workos-inc/node';
 import { WeekRow, MonthHeader } from '../components/planner/WeekRow';
@@ -56,10 +57,16 @@ function LandingPage() {
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200/50">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">☀️</span>
-            <span className="font-bold text-xl text-slate-900">{market.tagline}</span>
-          </div>
+          <Link href="/" className="flex items-center">
+            <Image
+              src={`${market.iconPath}/icon.png`}
+              alt={market.tagline}
+              width={120}
+              height={40}
+              className="h-10 w-auto"
+              priority
+            />
+          </Link>
           <div className="flex items-center gap-2">
             <a
               href={`/discover/${market.slug}`}
@@ -643,11 +650,14 @@ function LandingPage() {
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-3">
-              <span className="text-2xl">☀️</span>
-              <div>
-                <span className="font-bold text-lg text-white">{market.tagline}</span>
-                <p className="text-xs text-slate-500">By {market.name} parents, for {market.name} parents</p>
-              </div>
+              <Image
+                src={`${market.iconPath}/icon.png`}
+                alt={market.tagline}
+                width={100}
+                height={32}
+                className="h-8 w-auto brightness-0 invert"
+              />
+              <p className="text-xs text-slate-500">By {market.name} parents, for {market.name} parents</p>
             </div>
             <div className="flex items-center gap-6 text-sm">
               <a href={`/discover/${market.slug}`} className="hover:text-white transition-colors">Browse Camps</a>
@@ -1744,10 +1754,16 @@ function AppHeader({ user, onSignOut, isPremium }: { user: User | null; onSignOu
   return (
     <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3 sticky top-0 z-20">
       <div className="max-w-4xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">☀️</span>
-          <span className="font-bold text-lg">{market.tagline}</span>
-        </div>
+        <Link href="/" className="flex items-center">
+          <Image
+            src={`${market.iconPath}/icon.png`}
+            alt={market.tagline}
+            width={100}
+            height={32}
+            className="h-8 w-auto"
+            priority
+          />
+        </Link>
         <div className="flex items-center gap-4">
           {!isPremium && isPremium !== undefined && (
             <Link
