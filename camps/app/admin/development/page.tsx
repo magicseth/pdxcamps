@@ -375,6 +375,7 @@ function RequestRow({ request }: { request: any }) {
   const [expanded, setExpanded] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
 
   const submitFeedback = useMutation(api.scraping.development.submitFeedback);
   const approveCode = useMutation(api.scraping.development.approveScraperCode);
@@ -396,7 +397,12 @@ function RequestRow({ request }: { request: any }) {
   };
 
   const handleApprove = async () => {
-    await approveCode({ requestId: request._id });
+    setIsApproving(true);
+    try {
+      await approveCode({ requestId: request._id });
+    } finally {
+      setIsApproving(false);
+    }
   };
 
   const handleMarkFailed = async () => {
@@ -407,6 +413,195 @@ function RequestRow({ request }: { request: any }) {
     await forceRestart({ requestId: request._id, clearCode });
   };
 
+  // Parse sample data if available
+  const parsedSessions = request.lastTestSampleData ? (() => {
+    try {
+      return JSON.parse(request.lastTestSampleData);
+    } catch {
+      return null;
+    }
+  })() : null;
+
+  const needsReview = request.status === 'needs_feedback' || request.status === 'testing';
+  const hasTestResults = request.lastTestRun && (request.lastTestSessionsFound ?? 0) > 0;
+
+  // For needs_feedback status, show sample sessions inline
+  if (needsReview && hasTestResults && parsedSessions) {
+    return (
+      <li className="px-6 py-4 bg-yellow-50/50 dark:bg-yellow-900/10 border-l-4 border-yellow-400">
+        {/* Header row with info and actions */}
+        <div className="flex items-center justify-between gap-4 mb-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <StatusBadge status={request.status} />
+            {request.cityName && (
+              <span className="px-1.5 py-0.5 text-xs bg-surface/30 dark:bg-purple-900/30 text-primary-dark dark:text-purple-300 rounded">
+                {request.cityName}
+              </span>
+            )}
+            <h4 className="font-medium truncate">{request.sourceName}</h4>
+            <span className="text-xs text-slate-500">v{request.scraperVersion}</span>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <span className="text-sm text-slate-500">{request.lastTestSessionsFound} sessions</span>
+            <button
+              onClick={handleApprove}
+              disabled={isApproving}
+              className="px-3 py-1.5 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50 font-medium"
+            >
+              {isApproving ? '...' : 'Approve'}
+            </button>
+            <button
+              onClick={handleMarkFailed}
+              className="px-2 py-1.5 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded text-sm"
+              title="Mark as failed"
+            >
+              ✕
+            </button>
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="px-2 py-1.5 text-slate-500 hover:text-slate-700"
+            >
+              {expanded ? '▲' : '▼'}
+            </button>
+          </div>
+        </div>
+
+        {/* Sample sessions table - always visible for needs_feedback */}
+        <div className="bg-white dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 overflow-hidden mb-3">
+          <table className="w-full text-xs">
+            <thead className="bg-slate-50 dark:bg-slate-900">
+              <tr>
+                <th className="px-2 py-1.5 text-left font-medium text-slate-600 dark:text-slate-400">Camp Name</th>
+                <th className="px-2 py-1.5 text-left font-medium text-slate-600 dark:text-slate-400">Dates</th>
+                <th className="px-2 py-1.5 text-left font-medium text-slate-600 dark:text-slate-400">Times</th>
+                <th className="px-2 py-1.5 text-left font-medium text-slate-600 dark:text-slate-400">Ages</th>
+                <th className="px-2 py-1.5 text-left font-medium text-slate-600 dark:text-slate-400">Price</th>
+                <th className="px-2 py-1.5 text-left font-medium text-slate-600 dark:text-slate-400">Location</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+              {(Array.isArray(parsedSessions) ? parsedSessions.slice(0, 5) : []).map((session: any, i: number) => (
+                <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
+                  <td className="px-2 py-1.5 max-w-[200px] truncate" title={session.campName}>
+                    {session.campName || <span className="text-red-400">Missing</span>}
+                  </td>
+                  <td className="px-2 py-1.5 whitespace-nowrap">
+                    {session.startDate && session.endDate ? (
+                      `${session.startDate} - ${session.endDate}`
+                    ) : (
+                      <span className="text-red-400">Missing</span>
+                    )}
+                  </td>
+                  <td className="px-2 py-1.5 whitespace-nowrap">
+                    {session.dropOffTime && session.pickUpTime ? (
+                      `${formatTime(session.dropOffTime)} - ${formatTime(session.pickUpTime)}`
+                    ) : (
+                      <span className="text-slate-400">-</span>
+                    )}
+                  </td>
+                  <td className="px-2 py-1.5 whitespace-nowrap">
+                    {session.ageMin || session.ageMax || session.gradeMin || session.gradeMax ? (
+                      formatAgeRange(session)
+                    ) : (
+                      <span className="text-slate-400">-</span>
+                    )}
+                  </td>
+                  <td className="px-2 py-1.5 whitespace-nowrap">
+                    {session.price ? (
+                      `$${(session.price / 100).toFixed(0)}`
+                    ) : (
+                      <span className="text-slate-400">-</span>
+                    )}
+                  </td>
+                  <td className="px-2 py-1.5 max-w-[150px] truncate" title={session.locationName}>
+                    {session.locationName || <span className="text-slate-400">-</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {Array.isArray(parsedSessions) && parsedSessions.length > 5 && (
+            <div className="px-2 py-1 bg-slate-50 dark:bg-slate-900 text-xs text-slate-500 text-center">
+              +{parsedSessions.length - 5} more sessions
+            </div>
+          )}
+        </div>
+
+        {/* Inline feedback input */}
+        {request.status === 'needs_feedback' && (
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              className="flex-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900"
+              placeholder="Feedback: what's wrong or missing?"
+              onKeyDown={(e) => e.key === 'Enter' && handleSubmitFeedback()}
+            />
+            <button
+              onClick={handleSubmitFeedback}
+              disabled={submittingFeedback || !feedback.trim()}
+              className="px-3 py-1.5 bg-primary text-white rounded text-sm hover:bg-primary-dark disabled:opacity-50"
+            >
+              {submittingFeedback ? '...' : 'Send'}
+            </button>
+          </div>
+        )}
+
+        {/* Expanded section for additional details */}
+        {expanded && (
+          <div className="mt-4 space-y-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+            <a
+              href={request.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-primary hover:underline block"
+            >
+              {request.sourceUrl}
+            </a>
+
+            {request.lastTestError && (
+              <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-2 rounded">{request.lastTestError}</p>
+            )}
+
+            {request.generatedScraperCode && (
+              <details>
+                <summary className="text-sm text-primary cursor-pointer">View Generated Code</summary>
+                <pre className="mt-2 text-xs bg-slate-100 dark:bg-slate-800 p-4 rounded overflow-auto max-h-64 font-mono">
+                  {request.generatedScraperCode}
+                </pre>
+              </details>
+            )}
+
+            {request.feedbackHistory && request.feedbackHistory.length > 0 && (
+              <details>
+                <summary className="text-sm text-primary cursor-pointer">
+                  Feedback History ({request.feedbackHistory.length})
+                </summary>
+                <div className="mt-2 space-y-2">
+                  {request.feedbackHistory.map((fb: any, i: number) => (
+                    <div key={i} className="text-sm bg-slate-50 dark:bg-slate-900 rounded p-2">
+                      <span className="text-slate-500 text-xs">v{fb.scraperVersionBefore}: </span>
+                      {fb.feedback}
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
+
+            <details>
+              <summary className="text-sm text-primary cursor-pointer">Raw JSON</summary>
+              <pre className="mt-2 text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded overflow-auto max-h-48">
+                {request.lastTestSampleData}
+              </pre>
+            </details>
+          </div>
+        )}
+      </li>
+    );
+  }
+
+  // Default compact row for other statuses
   return (
     <li className="px-6 py-4">
       <div className="flex items-start justify-between">
@@ -500,42 +695,6 @@ function RequestRow({ request }: { request: any }) {
             </div>
           )}
 
-          {/* Actions */}
-          {request.status === 'needs_feedback' && (
-            <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
-              <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Provide Feedback
-              </p>
-              <textarea
-                value={feedback}
-                onChange={(e) => setFeedback(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-900 min-h-[80px] text-sm"
-                placeholder="What needs to be improved? Be specific about missing fields, incorrect data, etc."
-              />
-              <div className="flex gap-2 mt-2">
-                <button
-                  onClick={handleSubmitFeedback}
-                  disabled={submittingFeedback || !feedback.trim()}
-                  className="px-3 py-1.5 bg-primary text-white rounded text-sm hover:bg-primary-dark disabled:opacity-50"
-                >
-                  {submittingFeedback ? 'Sending...' : 'Send Feedback'}
-                </button>
-                <button
-                  onClick={handleApprove}
-                  className="px-3 py-1.5 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                >
-                  Approve & Complete
-                </button>
-                <button
-                  onClick={handleMarkFailed}
-                  className="px-3 py-1.5 bg-red-600 text-white rounded text-sm hover:bg-red-700"
-                >
-                  Mark Failed
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* Force Restart - available for stuck or completed requests */}
           {(request.status === 'in_progress' || request.status === 'testing') && (
             <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
@@ -579,6 +738,38 @@ function RequestRow({ request }: { request: any }) {
       )}
     </li>
   );
+}
+
+// Helper functions for formatting
+function formatTime(time: { hour: number; minute: number } | string): string {
+  if (typeof time === 'string') return time;
+  const hour = time.hour % 12 || 12;
+  const ampm = time.hour >= 12 ? 'pm' : 'am';
+  const min = time.minute > 0 ? `:${time.minute.toString().padStart(2, '0')}` : '';
+  return `${hour}${min}${ampm}`;
+}
+
+function formatAgeRange(session: any): string {
+  const parts = [];
+  if (session.ageMin || session.ageMax) {
+    if (session.ageMin && session.ageMax) {
+      parts.push(`${session.ageMin}-${session.ageMax}y`);
+    } else if (session.ageMin) {
+      parts.push(`${session.ageMin}+y`);
+    } else {
+      parts.push(`≤${session.ageMax}y`);
+    }
+  }
+  if (session.gradeMin || session.gradeMax) {
+    if (session.gradeMin && session.gradeMax) {
+      parts.push(`G${session.gradeMin}-${session.gradeMax}`);
+    } else if (session.gradeMin) {
+      parts.push(`G${session.gradeMin}+`);
+    } else {
+      parts.push(`≤G${session.gradeMax}`);
+    }
+  }
+  return parts.join(' / ');
 }
 
 function StatusBadge({ status }: { status: string }) {
