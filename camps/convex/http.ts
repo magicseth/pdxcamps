@@ -83,11 +83,26 @@ http.route({
 
       if (isSethReply) {
         // This is Seth replying - extract original recipient and send reply
+        // Look for routing info in subject OR body
         // Subject format: "Re: [From: original@email.com] Original Subject"
-        const originalSenderMatch = subject.match(/\[From: ([^\]]+)\]/);
+        // Body format: "[Reply routing: original@email.com]"
+        let originalSender: string | null = null;
 
-        if (originalSenderMatch) {
-          const originalSender = originalSenderMatch[1];
+        // Try subject first
+        const subjectMatch = subject.match(/\[From: ([^\]]+)\]/);
+        if (subjectMatch) {
+          originalSender = subjectMatch[1];
+        }
+
+        // Try body if not in subject
+        if (!originalSender && textBody) {
+          const bodyMatch = textBody.match(/\[Reply routing: ([^\]]+)\]/);
+          if (bodyMatch) {
+            originalSender = bodyMatch[1];
+          }
+        }
+
+        if (originalSender) {
 
           // Extract just Seth's reply (before the quoted content)
           // Look for common quote markers
@@ -120,7 +135,7 @@ http.route({
           });
           console.log(`Sent reply to ${originalSender}`);
         } else {
-          console.log("Seth's email but couldn't find original sender in subject");
+          console.log("Seth's email but couldn't find original sender in subject or body");
         }
       } else {
         // Forward to Seth using Node action (preserves attachments)
