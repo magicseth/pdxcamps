@@ -1003,6 +1003,11 @@ function PlannerHub({
   const subscription = useQuery(api.subscriptions.getSubscription);
   const isPremium = subscription?.isPremium ?? false;
 
+  const featuredSessions = useQuery(api.sessions.queries.getFeaturedSessions, {
+    citySlug: market.slug,
+    limit: 16,
+  });
+
   const familyEvents = useQuery(api.planner.queries.getFamilyEvents, {
     year: selectedYear,
   });
@@ -1376,6 +1381,42 @@ function PlannerHub({
             </div>
           )}
         </div>
+
+        {/* Scrolling Sessions Showcase */}
+        {featuredSessions && featuredSessions.length > 0 && (
+          <section className="bg-slate-900 py-12 overflow-hidden mt-8 -mx-4">
+            <div className="max-w-4xl mx-auto px-4 mb-6">
+              <h2 className="text-xl font-bold text-white">
+                Featured camps in {market.name}
+              </h2>
+              <p className="text-slate-400 text-sm mt-1">Happening this summer</p>
+            </div>
+
+            <div className="relative">
+              <div className="flex gap-4 animate-scroll-planner hover:pause-animation">
+                {featuredSessions.map((session) => (
+                  <SessionShowcaseCard key={session._id} session={session} citySlug={market.slug} />
+                ))}
+                {featuredSessions.map((session) => (
+                  <SessionShowcaseCard key={`dup-${session._id}`} session={session} citySlug={market.slug} />
+                ))}
+              </div>
+            </div>
+
+            <style jsx>{`
+              @keyframes scroll-planner {
+                0% { transform: translateX(0); }
+                100% { transform: translateX(-50%); }
+              }
+              .animate-scroll-planner {
+                animation: scroll-planner 60s linear infinite;
+              }
+              .animate-scroll-planner:hover {
+                animation-play-state: paused;
+              }
+            `}</style>
+          </section>
+        )}
       </main>
 
       <BottomNav citySlug={defaultCity?.slug} />
