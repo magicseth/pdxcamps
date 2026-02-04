@@ -83,6 +83,9 @@ http.route({
 
       if (isSethReply) {
         // This is Seth replying - extract original recipient and send reply
+        console.log("Seth reply detected. Subject:", subject);
+        console.log("Body preview:", textBody?.slice(0, 500));
+
         // Look for routing info in subject OR body
         // Subject format: "Re: [From: original@email.com] Original Subject"
         // Body format: "[Reply routing: original@email.com]"
@@ -92,6 +95,7 @@ http.route({
         const subjectMatch = subject.match(/\[From: ([^\]]+)\]/);
         if (subjectMatch) {
           originalSender = subjectMatch[1];
+          console.log("Found sender in subject:", originalSender);
         }
 
         // Try body if not in subject
@@ -99,6 +103,16 @@ http.route({
           const bodyMatch = textBody.match(/\[Reply routing: ([^\]]+)\]/);
           if (bodyMatch) {
             originalSender = bodyMatch[1];
+            console.log("Found sender in body:", originalSender);
+          }
+        }
+
+        // If still not found, look up the most recent inbound email that's not from Seth
+        if (!originalSender) {
+          const recentInbound = await ctx.runQuery(internal.email.getMostRecentNonSethInbound);
+          if (recentInbound) {
+            originalSender = recentInbound.fromEmail;
+            console.log("Found sender from recent inbound:", originalSender);
           }
         }
 

@@ -553,3 +553,24 @@ export const getCurrentFamilyForEmail = internalQuery({
     };
   },
 });
+
+/**
+ * Get the most recent inbound email that's not from Seth
+ * Used for reply routing when we can't find routing info in the email
+ */
+export const getMostRecentNonSethInbound = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const emails = await ctx.db
+      .query("inboundEmails")
+      .order("desc")
+      .take(10);
+
+    // Find the most recent one not from Seth
+    const nonSethEmail = emails.find(
+      (e) => !e.fromEmail.includes("seth@magicseth.com")
+    );
+
+    return nonSethEmail || null;
+  },
+});
