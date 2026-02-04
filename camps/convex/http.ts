@@ -31,11 +31,14 @@ http.route({
     try {
       const body = await req.json();
 
-      // Log the full payload for debugging
-      console.log("Inbound email payload:", JSON.stringify(body, null, 2));
+      // Only handle email.received events
+      if (body.type !== "email.received") {
+        return new Response(JSON.stringify({ ignored: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
 
-      // Resend inbound webhook only sends metadata - we need to fetch the body
-      // https://resend.com/docs/dashboard/webhooks/inbound-emails
       const data = body.data || body;
       const { email_id, from, to, subject } = data;
 
@@ -47,7 +50,6 @@ http.route({
         });
       }
 
-      // Fetch the full email content from Resend API
       const resendApiKey = process.env.RESEND_API_KEY;
       if (!resendApiKey) {
         console.error("RESEND_API_KEY not set");
@@ -57,7 +59,32 @@ http.route({
         });
       }
 
-      // Use the received email endpoint (different from sent emails)
+      // Forward the email using Resend API
+      const forwardResponse = await fetch(
+        "https://api.resend.com/emails/received/forward",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${resendApiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email_id: email_id,
+            to: "seth@magicseth.com",
+            from: "hello@pdxcamps.com",
+          }),
+        }
+      );
+
+      if (!forwardResponse.ok) {
+        console.error("Failed to forward email:", await forwardResponse.text());
+      } else {
+        const forwardData = await forwardResponse.json();
+        console.log("Forwarded email:", forwardData);
+      }
+
+      // Also store in database for admin view
+      // Fetch the email content for storage
       const emailResponse = await fetch(
         `https://api.resend.com/emails/received/${email_id}`,
         {
@@ -72,11 +99,8 @@ http.route({
 
       if (emailResponse.ok) {
         const emailData = await emailResponse.json();
-        console.log("Fetched email data:", JSON.stringify(emailData, null, 2));
         textBody = emailData.text;
         htmlBody = emailData.html;
-      } else {
-        console.error("Failed to fetch email:", emailResponse.status, await emailResponse.text());
       }
 
       await ctx.runMutation(internal.email.storeInboundEmail, {
