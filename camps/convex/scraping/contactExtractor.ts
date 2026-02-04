@@ -7,7 +7,7 @@
  * so we can reach out and ask permission for inclusion.
  */
 
-import { action, internalMutation, internalQuery } from "../_generated/server";
+import { action } from "../_generated/server";
 import { internal } from "../_generated/api";
 import { v } from "convex/values";
 import { Stagehand } from "@browserbasehq/stagehand";
@@ -87,7 +87,7 @@ Check the header, footer, sidebar, and main content areas. Also look for "Contac
 
       // If we have an organization ID, save the contact info
       if (args.organizationId && contactInfo) {
-        await ctx.runMutation(internal.scraping.contactExtractor.updateOrgContactInfo, {
+        await ctx.runMutation(internal.scraping.contactExtractorHelpers.updateOrgContactInfo, {
           organizationId: args.organizationId,
           email: contactInfo.email,
           phone: contactInfo.phone,
@@ -116,42 +116,5 @@ Check the header, footer, sidebar, and main content areas. Also look for "Contac
         error: errorMessage,
       };
     }
-  },
-});
-
-/**
- * Internal mutation to update organization contact info
- */
-export const updateOrgContactInfo = internalMutation({
-  args: {
-    organizationId: v.id("organizations"),
-    email: v.optional(v.string()),
-    phone: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    const updates: Record<string, string> = {};
-
-    if (args.email) {
-      updates.email = args.email;
-    }
-    if (args.phone) {
-      updates.phone = args.phone;
-    }
-
-    if (Object.keys(updates).length > 0) {
-      await ctx.db.patch(args.organizationId, updates);
-    }
-  },
-});
-
-/**
- * Internal query to get organization details
- */
-export const getOrganization = internalQuery({
-  args: {
-    organizationId: v.id("organizations"),
-  },
-  handler: async (ctx, args) => {
-    return await ctx.db.get(args.organizationId);
   },
 });
