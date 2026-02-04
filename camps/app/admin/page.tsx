@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from 'convex/react';
+import { useQuery, useAction } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import Link from 'next/link';
 import { Authenticated, Unauthenticated } from 'convex/react';
@@ -41,8 +41,23 @@ export default function AdminPage() {
 
 function AdminContent() {
   const [selectedCityId, setSelectedCityId] = useState<Id<"cities"> | undefined>(undefined);
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
 
   const isAdmin = useQuery(api.admin.queries.isAdmin);
+  const triggerWelcomeSequence = useAction(api.email.triggerWelcomeSequence);
+
+  const handleSendWelcomeEmails = async () => {
+    setEmailStatus('sending');
+    try {
+      await triggerWelcomeSequence();
+      setEmailStatus('sent');
+      setTimeout(() => setEmailStatus('idle'), 3000);
+    } catch (error) {
+      console.error('Failed to send welcome emails:', error);
+      setEmailStatus('error');
+      setTimeout(() => setEmailStatus('idle'), 3000);
+    }
+  };
   const cities = useQuery(api.cities.queries.listActiveCities);
   // Use lightweight summary query instead of full dashboard with sources
   const dashboard = useQuery(api.admin.queries.getDashboardSummary, { cityId: selectedCityId });
@@ -258,6 +273,25 @@ function AdminContent() {
         >
           Data Quality
         </Link>
+        <button
+          onClick={handleSendWelcomeEmails}
+          disabled={emailStatus === 'sending'}
+          className={`px-4 py-2 rounded-md text-sm font-medium ${
+            emailStatus === 'sent'
+              ? 'bg-green-600 text-white'
+              : emailStatus === 'error'
+              ? 'bg-red-600 text-white'
+              : 'bg-purple-600 text-white hover:bg-purple-700'
+          } disabled:opacity-50`}
+        >
+          {emailStatus === 'sending'
+            ? 'Sending...'
+            : emailStatus === 'sent'
+            ? 'Sent!'
+            : emailStatus === 'error'
+            ? 'Failed'
+            : 'Test Welcome Emails'}
+        </button>
       </div>
 
       {/* Secondary Metrics */}

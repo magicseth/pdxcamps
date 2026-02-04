@@ -9,9 +9,10 @@
  */
 
 import { action, internalAction, internalMutation } from "./_generated/server";
-import { components } from "./_generated/api";
+import { components, internal } from "./_generated/api";
 import { Resend, vOnEmailEventArgs } from "@convex-dev/resend";
 import { v } from "convex/values";
+import { Id } from "./_generated/dataModel";
 
 // Initialize Resend client
 // Note: To enable email event handling, add onEmailEvent option after
@@ -332,6 +333,79 @@ https://pdxcamps.com
     });
 
     return result;
+  },
+});
+
+/**
+ * Trigger welcome email sequence for the current user (admin use)
+ * Sends welcome email immediately and schedules tips email for 24 hours later
+ */
+export const triggerWelcomeSequence = action({
+  args: {},
+  handler: async (ctx): Promise<{ success: boolean; email: string }> => {
+    // Get the current user's family info
+    const family: {
+      _id: Id<"families">;
+      email: string;
+      displayName: string;
+      primaryCityId: Id<"cities">;
+    } | null = await ctx.runQuery(internal.email.queries.getCurrentFamily);
+    if (!family) {
+      throw new Error("No family found for current user");
+    }
+
+    // Get the city name
+    const city: { name: string } | null = await ctx.runQuery(internal.email.queries.getCity, {
+      cityId: family.primaryCityId,
+    });
+    const cityName = city?.name || "your area";
+
+    // Send welcome email immediately
+    await resend.sendEmail(ctx, {
+      from: `${FROM_NAME} <${FROM_EMAIL}>`,
+      to: [family.email],
+      subject: `Welcome to PDX Camps, ${family.displayName}!`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="text-align: center; padding: 24px 0;">
+            <h1 style="color: #1a1a1a; margin: 0;">Welcome to PDX Camps!</h1>
+          </div>
+
+          <p>Hi ${family.displayName},</p>
+
+          <p>Thanks for joining PDX Camps! We're excited to help you plan an amazing summer for your family in ${cityName}.</p>
+
+          <p>Your account is all set up and ready to go. Here's what you can do right now:</p>
+
+          <ul style="line-height: 1.8;">
+            <li><strong>Browse camps</strong> — Discover summer camps from dozens of local organizations</li>
+            <li><strong>Save favorites</strong> — Keep track of camps you're interested in</li>
+            <li><strong>Plan your summer</strong> — See your whole summer at a glance with our week-by-week planner</li>
+          </ul>
+
+          <p style="text-align: center; margin: 32px 0;">
+            <a href="https://pdxcamps.com" style="display: inline-block; padding: 14px 28px; background-color: #E5A33B; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">Start Exploring Camps</a>
+          </p>
+
+          <p>Happy planning!</p>
+
+          <p style="color: #666; font-size: 14px; margin-top: 32px; border-top: 1px solid #eee; padding-top: 16px;">
+            — The PDX Camps Team<br/>
+            <a href="https://pdxcamps.com" style="color: #E5A33B;">pdxcamps.com</a>
+          </p>
+        </div>
+      `,
+    });
+
+    // Schedule tips email for 24 hours later
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    await ctx.scheduler.runAfter(oneDayMs, internal.email.sendTipsEmail, {
+      to: family.email,
+      displayName: family.displayName,
+      cityName,
+    });
+
+    return { success: true, email: family.email };
   },
 });
 
