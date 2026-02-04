@@ -1179,10 +1179,11 @@ function PlannerHub({
               {/* Share button */}
               <button
                 onClick={() => setShowShareModal(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg font-medium text-sm hover:bg-primary-dark transition-colors"
                 title="Share schedule"
               >
                 <ShareIcon />
+                <span className="hidden sm:inline">Share</span>
               </button>
             </div>
           </div>
