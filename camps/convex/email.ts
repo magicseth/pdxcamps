@@ -86,6 +86,62 @@ const FROM_EMAIL = "hello@pdxcamps.com";
 const FROM_NAME = "PDX Camps";
 
 /**
+ * Test the organization outreach email by sending to current user
+ */
+export const testOutreachEmail = action({
+  args: {},
+  handler: async (ctx): Promise<{ success: boolean; email: string }> => {
+    // Get the current user's email
+    const family = await ctx.runQuery(internal.email.getCurrentFamilyForEmail);
+    if (!family) {
+      throw new Error("No family found for current user");
+    }
+
+    // Send test outreach email to the user
+    await resend.sendEmail(ctx, {
+      from: `${FROM_NAME} <${FROM_EMAIL}>`,
+      to: [family.email],
+      subject: `Featuring Test Organization on PDX Camps`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
+          <p style="background: #fef3c7; padding: 12px; border-radius: 6px; font-size: 14px;">
+            <strong>TEST EMAIL</strong> — This is what organizations receive when we reach out.
+          </p>
+
+          <p>Hello,</p>
+
+          <p>I'm reaching out from <strong>PDX Camps</strong>, a free platform helping Portland families discover and plan summer camps for their kids.</p>
+
+          <p>We've noticed <strong>Test Organization</strong> and would love to feature your camps on our platform. This gives families an easy way to find your programs when planning their summer.</p>
+
+          <p><strong>What we're asking:</strong></p>
+          <ul>
+            <li>Permission to list your camp sessions on PDX Camps</li>
+            <li>We'll link directly to your registration page</li>
+            <li>Families can save and compare your camps alongside others</li>
+          </ul>
+
+          <p><strong>What you get:</strong></p>
+          <ul>
+            <li>Free exposure to families actively planning summer camps</li>
+            <li>No fees or commissions - we're a free service</li>
+            <li>Direct links to your registration</li>
+          </ul>
+
+          <p>Would you be open to being featured? Just reply to this email and we'll get you set up.</p>
+
+          <p>Best,<br/>
+          The PDX Camps Team<br/>
+          <a href="https://pdxcamps.com">pdxcamps.com</a></p>
+        </div>
+      `,
+    });
+
+    return { success: true, email: family.email };
+  },
+});
+
+/**
  * Send a contact outreach email to a camp organization
  */
 export const sendContactOutreach = action({

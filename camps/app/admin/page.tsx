@@ -41,21 +41,36 @@ export default function AdminPage() {
 
 function AdminContent() {
   const [selectedCityId, setSelectedCityId] = useState<Id<"cities"> | undefined>(undefined);
-  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [welcomeEmailStatus, setWelcomeEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [outreachEmailStatus, setOutreachEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
 
   const isAdmin = useQuery(api.admin.queries.isAdmin);
   const triggerWelcomeSequence = useAction(api.email.triggerWelcomeSequence);
+  const testOutreachEmail = useAction(api.email.testOutreachEmail);
 
   const handleSendWelcomeEmails = async () => {
-    setEmailStatus('sending');
+    setWelcomeEmailStatus('sending');
     try {
       await triggerWelcomeSequence();
-      setEmailStatus('sent');
-      setTimeout(() => setEmailStatus('idle'), 3000);
+      setWelcomeEmailStatus('sent');
+      setTimeout(() => setWelcomeEmailStatus('idle'), 3000);
     } catch (error) {
       console.error('Failed to send welcome emails:', error);
-      setEmailStatus('error');
-      setTimeout(() => setEmailStatus('idle'), 3000);
+      setWelcomeEmailStatus('error');
+      setTimeout(() => setWelcomeEmailStatus('idle'), 3000);
+    }
+  };
+
+  const handleSendOutreachEmail = async () => {
+    setOutreachEmailStatus('sending');
+    try {
+      await testOutreachEmail();
+      setOutreachEmailStatus('sent');
+      setTimeout(() => setOutreachEmailStatus('idle'), 3000);
+    } catch (error) {
+      console.error('Failed to send outreach email:', error);
+      setOutreachEmailStatus('error');
+      setTimeout(() => setOutreachEmailStatus('idle'), 3000);
     }
   };
   const cities = useQuery(api.cities.queries.listActiveCities);
@@ -275,22 +290,41 @@ function AdminContent() {
         </Link>
         <button
           onClick={handleSendWelcomeEmails}
-          disabled={emailStatus === 'sending'}
+          disabled={welcomeEmailStatus === 'sending'}
           className={`px-4 py-2 rounded-md text-sm font-medium ${
-            emailStatus === 'sent'
+            welcomeEmailStatus === 'sent'
               ? 'bg-green-600 text-white'
-              : emailStatus === 'error'
+              : welcomeEmailStatus === 'error'
               ? 'bg-red-600 text-white'
               : 'bg-purple-600 text-white hover:bg-purple-700'
           } disabled:opacity-50`}
         >
-          {emailStatus === 'sending'
+          {welcomeEmailStatus === 'sending'
             ? 'Sending...'
-            : emailStatus === 'sent'
+            : welcomeEmailStatus === 'sent'
             ? 'Sent!'
-            : emailStatus === 'error'
+            : welcomeEmailStatus === 'error'
             ? 'Failed'
             : 'Test Welcome Emails'}
+        </button>
+        <button
+          onClick={handleSendOutreachEmail}
+          disabled={outreachEmailStatus === 'sending'}
+          className={`px-4 py-2 rounded-md text-sm font-medium ${
+            outreachEmailStatus === 'sent'
+              ? 'bg-green-600 text-white'
+              : outreachEmailStatus === 'error'
+              ? 'bg-red-600 text-white'
+              : 'bg-orange-600 text-white hover:bg-orange-700'
+          } disabled:opacity-50`}
+        >
+          {outreachEmailStatus === 'sending'
+            ? 'Sending...'
+            : outreachEmailStatus === 'sent'
+            ? 'Sent!'
+            : outreachEmailStatus === 'error'
+            ? 'Failed'
+            : 'Test Outreach Email'}
         </button>
       </div>
 
