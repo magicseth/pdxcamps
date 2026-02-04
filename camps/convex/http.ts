@@ -23,7 +23,7 @@ http.route({
 });
 
 // Inbound email webhook - receives emails sent to @pdxcamps.com
-// Configure in Resend Dashboard: https://deafening-schnauzer-923.convex.site/inbound-email
+// Configure in Resend Dashboard: https://deafening-schnauzer-923.convex.site/resend-inbound-webhook
 http.route({
   path: "/resend-inbound-webhook",
   method: "POST",
@@ -34,18 +34,57 @@ http.route({
       // Log the full payload for debugging
       console.log("Inbound email payload:", JSON.stringify(body, null, 2));
 
-      // Resend inbound webhook payload is nested under 'data'
+      // Resend inbound webhook only sends metadata - we need to fetch the body
       // https://resend.com/docs/dashboard/webhooks/inbound-emails
-      const data = body.data || body; // Handle both nested and flat structures
-      const { from, to, subject, text, html } = data;
+      const data = body.data || body;
+      const { email_id, from, to, subject } = data;
+
+      if (!email_id) {
+        console.error("No email_id in inbound webhook payload");
+        return new Response(JSON.stringify({ error: "No email_id" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      // Fetch the full email content from Resend API
+      const resendApiKey = process.env.RESEND_API_KEY;
+      if (!resendApiKey) {
+        console.error("RESEND_API_KEY not set");
+        return new Response(JSON.stringify({ error: "API key not configured" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      const emailResponse = await fetch(
+        `https://api.resend.com/emails/${email_id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${resendApiKey}`,
+          },
+        }
+      );
+
+      let textBody: string | undefined;
+      let htmlBody: string | undefined;
+
+      if (emailResponse.ok) {
+        const emailData = await emailResponse.json();
+        console.log("Fetched email data:", JSON.stringify(emailData, null, 2));
+        textBody = emailData.text;
+        htmlBody = emailData.html;
+      } else {
+        console.error("Failed to fetch email:", emailResponse.status, await emailResponse.text());
+      }
 
       await ctx.runMutation(internal.email.storeInboundEmail, {
-        resendId: body.id || data.id || `inbound-${Date.now()}`,
+        resendId: email_id,
         from: from || "unknown",
         to: Array.isArray(to) ? to : [to || "unknown"],
         subject: subject || "(no subject)",
-        textBody: text,
-        htmlBody: html,
+        textBody,
+        htmlBody,
       });
 
       return new Response(JSON.stringify({ success: true }), {
