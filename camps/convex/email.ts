@@ -14,9 +14,10 @@ import { Resend, vOnEmailEventArgs } from "@convex-dev/resend";
 import { v } from "convex/values";
 
 // Initialize Resend client
-// Note: To enable email event handling, add onEmailEvent option after
-// creating the handler in a separate file to avoid circular reference
-export const resend: Resend = new Resend(components.resend, {});
+// testMode: false allows sending to real email addresses (not just @resend.dev)
+export const resend: Resend = new Resend(components.resend, {
+  testMode: false,
+});
 
 /**
  * Handle email status events from Resend webhook
