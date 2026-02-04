@@ -56,6 +56,33 @@ if (!CONVEX_URL) {
 
 const client = new ConvexHttpClient(CONVEX_URL);
 
+/**
+ * Fetch and log all queue statuses
+ */
+async function logQueueStatus(prefix: string = "") {
+  try {
+    // Fetch all queue counts in parallel
+    const [scraperRequests, directoryStatus, contactStats] = await Promise.all([
+      client.query(api.scraping.development.getPendingRequests, {}).catch(() => []),
+      client.query(api.scraping.directoryDaemon.getQueueStatus, {}).catch(() => ({ pending: 0, processing: 0, completed: 0, failed: 0 })),
+      client.query(api.scraping.contactExtractorHelpers.getContactExtractionStats, {}).catch(() => ({ needsExtraction: 0, withEmail: 0, total: 0 })),
+    ]);
+
+    const scraperPending = (scraperRequests as any[]).filter((r: any) => r.status === "pending" || r.status === "in_progress").length;
+
+    const parts: string[] = [];
+    if (scraperPending > 0) parts.push(`🔧 Scrapers: ${scraperPending}`);
+    if (directoryStatus.pending > 0) parts.push(`📂 Directories: ${directoryStatus.pending}`);
+    if (contactStats.needsExtraction > 0) parts.push(`📧 Contacts: ${contactStats.needsExtraction}`);
+
+    if (parts.length > 0) {
+      console.log(`${prefix}📊 Queue: ${parts.join(" | ")}`);
+    }
+  } catch (err) {
+    // Silently ignore errors fetching status
+  }
+}
+
 // Scratchpad directory for Claude Code work
 // Place scraper development outside Next.js project to avoid triggering Turbopack rebuilds
 const SCRATCHPAD_DIR = path.join(process.cwd(), "..", ".scraper-development");
@@ -183,6 +210,7 @@ async function main() {
             worker.busy = true;
             worker.currentRequest = request as DevelopmentRequest;
 
+            await logQueueStatus(`[${worker.id}] `);
             console.log(`[${worker.id}] 🚀 Starting: ${request.sourceName}`);
             writeLog(`[${worker.id}] Claimed: ${request.sourceName}`);
 
@@ -1855,6 +1883,7 @@ async function processDirectoryQueue(verbose: boolean = false) {
   log(`   Found ${pending.length} pending directory items`);
 
   for (const item of pending as DirectoryQueueItem[]) {
+    await logQueueStatus("   ");
     log(`\n   Processing: ${item.url}`);
 
     try {
@@ -2125,6 +2154,7 @@ async function processContactExtraction(verbose: boolean = false) {
   for (const org of orgsNeedingContact) {
     if (!org.website) continue;
 
+    await logQueueStatus("   ");
     log(`\n   Extracting contact for: ${org.name}`);
     log(`   Website: ${org.website}`);
 
