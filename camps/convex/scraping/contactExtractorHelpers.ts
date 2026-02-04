@@ -3,7 +3,7 @@
  * Internal mutations and queries for contact extraction (non-Node.js)
  */
 
-import { internalMutation, internalQuery } from "../_generated/server";
+import { internalMutation, internalQuery, query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 
 /**
@@ -40,5 +40,52 @@ export const getOrganization = internalQuery({
   },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.organizationId);
+  },
+});
+
+/**
+ * Get organizations that need contact extraction
+ * (have website but no email)
+ */
+export const getOrgsNeedingContactInfo = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const allOrgs = await ctx.db
+      .query("organizations")
+      .withIndex("by_is_active", (q) => q.eq("isActive", true))
+      .collect();
+
+    // Filter to orgs with website but no email
+    const needsContact = allOrgs.filter(
+      (org) => org.website && !org.email
+    );
+
+    return needsContact.slice(0, args.limit ?? 10);
+  },
+});
+
+/**
+ * Get count of orgs needing contact info
+ */
+export const getContactExtractionStats = query({
+  args: {},
+  handler: async (ctx) => {
+    const allOrgs = await ctx.db
+      .query("organizations")
+      .withIndex("by_is_active", (q) => q.eq("isActive", true))
+      .collect();
+
+    const withWebsite = allOrgs.filter((org) => org.website);
+    const withEmail = allOrgs.filter((org) => org.email);
+    const needsExtraction = allOrgs.filter((org) => org.website && !org.email);
+
+    return {
+      total: allOrgs.length,
+      withWebsite: withWebsite.length,
+      withEmail: withEmail.length,
+      needsExtraction: needsExtraction.length,
+    };
   },
 });

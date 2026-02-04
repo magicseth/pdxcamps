@@ -2094,8 +2094,62 @@ async function fetchWithStagehand(
   }
 }
 
+// ============================================
+// CONTACT EXTRACTION PROCESSING
+// ============================================
+
+/**
+ * Process organizations that need contact info extraction
+ */
+async function processContactExtraction(verbose: boolean = false) {
+  const log = (msg: string) => {
+    writeLog(msg);
+    if (verbose) console.log(msg);
+  };
+
+  log("📧 Checking for orgs needing contact extraction...");
+
+  // Get orgs needing contact info
+  const orgsNeedingContact = await client.query(
+    api.scraping.contactExtractorHelpers.getOrgsNeedingContactInfo,
+    { limit: 3 }
+  );
+
+  if (!orgsNeedingContact || orgsNeedingContact.length === 0) {
+    log("   No orgs need contact extraction");
+    return;
+  }
+
+  log(`   Found ${orgsNeedingContact.length} orgs needing contact info`);
+
+  for (const org of orgsNeedingContact) {
+    if (!org.website) continue;
+
+    log(`\n   Extracting contact for: ${org.name}`);
+    log(`   Website: ${org.website}`);
+
+    try {
+      const result = await client.action(api.scraping.contactExtractor.extractContactInfo, {
+        url: org.website,
+        organizationId: org._id,
+      });
+
+      if (result.success && result.contactInfo) {
+        const info = result.contactInfo;
+        log(`   ✅ Found: ${info.email || 'no email'} | ${info.phone || 'no phone'}`);
+      } else {
+        log(`   ⚠️ No contact info found: ${result.error || 'unknown'}`);
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      log(`   ❌ Error: ${errorMsg}`);
+    }
+  }
+}
+
 // Check for --directory flag to only process directory queue
 const directoryOnly = process.argv.includes("--directory") || process.argv.includes("-d");
+const contactOnly = process.argv.includes("--contact") || process.argv.includes("-c");
 
 if (directoryOnly) {
   // One-shot directory processing
@@ -2107,9 +2161,18 @@ if (directoryOnly) {
     console.error("Error:", err);
     process.exit(1);
   });
+} else if (contactOnly) {
+  // One-shot contact extraction
+  console.log("📧 Processing contact extraction only...");
+  processContactExtraction(true).then(() => {
+    console.log("Done.");
+    process.exit(0);
+  }).catch((err) => {
+    console.error("Error:", err);
+    process.exit(1);
+  });
 } else {
-  // Run the full daemon (scraper development + directory queue)
-  // Add directory queue check to the main loop
+  // Run the full daemon (scraper development + directory queue + contact extraction)
   const originalMain = main;
   main = async function() {
     // Start the original main loop
@@ -2126,11 +2189,24 @@ if (directoryOnly) {
       }
     }, 30000); // Check every 30 seconds
 
-    // Initial check
+    // Also periodically check contact extraction
+    const contactInterval = setInterval(async () => {
+      if (!shutdownRequested) {
+        try {
+          await processContactExtraction(process.argv.includes("-v") || process.argv.includes("--verbose"));
+        } catch (err) {
+          console.error("Contact extraction error:", err);
+        }
+      }
+    }, 60000); // Check every 60 seconds
+
+    // Initial checks
     setTimeout(() => processDirectoryQueue(process.argv.includes("-v")), 5000);
+    setTimeout(() => processContactExtraction(process.argv.includes("-v")), 10000);
 
     await mainPromise;
     clearInterval(directoryInterval);
+    clearInterval(contactInterval);
   };
 
   main().catch(console.error);

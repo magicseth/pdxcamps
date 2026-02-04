@@ -39,6 +39,8 @@ import type * as planner_queries from "../planner/queries.js";
 import type * as registrations_mutations from "../registrations/mutations.js";
 import type * as registrations_queries from "../registrations/queries.js";
 import type * as scraping_actions from "../scraping/actions.js";
+import type * as scraping_contactExtractor from "../scraping/contactExtractor.js";
+import type * as scraping_contactExtractorHelpers from "../scraping/contactExtractorHelpers.js";
 import type * as scraping_coverage from "../scraping/coverage.js";
 import type * as scraping_deduplication from "../scraping/deduplication.js";
 import type * as scraping_development from "../scraping/development.js";
@@ -112,6 +114,8 @@ declare const fullApi: ApiFromModules<{
   "registrations/mutations": typeof registrations_mutations;
   "registrations/queries": typeof registrations_queries;
   "scraping/actions": typeof scraping_actions;
+  "scraping/contactExtractor": typeof scraping_contactExtractor;
+  "scraping/contactExtractorHelpers": typeof scraping_contactExtractorHelpers;
   "scraping/coverage": typeof scraping_coverage;
   "scraping/deduplication": typeof scraping_deduplication;
   "scraping/development": typeof scraping_development;
