@@ -57,8 +57,9 @@ http.route({
         });
       }
 
+      // Use the received email endpoint (different from sent emails)
       const emailResponse = await fetch(
-        `https://api.resend.com/emails/${email_id}`,
+        `https://api.resend.com/emails/received/${email_id}`,
         {
           headers: {
             Authorization: `Bearer ${resendApiKey}`,
