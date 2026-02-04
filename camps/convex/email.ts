@@ -8,11 +8,10 @@
  * - Registration reminders
  */
 
-import { action, internalAction, internalMutation } from "./_generated/server";
+import { action, internalAction, internalMutation, internalQuery } from "./_generated/server";
 import { components, internal } from "./_generated/api";
 import { Resend, vOnEmailEventArgs } from "@convex-dev/resend";
 import { v } from "convex/values";
-import { Id } from "./_generated/dataModel";
 
 // Initialize Resend client
 // Note: To enable email event handling, add onEmailEvent option after
@@ -344,21 +343,12 @@ export const triggerWelcomeSequence = action({
   args: {},
   handler: async (ctx): Promise<{ success: boolean; email: string }> => {
     // Get the current user's family info
-    const family: {
-      _id: Id<"families">;
-      email: string;
-      displayName: string;
-      primaryCityId: Id<"cities">;
-    } | null = await ctx.runQuery(internal.email.queries.getCurrentFamily);
+    const family = await ctx.runQuery(internal.email.getCurrentFamilyForEmail);
     if (!family) {
       throw new Error("No family found for current user");
     }
 
-    // Get the city name
-    const city: { name: string } | null = await ctx.runQuery(internal.email.queries.getCity, {
-      cityId: family.primaryCityId,
-    });
-    const cityName = city?.name || "your area";
+    const cityName = family.cityName || "your area";
 
     // Send welcome email immediately
     await resend.sendEmail(ctx, {
@@ -454,5 +444,33 @@ export const sendRegistrationReminder = action({
     });
 
     return result;
+  },
+});
+
+/**
+ * Internal query to get current user's family with city name
+ * Used by triggerWelcomeSequence to avoid circular references
+ */
+export const getCurrentFamilyForEmail = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return null;
+
+    const family = await ctx.db
+      .query("families")
+      .withIndex("by_workos_user_id", (q) => q.eq("workosUserId", identity.subject))
+      .first();
+
+    if (!family) return null;
+
+    // Get city name
+    const city = await ctx.db.get(family.primaryCityId);
+
+    return {
+      email: family.email,
+      displayName: family.displayName,
+      cityName: city?.name || null,
+    };
   },
 });
