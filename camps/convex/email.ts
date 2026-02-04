@@ -35,6 +35,51 @@ export const handleEmailEvent = internalMutation({
   },
 });
 
+/**
+ * Store an inbound email received via webhook
+ */
+export const storeInboundEmail = internalMutation({
+  args: {
+    resendId: v.string(),
+    from: v.string(),
+    to: v.array(v.string()),
+    subject: v.string(),
+    textBody: v.optional(v.string()),
+    htmlBody: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Parse the from field to extract email and name
+    // Format is typically "Name <email@example.com>" or just "email@example.com"
+    const fromMatch = args.from.match(/^(?:(.+?)\s*<)?([^<>]+)>?$/);
+    const fromEmail = fromMatch?.[2]?.trim() || args.from;
+    const fromName = fromMatch?.[1]?.trim();
+
+    // Try to match to an organization by email
+    const orgs = await ctx.db
+      .query("organizations")
+      .filter((q) => q.eq(q.field("email"), fromEmail))
+      .collect();
+    const matchedOrganizationId = orgs[0]?._id;
+
+    const emailId = await ctx.db.insert("inboundEmails", {
+      resendId: args.resendId,
+      from: args.from,
+      to: args.to,
+      subject: args.subject,
+      textBody: args.textBody,
+      htmlBody: args.htmlBody,
+      fromEmail,
+      fromName,
+      status: "received",
+      matchedOrganizationId,
+      receivedAt: Date.now(),
+    });
+
+    console.log(`Inbound email stored: ${emailId} from ${fromEmail}`);
+    return emailId;
+  },
+});
+
 // Default sender - should match verified domain in Resend
 const FROM_EMAIL = "hello@pdxcamps.com";
 const FROM_NAME = "PDX Camps";

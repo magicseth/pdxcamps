@@ -1,5 +1,5 @@
 import { httpRouter } from "convex/server";
-import { components } from "./_generated/api";
+import { components, internal } from "./_generated/api";
 import { registerRoutes } from "@convex-dev/stripe";
 import { httpAction } from "./_generated/server";
 import { resend } from "./email";
@@ -19,6 +19,45 @@ http.route({
   method: "POST",
   handler: httpAction(async (ctx, req) => {
     return await resend.handleResendEventWebhook(ctx, req);
+  }),
+});
+
+// Inbound email webhook - receives emails sent to @pdxcamps.com
+// Configure in Resend Dashboard: https://deafening-schnauzer-923.convex.site/inbound-email
+http.route({
+  path: "/inbound-email",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    try {
+      const body = await req.json();
+
+      // Resend inbound email payload structure
+      // https://resend.com/docs/dashboard/webhooks/inbound-emails
+      const { id, from, to, subject, text, html } = body;
+
+      await ctx.runMutation(internal.email.storeInboundEmail, {
+        resendId: id || `inbound-${Date.now()}`,
+        from: from || "unknown",
+        to: Array.isArray(to) ? to : [to || "unknown"],
+        subject: subject || "(no subject)",
+        textBody: text,
+        htmlBody: html,
+      });
+
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (error) {
+      console.error("Inbound email error:", error);
+      return new Response(
+        JSON.stringify({ error: "Failed to process inbound email" }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
   }),
 });
 

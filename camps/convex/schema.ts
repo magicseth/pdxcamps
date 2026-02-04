@@ -740,6 +740,40 @@ export default defineSchema({
     .index("by_session", ["sessionId"])
     .index("by_not_notified", ["notified"]),
 
+  // ============ INBOUND EMAILS ============
+
+  inboundEmails: defineTable({
+    // Resend-provided fields
+    resendId: v.string(),
+    from: v.string(),
+    to: v.array(v.string()),
+    subject: v.string(),
+    textBody: v.optional(v.string()),
+    htmlBody: v.optional(v.string()),
+
+    // Parsed metadata
+    fromEmail: v.string(), // Extracted email address
+    fromName: v.optional(v.string()), // Extracted name
+
+    // Processing status
+    status: v.union(
+      v.literal("received"),
+      v.literal("processed"),
+      v.literal("archived")
+    ),
+
+    // Link to organization if we can match by email
+    matchedOrganizationId: v.optional(v.id("organizations")),
+
+    receivedAt: v.number(),
+    processedAt: v.optional(v.number()),
+    notes: v.optional(v.string()),
+  })
+    .index("by_from_email", ["fromEmail"])
+    .index("by_status", ["status"])
+    .index("by_received_at", ["receivedAt"])
+    .index("by_organization", ["matchedOrganizationId"]),
+
   // Admin alerts
   scraperAlerts: defineTable({
     sourceId: v.optional(v.id("scrapeSources")),
