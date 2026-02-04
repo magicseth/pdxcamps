@@ -15,10 +15,10 @@ export function TopBar({ title }: TopBarProps) {
       <div className="max-w-4xl mx-auto flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
           <Image
-            src={`${market.iconPath}/icon.png`}
+            src={`${market.iconPath}/icon-192.png`}
             alt={market.tagline}
-            width={32}
-            height={32}
+            width={192}
+            height={192}
             className="h-8 w-8"
             priority
           />
