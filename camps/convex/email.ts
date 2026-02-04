@@ -131,7 +131,8 @@ export const testOutreachEmail = action({
           <p>Would you be open to being featured? Just reply to this email and we'll get you set up.</p>
 
           <p>Best,<br/>
-          The PDX Camps Team<br/>
+          Seth<br/>
+          <span style="color: #666;">Portland dad and creator of PDX Camps</span><br/>
           <a href="https://pdxcamps.com">pdxcamps.com</a></p>
         </div>
       `,
@@ -182,7 +183,8 @@ export const sendContactOutreach = action({
           <p>Would you be open to being featured? Just reply to this email and we'll get you set up.</p>
 
           <p>Best,<br/>
-          The PDX Camps Team<br/>
+          Seth<br/>
+          <span style="color: #666;">Portland dad and creator of PDX Camps</span><br/>
           <a href="https://pdxcamps.com">pdxcamps.com</a></p>
         </div>
       `,
@@ -206,7 +208,8 @@ What you get:
 Would you be open to being featured? Just reply to this email and we'll get you set up.
 
 Best,
-The PDX Camps Team
+Seth
+Portland dad and creator of PDX Camps
 https://pdxcamps.com
       `,
     });
