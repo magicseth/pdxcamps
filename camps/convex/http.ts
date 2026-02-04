@@ -59,32 +59,10 @@ http.route({
         });
       }
 
-      // Forward the email using Resend API
-      const forwardResponse = await fetch(
-        "https://api.resend.com/emails/received/forward",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${resendApiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email_id: email_id,
-            to: "seth@magicseth.com",
-            from: "hello@pdxcamps.com",
-          }),
-        }
-      );
+      // Check if this is Seth replying to a forwarded email
+      const isSethReply = from.includes("seth@magicseth.com");
 
-      if (!forwardResponse.ok) {
-        console.error("Failed to forward email:", await forwardResponse.text());
-      } else {
-        const forwardData = await forwardResponse.json();
-        console.log("Forwarded email:", forwardData);
-      }
-
-      // Also store in database for admin view
-      // Fetch the email content for storage
+      // Fetch the email content
       const emailResponse = await fetch(
         `https://api.resend.com/emails/received/${email_id}`,
         {
@@ -103,6 +81,90 @@ http.route({
         htmlBody = emailData.html;
       }
 
+      if (isSethReply) {
+        // This is Seth replying - extract original recipient and send reply
+        // Subject format: "Re: [From: original@email.com] Original Subject"
+        const originalSenderMatch = subject.match(/\[From: ([^\]]+)\]/);
+
+        if (originalSenderMatch) {
+          const originalSender = originalSenderMatch[1];
+
+          // Extract just Seth's reply (before the quoted content)
+          // Look for common quote markers
+          let replyText = textBody || "";
+          const quoteMarkers = [
+            /\n\s*On .+ wrote:\s*\n/i,           // "On Mon, Jan 1, 2024 at 10:00 AM X wrote:"
+            /\n\s*-{3,}\s*Original Message\s*-{3,}/i,  // "--- Original Message ---"
+            /\n\s*>{1,}/,                         // "> quoted text"
+            /\n\s*From: .+\n/i,                   // "From: someone"
+          ];
+
+          for (const marker of quoteMarkers) {
+            const match = replyText.match(marker);
+            if (match && match.index !== undefined) {
+              replyText = replyText.substring(0, match.index).trim();
+              break;
+            }
+          }
+
+          // Clean up the subject (remove the [From: ...] tag)
+          const cleanSubject = subject
+            .replace(/\[From: [^\]]+\]\s*/g, "")
+            .replace(/^Re:\s*/i, "");
+
+          // Send reply to the original sender
+          const sendResponse = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${resendApiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              from: "Seth <hello@pdxcamps.com>",
+              to: [originalSender],
+              subject: `Re: ${cleanSubject}`,
+              text: replyText,
+              reply_to: ["hello@pdxcamps.com"],
+            }),
+          });
+
+          if (sendResponse.ok) {
+            console.log(`Sent reply to ${originalSender}`);
+          } else {
+            console.error("Failed to send reply:", await sendResponse.text());
+          }
+        } else {
+          console.log("Seth's email but couldn't find original sender in subject");
+        }
+      } else {
+        // Forward to Seth with original sender tagged in subject
+        // Use custom forward with tagged subject
+        const taggedSubject = `[From: ${from}] ${subject}`;
+
+        const sendResponse = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${resendApiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: "PDX Camps <hello@pdxcamps.com>",
+            to: ["seth@magicseth.com"],
+            subject: taggedSubject,
+            text: textBody || "(no content)",
+            html: htmlBody,
+            reply_to: ["hello@pdxcamps.com"],
+          }),
+        });
+
+        if (sendResponse.ok) {
+          console.log(`Forwarded email from ${from} to Seth`);
+        } else {
+          console.error("Failed to forward email:", await sendResponse.text());
+        }
+      }
+
+      // Store in database for admin view
       await ctx.runMutation(internal.email.storeInboundEmail, {
         resendId: email_id,
         from: from || "unknown",
