@@ -67,9 +67,10 @@ interface PlannerGridProps {
   onGapClick?: (weekStart: string, weekEnd: string, childId: Id<'children'>) => void;
   onRegistrationClick?: (data: RegistrationClickData) => void;
   onEventClick?: (data: EventClickData) => void;
+  onAddChild?: () => void;
 }
 
-export function PlannerGrid({ coverage, children, citySlug, onGapClick, onRegistrationClick, onEventClick }: PlannerGridProps) {
+export function PlannerGrid({ coverage, children, citySlug, onGapClick, onRegistrationClick, onEventClick, onAddChild }: PlannerGridProps) {
   // Group weeks by month
   const weeksByMonth = useMemo(() => {
     const groups: Map<string, WeekData[]> = new Map();
@@ -188,6 +189,32 @@ export function PlannerGrid({ coverage, children, citySlug, onGapClick, onRegist
                 })}
               </tr>
             ))}
+            {/* Add Kid row */}
+            {onAddChild && (
+              <tr className="bg-white dark:bg-slate-800">
+                <td className="sticky left-0 z-10 px-4 py-2 bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700/50">
+                  <button
+                    onClick={onAddChild}
+                    className="flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-primary dark:hover:text-primary-light transition-colors"
+                  >
+                    <span className="w-7 h-7 rounded-full border-2 border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                    </span>
+                    Add Kid
+                  </button>
+                </td>
+                {coverage.map((week) => (
+                  <td
+                    key={`add-${week.week.startDate}`}
+                    className="border-b border-l border-slate-100 dark:border-slate-700/50 p-0"
+                  >
+                    <div className="w-full min-h-[48px]" />
+                  </td>
+                ))}
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
