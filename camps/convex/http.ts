@@ -25,7 +25,7 @@ http.route({
 // Inbound email webhook - receives emails sent to @pdxcamps.com
 // Configure in Resend Dashboard: https://deafening-schnauzer-923.convex.site/inbound-email
 http.route({
-  path: "/inbound-email",
+  path: "/resend-inbound-webhook",
   method: "POST",
   handler: httpAction(async (ctx, req) => {
     try {
