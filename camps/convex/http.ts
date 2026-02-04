@@ -42,6 +42,8 @@ http.route({
       const data = body.data || body;
       const { email_id, from, to, subject } = data;
 
+      console.log("Inbound email - from:", from, "to:", to, "subject:", subject);
+
       if (!email_id) {
         console.error("No email_id in inbound webhook payload");
         return new Response(JSON.stringify({ error: "No email_id" }), {

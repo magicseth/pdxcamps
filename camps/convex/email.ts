@@ -564,11 +564,14 @@ export const getMostRecentNonSethInbound = internalQuery({
     const emails = await ctx.db
       .query("inboundEmails")
       .order("desc")
-      .take(10);
+      .take(20);
 
-    // Find the most recent one not from Seth
+    // Find the most recent one not from Seth and with a valid email
     const nonSethEmail = emails.find(
-      (e) => !e.fromEmail.includes("seth@magicseth.com")
+      (e) =>
+        !e.fromEmail.includes("seth@magicseth.com") &&
+        e.fromEmail !== "unknown" &&
+        e.fromEmail.includes("@")
     );
 
     return nonSethEmail || null;
