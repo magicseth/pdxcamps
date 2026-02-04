@@ -24,6 +24,7 @@ import type * as discovery_actions from "../discovery/actions.js";
 import type * as discovery_mutations from "../discovery/mutations.js";
 import type * as discovery_queries from "../discovery/queries.js";
 import type * as email from "../email.js";
+import type * as emailForward from "../emailForward.js";
 import type * as families_mutations from "../families/mutations.js";
 import type * as families_queries from "../families/queries.js";
 import type * as http from "../http.js";
@@ -100,6 +101,7 @@ declare const fullApi: ApiFromModules<{
   "discovery/mutations": typeof discovery_mutations;
   "discovery/queries": typeof discovery_queries;
   email: typeof email;
+  emailForward: typeof emailForward;
   "families/mutations": typeof families_mutations;
   "families/queries": typeof families_queries;
   http: typeof http;
