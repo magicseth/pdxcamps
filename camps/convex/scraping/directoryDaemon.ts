@@ -220,7 +220,7 @@ export const completeQueueItem = mutation({
           });
 
           // Create scrape source
-          await ctx.db.insert("scrapeSources", {
+          const sourceId = await ctx.db.insert("scrapeSources", {
             organizationId: orgId,
             cityId: item.cityId,
             name,
@@ -233,6 +233,18 @@ export const completeQueueItem = mutation({
               successRate: 0,
               needsRegeneration: false,
             },
+          });
+
+          // Queue scraper development request
+          await ctx.db.insert("scraperDevelopmentRequests", {
+            sourceName: name,
+            sourceUrl: url,
+            sourceId: sourceId,
+            cityId: item.cityId,
+            requestedAt: Date.now(),
+            requestedBy: "directory-daemon",
+            notes: `Auto-discovered from directory: ${item.url}`,
+            status: "pending",
           });
 
           created++;
@@ -256,6 +268,29 @@ export const completeQueueItem = mutation({
 
 // Action to process directory queue is in directoryDaemonActions.ts
 // Call api.scraping.directoryDaemonActions.processDirectoryQueue
+
+/**
+ * Reset failed queue items back to pending
+ */
+export const resetFailedItems = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const failed = await ctx.db
+      .query("directoryQueue")
+      .filter((q) => q.eq(q.field("status"), "failed"))
+      .collect();
+
+    for (const item of failed) {
+      await ctx.db.patch(item._id, {
+        status: "pending",
+        error: undefined,
+        processedAt: undefined,
+      });
+    }
+
+    return { reset: failed.length };
+  },
+});
 
 /**
  * Directly seed camp URLs (no scraping needed)

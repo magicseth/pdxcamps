@@ -32,14 +32,18 @@ try {
   // Stagehand not installed - testing will be skipped
 }
 
-// Load environment
+// Load environment from .env.local, but don't overwrite existing env vars
 const envPath = path.join(process.cwd(), ".env.local");
 if (fs.existsSync(envPath)) {
   const envContent = fs.readFileSync(envPath, "utf-8");
   for (const line of envContent.split("\n")) {
     const [key, ...valueParts] = line.split("=");
     if (key && valueParts.length > 0) {
-      process.env[key.trim()] = valueParts.join("=").trim().replace(/^["']|["']$/g, "");
+      const trimmedKey = key.trim();
+      // Don't overwrite existing env vars (allows command-line override)
+      if (!process.env[trimmedKey]) {
+        process.env[trimmedKey] = valueParts.join("=").trim().replace(/^["']|["']$/g, "");
+      }
     }
   }
 }
@@ -1910,6 +1914,7 @@ async function processDirectoryQueue(verbose: boolean = false) {
 
 /**
  * Fetch a directory URL locally and extract camp links
+ * Falls back to Stagehand/Browserbase if simple fetch fails with 403
  */
 async function fetchDirectoryLocally(
   url: string,
@@ -1917,6 +1922,7 @@ async function fetchDirectoryLocally(
   baseUrlFilter?: string,
   log: (msg: string) => void = console.log
 ): Promise<{ success: boolean; urls: string[]; error?: string }> {
+  // Try simple fetch first
   try {
     const response = await fetch(url, {
       headers: {
@@ -1926,83 +1932,160 @@ async function fetchDirectoryLocally(
       },
     });
 
-    if (!response.ok) {
-      return { success: false, urls: [], error: `HTTP ${response.status}: ${response.statusText}` };
+    if (response.ok) {
+      const html = await response.text();
+      return extractLinksFromHtml(html, url, linkPattern, baseUrlFilter, log);
     }
 
-    const html = await response.text();
-
-    // Extract all links
-    const linkRegex = /<a[^>]*href=["']([^"']+)["'][^>]*>([^<]*)</gi;
-    const urls: string[] = [];
-    const seenDomains = new Set<string>();
-
-    let match;
-    while ((match = linkRegex.exec(html)) !== null) {
-      let linkUrl = match[1];
-      const text = match[2].trim();
-
-      // Skip empty, anchors, javascript, mailto, tel
-      if (!linkUrl || linkUrl.startsWith("#") || linkUrl.startsWith("javascript:") ||
-          linkUrl.startsWith("mailto:") || linkUrl.startsWith("tel:")) {
-        continue;
-      }
-
-      // Make absolute
-      try {
-        const absoluteUrl = new URL(linkUrl, url);
-        linkUrl = absoluteUrl.href;
-      } catch {
-        continue;
-      }
-
-      // Get domain
-      let domain: string;
-      try {
-        domain = new URL(linkUrl).hostname.replace(/^www\./, "");
-      } catch {
-        continue;
-      }
-
-      // Skip the source domain itself
-      const sourceHost = new URL(url).hostname.replace(/^www\./, "");
-      if (domain === sourceHost) continue;
-
-      // Apply filters
-      if (baseUrlFilter) {
-        const filterDomain = baseUrlFilter.replace(/^www\./, "");
-        if (!domain.includes(filterDomain)) continue;
-      }
-
-      if (linkPattern) {
-        try {
-          const pattern = new RegExp(linkPattern, "i");
-          if (!pattern.test(linkUrl) && !pattern.test(text)) continue;
-        } catch {
-          // Invalid regex, skip filter
-        }
-      }
-
-      // Skip common non-camp links
-      const skipPatterns = [
-        /\.(pdf|doc|docx|xls|xlsx|jpg|jpeg|png|gif|svg|css|js)$/i,
-        /facebook\.com|twitter\.com|instagram\.com|linkedin\.com|youtube\.com/i,
-        /login|signin|signup|account|cart|checkout|privacy|terms$/i,
-      ];
-
-      if (skipPatterns.some((p) => p.test(linkUrl))) continue;
-
-      // Dedupe by domain - only keep one URL per domain
-      if (seenDomains.has(domain)) continue;
-      seenDomains.add(domain);
-
-      urls.push(linkUrl);
+    // If 403, try Stagehand fallback
+    if (response.status === 403) {
+      log(`   Simple fetch got 403, trying Stagehand/Browserbase...`);
+      return await fetchWithStagehand(url, linkPattern, baseUrlFilter, log);
     }
 
-    log(`   Extracted ${urls.length} unique camp URLs`);
-    return { success: true, urls };
+    return { success: false, urls: [], error: `HTTP ${response.status}: ${response.statusText}` };
 
   } catch (error) {
+    // Network error - try Stagehand
+    log(`   Fetch error, trying Stagehand: ${error instanceof Error ? error.message : error}`);
+    return await fetchWithStagehand(url, linkPattern, baseUrlFilter, log);
+  }
+}
+
+/**
+ * Extract links from HTML content
+ */
+function extractLinksFromHtml(
+  html: string,
+  sourceUrl: string,
+  linkPattern?: string,
+  baseUrlFilter?: string,
+  log: (msg: string) => void = console.log
+): { success: boolean; urls: string[]; error?: string } {
+  const linkRegex = /<a[^>]*href=["']([^"']+)["'][^>]*>([^<]*)</gi;
+  const urls: string[] = [];
+  const seenDomains = new Set<string>();
+
+  let match;
+  while ((match = linkRegex.exec(html)) !== null) {
+    let linkUrl = match[1];
+    const text = match[2].trim();
+
+    // Skip empty, anchors, javascript, mailto, tel
+    if (!linkUrl || linkUrl.startsWith("#") || linkUrl.startsWith("javascript:") ||
+        linkUrl.startsWith("mailto:") || linkUrl.startsWith("tel:")) {
+      continue;
+    }
+
+    // Make absolute
+    try {
+      const absoluteUrl = new URL(linkUrl, sourceUrl);
+      linkUrl = absoluteUrl.href;
+    } catch {
+      continue;
+    }
+
+    // Get domain
+    let domain: string;
+    try {
+      domain = new URL(linkUrl).hostname.replace(/^www\./, "");
+    } catch {
+      continue;
+    }
+
+    // Skip the source domain itself
+    const sourceHost = new URL(sourceUrl).hostname.replace(/^www\./, "");
+    if (domain === sourceHost) continue;
+
+    // Apply filters
+    if (baseUrlFilter) {
+      const filterDomain = baseUrlFilter.replace(/^www\./, "");
+      if (!domain.includes(filterDomain)) continue;
+    }
+
+    if (linkPattern) {
+      try {
+        const pattern = new RegExp(linkPattern, "i");
+        if (!pattern.test(linkUrl) && !pattern.test(text)) continue;
+      } catch {
+        // Invalid regex, skip filter
+      }
+    }
+
+    // Skip common non-camp links
+    const skipPatterns = [
+      /\.(pdf|doc|docx|xls|xlsx|jpg|jpeg|png|gif|svg|css|js)$/i,
+      /facebook\.com|twitter\.com|instagram\.com|linkedin\.com|youtube\.com/i,
+      /login|signin|signup|account|cart|checkout|privacy|terms$/i,
+    ];
+
+    if (skipPatterns.some((p) => p.test(linkUrl))) continue;
+
+    // Dedupe by domain - only keep one URL per domain
+    if (seenDomains.has(domain)) continue;
+    seenDomains.add(domain);
+
+    urls.push(linkUrl);
+  }
+
+  log(`   Extracted ${urls.length} unique camp URLs`);
+  return { success: true, urls };
+}
+
+/**
+ * Fetch directory using Stagehand/Browserbase (real browser)
+ */
+async function fetchWithStagehand(
+  url: string,
+  linkPattern?: string,
+  baseUrlFilter?: string,
+  log: (msg: string) => void = console.log
+): Promise<{ success: boolean; urls: string[]; error?: string }> {
+  if (!Stagehand) {
+    return { success: false, urls: [], error: "Stagehand not available - install @browserbasehq/stagehand" };
+  }
+
+  if (!process.env.BROWSERBASE_API_KEY || !process.env.BROWSERBASE_PROJECT_ID) {
+    return { success: false, urls: [], error: "Missing BROWSERBASE_API_KEY or BROWSERBASE_PROJECT_ID" };
+  }
+
+  let stagehand: any = null;
+
+  try {
+    log(`   Initializing Stagehand...`);
+
+    stagehand = new Stagehand({
+      env: "BROWSERBASE",
+      apiKey: process.env.BROWSERBASE_API_KEY,
+      projectId: process.env.BROWSERBASE_PROJECT_ID,
+      model: {
+        modelName: "anthropic/claude-sonnet-4-20250514",
+        apiKey: process.env.MODEL_API_KEY,
+      },
+      disablePino: true,
+      verbose: 0,
+    });
+
+    await stagehand.init();
+    const page = stagehand.context.pages()[0];
+
+    log(`   Loading page in browser...`);
+    await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.waitForTimeout(3000);
+
+    // Get the page HTML using evaluate
+    const html = await page.evaluate(() => document.documentElement.outerHTML);
+
+    await stagehand.close();
+    stagehand = null;
+
+    // Extract links from the rendered HTML
+    return extractLinksFromHtml(html, url, linkPattern, baseUrlFilter, log);
+
+  } catch (error) {
+    if (stagehand) {
+      try { await stagehand.close(); } catch { }
+    }
     return {
       success: false,
       urls: [],
