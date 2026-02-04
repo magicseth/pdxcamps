@@ -404,3 +404,111 @@ export const getSharedPlan = query({
     };
   },
 });
+
+/**
+ * Get calendar data for a child by share token (for ICS feed)
+ * Returns all registered camps with dates/times for calendar sync
+ */
+export const getChildCalendar = query({
+  args: {
+    shareToken: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Find child by share token
+    const child = await ctx.db
+      .query("children")
+      .withIndex("by_share_token", (q) => q.eq("shareToken", args.shareToken))
+      .first();
+
+    if (!child || !child.isActive) {
+      return null;
+    }
+
+    // Get family info
+    const family = await ctx.db.get(child.familyId);
+    if (!family) {
+      return null;
+    }
+
+    // Get registrations for this child (registered and interested/waitlisted)
+    const registrations = await ctx.db
+      .query("registrations")
+      .withIndex("by_child", (q) => q.eq("childId", child._id))
+      .filter((q) => q.neq(q.field("status"), "cancelled"))
+      .collect();
+
+    // Fetch sessions with all details
+    const sessionIds = [...new Set(registrations.map((r) => r.sessionId))];
+    const sessionsRaw = await Promise.all(sessionIds.map((id) => ctx.db.get(id)));
+    const sessions = sessionsRaw.filter((s): s is Doc<"sessions"> => s !== null);
+
+    // Fetch camps for names
+    const campIds = [...new Set(sessions.map((s) => s.campId))];
+    const campsRaw = await Promise.all(campIds.map((id) => ctx.db.get(id)));
+    const camps = campsRaw.filter((c): c is Doc<"camps"> => c !== null);
+    const campMap = new Map(camps.map((c) => [c._id, c]));
+
+    // Fetch organizations
+    const orgIds = [...new Set(sessions.map((s) => s.organizationId))];
+    const orgsRaw = await Promise.all(orgIds.map((id) => ctx.db.get(id)));
+    const orgs = orgsRaw.filter((o): o is Doc<"organizations"> => o !== null);
+    const orgMap = new Map(orgs.map((o) => [o._id, o]));
+
+    // Fetch locations
+    const locationIds = [...new Set(sessions.map((s) => s.locationId))];
+    const locationsRaw = await Promise.all(locationIds.map((id) => ctx.db.get(id)));
+    const locations = locationsRaw.filter((l): l is Doc<"locations"> => l !== null);
+    const locationMap = new Map(locations.map((l) => [l._id, l]));
+
+    // Build calendar events
+    const events = registrations.map((reg) => {
+      const session = sessions.find((s) => s._id === reg.sessionId);
+      if (!session) return null;
+
+      const camp = campMap.get(session.campId);
+      const org = orgMap.get(session.organizationId);
+      const location = locationMap.get(session.locationId);
+
+      return {
+        id: reg._id,
+        status: reg.status,
+        campName: camp?.name || "Camp",
+        organizationName: org?.name || "",
+        startDate: session.startDate,
+        endDate: session.endDate,
+        dropOffTime: session.dropOffTime,
+        pickUpTime: session.pickUpTime,
+        locationName: location?.name || "",
+        locationAddress: location?.address
+          ? `${location.address.street}, ${location.address.city}, ${location.address.state} ${location.address.zip}`
+          : "",
+      };
+    }).filter((e): e is NonNullable<typeof e> => e !== null);
+
+    // Get family events
+    const familyEvents = await ctx.db
+      .query("familyEvents")
+      .withIndex("by_family_and_active", (q) =>
+        q.eq("familyId", family._id).eq("isActive", true)
+      )
+      .collect();
+
+    const childFamilyEvents = familyEvents
+      .filter((e) => e.childIds.includes(child._id))
+      .map((e) => ({
+        id: e._id,
+        title: e.title,
+        startDate: e.startDate,
+        endDate: e.endDate,
+        eventType: e.eventType,
+        location: e.location,
+      }));
+
+    return {
+      childName: child.firstName,
+      familyName: family.displayName,
+      events,
+      familyEvents: childFamilyEvents,
+    };
+  },
+});
