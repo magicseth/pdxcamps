@@ -377,6 +377,8 @@ function RequestRow({ request }: { request: any }) {
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const [isExtractingContact, setIsExtractingContact] = useState(false);
+  const [isSendingOutreach, setIsSendingOutreach] = useState(false);
+  const [outreachSent, setOutreachSent] = useState(false);
   const [contactResult, setContactResult] = useState<{
     success: boolean;
     email?: string;
@@ -390,10 +392,12 @@ function RequestRow({ request }: { request: any }) {
   const markFailed = useMutation(api.scraping.development.markFailed);
   const forceRestart = useMutation(api.scraping.development.forceRestart);
   const extractContact = useAction(api.scraping.contactExtractor.extractContactInfo);
+  const sendOutreach = useAction(api.email.sendContactOutreach);
 
   const handleExtractContact = async () => {
     setIsExtractingContact(true);
     setContactResult(null);
+    setOutreachSent(false);
     try {
       const result = await extractContact({
         url: request.sourceUrl,
@@ -413,6 +417,23 @@ function RequestRow({ request }: { request: any }) {
       });
     } finally {
       setIsExtractingContact(false);
+    }
+  };
+
+  const handleSendOutreach = async () => {
+    if (!contactResult?.email) return;
+    setIsSendingOutreach(true);
+    try {
+      await sendOutreach({
+        to: contactResult.email,
+        organizationName: request.sourceName,
+        contactName: contactResult.contactName,
+      });
+      setOutreachSent(true);
+    } catch (error) {
+      console.error('Failed to send outreach:', error);
+    } finally {
+      setIsSendingOutreach(false);
     }
   };
 
@@ -512,11 +533,24 @@ function RequestRow({ request }: { request: any }) {
         {contactResult && (
           <div className={`mb-3 px-3 py-2 rounded text-sm ${contactResult.success ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'}`}>
             {contactResult.success ? (
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 {contactResult.email && (
-                  <a href={`mailto:${contactResult.email}`} className="hover:underline">
-                    📧 {contactResult.email}
-                  </a>
+                  <>
+                    <a href={`mailto:${contactResult.email}`} className="hover:underline">
+                      📧 {contactResult.email}
+                    </a>
+                    {!outreachSent ? (
+                      <button
+                        onClick={handleSendOutreach}
+                        disabled={isSendingOutreach}
+                        className="px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 disabled:opacity-50"
+                      >
+                        {isSendingOutreach ? 'Sending...' : 'Send Outreach'}
+                      </button>
+                    ) : (
+                      <span className="text-green-600 text-xs font-medium">✓ Sent</span>
+                    )}
+                  </>
                 )}
                 {contactResult.phone && (
                   <a href={`tel:${contactResult.phone}`} className="hover:underline">
@@ -822,8 +856,23 @@ function RequestRow({ request }: { request: any }) {
                   {contactResult && (
                     <div className={`text-sm ${contactResult.success ? 'text-green-600' : 'text-red-600'}`}>
                       {contactResult.success ? (
-                        <span className="flex items-center gap-2">
-                          {contactResult.email && <span>📧 {contactResult.email}</span>}
+                        <span className="flex items-center gap-2 flex-wrap">
+                          {contactResult.email && (
+                            <>
+                              <span>📧 {contactResult.email}</span>
+                              {!outreachSent ? (
+                                <button
+                                  onClick={handleSendOutreach}
+                                  disabled={isSendingOutreach}
+                                  className="px-2 py-0.5 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 disabled:opacity-50"
+                                >
+                                  {isSendingOutreach ? '...' : 'Send Outreach'}
+                                </button>
+                              ) : (
+                                <span className="text-green-600 text-xs">✓ Sent</span>
+                              )}
+                            </>
+                          )}
                           {contactResult.phone && <span>📞 {contactResult.phone}</span>}
                           {contactResult.contactName && <span>👤 {contactResult.contactName}</span>}
                           {!contactResult.email && !contactResult.phone && <span className="text-slate-500">No contact info found</span>}
