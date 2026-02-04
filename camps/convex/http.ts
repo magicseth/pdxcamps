@@ -112,56 +112,24 @@ http.route({
             .replace(/\[From: [^\]]+\]\s*/g, "")
             .replace(/^Re:\s*/i, "");
 
-          // Send reply to the original sender
-          const sendResponse = await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${resendApiKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              from: "Seth <hello@pdxcamps.com>",
-              to: [originalSender],
-              subject: `Re: ${cleanSubject}`,
-              text: replyText,
-              reply_to: ["hello@pdxcamps.com"],
-            }),
+          // Send reply using Node action
+          await ctx.runAction(internal.emailForward.sendReply, {
+            to: originalSender,
+            subject: `Re: ${cleanSubject}`,
+            text: replyText,
           });
-
-          if (sendResponse.ok) {
-            console.log(`Sent reply to ${originalSender}`);
-          } else {
-            console.error("Failed to send reply:", await sendResponse.text());
-          }
+          console.log(`Sent reply to ${originalSender}`);
         } else {
           console.log("Seth's email but couldn't find original sender in subject");
         }
       } else {
-        // Forward to Seth with original sender tagged in subject
-        // Use custom forward with tagged subject
-        const taggedSubject = `[From: ${from}] ${subject}`;
-
-        const sendResponse = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${resendApiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from: "PDX Camps <hello@pdxcamps.com>",
-            to: ["seth@magicseth.com"],
-            subject: taggedSubject,
-            text: textBody || "(no content)",
-            html: htmlBody,
-            reply_to: ["hello@pdxcamps.com"],
-          }),
+        // Forward to Seth using Node action (preserves attachments)
+        await ctx.runAction(internal.emailForward.forwardToSeth, {
+          emailId: email_id,
+          originalFrom: from,
+          originalSubject: subject || "(no subject)",
         });
-
-        if (sendResponse.ok) {
-          console.log(`Forwarded email from ${from} to Seth`);
-        } else {
-          console.error("Failed to forward email:", await sendResponse.text());
-        }
+        console.log(`Forwarded email from ${from} to Seth`);
       }
 
       // Store in database for admin view
