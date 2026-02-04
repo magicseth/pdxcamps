@@ -1131,265 +1131,114 @@ function PlannerHub({
       <AppHeader user={user} onSignOut={onSignOut} isPremium={isPremium} />
 
       <main id="main-content" className="flex-1 pb-20">
-        <div className="max-w-4xl mx-auto px-4 py-6">
-          <div className="bg-gradient-to-br from-primary via-primary-dark to-surface-dark rounded-2xl p-6 mb-6 text-white">
-            <div className="flex items-center justify-between mb-4">
-              <h1 className="text-2xl font-bold">Summer {selectedYear}</h1>
-              <div className="flex items-center gap-2">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          {/* Compact toolbar */}
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              {/* Year selector */}
+              <div className="flex items-center gap-1">
                 <button
                   onClick={() => setSelectedYear((y) => y - 1)}
                   disabled={selectedYear <= currentYear - 1}
-                  className="p-1.5 bg-white/20 border border-white/30 rounded-lg text-white hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-1.5 text-slate-400 hover:text-slate-600 disabled:opacity-30"
                   aria-label="Previous year"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                  aria-label="Select year"
-                  className="px-3 py-1.5 bg-white/20 border border-white/30 rounded-lg text-white text-sm backdrop-blur-sm"
-                >
-                  {[currentYear - 1, currentYear, currentYear + 1].map((year) => (
-                    <option key={year} value={year} className="text-slate-900">
-                      {year}
-                    </option>
-                  ))}
-                </select>
+                <span className="font-semibold text-slate-900 dark:text-white">Summer {selectedYear}</span>
                 <button
                   onClick={() => setSelectedYear((y) => y + 1)}
                   disabled={selectedYear >= currentYear + 1}
-                  className="p-1.5 bg-white/20 border border-white/30 rounded-lg text-white hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-1.5 text-slate-400 hover:text-slate-600 disabled:opacity-30"
                   aria-label="Next year"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
               </div>
-            </div>
 
-            {stats && (
-              <>
-                <div className="grid grid-cols-3 gap-4 mb-4">
-                  <div>
-                    <div className={`text-3xl font-bold ${stats.coverage === 100 ? 'text-green-300 animate-bounce motion-reduce:animate-none' : ''}`}>
-                      {stats.coverage === 100 && '🎉 '}
-                      {stats.coverage}%
-                    </div>
-                    <div className="text-sm text-white/80">Planned</div>
-                  </div>
-                  <div>
-                    <div className="text-3xl font-bold">{stats.fullyPlannedWeeks}</div>
-                    <div className="text-sm text-white/80">Weeks Covered</div>
-                  </div>
-                  <div title={stats.totalGaps > 0 ? `${stats.totalGaps} child-weeks need camps` : 'All covered!'}>
-                    <div className={`text-3xl font-bold ${stats.weeksWithGaps > 0 ? 'text-accent-light' : ''}`}>
-                      {stats.weeksWithGaps}
-                    </div>
-                    <div className="text-sm text-white/80">
-                      Gaps to Fill
-                      {stats.totalGaps > stats.weeksWithGaps && (
-                        <span className="text-white/70/70"> ({stats.totalGaps} slots)</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="mb-4">
-                  <div className="h-3 bg-primary-dark/50 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        stats.coverage === 100
-                          ? 'bg-green-400'
-                          : stats.coverage >= 75
-                          ? 'bg-accent'
-                          : stats.coverage >= 50
-                          ? 'bg-accent-light'
-                          : 'bg-accent/70'
-                      }`}
-                      style={{ width: `${stats.coverage}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-xs text-white/70 mt-1">
-                    <span>June</span>
-                    <span>July</span>
-                    <span>August</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4 text-sm text-white/80 border-t border-primary/30 pt-3">
-                  <Link href="/saved" className="hover:text-white hover:underline transition-colors">
-                    {stats.registeredCount} camp{stats.registeredCount !== 1 ? 's' : ''} registered
-                  </Link>
-                  {stats.savedCount > 0 && (
+              {/* Stats summary */}
+              {stats && (
+                <div className="hidden sm:flex items-center gap-3 text-sm text-slate-500">
+                  <span className={stats.coverage === 100 ? 'text-green-600 font-medium' : ''}>
+                    {stats.coverage}% planned
+                  </span>
+                  {stats.weeksWithGaps > 0 && (
                     <>
-                      <span className="text-white/60">•</span>
-                      <Link href="/saved" className="hover:text-white hover:underline transition-colors">
-                        {stats.savedCount} saved for later
-                      </Link>
+                      <span>•</span>
+                      <span className="text-accent font-medium">{stats.totalGaps} gaps</span>
+                    </>
+                  )}
+                  {stats.registeredCount > 0 && (
+                    <>
+                      <span>•</span>
+                      <Link href="/saved" className="hover:text-slate-700">{stats.registeredCount} registered</Link>
                     </>
                   )}
                 </div>
-                <p className="mt-3 text-sm text-white/70 italic">
-                  {stats.coverage === 100
-                    ? "🎉 Amazing! Summer is fully planned!"
-                    : stats.coverage >= 75
-                    ? "🚀 Almost there! Just a few more weeks to fill."
-                    : stats.coverage >= 50
-                    ? "💪 Great progress! Keep filling those gaps."
-                    : stats.coverage > 0
-                    ? "🌱 Good start! Lots of camps to explore."
-                    : "👋 Welcome! Let's plan an awesome summer."}
-                </p>
-              </>
-            )}
+              )}
+            </div>
 
-            <div className="mt-4 flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              {/* Find Camps button */}
               {stats && stats.weeksWithGaps > 0 && defaultCity && (
                 <Link
                   href={`/discover/${defaultCity.slug}`}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-lg font-medium text-sm hover:bg-accent-dark shadow-md shadow-accent/20 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-accent text-white rounded-lg font-medium text-sm hover:bg-accent-dark transition-colors"
                 >
                   <SearchIcon />
-                  Find Camps
+                  <span className="hidden sm:inline">Find Camps</span>
                 </Link>
               )}
+
+              {/* Add Event button */}
+              <button
+                onClick={() => setShowAddEventModal(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-600"
+                title="Add family event (E key)"
+              >
+                <PlusIcon />
+                <span className="hidden sm:inline">Add Event</span>
+              </button>
+
+              {/* Share button */}
               <button
                 onClick={() => setShowShareModal(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 border border-white/40 text-white rounded-lg font-medium text-sm hover:bg-white/30 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                title="Share schedule"
               >
                 <ShareIcon />
-                Share Schedule
               </button>
             </div>
           </div>
 
-          {/* Share Your Schedule - Big CTA */}
-          <div className="bg-gradient-to-r from-surface-dark to-surface rounded-2xl p-6 mb-6 text-white">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-4 text-center sm:text-left">
-                <div className="text-4xl">🔗</div>
-                <div>
-                  <h3 className="text-xl font-bold">Share Your Summer Schedule!</h3>
-                  <p className="text-white/80">
-                    Send your schedule to friends & family. Coordinate camps together!
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowShareModal(true)}
-                className="flex-shrink-0 px-8 py-4 bg-white text-primary font-bold text-lg rounded-xl hover:bg-surface/20 transition-all shadow-lg hover:shadow-xl hover:scale-105"
-              >
-                Share Schedule →
-              </button>
-            </div>
-          </div>
-
-          {/* Upgrade Banner for Free Users */}
+          {/* Upgrade Banner for Free Users - compact */}
           {!isPremium && subscription !== undefined && (
-            <div className="bg-gradient-to-r from-accent/10 to-accent/5 dark:from-accent/20 dark:to-accent/10 border border-accent/30 dark:border-accent/40 rounded-xl p-4 mb-6">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="text-2xl">✨</div>
-                  <div>
-                    <p className="font-medium text-slate-900 dark:text-white">
-                      You're viewing 4 of 12 summer weeks
-                    </p>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">
-                      Upgrade to see all weeks, save unlimited camps & export to calendar
-                    </p>
-                  </div>
-                </div>
-                <Link
-                  href="/upgrade"
-                  className="flex-shrink-0 px-4 py-2 bg-gradient-to-r from-accent to-accent-dark text-white font-medium rounded-lg hover:from-accent-dark hover:to-primary transition-all shadow-sm"
-                >
-                  Upgrade
-                </Link>
-              </div>
+            <div className="bg-gradient-to-r from-accent/10 to-accent/5 dark:from-accent/20 dark:to-accent/10 border border-accent/30 rounded-lg px-4 py-2 mb-4 flex items-center justify-between">
+              <p className="text-sm text-slate-700 dark:text-slate-300">
+                <span className="font-medium">Free plan:</span> Viewing 4 of 12 weeks
+              </p>
+              <Link
+                href="/upgrade"
+                className="text-sm font-medium text-accent hover:text-accent-dark"
+              >
+                Upgrade →
+              </Link>
             </div>
           )}
 
-          <div className="flex items-center justify-between mb-4">
+          {/* View controls - only show child toggle in list view */}
+          <div className="mb-3 flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-3">
-              {children.length > 1 ? (
-                <div className="flex items-center bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-1">
-                  <button
-                    onClick={() => setSelectedChildId('all')}
-                    aria-pressed={selectedChildId === 'all'}
-                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                      selectedChildId === 'all'
-                        ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-                    }`}
-                  >
-                    All
-                  </button>
-                  {children.map((child) => (
-                    <button
-                      key={child._id}
-                      onClick={() => setSelectedChildId(child._id)}
-                      title={child.lastName ? `${child.firstName} ${child.lastName}` : child.firstName}
-                      aria-pressed={selectedChildId === child._id}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                        selectedChildId === child._id
-                          ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
-                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-                      }`}
-                    >
-                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
-                        selectedChildId === child._id
-                          ? 'bg-white/30 dark:bg-slate-900/30'
-                          : 'bg-slate-200 dark:bg-slate-600'
-                      }`}>
-                        {child.firstName[0]}
-                      </span>
-                      {child.firstName}
-                    </button>
-                  ))}
-                  <button
-                    onClick={() => setShowAddChildModal(true)}
-                    className="flex items-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-                    title="Add another child"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    <span className="hidden sm:inline">Add</span>
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setShowAddChildModal(true)}
-                  className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:border-slate-300 transition-colors"
-                  title="Add another child"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  Add Child
-                </button>
-              )}
-            </div>
-
-            <button
-              onClick={() => setShowAddEventModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
-              title="Add family event (E key)"
-            >
-              <PlusIcon />
-              Add Event
-              <kbd className="hidden sm:inline ml-1 px-1.5 py-0.5 bg-slate-100 dark:bg-slate-600 text-slate-500 dark:text-slate-400 rounded text-[10px]">E</kbd>
-            </button>
-          </div>
-
-          <div className="mb-4 flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-4">
               <CoverageLegend />
+
+              {/* View mode toggle */}
               <div className="flex items-center bg-slate-100 dark:bg-slate-700 rounded-lg p-0.5">
                 <button
-                  onClick={() => setViewMode('grid')}
+                  onClick={() => { setViewMode('grid'); setSelectedChildId('all'); }}
                   className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                     viewMode === 'grid'
                       ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm'
@@ -1411,30 +1260,60 @@ function PlannerHub({
                   <ListIcon />
                 </button>
               </div>
+
+              {/* Child toggle - only in list view */}
+              {viewMode === 'list' && children.length > 1 && (
+                <div className="flex items-center bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-0.5">
+                  <button
+                    onClick={() => setSelectedChildId('all')}
+                    className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                      selectedChildId === 'all'
+                        ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+                        : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    All
+                  </button>
+                  {children.map((child) => (
+                    <button
+                      key={child._id}
+                      onClick={() => setSelectedChildId(child._id)}
+                      className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                        selectedChildId === child._id
+                          ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+                          : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      {child.firstName}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-            {stats && stats.weeksWithGaps > 0 && (
-              <label
-                htmlFor="show-only-gaps"
-                className={`flex items-center gap-2 cursor-pointer select-none px-3 py-1.5 rounded-lg transition-colors ${
-                  showOnlyGaps
-                    ? 'bg-accent/20 dark:bg-accent/30 text-accent-dark dark:text-accent'
-                    : 'hover:bg-slate-100 dark:hover:bg-slate-700'
-                }`}
-                title="Toggle gaps filter (G key)"
+
+            <div className="flex items-center gap-2">
+              {/* Gaps filter */}
+              {stats && stats.weeksWithGaps > 0 && (
+                <label className="flex items-center gap-1.5 cursor-pointer text-xs text-slate-500">
+                  <input
+                    type="checkbox"
+                    checked={showOnlyGaps}
+                    onChange={(e) => setShowOnlyGaps(e.target.checked)}
+                    className="w-3.5 h-3.5 rounded border-slate-300 text-accent focus:ring-accent"
+                  />
+                  <span>Gaps only</span>
+                </label>
+              )}
+
+              {/* Add child button */}
+              <button
+                onClick={() => setShowAddChildModal(true)}
+                className="text-xs text-slate-400 hover:text-slate-600"
+                title="Add child"
               >
-                <input
-                  id="show-only-gaps"
-                  type="checkbox"
-                  checked={showOnlyGaps}
-                  onChange={(e) => setShowOnlyGaps(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-300 text-accent focus:ring-accent"
-                />
-                <span className={`text-sm ${showOnlyGaps ? 'font-medium' : 'text-slate-600 dark:text-slate-400'}`}>
-                  Show only gaps ({stats.weeksWithGaps})
-                </span>
-                <kbd className="hidden sm:inline px-1.5 py-0.5 bg-slate-100 dark:bg-slate-600 text-slate-500 dark:text-slate-400 rounded text-[10px]">G</kbd>
-              </label>
-            )}
+                + Add Kid
+              </button>
+            </div>
           </div>
 
           {coverage === undefined ? (
