@@ -12,7 +12,6 @@ import type { User } from '@workos-inc/node';
 import { PlannerGrid, RegistrationClickData, EventClickData } from '../components/planner/PlannerGrid';
 import { RegistrationModal } from '../components/planner/RegistrationModal';
 import { EditEventModal } from '../components/planner/EditEventModal';
-import { CoverageLegend } from '../components/planner/CoverageIndicator';
 import { AddEventModal } from '../components/planner/AddEventModal';
 import { AddChildModal } from '../components/planner/AddChildModal';
 import { BottomNav } from '../components/shared/BottomNav';
@@ -953,7 +952,11 @@ function PlannerHub({
   cities: { _id: Id<'cities'>; slug: string; name: string }[];
 }) {
   const market = useMarket();
-  const currentYear = new Date().getFullYear();
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth(); // 0-indexed, so September = 8
+  // Only show next year starting in September
+  const maxYear = currentMonth >= 8 ? currentYear + 1 : currentYear;
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -961,7 +964,6 @@ function PlannerHub({
     const yearParam = searchParams.get('year');
     return yearParam ? parseInt(yearParam) : currentYear;
   });
-  const [showOnlyGaps, setShowOnlyGaps] = useState(false);
   const [showAddEventModal, setShowAddEventModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showAddChildModal, setShowAddChildModal] = useState(false);
@@ -984,10 +986,6 @@ function PlannerHub({
       if ((e.key === 'e' || e.key === 'E') && !showAddEventModal) {
         e.preventDefault();
         setShowAddEventModal(true);
-      }
-      if (e.key === 'g' || e.key === 'G') {
-        e.preventDefault();
-        setShowOnlyGaps((prev) => !prev);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -1016,13 +1014,7 @@ function PlannerHub({
     return familyEvents.find((e) => e._id === selectedEventId) ?? null;
   }, [selectedEventId, familyEvents]);
 
-  const filteredCoverage = useMemo(() => {
-    if (!coverage) return [];
-    if (showOnlyGaps) {
-      return coverage.filter((week) => week.hasGap);
-    }
-    return coverage;
-  }, [coverage, showOnlyGaps]);
+  const filteredCoverage = coverage || [];
 
   const stats = useMemo(() => {
     if (!coverage) return null;
@@ -1130,7 +1122,7 @@ function PlannerHub({
                 <span className="font-semibold text-slate-900 dark:text-white">Summer {selectedYear}</span>
                 <button
                   onClick={() => setSelectedYear((y) => y + 1)}
-                  disabled={selectedYear >= currentYear + 1}
+                  disabled={selectedYear >= maxYear}
                   className="p-1.5 text-slate-400 hover:text-slate-600 disabled:opacity-30"
                   aria-label="Next year"
                 >
@@ -1220,34 +1212,6 @@ function PlannerHub({
             </Link>
           )}
 
-          {/* View controls */}
-          <div className="mb-3 flex items-center justify-between flex-wrap gap-2">
-            <CoverageLegend />
-
-            <div className="flex items-center gap-2">
-              {/* Gaps filter */}
-              {stats && stats.weeksWithGaps > 0 && (
-                <label className="flex items-center gap-1.5 cursor-pointer text-xs text-slate-500">
-                  <input
-                    type="checkbox"
-                    checked={showOnlyGaps}
-                    onChange={(e) => setShowOnlyGaps(e.target.checked)}
-                    className="w-3.5 h-3.5 rounded border-slate-300 text-accent focus:ring-accent"
-                  />
-                  <span>Gaps only</span>
-                </label>
-              )}
-
-              {/* Add child button */}
-              <button
-                onClick={() => setShowAddChildModal(true)}
-                className="text-xs text-slate-400 hover:text-slate-600"
-                title="Add child"
-              >
-                + Add Kid
-              </button>
-            </div>
-          </div>
 
           {coverage === undefined ? (
             <div role="status" aria-live="polite" className="space-y-2">
@@ -1258,31 +1222,9 @@ function PlannerHub({
             </div>
           ) : filteredCoverage.length === 0 ? (
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-8 text-center">
-              {showOnlyGaps && stats && stats.weeksWithGaps === 0 ? (
-                <>
-                  <div className="text-4xl mb-3">🎉</div>
-                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">
-                    No gaps to show!
-                  </h3>
-                  <p className="text-slate-500 dark:text-slate-400">
-                    Amazing work! Every week is covered for summer {selectedYear}.
-                  </p>
-                </>
-              ) : showOnlyGaps ? (
-                <>
-                  <div className="text-4xl mb-3">✨</div>
-                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">
-                    No gaps!
-                  </h3>
-                  <p className="text-slate-500 dark:text-slate-400">
-                    Everyone is fully covered for the summer.
-                  </p>
-                </>
-              ) : (
-                <p className="text-slate-500 dark:text-slate-400">
-                  No weeks found for summer {selectedYear}.
-                </p>
-              )}
+              <p className="text-slate-500 dark:text-slate-400">
+                No weeks found for summer {selectedYear}.
+              </p>
             </div>
           ) : (
             <PlannerGrid
