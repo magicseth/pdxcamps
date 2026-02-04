@@ -1195,19 +1195,29 @@ function PlannerHub({
             </div>
           </div>
 
-          {/* Upgrade Banner for Free Users - compact */}
+          {/* Upgrade Banner for Free Users - compelling upsell */}
           {!isPremium && subscription !== undefined && (
-            <div className="bg-gradient-to-r from-accent/10 to-accent/5 dark:from-accent/20 dark:to-accent/10 border border-accent/30 rounded-lg px-4 py-2 mb-4 flex items-center justify-between">
-              <p className="text-sm text-slate-700 dark:text-slate-300">
-                <span className="font-medium">Free plan:</span> Viewing 4 of 12 weeks
-              </p>
-              <Link
-                href="/upgrade"
-                className="text-sm font-medium text-accent hover:text-accent-dark"
-              >
-                Upgrade →
-              </Link>
-            </div>
+            <Link
+              href="/upgrade"
+              className="block bg-gradient-to-r from-accent/10 to-primary/10 dark:from-accent/20 dark:to-primary/20 border border-accent/30 rounded-lg px-4 py-3 mb-4 hover:from-accent/15 hover:to-primary/15 transition-colors group"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-lg">📅</span>
+                  <div>
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">
+                      Sync to Google Calendar
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Plus: share with co-parents, registration reminders, waitlist alerts
+                    </p>
+                  </div>
+                </div>
+                <span className="text-sm font-medium text-accent group-hover:text-accent-dark">
+                  $29/summer →
+                </span>
+              </div>
+            </Link>
           )}
 
           {/* View controls */}
