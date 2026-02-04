@@ -8,7 +8,7 @@
  * - Registration reminders
  */
 
-import { action, internalAction, internalMutation, internalQuery } from "./_generated/server";
+import { action, internalAction, internalMutation, internalQuery, query } from "./_generated/server";
 import { components, internal } from "./_generated/api";
 import { Resend, vOnEmailEventArgs } from "@convex-dev/resend";
 import { v } from "convex/values";
@@ -37,7 +37,7 @@ export const handleEmailEvent = internalMutation({
 });
 
 /**
- * Store an inbound email received via webhook
+ * Store an inbound email received via webhook and forward to Seth
  */
 export const storeInboundEmail = internalMutation({
   args: {
@@ -77,7 +77,53 @@ export const storeInboundEmail = internalMutation({
     });
 
     console.log(`Inbound email stored: ${emailId} from ${fromEmail}`);
+
+    // Schedule forwarding to Seth
+    await ctx.scheduler.runAfter(0, internal.email.forwardInboundEmail, {
+      emailId,
+      from: args.from,
+      subject: args.subject,
+      textBody: args.textBody,
+      htmlBody: args.htmlBody,
+    });
+
     return emailId;
+  },
+});
+
+/**
+ * Forward an inbound email to Seth
+ */
+export const forwardInboundEmail = internalAction({
+  args: {
+    emailId: v.id("inboundEmails"),
+    from: v.string(),
+    subject: v.string(),
+    textBody: v.optional(v.string()),
+    htmlBody: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const forwardTo = "seth@magicseth.com";
+
+    await resend.sendEmail(ctx, {
+      from: `${FROM_NAME} <${FROM_EMAIL}>`,
+      to: [forwardTo],
+      subject: `[PDX Camps Inbound] ${args.subject}`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: #f1f5f9; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px;">
+            <strong>From:</strong> ${args.from}<br/>
+            <strong>Subject:</strong> ${args.subject}
+          </div>
+          <div style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px;">
+            ${args.htmlBody || args.textBody?.replace(/\n/g, '<br/>') || '(no content)'}
+          </div>
+        </div>
+      `,
+      replyTo: [args.from],
+    });
+
+    console.log(`Forwarded inbound email ${args.emailId} to ${forwardTo}`);
   },
 });
 
@@ -504,6 +550,23 @@ export const sendRegistrationReminder = action({
     });
 
     return result;
+  },
+});
+
+/**
+ * List recent inbound emails for admin view
+ */
+export const listInboundEmails = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const emails = await ctx.db
+      .query("inboundEmails")
+      .order("desc")
+      .take(args.limit || 20);
+
+    return emails;
   },
 });
 

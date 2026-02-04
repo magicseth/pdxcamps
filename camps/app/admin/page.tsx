@@ -77,6 +77,7 @@ function AdminContent() {
   // Use lightweight summary query instead of full dashboard with sources
   const dashboard = useQuery(api.admin.queries.getDashboardSummary, { cityId: selectedCityId });
   const alerts = useQuery(api.scraping.queries.listUnacknowledgedAlerts, {});
+  const inboundEmails = useQuery(api.email.listInboundEmails, { limit: 10 });
 
   if (isAdmin === undefined) {
     return (
@@ -431,6 +432,45 @@ function AdminContent() {
           </div>
         </div>
       </div>
+
+      {/* Inbound Emails */}
+      {inboundEmails && inboundEmails.length > 0 && (
+        <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 flex items-center justify-between">
+            <h3 className="font-semibold text-slate-900 dark:text-white">Inbound Emails</h3>
+            <span className="text-xs text-slate-500">{inboundEmails.length} recent</span>
+          </div>
+          <ul className="divide-y divide-slate-200 dark:divide-slate-700">
+            {inboundEmails.map((email) => (
+              <li key={email._id} className="px-6 py-4">
+                <div className="flex items-start justify-between">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-slate-900 dark:text-white truncate">
+                      {email.subject || '(no subject)'}
+                    </p>
+                    <p className="text-sm text-slate-500 truncate">
+                      From: {email.fromName ? `${email.fromName} <${email.fromEmail}>` : email.fromEmail}
+                    </p>
+                    {email.textBody && (
+                      <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 line-clamp-2">
+                        {email.textBody.slice(0, 200)}
+                      </p>
+                    )}
+                  </div>
+                  <div className="ml-4 flex-shrink-0 text-right">
+                    <p className="text-xs text-slate-500">
+                      {new Date(email.receivedAt).toLocaleDateString()}
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      {new Date(email.receivedAt).toLocaleTimeString()}
+                    </p>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
