@@ -9,8 +9,9 @@ import Link from 'next/link';
 import { useAuth } from '@workos-inc/authkit-nextjs/components';
 import type { User } from '@workos-inc/node';
 import { WeekRow, MonthHeader } from '../components/planner/WeekRow';
-import { PlannerGrid, RegistrationClickData } from '../components/planner/PlannerGrid';
+import { PlannerGrid, RegistrationClickData, EventClickData } from '../components/planner/PlannerGrid';
 import { RegistrationModal } from '../components/planner/RegistrationModal';
+import { EditEventModal } from '../components/planner/EditEventModal';
 import { CoverageLegend } from '../components/planner/CoverageIndicator';
 import { AddEventModal } from '../components/planner/AddEventModal';
 import { AddChildModal } from '../components/planner/AddChildModal';
@@ -956,6 +957,7 @@ function PlannerHub({
   const [showAddChildModal, setShowAddChildModal] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedRegistration, setSelectedRegistration] = useState<RegistrationClickData | null>(null);
+  const [selectedEventId, setSelectedEventId] = useState<Id<'familyEvents'> | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -990,6 +992,16 @@ function PlannerHub({
 
   const subscription = useQuery(api.subscriptions.getSubscription);
   const isPremium = subscription?.isPremium ?? false;
+
+  const familyEvents = useQuery(api.planner.queries.getFamilyEvents, {
+    year: selectedYear,
+  });
+
+  // Find the selected event for the edit modal
+  const selectedEvent = useMemo(() => {
+    if (!selectedEventId || !familyEvents) return null;
+    return familyEvents.find((e) => e._id === selectedEventId) ?? null;
+  }, [selectedEventId, familyEvents]);
 
   const filteredCoverage = useMemo(() => {
     if (!coverage) return [];
@@ -1091,6 +1103,10 @@ function PlannerHub({
 
   const handleRegistrationClick = useCallback((data: RegistrationClickData) => {
     setSelectedRegistration(data);
+  }, []);
+
+  const handleEventClick = useCallback((data: EventClickData) => {
+    setSelectedEventId(data.eventId);
   }, []);
 
   return (
@@ -1453,6 +1469,7 @@ function PlannerHub({
               citySlug={defaultCity?.slug}
               onGapClick={handleGapClick}
               onRegistrationClick={handleRegistrationClick}
+              onEventClick={handleEventClick}
             />
           ) : (
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
@@ -1507,6 +1524,25 @@ function PlannerHub({
         } : null}
         citySlug={defaultCity?.slug}
       />
+
+      {selectedEvent && (
+        <EditEventModal
+          isOpen={selectedEventId !== null}
+          onClose={() => setSelectedEventId(null)}
+          event={{
+            _id: selectedEvent._id,
+            title: selectedEvent.title,
+            description: selectedEvent.description,
+            startDate: selectedEvent.startDate,
+            endDate: selectedEvent.endDate,
+            eventType: selectedEvent.eventType,
+            location: selectedEvent.location,
+            notes: selectedEvent.notes,
+            color: selectedEvent.color,
+            childIds: selectedEvent.childIds,
+          }}
+        />
+      )}
     </div>
   );
 }

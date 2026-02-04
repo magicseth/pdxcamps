@@ -52,15 +52,24 @@ export interface RegistrationClickData {
   registrationUrl?: string | null;
 }
 
+export interface EventClickData {
+  eventId: Id<'familyEvents'>;
+  title: string;
+  childId: Id<'children'>;
+  childName: string;
+  weekLabel: string;
+}
+
 interface PlannerGridProps {
   coverage: WeekData[];
   children: { _id: Id<'children'>; firstName: string; birthdate?: string; currentGrade?: number }[];
   citySlug?: string;
   onGapClick?: (weekStart: string, weekEnd: string, childId: Id<'children'>) => void;
   onRegistrationClick?: (data: RegistrationClickData) => void;
+  onEventClick?: (data: EventClickData) => void;
 }
 
-export function PlannerGrid({ coverage, children, citySlug, onGapClick, onRegistrationClick }: PlannerGridProps) {
+export function PlannerGrid({ coverage, children, citySlug, onGapClick, onRegistrationClick, onEventClick }: PlannerGridProps) {
   // Group weeks by month
   const weeksByMonth = useMemo(() => {
     const groups: Map<string, WeekData[]> = new Map();
@@ -173,6 +182,7 @@ export function PlannerGrid({ coverage, children, citySlug, onGapClick, onRegist
                       citySlug={citySlug}
                       onGapClick={onGapClick}
                       onRegistrationClick={onRegistrationClick}
+                      onEventClick={onEventClick}
                     />
                   );
                 })}
@@ -195,9 +205,10 @@ interface CoverageCellProps {
   citySlug?: string;
   onGapClick?: (weekStart: string, weekEnd: string, childId: Id<'children'>) => void;
   onRegistrationClick?: (data: RegistrationClickData) => void;
+  onEventClick?: (data: EventClickData) => void;
 }
 
-function CoverageCell({ data, week, childId, childName, isCurrentWeek, isPastWeek, citySlug, onGapClick, onRegistrationClick }: CoverageCellProps) {
+function CoverageCell({ data, week, childId, childName, isCurrentWeek, isPastWeek, citySlug, onGapClick, onRegistrationClick, onEventClick }: CoverageCellProps) {
   const status = data?.status || 'gap';
   const hasEvent = data?.events && data.events.length > 0;
   const hasRegistration = data?.registrations && data.registrations.length > 0;
@@ -320,6 +331,31 @@ function CoverageCell({ data, week, childId, childName, isCurrentWeek, isPastWee
         <button
           onClick={handleRegistrationClick}
           className="block w-full h-full hover:bg-green-200 dark:hover:bg-green-800/40 transition-colors cursor-pointer"
+        >
+          {cellContent}
+        </button>
+      </td>
+    );
+  }
+
+  // Make cells with events clickable
+  if (hasEvent && onEventClick && data?.events?.[0]) {
+    const evt = data.events[0];
+    const handleEventClick = () => {
+      onEventClick({
+        eventId: evt.eventId,
+        title: evt.title,
+        childId,
+        childName,
+        weekLabel: `${week.week.monthName} ${week.week.label}`,
+      });
+    };
+
+    return (
+      <td className="border-b border-l border-slate-100 dark:border-slate-700/50 p-0">
+        <button
+          onClick={handleEventClick}
+          className="block w-full h-full hover:bg-surface/50 dark:hover:bg-surface-dark/50 transition-colors cursor-pointer"
         >
           {cellContent}
         </button>
