@@ -79,8 +79,13 @@ http.route({
 
       if (emailResponse.ok) {
         const emailData = await emailResponse.json();
+        console.log("Fetched email data keys:", Object.keys(emailData));
+        console.log("Email data:", JSON.stringify(emailData).slice(0, 1000));
         textBody = emailData.text;
         htmlBody = emailData.html;
+      } else {
+        const errorText = await emailResponse.text();
+        console.error("Failed to fetch email content:", emailResponse.status, errorText);
       }
 
       if (isSethReply) {
