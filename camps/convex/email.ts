@@ -8,13 +8,32 @@
  * - Registration reminders
  */
 
-import { action, internalAction } from "./_generated/server";
+import { action, internalAction, internalMutation } from "./_generated/server";
 import { components } from "./_generated/api";
-import { Resend } from "@convex-dev/resend";
+import { Resend, vOnEmailEventArgs } from "@convex-dev/resend";
 import { v } from "convex/values";
 
 // Initialize Resend client
-const resend = new Resend(components.resend);
+// Note: To enable email event handling, add onEmailEvent option after
+// creating the handler in a separate file to avoid circular reference
+export const resend: Resend = new Resend(components.resend, {});
+
+/**
+ * Handle email status events from Resend webhook
+ * Called by the resend component when webhook events are received
+ */
+export const handleEmailEvent = internalMutation({
+  args: vOnEmailEventArgs,
+  handler: async (ctx, args) => {
+    // Log email events for debugging
+    console.log(`Email event: ${args.event} for email ${args.id}`);
+
+    // Could add custom handling here:
+    // - Track delivery success/failure in database
+    // - Alert on bounces or spam complaints
+    // - Update outreach status
+  },
+});
 
 // Default sender - should match verified domain in Resend
 const FROM_EMAIL = "hello@pdxcamps.com";
