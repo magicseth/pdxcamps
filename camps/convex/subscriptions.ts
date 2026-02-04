@@ -93,8 +93,12 @@ export const getSubscription = query({
       (sub) => sub.status === "active" || sub.status === "trialing"
     );
 
+    // Check if subscription is set to cancel at period end
+    const cancelAtPeriodEnd = activeSubscription?.cancelAtPeriodEnd ?? false;
+
     return {
       isPremium: !!activeSubscription,
+      cancelAtPeriodEnd,
       subscription: activeSubscription || null,
       limits: activeSubscription
         ? { maxChildren: Infinity, maxWeeks: 12, maxSavedCamps: Infinity }
@@ -215,6 +219,30 @@ export const cancelSubscription = action({
     await stripeClient.cancelSubscription(ctx, {
       stripeSubscriptionId: args.stripeSubscriptionId,
       cancelAtPeriodEnd: true, // Let them use until end of period
+    });
+
+    return { success: true };
+  },
+});
+
+/**
+ * Resubscribe - resume a subscription that was set to cancel at period end
+ */
+export const resubscribe = action({
+  args: {
+    stripeSubscriptionId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    // Use Stripe SDK directly to update the subscription
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
+    await stripe.subscriptions.update(args.stripeSubscriptionId, {
+      cancel_at_period_end: false,
     });
 
     return { success: true };

@@ -782,6 +782,7 @@ function HomeAddressSection({
 function SubscriptionSection() {
   const subscription = useQuery(api.subscriptions.getSubscription);
   const createPortalSession = useAction(api.subscriptions.createPortalSession);
+  const resubscribe = useAction(api.subscriptions.resubscribe);
   const [isLoading, setIsLoading] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -796,6 +797,20 @@ function SubscriptionSection() {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to open subscription portal');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResubscribe = async () => {
+    if (!subscription?.subscription?.stripeSubscriptionId) return;
+    try {
+      setIsLoading(true);
+      setError(null);
+      await resubscribe({ stripeSubscriptionId: subscription.subscription.stripeSubscriptionId });
+      // Subscription will update via Convex reactivity
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to resubscribe');
     } finally {
       setIsLoading(false);
     }
@@ -834,27 +849,50 @@ function SubscriptionSection() {
             </div>
             <div>
               <p className="font-semibold text-slate-900 dark:text-white">Summer Pass</p>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Premium member</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {subscription.cancelAtPeriodEnd ? 'Cancels at end of period' : 'Premium member'}
+              </p>
             </div>
           </div>
 
-          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-            <p className="text-sm text-green-700 dark:text-green-400 font-medium mb-2">Your benefits:</p>
-            <ul className="text-sm text-green-600 dark:text-green-500 space-y-1">
-              <li className="flex items-center gap-2">
-                <CheckIcon />
-                All 12 weeks visible
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckIcon />
-                Unlimited saved camps
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckIcon />
-                Calendar export
-              </li>
-            </ul>
-          </div>
+          {subscription.cancelAtPeriodEnd && (
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+              <p className="text-sm text-amber-700 dark:text-amber-400 font-medium mb-2">
+                Your subscription is set to cancel
+              </p>
+              <p className="text-sm text-amber-600 dark:text-amber-500 mb-3">
+                You'll keep premium access until the end of your billing period.
+              </p>
+              <button
+                type="button"
+                onClick={handleResubscribe}
+                disabled={isLoading}
+                className="px-4 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? 'Loading...' : 'Keep My Subscription'}
+              </button>
+            </div>
+          )}
+
+          {!subscription.cancelAtPeriodEnd && (
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+              <p className="text-sm text-green-700 dark:text-green-400 font-medium mb-2">Your benefits:</p>
+              <ul className="text-sm text-green-600 dark:text-green-500 space-y-1">
+                <li className="flex items-center gap-2">
+                  <CheckIcon />
+                  All 12 weeks visible
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckIcon />
+                  Unlimited saved camps
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckIcon />
+                  Calendar export
+                </li>
+              </ul>
+            </div>
+          )}
 
           <div className="flex gap-3">
             <button
@@ -865,13 +903,15 @@ function SubscriptionSection() {
             >
               {isLoading ? 'Loading...' : 'Manage Billing'}
             </button>
-            <button
-              type="button"
-              onClick={() => setShowCancelModal(true)}
-              className="px-4 py-2 text-red-600 border border-red-200 dark:border-red-800 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20"
-            >
-              Cancel
-            </button>
+            {!subscription.cancelAtPeriodEnd && (
+              <button
+                type="button"
+                onClick={() => setShowCancelModal(true)}
+                className="px-4 py-2 text-red-600 border border-red-200 dark:border-red-800 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20"
+              >
+                Cancel
+              </button>
+            )}
           </div>
         </div>
       ) : (
