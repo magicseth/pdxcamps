@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Id } from '../../../convex/_generated/dataModel';
 import Link from 'next/link';
@@ -376,11 +376,45 @@ function RequestRow({ request }: { request: any }) {
   const [feedback, setFeedback] = useState('');
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
+  const [isExtractingContact, setIsExtractingContact] = useState(false);
+  const [contactResult, setContactResult] = useState<{
+    success: boolean;
+    email?: string;
+    phone?: string;
+    contactName?: string;
+    error?: string;
+  } | null>(null);
 
   const submitFeedback = useMutation(api.scraping.development.submitFeedback);
   const approveCode = useMutation(api.scraping.development.approveScraperCode);
   const markFailed = useMutation(api.scraping.development.markFailed);
   const forceRestart = useMutation(api.scraping.development.forceRestart);
+  const extractContact = useAction(api.scraping.contactExtractor.extractContactInfo);
+
+  const handleExtractContact = async () => {
+    setIsExtractingContact(true);
+    setContactResult(null);
+    try {
+      const result = await extractContact({
+        url: request.sourceUrl,
+        organizationId: request.sourceId ? undefined : undefined, // We don't have org ID directly
+      });
+      setContactResult({
+        success: result.success,
+        email: result.contactInfo?.email,
+        phone: result.contactInfo?.phone,
+        contactName: result.contactInfo?.contactName,
+        error: result.error,
+      });
+    } catch (error) {
+      setContactResult({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    } finally {
+      setIsExtractingContact(false);
+    }
+  };
 
   const handleSubmitFeedback = async () => {
     if (!feedback.trim()) return;
@@ -444,6 +478,14 @@ function RequestRow({ request }: { request: any }) {
           <div className="flex items-center gap-2 flex-shrink-0">
             <span className="text-sm text-slate-500">{request.lastTestSessionsFound} sessions</span>
             <button
+              onClick={handleExtractContact}
+              disabled={isExtractingContact}
+              className="px-2 py-1.5 text-purple-600 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded text-sm"
+              title="Get contact info"
+            >
+              {isExtractingContact ? '⟳' : '📧'}
+            </button>
+            <button
               onClick={handleApprove}
               disabled={isApproving}
               className="px-3 py-1.5 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50 font-medium"
@@ -465,6 +507,32 @@ function RequestRow({ request }: { request: any }) {
             </button>
           </div>
         </div>
+
+        {/* Contact info result */}
+        {contactResult && (
+          <div className={`mb-3 px-3 py-2 rounded text-sm ${contactResult.success ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'}`}>
+            {contactResult.success ? (
+              <div className="flex flex-wrap gap-3">
+                {contactResult.email && (
+                  <a href={`mailto:${contactResult.email}`} className="hover:underline">
+                    📧 {contactResult.email}
+                  </a>
+                )}
+                {contactResult.phone && (
+                  <a href={`tel:${contactResult.phone}`} className="hover:underline">
+                    📞 {contactResult.phone}
+                  </a>
+                )}
+                {contactResult.contactName && <span>👤 {contactResult.contactName}</span>}
+                {!contactResult.email && !contactResult.phone && (
+                  <span className="text-slate-500">No contact info found on website</span>
+                )}
+              </div>
+            ) : (
+              <span>Error: {contactResult.error}</span>
+            )}
+          </div>
+        )}
 
         {/* Sample sessions table - always visible for needs_feedback */}
         <div className="bg-white dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 overflow-hidden mb-3">
@@ -719,19 +787,54 @@ function RequestRow({ request }: { request: any }) {
           )}
 
           {(request.status === 'failed' || request.status === 'completed') && (
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleForceRestart(false)}
-                className="px-3 py-1.5 bg-slate-600 text-white rounded text-sm hover:bg-slate-700"
-              >
-                Restart (Keep Code)
-              </button>
-              <button
-                onClick={() => handleForceRestart(true)}
-                className="px-3 py-1.5 bg-orange-600 text-white rounded text-sm hover:bg-orange-700"
-              >
-                Restart (Clear Code)
-              </button>
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleForceRestart(false)}
+                  className="px-3 py-1.5 bg-slate-600 text-white rounded text-sm hover:bg-slate-700"
+                >
+                  Restart (Keep Code)
+                </button>
+                <button
+                  onClick={() => handleForceRestart(true)}
+                  className="px-3 py-1.5 bg-orange-600 text-white rounded text-sm hover:bg-orange-700"
+                >
+                  Restart (Clear Code)
+                </button>
+              </div>
+
+              {/* Contact Extraction */}
+              <div className="border-t border-slate-200 dark:border-slate-700 pt-3">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleExtractContact}
+                    disabled={isExtractingContact}
+                    className="px-3 py-1.5 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 disabled:opacity-50 flex items-center gap-1"
+                  >
+                    {isExtractingContact ? (
+                      <>
+                        <span className="animate-spin">⟳</span> Extracting...
+                      </>
+                    ) : (
+                      <>📧 Get Contact Info</>
+                    )}
+                  </button>
+                  {contactResult && (
+                    <div className={`text-sm ${contactResult.success ? 'text-green-600' : 'text-red-600'}`}>
+                      {contactResult.success ? (
+                        <span className="flex items-center gap-2">
+                          {contactResult.email && <span>📧 {contactResult.email}</span>}
+                          {contactResult.phone && <span>📞 {contactResult.phone}</span>}
+                          {contactResult.contactName && <span>👤 {contactResult.contactName}</span>}
+                          {!contactResult.email && !contactResult.phone && <span className="text-slate-500">No contact info found</span>}
+                        </span>
+                      ) : (
+                        <span>Error: {contactResult.error}</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>
