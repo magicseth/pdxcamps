@@ -122,21 +122,30 @@ http.route({
 
           // Extract just Seth's reply (before the quoted content)
           // Look for common quote markers
-          let replyText = textBody || "";
+          const fullText = textBody || "";
+          let replyText = fullText;
           const quoteMarkers = [
             /\n\s*On .+ wrote:\s*\n/i,           // "On Mon, Jan 1, 2024 at 10:00 AM X wrote:"
             /\n\s*-{3,}\s*Original Message\s*-{3,}/i,  // "--- Original Message ---"
-            /\n\s*>{1,}/,                         // "> quoted text"
-            /\n\s*From: .+\n/i,                   // "From: someone"
+            /\n\s*From: .+\nSent: /i,            // Outlook style
+            /\n\s*-{3,}\s*Forwarded message\s*-{3,}/i,  // Forwarded message
           ];
 
           for (const marker of quoteMarkers) {
             const match = replyText.match(marker);
-            if (match && match.index !== undefined) {
+            if (match && match.index !== undefined && match.index > 10) {
+              // Only strip if there's meaningful content before the quote
               replyText = replyText.substring(0, match.index).trim();
               break;
             }
           }
+
+          // If stripping removed everything, use the full text
+          if (!replyText.trim()) {
+            replyText = fullText;
+          }
+
+          console.log("Reply text to send:", replyText.slice(0, 200));
 
           // Clean up the subject (remove the [From: ...] tag)
           const cleanSubject = subject

@@ -63,12 +63,15 @@ export const sendReply = internalAction({
 
     const resend = new Resend(resendApiKey);
 
+    // Ensure we have content to send
+    const textContent = args.text?.trim() || "(no message)";
+
     const { data, error } = await resend.emails.send({
       from: "Seth <hello@pdxcamps.com>",
       to: [args.to],
       subject: args.subject,
-      text: args.text,
-      html: args.html,
+      text: textContent,
+      html: args.html || undefined,
       replyTo: ["hello@pdxcamps.com"],
     });
 
