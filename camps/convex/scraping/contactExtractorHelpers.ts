@@ -8,6 +8,7 @@ import { v } from "convex/values";
 
 /**
  * Internal mutation to update organization contact info
+ * Always records the attempt timestamp to prevent retrying the same orgs
  */
 export const updateOrgContactInfo = internalMutation({
   args: {
@@ -16,7 +17,10 @@ export const updateOrgContactInfo = internalMutation({
     phone: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const updates: Record<string, string> = {};
+    const updates: Record<string, string | number> = {
+      // Always record that we attempted extraction
+      contactExtractionAttemptedAt: Date.now(),
+    };
 
     if (args.email) {
       updates.email = args.email;
@@ -25,9 +29,7 @@ export const updateOrgContactInfo = internalMutation({
       updates.phone = args.phone;
     }
 
-    if (Object.keys(updates).length > 0) {
-      await ctx.db.patch(args.organizationId, updates);
-    }
+    await ctx.db.patch(args.organizationId, updates);
   },
 });
 
@@ -45,7 +47,7 @@ export const getOrganization = internalQuery({
 
 /**
  * Get organizations that need contact extraction
- * (have website but no email)
+ * (have website but no email, not attempted in last 7 days)
  */
 export const getOrgsNeedingContactInfo = query({
   args: {
@@ -57,9 +59,14 @@ export const getOrgsNeedingContactInfo = query({
       .withIndex("by_is_active", (q) => q.eq("isActive", true))
       .collect();
 
-    // Filter to orgs with website but no email
+    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+
+    // Filter to orgs with website but no email, not recently attempted
     const needsContact = allOrgs.filter(
-      (org) => org.website && !org.email
+      (org) =>
+        org.website &&
+        !org.email &&
+        (!org.contactExtractionAttemptedAt || org.contactExtractionAttemptedAt < sevenDaysAgo)
     );
 
     return needsContact.slice(0, args.limit ?? 10);
@@ -77,14 +84,23 @@ export const getContactExtractionStats = query({
       .withIndex("by_is_active", (q) => q.eq("isActive", true))
       .collect();
 
+    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+
     const withWebsite = allOrgs.filter((org) => org.website);
     const withEmail = allOrgs.filter((org) => org.email);
-    const needsExtraction = allOrgs.filter((org) => org.website && !org.email);
+    const attempted = allOrgs.filter((org) => org.contactExtractionAttemptedAt);
+    const needsExtraction = allOrgs.filter(
+      (org) =>
+        org.website &&
+        !org.email &&
+        (!org.contactExtractionAttemptedAt || org.contactExtractionAttemptedAt < sevenDaysAgo)
+    );
 
     return {
       total: allOrgs.length,
       withWebsite: withWebsite.length,
       withEmail: withEmail.length,
+      attempted: attempted.length,
       needsExtraction: needsExtraction.length,
     };
   },

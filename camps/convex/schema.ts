@@ -119,6 +119,8 @@ export default defineSchema({
     cityIds: v.array(v.id("cities")),
     isVerified: v.boolean(),
     isActive: v.boolean(),
+    // Contact extraction tracking - prevents retrying the same orgs
+    contactExtractionAttemptedAt: v.optional(v.number()),
   })
     .index("by_slug", ["slug"])
     .index("by_is_active", ["isActive"]),

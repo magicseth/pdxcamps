@@ -2124,12 +2124,11 @@ async function fetchWithStagehand(
  * Process organizations that need contact info extraction
  */
 async function processContactExtraction(verbose: boolean = false) {
+  // Contact extraction always logs to console (it's important to see progress)
   const log = (msg: string) => {
     writeLog(msg);
-    if (verbose) console.log(msg);
+    console.log(msg);
   };
-
-  log("📧 Checking for orgs needing contact extraction...");
 
   // Get orgs needing contact info
   const orgsNeedingContact = await client.query(
@@ -2138,18 +2137,17 @@ async function processContactExtraction(verbose: boolean = false) {
   );
 
   if (!orgsNeedingContact || orgsNeedingContact.length === 0) {
-    log("   No orgs need contact extraction");
+    if (verbose) log("📧 No orgs need contact extraction");
     return;
   }
 
-  log(`   Found ${orgsNeedingContact.length} orgs needing contact info`);
+  log(`📧 Processing ${orgsNeedingContact.length} orgs for contact extraction...`);
 
   for (const org of orgsNeedingContact) {
     if (!org.website) continue;
 
     await logQueueStatus("   ");
-    log(`\n   Extracting contact for: ${org.name}`);
-    log(`   Website: ${org.website}`);
+    log(`   🔍 ${org.name}: ${org.website}`);
 
     try {
       const result = await client.action(api.scraping.contactExtractor.extractContactInfo, {
@@ -2159,9 +2157,13 @@ async function processContactExtraction(verbose: boolean = false) {
 
       if (result.success && result.contactInfo) {
         const info = result.contactInfo;
-        log(`   ✅ Found: ${info.email || 'no email'} | ${info.phone || 'no phone'}`);
+        if (info.email || info.phone) {
+          log(`   ✅ Found: ${info.email || '-'} | ${info.phone || '-'}`);
+        } else {
+          log(`   ⚠️ No contact info on page`);
+        }
       } else {
-        log(`   ⚠️ No contact info found: ${result.error || 'unknown'}`);
+        log(`   ❌ Error: ${result.error || 'unknown'}`);
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
