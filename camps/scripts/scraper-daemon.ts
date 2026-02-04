@@ -70,14 +70,7 @@ async function logQueueStatus(prefix: string = "") {
 
     const scraperPending = (scraperRequests as any[]).filter((r: any) => r.status === "pending" || r.status === "in_progress").length;
 
-    const parts: string[] = [];
-    if (scraperPending > 0) parts.push(`🔧 Scrapers: ${scraperPending}`);
-    if (directoryStatus.pending > 0) parts.push(`📂 Directories: ${directoryStatus.pending}`);
-    if (contactStats.needsExtraction > 0) parts.push(`📧 Contacts: ${contactStats.needsExtraction}`);
-
-    if (parts.length > 0) {
-      console.log(`${prefix}📊 Queue: ${parts.join(" | ")}`);
-    }
+    console.log(`${prefix}📊 Backlog: 🔧 Scrapers: ${scraperPending} | 📂 Directories: ${directoryStatus.pending} | 📧 Contacts: ${contactStats.needsExtraction}`);
   } catch (err) {
     // Silently ignore errors fetching status
   }
