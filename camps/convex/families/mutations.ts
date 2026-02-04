@@ -1,4 +1,5 @@
 import { mutation } from "../_generated/server";
+import { internal } from "../_generated/api";
 import { v } from "convex/values";
 import { requireAuth, requireFamily, getFamily } from "../lib/auth";
 import { addressValidator, calendarSharingDefaultValidator } from "../lib/validators";
@@ -128,16 +129,36 @@ export const adminUpdateWorkosUserId = mutation({
 
 /**
  * Mark the current family's onboarding as completed.
+ * Sends welcome email immediately and schedules tips email for next day.
  */
 export const completeOnboarding = mutation({
   args: {},
   handler: async (ctx) => {
     const family = await requireFamily(ctx);
 
-    // Only update if not already completed
+    // Only send emails and update if not already completed
     if (family.onboardingCompletedAt === undefined) {
       await ctx.db.patch(family._id, {
         onboardingCompletedAt: Date.now(),
+      });
+
+      // Get the city name for personalized emails
+      const city = await ctx.db.get(family.primaryCityId);
+      const cityName = city?.name || "your area";
+
+      // Send welcome email immediately
+      await ctx.scheduler.runAfter(0, internal.email.sendWelcomeEmail, {
+        to: family.email,
+        displayName: family.displayName,
+        cityName,
+      });
+
+      // Schedule tips email for 24 hours later
+      const oneDayMs = 24 * 60 * 60 * 1000;
+      await ctx.scheduler.runAfter(oneDayMs, internal.email.sendTipsEmail, {
+        to: family.email,
+        displayName: family.displayName,
+        cityName,
       });
     }
 

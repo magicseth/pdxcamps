@@ -184,6 +184,158 @@ export const sendEmail = internalAction({
 });
 
 /**
+ * Send welcome email to new users after onboarding
+ */
+export const sendWelcomeEmail = internalAction({
+  args: {
+    to: v.string(),
+    displayName: v.string(),
+    cityName: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const result = await resend.sendEmail(ctx, {
+      from: `${FROM_NAME} <${FROM_EMAIL}>`,
+      to: [args.to],
+      subject: `Welcome to PDX Camps, ${args.displayName}! 🏕️`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="text-align: center; padding: 24px 0;">
+            <h1 style="color: #1a1a1a; margin: 0;">Welcome to PDX Camps!</h1>
+          </div>
+
+          <p>Hi ${args.displayName},</p>
+
+          <p>Thanks for joining PDX Camps! We're excited to help you plan an amazing summer for your family in ${args.cityName}.</p>
+
+          <p>Your account is all set up and ready to go. Here's what you can do right now:</p>
+
+          <ul style="line-height: 1.8;">
+            <li><strong>Browse camps</strong> — Discover summer camps from dozens of local organizations</li>
+            <li><strong>Save favorites</strong> — Keep track of camps you're interested in</li>
+            <li><strong>Plan your summer</strong> — See your whole summer at a glance with our week-by-week planner</li>
+          </ul>
+
+          <p style="text-align: center; margin: 32px 0;">
+            <a href="https://pdxcamps.com" style="display: inline-block; padding: 14px 28px; background-color: #E5A33B; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">Start Exploring Camps</a>
+          </p>
+
+          <p>Happy planning!</p>
+
+          <p style="color: #666; font-size: 14px; margin-top: 32px; border-top: 1px solid #eee; padding-top: 16px;">
+            — The PDX Camps Team<br/>
+            <a href="https://pdxcamps.com" style="color: #E5A33B;">pdxcamps.com</a>
+          </p>
+        </div>
+      `,
+      text: `
+Hi ${args.displayName},
+
+Thanks for joining PDX Camps! We're excited to help you plan an amazing summer for your family in ${args.cityName}.
+
+Your account is all set up and ready to go. Here's what you can do right now:
+
+- Browse camps — Discover summer camps from dozens of local organizations
+- Save favorites — Keep track of camps you're interested in
+- Plan your summer — See your whole summer at a glance with our week-by-week planner
+
+Start exploring at https://pdxcamps.com
+
+Happy planning!
+
+— The PDX Camps Team
+https://pdxcamps.com
+      `,
+    });
+
+    return result;
+  },
+});
+
+/**
+ * Send tips & tricks email (scheduled for day after signup)
+ */
+export const sendTipsEmail = internalAction({
+  args: {
+    to: v.string(),
+    displayName: v.string(),
+    cityName: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const result = await resend.sendEmail(ctx, {
+      from: `${FROM_NAME} <${FROM_EMAIL}>`,
+      to: [args.to],
+      subject: `Get the most out of PDX Camps — Tips for ${args.cityName} families`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
+          <p>Hi ${args.displayName},</p>
+
+          <p>Now that you've had a day to explore, here are some tips to help you find the perfect camps for your family:</p>
+
+          <h3 style="color: #1a1a1a; margin-top: 24px;">📅 Use the Summer Planner</h3>
+          <p>Our week-by-week planner shows you exactly which weeks are covered and where you have gaps. Add family vacations and trips to see your complete summer schedule.</p>
+
+          <h3 style="color: #1a1a1a; margin-top: 24px;">🔍 Filter by What Matters</h3>
+          <p>Looking for something specific? Filter camps by:</p>
+          <ul>
+            <li><strong>Age range</strong> — Only see camps your kids qualify for</li>
+            <li><strong>Location</strong> — Find camps close to home or work</li>
+            <li><strong>Organization</strong> — Browse by your favorite providers</li>
+            <li><strong>Price</strong> — Stay within your budget</li>
+          </ul>
+
+          <h3 style="color: #1a1a1a; margin-top: 24px;">⭐ Save Camps to Compare</h3>
+          <p>Found a camp you like? Save it to your list! You can compare multiple options before deciding which to register for.</p>
+
+          <h3 style="color: #1a1a1a; margin-top: 24px;">🔔 Register Early</h3>
+          <p>Popular camps fill up fast — especially in ${args.cityName}! When you find something you love, click through to register right away.</p>
+
+          <p style="text-align: center; margin: 32px 0;">
+            <a href="https://pdxcamps.com" style="display: inline-block; padding: 14px 28px; background-color: #E5A33B; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">Continue Planning</a>
+          </p>
+
+          <p>Questions? Just reply to this email — we'd love to hear from you!</p>
+
+          <p style="color: #666; font-size: 14px; margin-top: 32px; border-top: 1px solid #eee; padding-top: 16px;">
+            — The PDX Camps Team<br/>
+            <a href="https://pdxcamps.com" style="color: #E5A33B;">pdxcamps.com</a>
+          </p>
+        </div>
+      `,
+      text: `
+Hi ${args.displayName},
+
+Now that you've had a day to explore, here are some tips to help you find the perfect camps for your family:
+
+📅 USE THE SUMMER PLANNER
+Our week-by-week planner shows you exactly which weeks are covered and where you have gaps. Add family vacations and trips to see your complete summer schedule.
+
+🔍 FILTER BY WHAT MATTERS
+Looking for something specific? Filter camps by:
+- Age range — Only see camps your kids qualify for
+- Location — Find camps close to home or work
+- Organization — Browse by your favorite providers
+- Price — Stay within your budget
+
+⭐ SAVE CAMPS TO COMPARE
+Found a camp you like? Save it to your list! You can compare multiple options before deciding which to register for.
+
+🔔 REGISTER EARLY
+Popular camps fill up fast — especially in ${args.cityName}! When you find something you love, click through to register right away.
+
+Continue planning at https://pdxcamps.com
+
+Questions? Just reply to this email — we'd love to hear from you!
+
+— The PDX Camps Team
+https://pdxcamps.com
+      `,
+    });
+
+    return result;
+  },
+});
+
+/**
  * Send a registration reminder email
  */
 export const sendRegistrationReminder = action({
