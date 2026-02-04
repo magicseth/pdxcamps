@@ -60,9 +60,21 @@ export interface EventClickData {
   weekLabel: string;
 }
 
+// Default child colors matching app vibe
+const DEFAULT_CHILD_COLORS = [
+  '#5B9BD5', // Sky
+  '#7CB887', // Sage
+  '#E8927C', // Coral
+  '#9B8DC5', // Lavender
+  '#5DADE2', // Ocean
+  '#D4A574', // Sand
+  '#82C4C3', // Seafoam
+  '#C9A0DC', // Orchid
+];
+
 interface PlannerGridProps {
   coverage: WeekData[];
-  children: { _id: Id<'children'>; firstName: string; birthdate?: string; currentGrade?: number }[];
+  children: { _id: Id<'children'>; firstName: string; birthdate?: string; currentGrade?: number; color?: string; shareToken?: string }[];
   citySlug?: string;
   onGapClick?: (weekStart: string, weekEnd: string, childId: Id<'children'>) => void;
   onRegistrationClick?: (data: RegistrationClickData) => void;
@@ -151,7 +163,9 @@ export function PlannerGrid({ coverage, children, citySlug, onGapClick, onRegist
             </tr>
           </thead>
           <tbody>
-            {children.map((child, childIndex) => (
+            {children.map((child, childIndex) => {
+              const childColor = child.color || DEFAULT_CHILD_COLORS[childIndex % DEFAULT_CHILD_COLORS.length];
+              return (
               <tr
                 key={child._id}
                 className={childIndex % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50/50 dark:bg-slate-800/50'}
@@ -159,10 +173,26 @@ export function PlannerGrid({ coverage, children, citySlug, onGapClick, onRegist
                 {/* Child name - sticky left column */}
                 <td className="sticky left-0 z-10 px-4 py-3 text-sm font-medium text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-700/50 bg-inherit">
                   <div className="flex items-center gap-2">
-                    <span className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-surface-dark flex items-center justify-center text-white text-xs font-bold">
+                    <span
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                      style={{ backgroundColor: childColor }}
+                    >
                       {child.firstName[0]}
                     </span>
-                    {child.firstName}
+                    <span>{child.firstName}</span>
+                    {child.shareToken && (
+                      <a
+                        href={`/share/${child.shareToken}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-slate-400 hover:text-primary transition-colors"
+                        title={`Share ${child.firstName}'s schedule`}
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                        </svg>
+                      </a>
+                    )}
                   </div>
                 </td>
                 {/* Week cells */}
@@ -188,7 +218,8 @@ export function PlannerGrid({ coverage, children, citySlug, onGapClick, onRegist
                   );
                 })}
               </tr>
-            ))}
+            );
+            })}
             {/* Add Kid row */}
             {onAddChild && (
               <tr className="bg-white dark:bg-slate-800">

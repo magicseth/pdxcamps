@@ -9,7 +9,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@workos-inc/authkit-nextjs/components';
 import type { User } from '@workos-inc/node';
-import { WeekRow, MonthHeader } from '../components/planner/WeekRow';
 import { PlannerGrid, RegistrationClickData, EventClickData } from '../components/planner/PlannerGrid';
 import { RegistrationModal } from '../components/planner/RegistrationModal';
 import { EditEventModal } from '../components/planner/EditEventModal';
@@ -957,25 +956,19 @@ function PlannerHub({
     const yearParam = searchParams.get('year');
     return yearParam ? parseInt(yearParam) : currentYear;
   });
-  const [selectedChildId, setSelectedChildId] = useState<Id<'children'> | 'all'>(() => {
-    const childParam = searchParams.get('child');
-    return childParam && childParam !== 'all' ? childParam as Id<'children'> : 'all';
-  });
   const [showOnlyGaps, setShowOnlyGaps] = useState(false);
   const [showAddEventModal, setShowAddEventModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showAddChildModal, setShowAddChildModal] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedRegistration, setSelectedRegistration] = useState<RegistrationClickData | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<Id<'familyEvents'> | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams();
     if (selectedYear !== currentYear) params.set('year', selectedYear.toString());
-    if (selectedChildId !== 'all') params.set('child', selectedChildId);
     const queryString = params.toString();
     router.replace(`/${queryString ? `?${queryString}` : ''}`, { scroll: false });
-  }, [selectedYear, selectedChildId, currentYear, router]);
+  }, [selectedYear, currentYear, router]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1020,34 +1013,11 @@ function PlannerHub({
 
   const filteredCoverage = useMemo(() => {
     if (!coverage) return [];
-    let result = coverage;
-
-    if (selectedChildId !== 'all') {
-      result = result.map((week) => ({
-        ...week,
-        childCoverage: week.childCoverage.filter((c) => c.childId === selectedChildId),
-        hasGap: week.childCoverage
-          .filter((c) => c.childId === selectedChildId)
-          .some((c) => c.status === 'gap'),
-      }));
-    }
-
     if (showOnlyGaps) {
-      result = result.filter((week) => week.hasGap);
+      return coverage.filter((week) => week.hasGap);
     }
-
-    return result;
-  }, [coverage, selectedChildId, showOnlyGaps]);
-
-  const coverageByMonth = useMemo(() => {
-    const groups: Map<string, typeof filteredCoverage> = new Map();
-    for (const week of filteredCoverage) {
-      const month = week.week.monthName;
-      if (!groups.has(month)) groups.set(month, []);
-      groups.get(month)!.push(week);
-    }
-    return Array.from(groups.entries());
-  }, [filteredCoverage]);
+    return coverage;
+  }, [coverage, showOnlyGaps]);
 
   const stats = useMemo(() => {
     if (!coverage) return null;
@@ -1235,66 +1205,9 @@ function PlannerHub({
             </div>
           )}
 
-          {/* View controls - only show child toggle in list view */}
+          {/* View controls */}
           <div className="mb-3 flex items-center justify-between flex-wrap gap-2">
-            <div className="flex items-center gap-3">
-              <CoverageLegend />
-
-              {/* View mode toggle */}
-              <div className="flex items-center bg-slate-100 dark:bg-slate-700 rounded-lg p-0.5">
-                <button
-                  onClick={() => { setViewMode('grid'); setSelectedChildId('all'); }}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                    viewMode === 'grid'
-                      ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                  title="Grid view"
-                >
-                  <GridIcon />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                    viewMode === 'list'
-                      ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                  title="List view"
-                >
-                  <ListIcon />
-                </button>
-              </div>
-
-              {/* Child toggle - only in list view */}
-              {viewMode === 'list' && children.length > 1 && (
-                <div className="flex items-center bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-0.5">
-                  <button
-                    onClick={() => setSelectedChildId('all')}
-                    className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                      selectedChildId === 'all'
-                        ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
-                        : 'text-slate-500 hover:text-slate-700'
-                    }`}
-                  >
-                    All
-                  </button>
-                  {children.map((child) => (
-                    <button
-                      key={child._id}
-                      onClick={() => setSelectedChildId(child._id)}
-                      className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                        selectedChildId === child._id
-                          ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
-                          : 'text-slate-500 hover:text-slate-700'
-                      }`}
-                    >
-                      {child.firstName}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <CoverageLegend />
 
             <div className="flex items-center gap-2">
               {/* Gaps filter */}
@@ -1344,10 +1257,10 @@ function PlannerHub({
                 <>
                   <div className="text-4xl mb-3">✨</div>
                   <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">
-                    No gaps for {children.find(c => c._id === selectedChildId)?.firstName || 'this child'}!
+                    No gaps!
                   </h3>
                   <p className="text-slate-500 dark:text-slate-400">
-                    This child is fully covered for the summer.
+                    Everyone is fully covered for the summer.
                   </p>
                 </>
               ) : (
@@ -1356,29 +1269,16 @@ function PlannerHub({
                 </p>
               )}
             </div>
-          ) : viewMode === 'grid' ? (
+          ) : (
             <PlannerGrid
               coverage={filteredCoverage}
-              children={selectedChildId === 'all' ? children : children.filter(c => c._id === selectedChildId)}
+              children={children}
               citySlug={defaultCity?.slug}
               onGapClick={handleGapClick}
               onRegistrationClick={handleRegistrationClick}
               onEventClick={handleEventClick}
               onAddChild={() => setShowAddChildModal(true)}
             />
-          ) : (
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
-              {coverageByMonth.map(([month, weeks]) => (
-                <div key={month}>
-                  <MonthHeader monthName={month} />
-                  <div className="divide-y divide-slate-100 dark:divide-slate-700/50">
-                    {weeks.map((week, index) => (
-                      <WeekRow key={week.week.startDate} data={week} isFirstOfMonth={index === 0} />
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
           )}
         </div>
 
@@ -1741,22 +1641,6 @@ function SettingsIcon() {
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>
-  );
-}
-
-function GridIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-    </svg>
-  );
-}
-
-function ListIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
     </svg>
   );
 }

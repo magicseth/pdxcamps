@@ -991,16 +991,16 @@ function CancelSubscriptionModal({
   );
 }
 
-// Preset colors for children
+// Preset colors for children - softer palette matching app vibe
 const CHILD_COLORS = [
-  { value: '#3B82F6', label: 'Blue' },
-  { value: '#10B981', label: 'Green' },
-  { value: '#F59E0B', label: 'Orange' },
-  { value: '#EF4444', label: 'Red' },
-  { value: '#8B5CF6', label: 'Purple' },
-  { value: '#EC4899', label: 'Pink' },
-  { value: '#14B8A6', label: 'Teal' },
-  { value: '#F97316', label: 'Tangerine' },
+  { value: '#5B9BD5', label: 'Sky' },       // Soft sky blue
+  { value: '#7CB887', label: 'Sage' },      // Soft sage green
+  { value: '#E8927C', label: 'Coral' },     // Muted coral
+  { value: '#9B8DC5', label: 'Lavender' },  // Soft lavender
+  { value: '#5DADE2', label: 'Ocean' },     // Ocean blue
+  { value: '#D4A574', label: 'Sand' },      // Warm sand/caramel
+  { value: '#82C4C3', label: 'Seafoam' },   // Soft teal
+  { value: '#C9A0DC', label: 'Orchid' },    // Light orchid
 ];
 
 function ChildrenSection({
