@@ -34,6 +34,31 @@ export const updateOrgContactInfo = internalMutation({
 });
 
 /**
+ * Public mutation to update organization contact info (for local daemon)
+ */
+export const saveOrgContactInfo = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const updates: Record<string, string | number> = {
+      contactExtractionAttemptedAt: Date.now(),
+    };
+
+    if (args.email) {
+      updates.email = args.email;
+    }
+    if (args.phone) {
+      updates.phone = args.phone;
+    }
+
+    await ctx.db.patch(args.organizationId, updates);
+  },
+});
+
+/**
  * Internal query to get organization details
  */
 export const getOrganization = internalQuery({

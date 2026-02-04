@@ -2120,6 +2120,88 @@ async function fetchWithStagehand(
 // CONTACT EXTRACTION PROCESSING
 // ============================================
 
+interface ContactInfo {
+  email?: string;
+  phone?: string;
+  contactName?: string;
+  contactTitle?: string;
+  address?: string;
+}
+
+/**
+ * Extract contact info from a URL locally using Stagehand
+ */
+async function extractContactLocally(
+  url: string,
+  log: (msg: string) => void
+): Promise<{ success: boolean; contactInfo?: ContactInfo; error?: string }> {
+  if (!Stagehand) {
+    return { success: false, error: "Stagehand not available" };
+  }
+
+  if (!process.env.BROWSERBASE_API_KEY || !process.env.BROWSERBASE_PROJECT_ID) {
+    return { success: false, error: "Missing BROWSERBASE_API_KEY or BROWSERBASE_PROJECT_ID" };
+  }
+
+  let stagehand: any = null;
+
+  try {
+    stagehand = new Stagehand({
+      env: "BROWSERBASE",
+      apiKey: process.env.BROWSERBASE_API_KEY,
+      projectId: process.env.BROWSERBASE_PROJECT_ID,
+      model: {
+        modelName: "anthropic/claude-sonnet-4-20250514",
+        apiKey: process.env.MODEL_API_KEY,
+      },
+      disablePino: true,
+      verbose: 0,
+    });
+
+    await stagehand.init();
+    const page = stagehand.context.pages()[0];
+
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await page.waitForTimeout(3000);
+
+    // Use Stagehand's extract with a zod-like schema
+    const { z } = await import("zod");
+    const ContactInfoSchema = z.object({
+      email: z.string().optional().describe("Primary contact email address"),
+      phone: z.string().optional().describe("Primary contact phone number"),
+      contactName: z.string().optional().describe("Name of the contact person"),
+      contactTitle: z.string().optional().describe("Title/role of the contact person"),
+      address: z.string().optional().describe("Physical address"),
+    });
+
+    const instruction = `Extract all contact information from this page. Look carefully for:
+- Email addresses (especially info@, contact@, hello@, registration@, or any camp-related email)
+- Phone numbers (in any format)
+- Physical addresses
+- Contact person names and their titles/roles (e.g., Camp Director, Program Manager)
+
+Check the header, footer, sidebar, and main content areas. Also look for "Contact Us", "About", or "Connect" sections.`;
+
+    const extractResult = await stagehand.extract(instruction, ContactInfoSchema);
+
+    await stagehand.close();
+    stagehand = null;
+
+    return {
+      success: true,
+      contactInfo: extractResult as ContactInfo,
+    };
+  } catch (error) {
+    if (stagehand) {
+      try { await stagehand.close(); } catch { }
+    }
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
 /**
  * Process organizations that need contact info extraction
  */
@@ -2150,9 +2232,14 @@ async function processContactExtraction(verbose: boolean = false) {
     log(`   🔍 ${org.name}: ${org.website}`);
 
     try {
-      const result = await client.action(api.scraping.contactExtractor.extractContactInfo, {
-        url: org.website,
+      // Extract locally using Stagehand (not via Convex action)
+      const result = await extractContactLocally(org.website, log);
+
+      // Save results to Convex
+      await client.mutation(api.scraping.contactExtractorHelpers.saveOrgContactInfo, {
         organizationId: org._id,
+        email: result.contactInfo?.email,
+        phone: result.contactInfo?.phone,
       });
 
       if (result.success && result.contactInfo) {
@@ -2168,6 +2255,13 @@ async function processContactExtraction(verbose: boolean = false) {
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
       log(`   ❌ Error: ${errorMsg}`);
+
+      // Still mark as attempted so we don't retry immediately
+      try {
+        await client.mutation(api.scraping.contactExtractorHelpers.saveOrgContactInfo, {
+          organizationId: org._id,
+        });
+      } catch { }
     }
   }
 }
