@@ -186,9 +186,39 @@ export const createCityForMarket = mutation({
       updatedAt: Date.now(),
     });
 
+    // Auto-create market discovery task to find camp sources
+    const regionName = `${args.name}, ${args.state}`;
+    const searchQueries = generateMarketSearchQueries(regionName);
+
+    await ctx.db.insert("marketDiscoveryTasks", {
+      cityId,
+      regionName,
+      searchQueries,
+      maxSearchResults: 50,
+      status: "pending",
+      createdAt: Date.now(),
+    });
+
     return { cityId, success: true };
   },
 });
+
+/**
+ * Generate search queries for market discovery
+ */
+function generateMarketSearchQueries(regionName: string): string[] {
+  const currentYear = new Date().getFullYear();
+  return [
+    `${regionName} summer camps`,
+    `${regionName} summer camps ${currentYear}`,
+    `${regionName} kids day camps`,
+    `${regionName} children summer programs`,
+    `best summer camps in ${regionName}`,
+    `${regionName} STEM camps`,
+    `${regionName} sports camps`,
+    `${regionName} art camps for kids`,
+  ];
+}
 
 /**
  * Link an existing city to the expansion market

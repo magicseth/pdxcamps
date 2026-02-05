@@ -67,8 +67,11 @@ export const checkDomainsWorkflow = workflow.define({
     for (let i = 0; i < args.domains.length; i++) {
       const domain = args.domains[i];
 
-      // Wait for rate limit before checking
-      await step.runMutation(internal.expansion.domainWorkflow.waitForRateLimit, {});
+      // Consume rate limit token (will throw and retry if rate limited)
+      await step.runMutation(
+        internal.expansion.domainWorkflow.consumeRateLimit,
+        {}
+      );
 
       // Check this domain
       const result = await step.runAction(
@@ -105,15 +108,19 @@ export const checkDomainsWorkflow = workflow.define({
 });
 
 /**
- * Wait for rate limit - throws if rate limited, workflow will retry
+ * Consume a rate limit token - throws if rate limited, workflow will retry
  */
-export const waitForRateLimit = internalMutation({
+export const consumeRateLimit = internalMutation({
   args: {},
   handler: async (ctx) => {
     const status = await rateLimiter.limit(ctx, "porkbunDomainCheck", {
-      throws: true,
+      throws: false,
     });
-    return status;
+    if (!status.ok) {
+      // Throw a regular error so workflow retries with backoff
+      throw new Error(`Rate limited, retry after ${status.retryAfter}ms`);
+    }
+    return { ok: true };
   },
 });
 
