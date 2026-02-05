@@ -244,7 +244,7 @@ function extractSession(
     locationLongitude: isMainOmsi ? -122.6655 : undefined,
     isAvailable: session?.available ?? true,
     availabilityRaw: session?.available ? "Available" : "Sold Out",
-    registrationUrl: `https://secure.omsi.edu/camps-and-classes?product=${product.safeURL}`,
+    registrationUrl: `https://secure.omsi.edu/camps-and-classes/${product.safeURL}`,
     sourceProductId: product.productId,
     sourceSessionId: session?.campClassProductId,
     dateRaw: session?.startDate || undefined,
@@ -330,6 +330,13 @@ function extractSession(
       scraped.minGrade = parseInt(gradeMatch[1]);
       scraped.maxGrade = parseInt(gradeMatch[2]);
     }
+  }
+
+  // Extract image URL from imageName
+  if (product.imageName) {
+    // OMSI image URL pattern: /resource/{timestamp}/Camps_Classes_Images/{imageName}
+    const imageUrl = `https://secure.omsi.edu/resource/1737139886000/Camps_Classes_Images/${product.imageName}`;
+    scraped.imageUrls = [imageUrl];
   }
 
   log("DEBUG", "Extracted session", {
