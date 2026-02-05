@@ -1,6 +1,7 @@
 "use node";
 
 import { action } from "../_generated/server";
+import { api } from "../_generated/api";
 import { v } from "convex/values";
 
 // Porkbun API types
@@ -545,8 +546,7 @@ export const setupDnsForDomain = action({
   }> => {
     // Step 1: Create Netlify DNS zone
     const zoneResult = await ctx.runAction(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (ctx as any).api.expansion.actions.createNetlifyDnsZone,
+      api.expansion.actions.createNetlifyDnsZone,
       { domain: args.domain }
     );
 
@@ -559,8 +559,7 @@ export const setupDnsForDomain = action({
 
     // Step 2: Add DNS records
     const recordsResult = await ctx.runAction(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (ctx as any).api.expansion.actions.configureNetlifyDnsRecords,
+      api.expansion.actions.configureNetlifyDnsRecords,
       { zoneId: zoneResult.zoneId, domain: args.domain }
     );
 
@@ -575,8 +574,7 @@ export const setupDnsForDomain = action({
     // Step 3: Update nameservers at Porkbun (if we have Netlify nameservers)
     if (zoneResult.nameservers && zoneResult.nameservers.length > 0) {
       const nsResult = await ctx.runAction(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (ctx as any).api.expansion.actions.updateNameservers,
+        api.expansion.actions.updateNameservers,
         { domain: args.domain, nameservers: zoneResult.nameservers }
       );
 
