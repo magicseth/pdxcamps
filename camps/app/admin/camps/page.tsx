@@ -321,8 +321,7 @@ function CampsContent() {
                     >
                       <div className="flex items-start gap-3">
                         <CampImage
-                          resolvedImageUrl={camp.resolvedImageUrls?.[0]}
-                          externalImageUrl={camp.externalImageUrls?.[0]}
+                          externalImageUrl={camp.imageUrl}
                           name={camp.name}
                           size="sm"
                           className="flex-shrink-0"

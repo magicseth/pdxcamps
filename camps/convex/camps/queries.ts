@@ -4,6 +4,7 @@ import { Id } from "../_generated/dataModel";
 
 /**
  * List camps for admin interface with filtering
+ * Optimized to batch reads and avoid N+1 queries
  */
 export const listCampsForAdmin = query({
   args: {
@@ -14,28 +15,45 @@ export const listCampsForAdmin = query({
     search: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // Get all camps
-    let camps = await ctx.db.query("camps").collect();
+    // Batch fetch all data upfront to avoid N+1 queries
+    const [allCamps, allOrganizations, allSessions] = await Promise.all([
+      ctx.db.query("camps").collect(),
+      ctx.db.query("organizations").collect(),
+      ctx.db.query("sessions").collect(),
+    ]);
 
-    // Filter by city (via organization)
+    // Build lookup maps
+    const orgMap = new Map(allOrganizations.map((o) => [o._id, o]));
+
+    // Group sessions by campId
+    const sessionsByCamp = new Map<Id<"camps">, typeof allSessions>();
+    for (const session of allSessions) {
+      const existing = sessionsByCamp.get(session.campId) || [];
+      existing.push(session);
+      sessionsByCamp.set(session.campId, existing);
+    }
+
+    // Build set of org IDs in city if filtering by city
+    let orgIdsInCity: Set<Id<"organizations">> | undefined;
     if (args.cityId) {
-      const orgsInCity = await ctx.db
-        .query("organizations")
-        .collect();
-      const orgIdsInCity = new Set(
-        orgsInCity
+      orgIdsInCity = new Set(
+        allOrganizations
           .filter((org) => org.cityIds.includes(args.cityId as Id<"cities">))
           .map((org) => org._id)
       );
-      camps = camps.filter((camp) => orgIdsInCity.has(camp.organizationId));
     }
 
-    // Filter by organization
+    // Filter camps
+    let camps = allCamps;
+
+    if (orgIdsInCity) {
+      camps = camps.filter((camp) => orgIdsInCity!.has(camp.organizationId));
+    }
+
     if (args.organizationId) {
       camps = camps.filter((camp) => camp.organizationId === args.organizationId);
     }
 
-    // Filter by image presence
     if (args.hasImage !== undefined) {
       camps = camps.filter((camp) => {
         const hasStorageImage = camp.imageStorageIds && camp.imageStorageIds.length > 0;
@@ -45,7 +63,6 @@ export const listCampsForAdmin = query({
       });
     }
 
-    // Filter by search
     if (args.search) {
       const searchLower = args.search.toLowerCase();
       camps = camps.filter((camp) =>
@@ -54,63 +71,45 @@ export const listCampsForAdmin = query({
       );
     }
 
-    // Enrich camps with organization and session data
-    const enrichedCamps = await Promise.all(
-      camps.map(async (camp) => {
-        const org = await ctx.db.get(camp.organizationId);
+    const today = new Date().toISOString().split("T")[0];
 
-        // Resolve image URLs
-        const resolvedImageUrls: string[] = [];
-        for (const storageId of camp.imageStorageIds || []) {
-          const url = await ctx.storage.getUrl(storageId);
-          if (url) resolvedImageUrls.push(url);
-        }
+    // Enrich camps without additional queries
+    const enrichedCamps = camps.map((camp) => {
+      const org = orgMap.get(camp.organizationId);
+      const sessions = sessionsByCamp.get(camp._id) || [];
 
-        // Get session counts
-        const sessions = await ctx.db
-          .query("sessions")
-          .withIndex("by_camp", (q) => q.eq("campId", camp._id))
-          .collect();
+      const activeSessions = sessions.filter(
+        (s) => s.status === "active" && s.startDate >= today
+      );
+      const sessionsWithAvailability = sessions.filter((s) => s.capacity > 0);
+      const hasAvailabilityData = sessionsWithAvailability.length > 0;
 
-        const today = new Date().toISOString().split("T")[0];
-        const activeSessions = sessions.filter(
-          (s) => s.status === "active" && s.startDate >= today
-        );
+      // Use external URLs only in list view (skip storage resolution for performance)
+      const hasStorageImage = camp.imageStorageIds && camp.imageStorageIds.length > 0;
+      const hasExternalImage = camp.imageUrls && camp.imageUrls.length > 0;
 
-        // Check for availability data (sessions with capacity > 0)
-        const sessionsWithAvailability = sessions.filter((s) => s.capacity > 0);
-        const hasAvailabilityData = sessionsWithAvailability.length > 0;
-
-        // Get org logo URL
-        let orgLogoUrl: string | undefined;
-        if (org?.logoStorageId) {
-          orgLogoUrl = await ctx.storage.getUrl(org.logoStorageId) ?? undefined;
-        }
-        orgLogoUrl = orgLogoUrl || org?.logoUrl;
-
-        return {
-          _id: camp._id,
-          name: camp.name,
-          slug: camp.slug,
-          description: camp.description,
-          categories: camp.categories,
-          ageRequirements: camp.ageRequirements,
-          isActive: camp.isActive,
-          organizationId: camp.organizationId,
-          organizationName: org?.name,
-          organizationSlug: org?.slug,
-          organizationLogoUrl: orgLogoUrl,
-          imageUrl: resolvedImageUrls[0] || camp.imageUrls?.[0],
-          resolvedImageUrls,
-          externalImageUrls: camp.imageUrls || [],
-          hasImage: resolvedImageUrls.length > 0 || (camp.imageUrls && camp.imageUrls.length > 0),
-          totalSessions: sessions.length,
-          activeSessions: activeSessions.length,
-          sessionsWithAvailability: sessionsWithAvailability.length,
-          hasAvailabilityData,
-        };
-      })
-    );
+      return {
+        _id: camp._id,
+        name: camp.name,
+        slug: camp.slug,
+        description: camp.description,
+        categories: camp.categories,
+        ageRequirements: camp.ageRequirements,
+        isActive: camp.isActive,
+        organizationId: camp.organizationId,
+        organizationName: org?.name,
+        organizationSlug: org?.slug,
+        organizationLogoUrl: org?.logoUrl,
+        // For list view, use external URL; detail view will resolve storage
+        imageUrl: camp.imageUrls?.[0],
+        hasStorageImage,
+        hasImage: hasStorageImage || hasExternalImage,
+        totalSessions: sessions.length,
+        activeSessions: activeSessions.length,
+        sessionsWithAvailability: sessionsWithAvailability.length,
+        hasAvailabilityData,
+      };
+    });
 
     // Filter by availability data if specified
     let filteredCamps = enrichedCamps;
