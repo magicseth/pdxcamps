@@ -1983,6 +1983,7 @@ function SessionCard({
           onClose={() => setShowSaveModal(false)}
           onPaywallHit={() => setShowUpgradeModal(true)}
           preSelectedChildId={preSelectedChildId}
+          ageRequirements={session.ageRequirements}
         />
       )}
 
@@ -2016,21 +2017,94 @@ function SaveSessionModal({
   onClose,
   onPaywallHit,
   preSelectedChildId,
+  ageRequirements,
 }: {
   sessionId: Id<'sessions'>;
   campName: string;
   onClose: () => void;
   onPaywallHit: () => void;
   preSelectedChildId?: Id<'children'> | null;
+  ageRequirements: {
+    minAge?: number;
+    maxAge?: number;
+    minGrade?: number;
+    maxGrade?: number;
+  };
 }) {
-  const [selectedChildId, setSelectedChildId] = useState<Id<'children'> | null>(preSelectedChildId ?? null);
+  const [selectedChildIds, setSelectedChildIds] = useState<Set<Id<'children'>>>(new Set());
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [initialized, setInitialized] = useState(false);
 
   const children = useQuery(api.children.queries.listChildren);
   const markInterested = useMutation(api.registrations.mutations.markInterested);
+
+  // Check if a child is eligible based on age/grade requirements
+  const checkEligibility = (child: { birthdate: string; currentGrade?: number }): { eligible: boolean; reason?: string } => {
+    const age = getChildAge(child.birthdate);
+    const grade = child.currentGrade;
+
+    // Check age requirements
+    if (age !== null) {
+      if (ageRequirements.minAge !== undefined && age < ageRequirements.minAge) {
+        return { eligible: false, reason: `Too young (${age}y, needs ${ageRequirements.minAge}+)` };
+      }
+      if (ageRequirements.maxAge !== undefined && age > ageRequirements.maxAge) {
+        return { eligible: false, reason: `Too old (${age}y, max ${ageRequirements.maxAge})` };
+      }
+    }
+
+    // Check grade requirements
+    if (grade !== undefined) {
+      if (ageRequirements.minGrade !== undefined && grade < ageRequirements.minGrade) {
+        const minGradeLabel = ageRequirements.minGrade === 0 ? 'K' : `${ageRequirements.minGrade}`;
+        const childGradeLabel = grade === 0 ? 'K' : grade < 0 ? 'Pre-K' : `${grade}`;
+        return { eligible: false, reason: `Grade too low (${childGradeLabel}, needs ${minGradeLabel}+)` };
+      }
+      if (ageRequirements.maxGrade !== undefined && grade > ageRequirements.maxGrade) {
+        const maxGradeLabel = ageRequirements.maxGrade === 0 ? 'K' : `${ageRequirements.maxGrade}`;
+        const childGradeLabel = grade === 0 ? 'K' : `${grade}`;
+        return { eligible: false, reason: `Grade too high (${childGradeLabel}, max ${maxGradeLabel})` };
+      }
+    }
+
+    return { eligible: true };
+  };
+
+  // Initialize selection when children load - pre-select the filtered child if eligible
+  useEffect(() => {
+    if (children && !initialized) {
+      const initialSelection = new Set<Id<'children'>>();
+
+      // If there's a pre-selected child and they're eligible, select them
+      if (preSelectedChildId) {
+        const preSelectedChild = children.find(c => c._id === preSelectedChildId);
+        if (preSelectedChild) {
+          const { eligible } = checkEligibility(preSelectedChild);
+          if (eligible) {
+            initialSelection.add(preSelectedChildId);
+          }
+        }
+      }
+
+      setSelectedChildIds(initialSelection);
+      setInitialized(true);
+    }
+  }, [children, preSelectedChildId, initialized]);
+
+  const toggleChild = (childId: Id<'children'>) => {
+    setSelectedChildIds(prev => {
+      const next = new Set(prev);
+      if (next.has(childId)) {
+        next.delete(childId);
+      } else {
+        next.add(childId);
+      }
+      return next;
+    });
+  };
 
   // Close on Escape key
   useEffect(() => {
@@ -2044,19 +2118,25 @@ function SaveSessionModal({
   }, [onClose, success]);
 
   const handleSave = async () => {
-    if (!selectedChildId) {
-      setError('Please select a child');
+    if (selectedChildIds.size === 0) {
+      setError('Please select at least one child');
       return;
     }
 
     try {
       setError(null);
       setIsSaving(true);
-      await markInterested({
-        childId: selectedChildId,
-        sessionId,
-        notes: notes || undefined,
-      });
+
+      // Save for each selected child
+      const childIdArray = Array.from(selectedChildIds);
+      for (const childId of childIdArray) {
+        await markInterested({
+          childId,
+          sessionId,
+          notes: notes || undefined,
+        });
+      }
+
       setSuccess(true);
       setTimeout(() => {
         onClose();
@@ -2164,41 +2244,66 @@ function SaveSessionModal({
               <>
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    Select Child
+                    Select Children
                   </label>
                   <div className="space-y-2">
-                    {children.map((child) => (
-                      <label
-                        key={child._id}
-                        className={`flex items-center gap-3 p-3 rounded-md border cursor-pointer ${
-                          selectedChildId === child._id
-                            ? 'border-primary bg-primary/10 dark:bg-primary-dark/30'
-                            : 'border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="child"
-                          value={child._id}
-                          checked={selectedChildId === child._id}
-                          onChange={() => setSelectedChildId(child._id)}
-                          className="sr-only"
-                        />
-                        <div className="w-10 h-10 bg-slate-200 dark:bg-slate-600 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 font-medium">
-                          {child.firstName[0]}
-                        </div>
-                        <div>
-                          <p className="font-medium text-slate-900 dark:text-white">
-                            {child.firstName} {child.lastName}
-                          </p>
-                          {child.birthdate && (
-                            <p className="text-xs text-slate-500 dark:text-slate-400">
-                              {calculateDisplayAge(child.birthdate)}
+                    {children.map((child) => {
+                      const { eligible, reason } = checkEligibility(child);
+                      const isSelected = selectedChildIds.has(child._id);
+
+                      return (
+                        <label
+                          key={child._id}
+                          className={`flex items-center gap-3 p-3 rounded-md border ${
+                            !eligible
+                              ? 'cursor-not-allowed opacity-60 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800'
+                              : isSelected
+                                ? 'cursor-pointer border-primary bg-primary/10 dark:bg-primary-dark/30'
+                                : 'cursor-pointer border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            value={child._id}
+                            checked={isSelected}
+                            disabled={!eligible}
+                            onChange={() => eligible && toggleChild(child._id)}
+                            className="sr-only"
+                          />
+                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                            !eligible
+                              ? 'border-slate-300 dark:border-slate-600 bg-slate-200 dark:bg-slate-700'
+                              : isSelected
+                                ? 'border-primary bg-primary'
+                                : 'border-slate-300 dark:border-slate-500'
+                          }`}>
+                            {isSelected && (
+                              <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                          <div className="w-10 h-10 bg-slate-200 dark:bg-slate-600 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 font-medium flex-shrink-0">
+                            {child.firstName[0]}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={`font-medium ${!eligible ? 'text-slate-500 dark:text-slate-400' : 'text-slate-900 dark:text-white'}`}>
+                              {child.firstName} {child.lastName}
                             </p>
-                          )}
-                        </div>
-                      </label>
-                    ))}
+                            {child.birthdate && (
+                              <p className="text-xs text-slate-500 dark:text-slate-400">
+                                {calculateDisplayAge(child.birthdate)}
+                              </p>
+                            )}
+                            {!eligible && reason && (
+                              <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+                                {reason}
+                              </p>
+                            )}
+                          </div>
+                        </label>
+                      );
+                    })}
                   </div>
                 </div>
 
