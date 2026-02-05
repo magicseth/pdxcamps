@@ -688,6 +688,18 @@ export default defineSchema({
       registrationSystem: v.optional(v.string()),
       urlPatterns: v.optional(v.array(v.string())),
       navigationNotes: v.optional(v.array(v.string())),
+      // API Discovery results
+      discoveredApis: v.optional(v.array(v.object({
+        url: v.string(),
+        method: v.string(),
+        contentType: v.string(),
+        responseSize: v.number(),
+        matchCount: v.number(),
+        structureHint: v.optional(v.string()),
+        urlPattern: v.optional(v.string()),
+        sampleData: v.optional(v.string()), // First 2KB of response for preview
+      }))),
+      apiSearchTerm: v.optional(v.string()),
     })),
 
     // Retry tracking
@@ -869,6 +881,40 @@ export default defineSchema({
     spotsRemaining: v.number(),
     recordedAt: v.number(),
   }).index("by_session", ["sessionId"]),
+
+  // ============ MARKET EXPANSION ============
+
+  expansionMarkets: defineTable({
+    marketKey: v.string(), // "seattle-wa"
+    tier: v.number(), // 1, 2, or 3
+
+    // Domain
+    selectedDomain: v.optional(v.string()),
+    domainPurchased: v.boolean(),
+    domainPurchasedAt: v.optional(v.number()),
+    porkbunOrderId: v.optional(v.string()),
+
+    // DNS
+    dnsConfigured: v.boolean(),
+    netlifyZoneId: v.optional(v.string()),
+
+    // City
+    cityId: v.optional(v.id("cities")),
+
+    // Status
+    status: v.union(
+      v.literal("not_started"),
+      v.literal("domain_purchased"),
+      v.literal("dns_configured"),
+      v.literal("city_created"),
+      v.literal("launched")
+    ),
+
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_market_key", ["marketKey"])
+    .index("by_status", ["status"]),
 
   // Admin alerts
   scraperAlerts: defineTable({

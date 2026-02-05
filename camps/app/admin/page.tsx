@@ -266,6 +266,18 @@ function AdminContent() {
       {/* Quick Actions */}
       <div className="flex flex-wrap gap-3">
         <Link
+          href="/admin/pipeline"
+          className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm font-medium"
+        >
+          Pipeline Diagnostics
+        </Link>
+        <Link
+          href="/admin/expansion"
+          className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 text-sm font-medium"
+        >
+          Market Expansion
+        </Link>
+        <Link
           href="/admin/market-seeding"
           className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium"
         >

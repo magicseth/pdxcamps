@@ -25,12 +25,16 @@ import type * as discovery_mutations from "../discovery/mutations.js";
 import type * as discovery_queries from "../discovery/queries.js";
 import type * as email from "../email.js";
 import type * as emailForward from "../emailForward.js";
+import type * as expansion_actions from "../expansion/actions.js";
+import type * as expansion_mutations from "../expansion/mutations.js";
+import type * as expansion_queries from "../expansion/queries.js";
 import type * as families_mutations from "../families/mutations.js";
 import type * as families_queries from "../families/queries.js";
 import type * as http from "../http.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_geocoding from "../lib/geocoding.js";
 import type * as lib_helpers from "../lib/helpers.js";
+import type * as lib_sessionAggregate from "../lib/sessionAggregate.js";
 import type * as lib_validators from "../lib/validators.js";
 import type * as locations_mutations from "../locations/mutations.js";
 import type * as locations_queries from "../locations/queries.js";
@@ -53,6 +57,7 @@ import type * as scraping_dataQualityActions from "../scraping/dataQualityAction
 import type * as scraping_dataQualityChecks from "../scraping/dataQualityChecks.js";
 import type * as scraping_deduplication from "../scraping/deduplication.js";
 import type * as scraping_development from "../scraping/development.js";
+import type * as scraping_diagnostics from "../scraping/diagnostics.js";
 import type * as scraping_directoryDaemon from "../scraping/directoryDaemon.js";
 import type * as scraping_directoryDaemonActions from "../scraping/directoryDaemonActions.js";
 import type * as scraping_fixOrgWebsites from "../scraping/fixOrgWebsites.js";
@@ -113,12 +118,16 @@ declare const fullApi: ApiFromModules<{
   "discovery/queries": typeof discovery_queries;
   email: typeof email;
   emailForward: typeof emailForward;
+  "expansion/actions": typeof expansion_actions;
+  "expansion/mutations": typeof expansion_mutations;
+  "expansion/queries": typeof expansion_queries;
   "families/mutations": typeof families_mutations;
   "families/queries": typeof families_queries;
   http: typeof http;
   "lib/auth": typeof lib_auth;
   "lib/geocoding": typeof lib_geocoding;
   "lib/helpers": typeof lib_helpers;
+  "lib/sessionAggregate": typeof lib_sessionAggregate;
   "lib/validators": typeof lib_validators;
   "locations/mutations": typeof locations_mutations;
   "locations/queries": typeof locations_queries;
@@ -141,6 +150,7 @@ declare const fullApi: ApiFromModules<{
   "scraping/dataQualityChecks": typeof scraping_dataQualityChecks;
   "scraping/deduplication": typeof scraping_deduplication;
   "scraping/development": typeof scraping_development;
+  "scraping/diagnostics": typeof scraping_diagnostics;
   "scraping/directoryDaemon": typeof scraping_directoryDaemon;
   "scraping/directoryDaemonActions": typeof scraping_directoryDaemonActions;
   "scraping/fixOrgWebsites": typeof scraping_fixOrgWebsites;
@@ -1156,6 +1166,192 @@ export declare const components: {
             | "failed";
         },
         null
+      >;
+    };
+  };
+  sessionsBySource: {
+    btree: {
+      aggregateBetween: FunctionReference<
+        "query",
+        "internal",
+        { k1?: any; k2?: any; namespace?: any },
+        { count: number; sum: number }
+      >;
+      aggregateBetweenBatch: FunctionReference<
+        "query",
+        "internal",
+        { queries: Array<{ k1?: any; k2?: any; namespace?: any }> },
+        Array<{ count: number; sum: number }>
+      >;
+      atNegativeOffset: FunctionReference<
+        "query",
+        "internal",
+        { k1?: any; k2?: any; namespace?: any; offset: number },
+        { k: any; s: number; v: any }
+      >;
+      atOffset: FunctionReference<
+        "query",
+        "internal",
+        { k1?: any; k2?: any; namespace?: any; offset: number },
+        { k: any; s: number; v: any }
+      >;
+      atOffsetBatch: FunctionReference<
+        "query",
+        "internal",
+        {
+          queries: Array<{
+            k1?: any;
+            k2?: any;
+            namespace?: any;
+            offset: number;
+          }>;
+        },
+        Array<{ k: any; s: number; v: any }>
+      >;
+      get: FunctionReference<
+        "query",
+        "internal",
+        { key: any; namespace?: any },
+        null | { k: any; s: number; v: any }
+      >;
+      offset: FunctionReference<
+        "query",
+        "internal",
+        { k1?: any; key: any; namespace?: any },
+        number
+      >;
+      offsetUntil: FunctionReference<
+        "query",
+        "internal",
+        { k2?: any; key: any; namespace?: any },
+        number
+      >;
+      paginate: FunctionReference<
+        "query",
+        "internal",
+        {
+          cursor?: string;
+          k1?: any;
+          k2?: any;
+          limit: number;
+          namespace?: any;
+          order: "asc" | "desc";
+        },
+        {
+          cursor: string;
+          isDone: boolean;
+          page: Array<{ k: any; s: number; v: any }>;
+        }
+      >;
+      paginateNamespaces: FunctionReference<
+        "query",
+        "internal",
+        { cursor?: string; limit: number },
+        { cursor: string; isDone: boolean; page: Array<any> }
+      >;
+      validate: FunctionReference<
+        "query",
+        "internal",
+        { namespace?: any },
+        any
+      >;
+    };
+    inspect: {
+      display: FunctionReference<"query", "internal", { namespace?: any }, any>;
+      dump: FunctionReference<"query", "internal", { namespace?: any }, string>;
+      inspectNode: FunctionReference<
+        "query",
+        "internal",
+        { namespace?: any; node?: string },
+        null
+      >;
+      listTreeNodes: FunctionReference<
+        "query",
+        "internal",
+        { take?: number },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          aggregate?: { count: number; sum: number };
+          items: Array<{ k: any; s: number; v: any }>;
+          subtrees: Array<string>;
+        }>
+      >;
+      listTrees: FunctionReference<
+        "query",
+        "internal",
+        { take?: number },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          maxNodeSize: number;
+          namespace?: any;
+          root: string;
+        }>
+      >;
+    };
+    public: {
+      clear: FunctionReference<
+        "mutation",
+        "internal",
+        { maxNodeSize?: number; namespace?: any; rootLazy?: boolean },
+        null
+      >;
+      delete_: FunctionReference<
+        "mutation",
+        "internal",
+        { key: any; namespace?: any },
+        null
+      >;
+      deleteIfExists: FunctionReference<
+        "mutation",
+        "internal",
+        { key: any; namespace?: any },
+        any
+      >;
+      init: FunctionReference<
+        "mutation",
+        "internal",
+        { maxNodeSize?: number; namespace?: any; rootLazy?: boolean },
+        null
+      >;
+      insert: FunctionReference<
+        "mutation",
+        "internal",
+        { key: any; namespace?: any; summand?: number; value: any },
+        null
+      >;
+      makeRootLazy: FunctionReference<
+        "mutation",
+        "internal",
+        { namespace?: any },
+        null
+      >;
+      replace: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          currentKey: any;
+          namespace?: any;
+          newKey: any;
+          newNamespace?: any;
+          summand?: number;
+          value: any;
+        },
+        null
+      >;
+      replaceOrInsert: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          currentKey: any;
+          namespace?: any;
+          newKey: any;
+          newNamespace?: any;
+          summand?: number;
+          value: any;
+        },
+        any
       >;
     };
   };
