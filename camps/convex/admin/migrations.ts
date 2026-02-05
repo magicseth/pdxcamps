@@ -544,3 +544,140 @@ export const recalculateSourceSessionCounts = mutation({
     };
   },
 });
+
+/**
+ * Fix sessions with $0 price that are marked "active" - they should be "draft".
+ * These sessions have broken price extraction and shouldn't show to users
+ * until manually reviewed.
+ */
+export const fixZeroPriceSessions = mutation({
+  args: {
+    dryRun: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const dryRun = args.dryRun ?? true;
+
+    // Find all active sessions with $0 price
+    const sessions = await ctx.db
+      .query("sessions")
+      .withIndex("by_city_and_status", (q) => q.eq("cityId", undefined as any))
+      .collect();
+
+    // Actually we need to check all sessions since we can't query by price
+    const allSessions = await ctx.db.query("sessions").collect();
+
+    const zeroPriceActive = allSessions.filter(
+      (s) => s.status === "active" && s.price === 0
+    );
+
+    if (dryRun) {
+      // Group by source for better visibility
+      const bySource = new Map<string, { name: string; count: number }>();
+      for (const session of zeroPriceActive) {
+        if (session.sourceId) {
+          const source = await ctx.db.get(session.sourceId);
+          const sourceName = source?.name || "Unknown";
+          const existing = bySource.get(session.sourceId) || { name: sourceName, count: 0 };
+          existing.count++;
+          bySource.set(session.sourceId, existing);
+        }
+      }
+
+      return {
+        dryRun: true,
+        totalSessions: allSessions.length,
+        zeroPriceActiveSessions: zeroPriceActive.length,
+        wouldChangeToD: zeroPriceActive.length,
+        bySource: Array.from(bySource.entries())
+          .map(([id, data]) => ({ sourceId: id, name: data.name, count: data.count }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 20),
+      };
+    }
+
+    // Apply fixes
+    let fixed = 0;
+    for (const session of zeroPriceActive) {
+      await ctx.db.patch(session._id, {
+        status: "draft",
+      });
+      fixed++;
+    }
+
+    return {
+      dryRun: false,
+      totalSessions: allSessions.length,
+      fixed,
+    };
+  },
+});
+
+/**
+ * Fix sessions that have wrong cityId based on their source's cityId.
+ * This fixes Boston sessions that were incorrectly assigned Portland's cityId.
+ */
+export const fixSessionCityIds = mutation({
+  args: {
+    dryRun: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const dryRun = args.dryRun ?? true;
+
+    // Get all sources with their cityId
+    const sources = await ctx.db.query("scrapeSources").collect();
+    const sourceMap = new Map(sources.map(s => [s._id, s.cityId]));
+
+    // Get all sessions
+    const sessions = await ctx.db.query("sessions").collect();
+
+    const fixes: { sessionId: string; oldCityId: string; newCityId: string; sourceName: string }[] = [];
+
+    for (const session of sessions) {
+      if (!session.sourceId) continue;
+
+      const sourceCityId = sourceMap.get(session.sourceId);
+      if (!sourceCityId) continue;
+
+      // Check if session's cityId doesn't match source's cityId
+      if (session.cityId !== sourceCityId) {
+        const source = sources.find(s => s._id === session.sourceId);
+        fixes.push({
+          sessionId: session._id,
+          oldCityId: session.cityId,
+          newCityId: sourceCityId,
+          sourceName: source?.name || "Unknown",
+        });
+      }
+    }
+
+    if (dryRun) {
+      // Get city names for better output
+      const cities = await ctx.db.query("cities").collect();
+      const cityNames = new Map(cities.map(c => [c._id, c.name]));
+
+      return {
+        dryRun: true,
+        totalSessions: sessions.length,
+        sessionsNeedingFix: fixes.length,
+        sampleFixes: fixes.slice(0, 10).map(f => ({
+          oldCity: cityNames.get(f.oldCityId as any) || f.oldCityId,
+          newCity: cityNames.get(f.newCityId as any) || f.newCityId,
+          source: f.sourceName,
+        })),
+      };
+    }
+
+    // Apply fixes
+    for (const fix of fixes) {
+      await ctx.db.patch(fix.sessionId as any, {
+        cityId: fix.newCityId as any,
+      });
+    }
+
+    return {
+      dryRun: false,
+      totalSessions: sessions.length,
+      fixed: fixes.length,
+    };
+  },
+});
