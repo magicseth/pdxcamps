@@ -276,14 +276,86 @@ export function ExpansionWizard({
               </div>
 
               {market.status === 'launched' ? (
-                <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-center">
-                  <p className="text-green-700 dark:text-green-300 font-medium">
-                    This market is live!
-                  </p>
-                  <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-                    Domain: {market.selectedDomain}
-                  </p>
-                </div>
+                <>
+                  <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-center">
+                    <p className="text-green-700 dark:text-green-300 font-medium">
+                      This market is live!
+                    </p>
+                    <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                      Domain: {market.selectedDomain}
+                    </p>
+                  </div>
+
+                  {/* Icon Generation for launched markets */}
+                  {onGenerateIcons && (
+                    <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4">
+                      <h4 className="font-medium text-slate-700 dark:text-slate-300 mb-3">City Icon</h4>
+                      {market.iconOptions && market.iconOptions.length > 0 ? (
+                        <div className="space-y-3">
+                          <p className="text-sm text-slate-600 dark:text-slate-400">Select an icon:</p>
+                          <div className="grid grid-cols-4 gap-2">
+                            {market.iconOptions.map((url, i) => (
+                              <button
+                                key={i}
+                                onClick={async () => {
+                                  if (onSelectIcon) {
+                                    setLoading(true);
+                                    await onSelectIcon(url);
+                                    setLoading(false);
+                                  }
+                                }}
+                                className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                                  market.selectedIconSourceUrl === url
+                                    ? 'border-primary ring-2 ring-primary'
+                                    : 'border-slate-200 dark:border-slate-700 hover:border-primary/50'
+                                }`}
+                              >
+                                <img src={url} alt={`Icon option ${i + 1}`} className="w-full h-full object-cover" />
+                                {market.selectedIconSourceUrl === url && (
+                                  <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                                    <span className="text-white text-xl">✓</span>
+                                  </div>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                          <button
+                            onClick={async () => {
+                              setLoading(true);
+                              await onGenerateIcons();
+                              setLoading(false);
+                            }}
+                            disabled={loading}
+                            className="text-sm text-primary hover:underline disabled:opacity-50"
+                          >
+                            {loading ? 'Generating...' : 'Regenerate icons'}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <p className="text-sm text-slate-600 dark:text-slate-400">
+                            Generate AI-powered city icons featuring local landmarks.
+                          </p>
+                          <button
+                            onClick={async () => {
+                              setLoading(true);
+                              setError(null);
+                              const result = await onGenerateIcons();
+                              if (!result.success) {
+                                setError(result.error || 'Failed to generate icons');
+                              }
+                              setLoading(false);
+                            }}
+                            disabled={loading}
+                            className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
+                          >
+                            {loading ? 'Generating Icons...' : 'Generate City Icons'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
               ) : (
                 <button
                   onClick={handleStart}
