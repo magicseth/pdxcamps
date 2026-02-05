@@ -58,6 +58,10 @@ export function ExpansionWizard({
       setStep('overview');
     } else if (market.status === 'domain_purchased' && !market.dnsConfigured) {
       setStep('dns');
+      // Also set the selected domain from market data
+      if (market.selectedDomain) {
+        setSelectedDomain(market.selectedDomain);
+      }
     } else if (market.status === 'dns_configured' && !market.cityId) {
       setStep('city');
     } else if (market.status === 'city_created') {
@@ -65,7 +69,7 @@ export function ExpansionWizard({
     } else if (market.status === 'launched') {
       setStep('overview');
     }
-  }, [market.status, market.dnsConfigured, market.cityId]);
+  }, [market.status, market.dnsConfigured, market.cityId, market.selectedDomain]);
 
   // Update fromEmail when domain changes
   useEffect(() => {
