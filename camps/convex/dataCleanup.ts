@@ -1996,35 +1996,26 @@ function scoreLocation(location: {
 }
 
 /**
- * Merge duplicate locations - keeps the best one and reassigns sessions
+ * Merge duplicate locations - keeps the first one and reassigns sessions
+ * Processes locations in small batches to avoid read limits
  */
 export const mergeDuplicateLocations = mutation({
   args: {
     dryRun: v.optional(v.boolean()),
-    organizationId: v.optional(v.id("organizations")),
-    limit: v.optional(v.number()),
+    batchSize: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const dryRun = args.dryRun ?? true;
-    const limit = args.limit ?? 500;
+    const batchSize = args.batchSize ?? 200; // Process 200 locations at a time
 
-    // Get locations
-    let locations;
-    const orgId = args.organizationId;
-    if (orgId) {
-      locations = await ctx.db
-        .query("locations")
-        .withIndex("by_organization", (q) => q.eq("organizationId", orgId))
-        .collect();
-    } else {
-      locations = await ctx.db.query("locations").collect();
-    }
+    // Get a batch of locations
+    const locations = await ctx.db.query("locations").take(batchSize);
 
     // Group by normalized name + organization
     const byKey = new Map<string, typeof locations>();
     for (const location of locations) {
       const normalizedName = location.name.toLowerCase().trim();
-      const key = `${location.organizationId}|${normalizedName}`;
+      const key = `${location.organizationId ?? "none"}|${normalizedName}`;
       const existing = byKey.get(key) || [];
       existing.push(location);
       byKey.set(key, existing);
@@ -2033,50 +2024,20 @@ export const mergeDuplicateLocations = mutation({
     let mergedCount = 0;
     let deletedCount = 0;
     let sessionsReassigned = 0;
-    const mergeResults: Array<{
-      keptId: string;
-      deletedIds: string[];
-      name: string;
-    }> = [];
 
     for (const [, locationList] of byKey) {
       if (locationList.length <= 1) continue;
-      if (mergedCount >= limit) break;
 
-      // Get session counts for scoring
-      const locsWithCounts = await Promise.all(
-        locationList.map(async (loc) => {
-          const sessions = await ctx.db
-            .query("sessions")
-            .withIndex("by_location", (q) => q.eq("locationId", loc._id))
-            .collect();
-          return {
-            location: loc,
-            sessionCount: sessions.length,
-          };
-        })
-      );
+      // Keep the first one (simplest approach)
+      const keep = locationList[0];
+      const toDelete = locationList.slice(1);
 
-      // Score and pick the best
-      const scored = locsWithCounts.map((l) => ({
-        location: l.location,
-        sessionCount: l.sessionCount,
-        score: scoreLocation({
-          ...l.location,
-          sessionCount: l.sessionCount,
-        }),
-      }));
-      scored.sort((a, b) => b.score - a.score);
-
-      const keep = scored[0].location;
-      const toDelete = scored.slice(1).map((s) => s.location);
-
-      // Reassign sessions from deleted locations to kept location
+      // Reassign sessions and delete duplicates
       for (const deleteLocation of toDelete) {
         const sessions = await ctx.db
           .query("sessions")
           .withIndex("by_location", (q) => q.eq("locationId", deleteLocation._id))
-          .collect();
+          .take(100);
 
         for (const session of sessions) {
           if (!dryRun) {
@@ -2085,28 +2046,22 @@ export const mergeDuplicateLocations = mutation({
           sessionsReassigned++;
         }
 
-        // Delete the duplicate location
         if (!dryRun) {
           await ctx.db.delete(deleteLocation._id);
         }
         deletedCount++;
       }
-
-      mergeResults.push({
-        keptId: keep._id,
-        deletedIds: toDelete.map((l) => l._id),
-        name: keep.name,
-      });
       mergedCount++;
     }
 
     return {
       dryRun,
-      totalLocations: locations.length,
+      batchSize,
+      locationsProcessed: locations.length,
       duplicateGroupsMerged: mergedCount,
       locationsDeleted: deletedCount,
       sessionsReassigned,
-      sampleMerges: mergeResults.slice(0, 20),
+      message: deletedCount > 0 ? "Run again to process more duplicates" : "No duplicates found in this batch",
     };
   },
 });
