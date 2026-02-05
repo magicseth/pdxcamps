@@ -118,4 +118,13 @@ crons.daily(
 //   { retentionDays: 30 }
 // );
 
+// Session deduplication - runs daily at 4 AM PST (12 PM UTC)
+// Merges duplicate sessions (same camp, location, start/end dates)
+crons.daily(
+  "deduplicate sessions",
+  { hourUTC: 12, minuteUTC: 0 },
+  internal.dataCleanup.autoDeduplicateSessions,
+  {}
+);
+
 export default crons;

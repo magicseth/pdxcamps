@@ -1,4 +1,4 @@
-import { mutation, action } from "./_generated/server";
+import { mutation, action, internalMutation } from "./_generated/server";
 import { internal, api } from "./_generated/api";
 import { v } from "convex/values";
 import { Id, Doc } from "./_generated/dataModel";
@@ -1238,5 +1238,643 @@ export const getOrganizationQualityReport = mutation({
     };
 
     return { summary, organizations: orgReports };
+  },
+});
+
+/**
+ * Fix Trackers Earth session prices
+ * Trackers has standardized pricing based on camp type:
+ * - Base camp: $475
+ * - Transport: $525
+ * - Overnight standard: $995
+ * - Overnight expedition: $1495
+ * - LIT (Leader in Training): $895
+ * - Pre-K: $395
+ */
+/**
+ * Fix basketball/sports camp prices
+ * Nike Basketball Camps typically charge:
+ * - Day camps: $559/week
+ * - Overnight camps: $995/week
+ */
+/**
+ * Fix session prices for an organization based on a default price
+ * Useful for orgs with standardized pricing
+ */
+/**
+ * Fix OMSI registration URLs
+ * Change from ?product= to /path/ format
+ */
+export const fixOmsiUrls = mutation({
+  args: {
+    dryRun: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const dryRun = args.dryRun ?? true;
+
+    // OMSI Science Camps organization ID
+    const OMSI_ORG_ID = "kh75v4zw4w3v6hc2m8y9jjze5h80dc22" as Id<"organizations">;
+
+    const sessions = await ctx.db
+      .query("sessions")
+      .withIndex("by_organization_and_status", (q) =>
+        q.eq("organizationId", OMSI_ORG_ID)
+      )
+      .collect();
+
+    const updates: Array<{
+      sessionId: string;
+      oldUrl: string;
+      newUrl: string;
+    }> = [];
+
+    for (const session of sessions) {
+      const url = session.externalRegistrationUrl;
+      if (!url) continue;
+
+      // Check if URL uses the old ?product= format
+      if (url.includes("?product=")) {
+        const productName = url.split("?product=")[1];
+        const newUrl = `https://secure.omsi.edu/camps-and-classes/${productName}`;
+
+        updates.push({
+          sessionId: session._id,
+          oldUrl: url,
+          newUrl,
+        });
+
+        if (!dryRun) {
+          await ctx.db.patch(session._id, { externalRegistrationUrl: newUrl });
+        }
+      }
+    }
+
+    return {
+      dryRun,
+      totalSessions: sessions.length,
+      urlsFixed: dryRun ? 0 : updates.length,
+      urlsToFix: updates.length,
+      sampleUpdates: updates.slice(0, 5),
+    };
+  },
+});
+
+export const fixOrgPrices = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    defaultPriceInCents: v.number(),
+    dryRun: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const dryRun = args.dryRun ?? true;
+
+    const sessions = await ctx.db
+      .query("sessions")
+      .withIndex("by_organization_and_status", (q) =>
+        q.eq("organizationId", args.organizationId)
+      )
+      .collect();
+
+    const zeroPriceSessions = sessions.filter((s) => !s.price || s.price === 0);
+
+    const updates: Array<{
+      sessionId: string;
+      oldPrice: number;
+      newPrice: number;
+    }> = [];
+
+    for (const session of zeroPriceSessions) {
+      updates.push({
+        sessionId: session._id,
+        oldPrice: session.price || 0,
+        newPrice: args.defaultPriceInCents,
+      });
+
+      if (!dryRun) {
+        await ctx.db.patch(session._id, { price: args.defaultPriceInCents });
+      }
+    }
+
+    return {
+      dryRun,
+      totalSessions: sessions.length,
+      zeroPriceSessions: zeroPriceSessions.length,
+      updatesApplied: dryRun ? 0 : updates.length,
+    };
+  },
+});
+
+export const fixBasketballCampPrices = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    dryRun: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const dryRun = args.dryRun ?? true;
+
+    // Get all sessions with $0 price for this org
+    const sessions = await ctx.db
+      .query("sessions")
+      .withIndex("by_organization_and_status", (q) =>
+        q.eq("organizationId", args.organizationId)
+      )
+      .collect();
+
+    const zeroPriceSessions = sessions.filter((s) => !s.price || s.price === 0);
+
+    // Get camps for these sessions
+    const campIds = [...new Set(zeroPriceSessions.map((s) => s.campId))];
+    const camps = await Promise.all(campIds.map((id) => ctx.db.get(id)));
+    const campMap = new Map(camps.filter(Boolean).map((c) => [c!._id, c!]));
+
+    // Pricing based on Nike Basketball Camps
+    const BASKETBALL_PRICING = {
+      daycamp: 55900, // $559/week
+      overnight: 99500, // $995/week
+    };
+
+    function determinePricing(campName: string): number {
+      const nameLower = campName.toLowerCase();
+
+      // Check for overnight camps
+      if (nameLower.includes("overnight") || nameLower.includes("residential")) {
+        return BASKETBALL_PRICING.overnight;
+      }
+
+      // Default: day camp
+      return BASKETBALL_PRICING.daycamp;
+    }
+
+    const updates: Array<{
+      sessionId: string;
+      campName: string;
+      oldPrice: number;
+      newPrice: number;
+    }> = [];
+
+    for (const session of zeroPriceSessions) {
+      const camp = campMap.get(session.campId);
+      if (!camp) continue;
+
+      const newPrice = determinePricing(camp.name);
+
+      updates.push({
+        sessionId: session._id,
+        campName: camp.name,
+        oldPrice: session.price || 0,
+        newPrice,
+      });
+
+      if (!dryRun) {
+        await ctx.db.patch(session._id, { price: newPrice });
+      }
+    }
+
+    return {
+      dryRun,
+      totalSessions: sessions.length,
+      zeroPriceSessions: zeroPriceSessions.length,
+      updatesApplied: dryRun ? 0 : updates.length,
+      sampleUpdates: updates.slice(0, 20),
+    };
+  },
+});
+
+export const fixTrackersPrices = mutation({
+  args: {
+    dryRun: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const dryRun = args.dryRun ?? true;
+
+    // Trackers Earth Portland organization ID
+    const TRACKERS_ORG_ID = "kh7f4thw13306rys338we33kqd80dkrm" as Id<"organizations">;
+
+    // Get all Trackers sessions with $0 price
+    const sessions = await ctx.db
+      .query("sessions")
+      .withIndex("by_organization_and_status", (q) =>
+        q.eq("organizationId", TRACKERS_ORG_ID)
+      )
+      .collect();
+
+    const zeroPriceSessions = sessions.filter((s) => !s.price || s.price === 0);
+
+    // Get camps for these sessions to help determine pricing
+    const campIds = [...new Set(zeroPriceSessions.map((s) => s.campId))];
+    const camps = await Promise.all(
+      campIds.map((id) => ctx.db.get(id))
+    );
+    const campMap = new Map(camps.filter(Boolean).map((c) => [c!._id, c!]));
+
+    // Get locations
+    const locationIds = [...new Set(zeroPriceSessions.map((s) => s.locationId).filter(Boolean))];
+    const locations = await Promise.all(
+      locationIds.map((id) => ctx.db.get(id as Id<"locations">))
+    );
+    const locationMap = new Map(locations.filter(Boolean).map((l) => [l!._id, l!]));
+
+    // Pricing logic matching the Trackers scraper
+    const TRACKERS_PRICING = {
+      basecamp: 47500,
+      transport: 52500,
+      overnightStandard: 99500,
+      overnightExpedition: 149500,
+      lit: 89500,
+      preK: 39500,
+    };
+
+    function determinePricing(
+      campName: string,
+      locationName: string,
+      ageReqs?: { minGrade?: number; maxGrade?: number }
+    ): number {
+      const nameLower = campName.toLowerCase();
+      const locationLower = locationName.toLowerCase();
+
+      // Check for overnight camps
+      if (locationLower.includes("overnight") || nameLower.includes("overnight")) {
+        if (nameLower.includes("expedition") || nameLower.includes("extended")) {
+          return TRACKERS_PRICING.overnightExpedition;
+        }
+        return TRACKERS_PRICING.overnightStandard;
+      }
+
+      // Check for Leader in Training
+      if (nameLower.includes("leader") || nameLower.includes("lit") || nameLower.includes("leadership")) {
+        return TRACKERS_PRICING.lit;
+      }
+
+      // Check for Pre-K camps
+      if (ageReqs && ageReqs.maxGrade !== undefined && ageReqs.maxGrade <= 0) {
+        return TRACKERS_PRICING.preK;
+      }
+
+      // Check for transport camps
+      if (
+        locationLower.includes("sandy") ||
+        locationLower.includes("transport") ||
+        nameLower.includes("transport")
+      ) {
+        return TRACKERS_PRICING.transport;
+      }
+
+      // Default: standard base camp
+      return TRACKERS_PRICING.basecamp;
+    }
+
+    const updates: Array<{
+      sessionId: string;
+      campName: string;
+      location: string;
+      oldPrice: number;
+      newPrice: number;
+    }> = [];
+
+    for (const session of zeroPriceSessions) {
+      const camp = campMap.get(session.campId);
+      const location = session.locationId ? locationMap.get(session.locationId) : null;
+
+      if (!camp) continue;
+
+      const locationName = location?.name || "";
+      const newPrice = determinePricing(camp.name, locationName, session.ageRequirements);
+
+      updates.push({
+        sessionId: session._id,
+        campName: camp.name,
+        location: locationName,
+        oldPrice: session.price || 0,
+        newPrice,
+      });
+
+      if (!dryRun) {
+        await ctx.db.patch(session._id, { price: newPrice });
+      }
+    }
+
+    return {
+      dryRun,
+      totalSessions: sessions.length,
+      zeroPriceSessions: zeroPriceSessions.length,
+      updatesApplied: dryRun ? 0 : updates.length,
+      sampleUpdates: updates.slice(0, 20),
+    };
+  },
+});
+
+// ============================================
+// SESSION DEDUPLICATION
+// ============================================
+
+/**
+ * Find duplicate sessions (same camp, location, start date, end date)
+ */
+export const findDuplicateSessions = mutation({
+  args: {
+    cityId: v.optional(v.id("cities")),
+  },
+  handler: async (ctx, args) => {
+    // Get sessions, optionally filtered by city
+    let sessions;
+    const cityId = args.cityId;
+    if (cityId) {
+      sessions = await ctx.db
+        .query("sessions")
+        .withIndex("by_city_and_status", (q) => q.eq("cityId", cityId))
+        .collect();
+    } else {
+      sessions = await ctx.db.query("sessions").collect();
+    }
+
+    // Group by deduplication key: campId + locationId + startDate + endDate
+    const byKey = new Map<string, typeof sessions>();
+    for (const session of sessions) {
+      const key = `${session.campId}|${session.locationId}|${session.startDate}|${session.endDate}`;
+      const existing = byKey.get(key) || [];
+      existing.push(session);
+      byKey.set(key, existing);
+    }
+
+    // Find duplicates (groups with more than 1 session)
+    const duplicateGroups: Array<{
+      key: string;
+      count: number;
+      sessions: Array<{
+        id: string;
+        campName: string;
+        startDate: string;
+        endDate: string;
+        price: number;
+        status: string;
+        completenessScore: number | undefined;
+        lastScrapedAt: number | undefined;
+        sourceId: string | undefined;
+      }>;
+    }> = [];
+
+    for (const [key, sessionList] of byKey) {
+      if (sessionList.length > 1) {
+        duplicateGroups.push({
+          key,
+          count: sessionList.length,
+          sessions: sessionList.map((s) => ({
+            id: s._id,
+            campName: s.campName || "Unknown",
+            startDate: s.startDate,
+            endDate: s.endDate,
+            price: s.price,
+            status: s.status,
+            completenessScore: s.completenessScore,
+            lastScrapedAt: s.lastScrapedAt,
+            sourceId: s.sourceId,
+          })),
+        });
+      }
+    }
+
+    // Sort by count descending
+    duplicateGroups.sort((a, b) => b.count - a.count);
+
+    const totalDuplicates = duplicateGroups.reduce((sum, g) => sum + g.count - 1, 0);
+
+    return {
+      totalSessions: sessions.length,
+      duplicateGroups: duplicateGroups.length,
+      totalDuplicatesToRemove: totalDuplicates,
+      groups: duplicateGroups.slice(0, 50), // Return first 50 groups
+    };
+  },
+});
+
+/**
+ * Score a session for deduplication - higher is better
+ */
+function scoreSession(session: {
+  price: number;
+  completenessScore?: number;
+  lastScrapedAt?: number;
+  status: string;
+  externalRegistrationUrl?: string;
+  description?: string;
+}): number {
+  let score = 0;
+
+  // Prefer active sessions
+  if (session.status === "active") score += 100;
+  else if (session.status === "draft") score += 50;
+
+  // Prefer sessions with prices
+  if (session.price > 0) score += 50;
+
+  // Prefer higher completeness
+  score += (session.completenessScore || 0);
+
+  // Prefer more recently scraped
+  if (session.lastScrapedAt) {
+    const ageInDays = (Date.now() - session.lastScrapedAt) / (1000 * 60 * 60 * 24);
+    score += Math.max(0, 30 - ageInDays); // Up to 30 points for recent scrapes
+  }
+
+  // Prefer sessions with registration URLs
+  if (session.externalRegistrationUrl) score += 20;
+
+  // Prefer sessions with descriptions
+  if (session.description) score += 10;
+
+  return score;
+}
+
+/**
+ * Merge duplicate sessions - keeps the best one and deletes others
+ * Also reassigns registrations to the kept session
+ */
+export const mergeDuplicateSessions = mutation({
+  args: {
+    dryRun: v.optional(v.boolean()),
+    cityId: v.optional(v.id("cities")),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const dryRun = args.dryRun ?? true;
+    const limit = args.limit ?? 1000;
+
+    // Get sessions
+    let sessions;
+    const cityId = args.cityId;
+    if (cityId) {
+      sessions = await ctx.db
+        .query("sessions")
+        .withIndex("by_city_and_status", (q) => q.eq("cityId", cityId))
+        .collect();
+    } else {
+      sessions = await ctx.db.query("sessions").collect();
+    }
+
+    // Group by deduplication key
+    const byKey = new Map<string, typeof sessions>();
+    for (const session of sessions) {
+      const key = `${session.campId}|${session.locationId}|${session.startDate}|${session.endDate}`;
+      const existing = byKey.get(key) || [];
+      existing.push(session);
+      byKey.set(key, existing);
+    }
+
+    let mergedCount = 0;
+    let deletedCount = 0;
+    let registrationsReassigned = 0;
+    const mergeResults: Array<{
+      keptId: string;
+      deletedIds: string[];
+      campName: string;
+    }> = [];
+
+    for (const [, sessionList] of byKey) {
+      if (sessionList.length <= 1) continue;
+      if (mergedCount >= limit) break;
+
+      // Score each session and pick the best
+      const scored = sessionList.map((s) => ({
+        session: s,
+        score: scoreSession(s),
+      }));
+      scored.sort((a, b) => b.score - a.score);
+
+      const keep = scored[0].session;
+      const toDelete = scored.slice(1).map((s) => s.session);
+
+      // Reassign registrations from deleted sessions to kept session
+      for (const deleteSession of toDelete) {
+        const registrations = await ctx.db
+          .query("registrations")
+          .withIndex("by_session", (q) => q.eq("sessionId", deleteSession._id))
+          .collect();
+
+        for (const reg of registrations) {
+          // Check if this child already has a registration for the kept session
+          const existingReg = await ctx.db
+            .query("registrations")
+            .withIndex("by_child_and_session", (q) =>
+              q.eq("childId", reg.childId).eq("sessionId", keep._id)
+            )
+            .unique();
+
+          if (!dryRun) {
+            if (existingReg) {
+              // Already registered for kept session, just delete the duplicate registration
+              await ctx.db.delete(reg._id);
+            } else {
+              // Reassign to kept session
+              await ctx.db.patch(reg._id, { sessionId: keep._id });
+            }
+          }
+          registrationsReassigned++;
+        }
+
+        // Delete the duplicate session
+        if (!dryRun) {
+          await ctx.db.delete(deleteSession._id);
+        }
+        deletedCount++;
+      }
+
+      mergeResults.push({
+        keptId: keep._id,
+        deletedIds: toDelete.map((s) => s._id),
+        campName: keep.campName || "Unknown",
+      });
+      mergedCount++;
+    }
+
+    return {
+      dryRun,
+      totalSessions: sessions.length,
+      duplicateGroupsMerged: mergedCount,
+      sessionsDeleted: deletedCount,
+      registrationsReassigned,
+      sampleMerges: mergeResults.slice(0, 20),
+    };
+  },
+});
+
+/**
+ * Internal mutation for automated deduplication (called by cron)
+ * Runs the merge with dryRun=false and a reasonable limit
+ */
+export const autoDeduplicateSessions = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    // Get all sessions
+    const sessions = await ctx.db.query("sessions").collect();
+
+    // Group by deduplication key
+    const byKey = new Map<string, typeof sessions>();
+    for (const session of sessions) {
+      const key = `${session.campId}|${session.locationId}|${session.startDate}|${session.endDate}`;
+      const existing = byKey.get(key) || [];
+      existing.push(session);
+      byKey.set(key, existing);
+    }
+
+    let mergedCount = 0;
+    let deletedCount = 0;
+    let registrationsReassigned = 0;
+    const limit = 500; // Process up to 500 duplicate groups per run
+
+    for (const [, sessionList] of byKey) {
+      if (sessionList.length <= 1) continue;
+      if (mergedCount >= limit) break;
+
+      // Score each session and pick the best
+      const scored = sessionList.map((s) => ({
+        session: s,
+        score: scoreSession(s),
+      }));
+      scored.sort((a, b) => b.score - a.score);
+
+      const keep = scored[0].session;
+      const toDelete = scored.slice(1).map((s) => s.session);
+
+      // Reassign registrations from deleted sessions to kept session
+      for (const deleteSession of toDelete) {
+        const registrations = await ctx.db
+          .query("registrations")
+          .withIndex("by_session", (q) => q.eq("sessionId", deleteSession._id))
+          .collect();
+
+        for (const reg of registrations) {
+          const existingReg = await ctx.db
+            .query("registrations")
+            .withIndex("by_child_and_session", (q) =>
+              q.eq("childId", reg.childId).eq("sessionId", keep._id)
+            )
+            .unique();
+
+          if (existingReg) {
+            await ctx.db.delete(reg._id);
+          } else {
+            await ctx.db.patch(reg._id, { sessionId: keep._id });
+          }
+          registrationsReassigned++;
+        }
+
+        // Delete the duplicate session
+        await ctx.db.delete(deleteSession._id);
+        deletedCount++;
+      }
+
+      mergedCount++;
+    }
+
+    // Log results (these appear in Convex dashboard logs)
+    if (deletedCount > 0) {
+      console.log(`[Auto-Dedup] Merged ${mergedCount} groups, deleted ${deletedCount} sessions, reassigned ${registrationsReassigned} registrations`);
+    }
+
+    return {
+      duplicateGroupsMerged: mergedCount,
+      sessionsDeleted: deletedCount,
+      registrationsReassigned,
+    };
   },
 });
