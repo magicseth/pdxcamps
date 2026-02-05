@@ -560,8 +560,8 @@ export const importFromJob = action({
                 completenessScore: validation.completenessScore,
                 missingFields: validation.missingFields,
                 dataSource: "scraped" as const,
-                // Capacity fields
-                capacity: session.capacity,
+                // Capacity fields - use spotsLeft as capacity if capacity not provided
+                capacity: session.capacity ?? session.spotsLeft,
                 enrolledCount: session.enrolledCount,
               }
             );

@@ -229,16 +229,19 @@ export const getFeaturedSessions = query({
 
     const today = new Date().toISOString().split("T")[0];
 
-    // Get upcoming active sessions with prices (prioritize sessions with good data)
+    // Get all active sessions in the city (not ordered by date)
+    // This ensures we sample from the full date range, not just the nearest dates
     const allSessions = await ctx.db
       .query("sessions")
-      .withIndex("by_city_and_status_and_start_date", (q) =>
-        q.eq("cityId", city._id).eq("status", "active").gte("startDate", today)
+      .withIndex("by_city_and_status", (q) =>
+        q.eq("cityId", city._id).eq("status", "active")
       )
-      .take(200);
+      .collect();
 
-    // Filter to sessions with prices
-    const sessionsWithPrices = allSessions.filter((s) => s.price > 0);
+    // Filter to future sessions with prices
+    const sessionsWithPrices = allSessions.filter(
+      (s) => s.price > 0 && s.startDate >= today
+    );
 
     // Shuffle sessions for variety in the carousel
     // Use a simple Fisher-Yates shuffle with a daily seed so the order changes each day
