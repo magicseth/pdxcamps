@@ -901,6 +901,12 @@ export default defineSchema({
     // City
     cityId: v.optional(v.id("cities")),
 
+    // Icon generation
+    iconOptions: v.optional(v.array(v.string())), // URLs of generated icon options
+    iconPrompt: v.optional(v.string()), // The prompt used to generate icons
+    selectedIconStorageId: v.optional(v.id("_storage")), // Selected icon in Convex storage
+    selectedIconSourceUrl: v.optional(v.string()), // Original URL of selected icon
+
     // Status
     status: v.union(
       v.literal("not_started"),

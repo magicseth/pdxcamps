@@ -27,6 +27,8 @@ import type * as email from "../email.js";
 import type * as emailForward from "../emailForward.js";
 import type * as expansion_actions from "../expansion/actions.js";
 import type * as expansion_domainWorkflow from "../expansion/domainWorkflow.js";
+import type * as expansion_iconGeneration from "../expansion/iconGeneration.js";
+import type * as expansion_iconMutations from "../expansion/iconMutations.js";
 import type * as expansion_mutations from "../expansion/mutations.js";
 import type * as expansion_queries from "../expansion/queries.js";
 import type * as families_mutations from "../families/mutations.js";
@@ -121,6 +123,8 @@ declare const fullApi: ApiFromModules<{
   emailForward: typeof emailForward;
   "expansion/actions": typeof expansion_actions;
   "expansion/domainWorkflow": typeof expansion_domainWorkflow;
+  "expansion/iconGeneration": typeof expansion_iconGeneration;
+  "expansion/iconMutations": typeof expansion_iconMutations;
   "expansion/mutations": typeof expansion_mutations;
   "expansion/queries": typeof expansion_queries;
   "families/mutations": typeof families_mutations;
