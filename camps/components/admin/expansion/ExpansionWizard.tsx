@@ -727,6 +727,11 @@ export function ExpansionWizard({
                       >
                         {loading ? 'Generating...' : 'Regenerate icons'}
                       </button>
+                      {market.selectedIconStorageId && (
+                        <p className="text-xs text-green-600 dark:text-green-400 mt-2">
+                          ✓ Icon saved to city record
+                        </p>
+                      )}
                     </div>
                   ) : (
                     <div className="space-y-3">

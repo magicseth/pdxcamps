@@ -165,7 +165,7 @@ export const createCityForMarket = mutation({
       throw new Error(`City with slug "${args.slug}" already exists`);
     }
 
-    // Create the city
+    // Create the city (include icon if already selected in expansion workflow)
     const cityId = await ctx.db.insert("cities", {
       name: args.name,
       slug: args.slug,
@@ -177,6 +177,8 @@ export const createCityForMarket = mutation({
       brandName: args.brandName,
       domain: args.domain,
       fromEmail: args.fromEmail,
+      // Copy icon from expansion market if already selected
+      iconStorageId: record.selectedIconStorageId,
     });
 
     // Link to expansion market record
@@ -243,11 +245,19 @@ export const linkExistingCity = mutation({
       throw new Error("City not found");
     }
 
+    // Link expansion market to city
     await ctx.db.patch(record._id, {
       cityId: args.cityId,
       status: "city_created",
       updatedAt: Date.now(),
     });
+
+    // Copy icon from expansion market to city if one exists
+    if (record.selectedIconStorageId && !city.iconStorageId) {
+      await ctx.db.patch(args.cityId, {
+        iconStorageId: record.selectedIconStorageId,
+      });
+    }
 
     return { success: true };
   },

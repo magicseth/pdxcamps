@@ -33,7 +33,7 @@ export const storeIconOptions = internalMutation({
 });
 
 /**
- * Save the selected icon to the market record
+ * Save the selected icon to the market record AND the linked city
  */
 export const saveSelectedIcon = internalMutation({
   args: {
@@ -51,10 +51,18 @@ export const saveSelectedIcon = internalMutation({
       throw new Error(`Market not found: ${args.marketKey}`);
     }
 
+    // Update the expansion market record
     await ctx.db.patch(market._id, {
       selectedIconStorageId: args.storageId,
       selectedIconSourceUrl: args.sourceUrl,
       updatedAt: Date.now(),
     });
+
+    // Also update the linked city if one exists
+    if (market.cityId) {
+      await ctx.db.patch(market.cityId, {
+        iconStorageId: args.storageId,
+      });
+    }
   },
 });
