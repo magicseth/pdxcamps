@@ -273,7 +273,7 @@ export const purchaseDomain = action({
 
       return {
         success: true,
-        orderId: data.orderId,
+        orderId: data.orderId ? String(data.orderId) : undefined,
       };
     } catch (error) {
       return {
