@@ -65,3 +65,33 @@ export const listNeighborhoods = query({
       .collect();
   },
 });
+
+/**
+ * Get a city by its domain
+ * Used for multi-tenant routing
+ */
+export const getCityByDomain = query({
+  args: {
+    domain: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Try exact match first
+    const city = await ctx.db
+      .query("cities")
+      .withIndex("by_domain", (q) => q.eq("domain", args.domain))
+      .first();
+
+    if (city) return city;
+
+    // Also try without www prefix
+    const domainWithoutWww = args.domain.replace(/^www\./, '');
+    if (domainWithoutWww !== args.domain) {
+      return await ctx.db
+        .query("cities")
+        .withIndex("by_domain", (q) => q.eq("domain", domainWithoutWww))
+        .first();
+    }
+
+    return null;
+  },
+});

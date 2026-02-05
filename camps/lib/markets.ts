@@ -58,6 +58,20 @@ export const MARKETS: Market[] = [
     iconPath: '/icons/den',
     themeColor: '#7c3aed', // Purple for mountains
   },
+  {
+    slug: 'san-francisco',
+    name: 'San Francisco',
+    tagline: 'SFB Camps',
+    region: 'San Francisco Bay Area',
+    domains: ['sfbaycamps.com', 'www.sfbaycamps.com'],
+    emoji: '🌉',
+    popularOrgs: 'California Academy of Sciences, Exploratorium, SF Parks',
+    neighborhoods: 'San Francisco, Oakland, Berkeley, Palo Alto, San Jose',
+    testimonialAttribution: 'Bay Area parent of 2',
+    madeIn: 'San Francisco',
+    iconPath: '/icons/sfb',
+    themeColor: '#f97316', // Orange for Golden Gate
+  },
 ];
 
 export const DEFAULT_MARKET = MARKETS[0]; // Portland as fallback

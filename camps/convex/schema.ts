@@ -40,7 +40,8 @@ export default defineSchema({
     fromEmail: v.optional(v.string()), // e.g., "hello@pdxcamps.com"
   })
     .index("by_slug", ["slug"])
-    .index("by_is_active", ["isActive"]),
+    .index("by_is_active", ["isActive"])
+    .index("by_domain", ["domain"]),
 
   neighborhoods: defineTable({
     cityId: v.id("cities"),
@@ -888,11 +889,21 @@ export default defineSchema({
     marketKey: v.string(), // "seattle-wa"
     tier: v.number(), // 1, 2, or 3
 
-    // Domain
+    // Domain - primary domain (backwards compatible)
     selectedDomain: v.optional(v.string()),
     domainPurchased: v.boolean(),
     domainPurchasedAt: v.optional(v.number()),
     porkbunOrderId: v.optional(v.string()),
+
+    // Multiple domains support
+    domains: v.optional(v.array(v.object({
+      domain: v.string(),
+      isPrimary: v.boolean(),
+      purchasedAt: v.optional(v.number()),
+      orderId: v.optional(v.string()),
+      dnsConfigured: v.optional(v.boolean()),
+      netlifyZoneId: v.optional(v.string()),
+    }))),
 
     // DNS
     dnsConfigured: v.boolean(),
