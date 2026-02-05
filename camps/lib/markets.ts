@@ -44,6 +44,20 @@ export const MARKETS: Market[] = [
     iconPath: '/icons/bos',
     themeColor: '#dc2626',
   },
+  {
+    slug: 'denver',
+    name: 'Denver',
+    tagline: 'DEN Camps',
+    region: 'Denver Metro Area',
+    domains: ['dencamps.com', 'www.dencamps.com'],
+    emoji: '🏔️',
+    popularOrgs: 'Denver Museum of Nature & Science, Denver Zoo, Denver Parks',
+    neighborhoods: 'Denver, Aurora, Lakewood, Littleton, Boulder',
+    testimonialAttribution: 'Denver parent of 2',
+    madeIn: 'Denver',
+    iconPath: '/icons/den',
+    themeColor: '#7c3aed', // Purple for mountains
+  },
 ];
 
 export const DEFAULT_MARKET = MARKETS[0]; // Portland as fallback
