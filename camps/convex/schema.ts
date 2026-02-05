@@ -34,6 +34,10 @@ export default defineSchema({
     isActive: v.boolean(),
     centerLatitude: v.number(),
     centerLongitude: v.number(),
+    // Brand info for emails and site customization
+    brandName: v.optional(v.string()), // e.g., "PDX Camps", "BOS Camps"
+    domain: v.optional(v.string()), // e.g., "pdxcamps.com", "boscamps.com"
+    fromEmail: v.optional(v.string()), // e.g., "hello@pdxcamps.com"
   })
     .index("by_slug", ["slug"])
     .index("by_is_active", ["isActive"]),
@@ -99,6 +103,9 @@ export default defineSchema({
     color: v.optional(v.string()),
     // Shareable plan token - allows public viewing of this child's summer plan
     shareToken: v.optional(v.string()),
+    // Custom summer date range (defaults to June 1 - Aug 31 if not set)
+    summerStartDate: v.optional(v.string()), // ISO date "2025-06-15"
+    summerEndDate: v.optional(v.string()), // ISO date "2025-08-22"
   })
     .index("by_family", ["familyId"])
     .index("by_family_and_active", ["familyId", "isActive"])
@@ -773,6 +780,31 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_received_at", ["receivedAt"])
     .index("by_organization", ["matchedOrganizationId"]),
+
+  // ============ NOTIFICATIONS ============
+
+  // Track what notifications have been sent to avoid duplicates
+  notificationsSent: defineTable({
+    familyId: v.id("families"),
+    sessionId: v.id("sessions"),
+    changeType: v.union(
+      v.literal("registration_opened"),
+      v.literal("low_availability")
+    ),
+    notifiedAt: v.number(),
+    emailId: v.optional(v.string()),
+  })
+    .index("by_family", ["familyId"])
+    .index("by_family_session_type", ["familyId", "sessionId", "changeType"]),
+
+  // Track availability to detect when it drops below threshold
+  sessionAvailabilitySnapshots: defineTable({
+    sessionId: v.id("sessions"),
+    enrolledCount: v.number(),
+    capacity: v.number(),
+    spotsRemaining: v.number(),
+    recordedAt: v.number(),
+  }).index("by_session", ["sessionId"]),
 
   // Admin alerts
   scraperAlerts: defineTable({

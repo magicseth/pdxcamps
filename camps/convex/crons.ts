@@ -4,6 +4,19 @@ import { internal } from "./_generated/api";
 const crons = cronJobs();
 
 // ============================================
+// NOTIFICATION CRONS
+// ============================================
+
+// Hourly notification digest - sends availability alerts to families
+// Notifies when camps they saved open for registration or have low availability
+crons.interval(
+  "availability notification digest",
+  { hours: 1 },
+  internal.notifications.actions.processHourlyDigest,
+  {}
+);
+
+// ============================================
 // SCRAPING CRONS
 // ============================================
 

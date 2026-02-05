@@ -2,13 +2,18 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useMarket } from '../../hooks/useMarket';
 
 interface BottomNavProps {
   citySlug?: string;
 }
 
-export function BottomNav({ citySlug = 'portland' }: BottomNavProps) {
+export function BottomNav({ citySlug }: BottomNavProps) {
   const pathname = usePathname();
+  const market = useMarket();
+
+  // Use explicit prop or detect from hostname (e.g., boscamps.com -> boston)
+  const effectiveCitySlug = citySlug ?? market.slug;
 
   const isActive = (path: string) => {
     if (path === '/') return pathname === '/';
@@ -23,7 +28,7 @@ export function BottomNav({ citySlug = 'portland' }: BottomNavProps) {
     >
       <div className="max-w-4xl mx-auto flex items-center justify-around">
         <NavLink href="/" active={isActive('/')} icon={<CalendarIcon />} label="Planner" />
-        <NavLink href={`/discover/${citySlug}`} active={isActive('/discover')} icon={<SearchIcon />} label="Discover" />
+        <NavLink href={`/discover/${effectiveCitySlug}`} active={isActive('/discover')} icon={<SearchIcon />} label="Discover" />
         <NavLink href="/calendar" active={isActive('/calendar')} icon={<ListIcon />} label="My Camps" />
         <NavLink href="/friends" active={isActive('/friends')} icon={<FriendsIcon />} label="Friends" />
       </div>

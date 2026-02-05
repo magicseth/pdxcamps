@@ -60,7 +60,7 @@ export default function DiscoverPage() {
       startDateBefore: searchParams.get('to') || '',
       selectedCategories: searchParams.get('categories')?.split(',').filter(Boolean) || [],
       maxPrice: searchParams.get('maxPrice') ? parseInt(searchParams.get('maxPrice')!) : undefined,
-      hideSoldOut: searchParams.get('hideSoldOut') === 'true',
+      hideSoldOut: searchParams.get('hideSoldOut') !== 'false', // Default to true
       extendedCareOnly: searchParams.get('extendedCare') === 'true',
       childAge: searchParams.get('age') ? parseInt(searchParams.get('age')!) : undefined,
       childGrade: searchParams.get('grade') ? parseInt(searchParams.get('grade')!) : undefined,
@@ -131,7 +131,7 @@ export default function DiscoverPage() {
     if (startDateBefore) params.set('to', startDateBefore);
     if (selectedCategories.length > 0) params.set('categories', selectedCategories.join(','));
     if (maxPrice !== undefined) params.set('maxPrice', maxPrice.toString());
-    if (hideSoldOut) params.set('hideSoldOut', 'true');
+    if (!hideSoldOut) params.set('hideSoldOut', 'false'); // Only add when explicitly false (true is default)
     if (extendedCareOnly) params.set('extendedCare', 'true');
     if (childAge !== undefined) params.set('age', childAge.toString());
     if (childGrade !== undefined) params.set('grade', childGrade.toString());
@@ -327,7 +327,7 @@ export default function DiscoverPage() {
     setStartDateBefore('');
     setSelectedCategories([]);
     setMaxPrice(undefined);
-    setHideSoldOut(false);
+    setHideSoldOut(true); // Reset to default (hide sold out)
     setChildAge(undefined);
     setChildGrade(undefined);
     setSelectedOrganizations([]);
@@ -340,7 +340,7 @@ export default function DiscoverPage() {
     startDateBefore ||
     selectedCategories.length > 0 ||
     maxPrice !== undefined ||
-    hideSoldOut ||
+    !hideSoldOut || // Count when showing sold out (non-default)
     extendedCareOnly ||
     childAge !== undefined ||
     childGrade !== undefined ||
@@ -354,7 +354,7 @@ export default function DiscoverPage() {
     (startDateBefore ? 1 : 0) +
     selectedCategories.length +
     (maxPrice !== undefined ? 1 : 0) +
-    (hideSoldOut ? 1 : 0) +
+    (!hideSoldOut ? 1 : 0) + // Count when showing sold out (non-default)
     (extendedCareOnly ? 1 : 0) +
     (childAge !== undefined ? 1 : 0) +
     (childGrade !== undefined ? 1 : 0) +
@@ -604,28 +604,40 @@ export default function DiscoverPage() {
                       {myChildren.map((child) => {
                         const age = getChildAge(child.birthdate);
                         const grade = child.currentGrade;
+                        const isSelected = selectedChildId === child._id;
                         return (
                           <button
                             key={child._id}
                             type="button"
                             onClick={() => {
-                              // Track which child is selected for pre-filling save modal
-                              setSelectedChildId(child._id);
-                              if (grade !== undefined) {
-                                setChildGrade(grade);
+                              if (isSelected) {
+                                // Deselect: clear child selection and age/grade filters
+                                setSelectedChildId(null);
                                 setChildAge(undefined);
-                              } else if (age !== null) {
-                                setChildAge(age);
                                 setChildGrade(undefined);
+                              } else {
+                                // Select: set child and apply their age/grade
+                                setSelectedChildId(child._id);
+                                // Set age if available (always show in button)
+                                if (age !== null) {
+                                  setChildAge(age);
+                                }
+                                // Also set grade if available for more accurate filtering
+                                if (grade !== undefined) {
+                                  setChildGrade(grade);
+                                } else {
+                                  setChildGrade(undefined);
+                                }
                               }
                             }}
                             className={`px-2 py-1 text-xs rounded-md font-medium transition-colors ${
-                              (age !== null && childAge === age) || (grade !== undefined && childGrade === grade)
+                              isSelected
                                 ? 'bg-primary text-white'
                                 : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
                             }`}
                           >
                             {child.firstName} ({age}y)
+                            {isSelected && <span className="ml-1">✕</span>}
                           </button>
                         );
                       })}
@@ -961,10 +973,10 @@ export default function DiscoverPage() {
                       onRemove={() => setMaxPrice(undefined)}
                     />
                   )}
-                  {hideSoldOut && (
+                  {!hideSoldOut && (
                     <FilterChip
-                      label="Hide sold out"
-                      onRemove={() => setHideSoldOut(false)}
+                      label="Showing sold out"
+                      onRemove={() => setHideSoldOut(true)}
                     />
                   )}
                   {extendedCareOnly && (

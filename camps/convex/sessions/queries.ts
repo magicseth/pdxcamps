@@ -237,21 +237,35 @@ export const getFeaturedSessions = query({
       )
       .take(200);
 
-    // Filter to sessions with prices and sort by start date
-    const sessionsWithPrices = allSessions
-      .filter((s) => s.price > 0)
-      .sort((a, b) => a.startDate.localeCompare(b.startDate));
+    // Filter to sessions with prices
+    const sessionsWithPrices = allSessions.filter((s) => s.price > 0);
 
-    // Take a variety - spread across different camps
+    // Shuffle sessions for variety in the carousel
+    // Use a simple Fisher-Yates shuffle with a daily seed so the order changes each day
+    const shuffled = [...sessionsWithPrices];
+    let seed = today.split("-").reduce((acc, n) => acc + parseInt(n), 0);
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      const j = seed % (i + 1);
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    // Take a variety - spread across different camps/orgs
     const selectedSessions: typeof sessionsWithPrices = [];
     const seenCamps = new Set<string>();
+    const seenOrgs = new Set<string>();
 
-    for (const session of sessionsWithPrices) {
+    for (const session of shuffled) {
       if (selectedSessions.length >= limit) break;
-      // Allow some duplicates but prioritize variety
-      if (!seenCamps.has(session.campId) || selectedSessions.length < limit / 2) {
+      // Prioritize variety: prefer sessions from unseen camps AND orgs
+      const campSeen = seenCamps.has(session.campId);
+      const orgSeen = seenOrgs.has(session.organizationId);
+
+      // Allow if: new camp, or we haven't filled half yet, or new org
+      if (!campSeen || selectedSessions.length < limit / 3 || !orgSeen) {
         selectedSessions.push(session);
         seenCamps.add(session.campId);
+        seenOrgs.add(session.organizationId);
       }
     }
 
