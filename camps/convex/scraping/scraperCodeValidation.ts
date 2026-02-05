@@ -17,7 +17,7 @@ export function validateScraperCode(code: string): void {
   const corruptedPatterns = [
     // Unclosed template literal expressions
     /\$\{[^}]*$/m, // ${expr at end of line without closing }
-    /\$\{[^}]*\n[^}]*$/s, // ${expr spanning multiple lines without }
+    /\$\{[^}]*\n[\s\S]*$/m, // ${expr spanning multiple lines without }
     // Orphaned template literal parts
     /`[^`]*\$\{[^}]*`/g, // Check each backtick string has balanced ${}
   ];
@@ -32,7 +32,7 @@ export function validateScraperCode(code: string): void {
 
   // Check for unclosed ${} in template literals
   // This regex finds template literals and checks their expressions
-  const templateLiteralRegex = /`([^`]*)`/gs;
+  const templateLiteralRegex = /`([\s\S]*?)`/g;
   let match;
   while ((match = templateLiteralRegex.exec(code)) !== null) {
     const content = match[1];
