@@ -272,47 +272,88 @@ export const getFeaturedSessions = query({
       }
     }
 
-    // Enrich with camp, organization, and location data
-    const enrichedSessions = await Promise.all(
-      selectedSessions.map(async (session) => {
-        const camp = await ctx.db.get(session.campId);
-        if (!camp) return null;
+    // Batch fetch all related data upfront for efficiency
+    const campIds = [...new Set(selectedSessions.map((s) => s.campId))];
+    const locationIds = [...new Set(selectedSessions.map((s) => s.locationId))];
 
-        const organization = await ctx.db.get(camp.organizationId);
-        const location = await ctx.db.get(session.locationId);
+    // Fetch camps and locations in parallel
+    const [campsRaw, locationsRaw] = await Promise.all([
+      Promise.all(campIds.map((id) => ctx.db.get(id))),
+      Promise.all(locationIds.map((id) => ctx.db.get(id))),
+    ]);
 
-        // Get image URL
-        let imageUrl: string | undefined;
-        if (camp.imageStorageIds && camp.imageStorageIds.length > 0) {
-          imageUrl = await ctx.storage.getUrl(camp.imageStorageIds[0]) ?? undefined;
-        } else if (camp.imageUrls && camp.imageUrls.length > 0) {
-          imageUrl = camp.imageUrls[0];
-        }
+    const campMap = new Map(campsRaw.filter(Boolean).map((c) => [c!._id, c!]));
+    const locationMap = new Map(locationsRaw.filter(Boolean).map((l) => [l!._id, l!]));
 
-        // Get organization logo URL
-        let orgLogoUrl: string | undefined;
-        if (organization?.logoStorageId) {
-          orgLogoUrl = await ctx.storage.getUrl(organization.logoStorageId) ?? undefined;
-        }
+    // Get organization IDs from camps and fetch them
+    const orgIds = [...new Set([...campMap.values()].map((c) => c.organizationId))];
+    const orgsRaw = await Promise.all(orgIds.map((id) => ctx.db.get(id)));
+    const orgMap = new Map(orgsRaw.filter(Boolean).map((o) => [o!._id, o!]));
 
-        return {
-          _id: session._id,
-          campName: camp.name,
-          campSlug: camp.slug,
-          organizationName: organization?.name,
-          organizationLogoUrl: orgLogoUrl,
-          imageUrl,
-          startDate: session.startDate,
-          endDate: session.endDate,
-          price: session.price,
-          locationName: location?.name,
-          ageRequirements: session.ageRequirements || camp.ageRequirements,
-          categories: camp.categories,
-          spotsLeft: session.capacity - session.enrolledCount,
-          isSoldOut: session.enrolledCount >= session.capacity,
-        };
-      })
+    // Collect all storage IDs that need URL resolution
+    const storageIds: Array<{ type: "camp" | "org"; id: string; storageId: string }> = [];
+    for (const camp of campMap.values()) {
+      if (camp.imageStorageIds && camp.imageStorageIds.length > 0) {
+        storageIds.push({ type: "camp", id: camp._id, storageId: camp.imageStorageIds[0] });
+      }
+    }
+    for (const org of orgMap.values()) {
+      if (org.logoStorageId) {
+        storageIds.push({ type: "org", id: org._id, storageId: org.logoStorageId });
+      }
+    }
+
+    // Batch resolve storage URLs
+    const urlResults = await Promise.all(
+      storageIds.map(async (item) => ({
+        ...item,
+        url: await ctx.storage.getUrl(item.storageId as any),
+      }))
     );
+
+    const campImageUrls = new Map<string, string>();
+    const orgLogoUrls = new Map<string, string>();
+    for (const result of urlResults) {
+      if (result.url) {
+        if (result.type === "camp") {
+          campImageUrls.set(result.id, result.url);
+        } else {
+          orgLogoUrls.set(result.id, result.url);
+        }
+      }
+    }
+
+    // Build enriched sessions using the pre-fetched maps
+    const enrichedSessions = selectedSessions.map((session) => {
+      const camp = campMap.get(session.campId);
+      if (!camp) return null;
+
+      const organization = orgMap.get(camp.organizationId);
+      const location = locationMap.get(session.locationId);
+
+      // Get image URL from pre-resolved map or fallback to URL
+      let imageUrl = campImageUrls.get(camp._id);
+      if (!imageUrl && camp.imageUrls && camp.imageUrls.length > 0) {
+        imageUrl = camp.imageUrls[0];
+      }
+
+      return {
+        _id: session._id,
+        campName: camp.name,
+        campSlug: camp.slug,
+        organizationName: organization?.name,
+        organizationLogoUrl: orgLogoUrls.get(organization?._id ?? ""),
+        imageUrl,
+        startDate: session.startDate,
+        endDate: session.endDate,
+        price: session.price,
+        locationName: location?.name,
+        ageRequirements: session.ageRequirements || camp.ageRequirements,
+        categories: camp.categories,
+        spotsLeft: session.capacity - session.enrolledCount,
+        isSoldOut: session.enrolledCount >= session.capacity,
+      };
+    });
 
     return enrichedSessions.filter((s): s is NonNullable<typeof s> => s !== null);
   },
