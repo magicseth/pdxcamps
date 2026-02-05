@@ -353,11 +353,69 @@ export const getCamp = query({
 
 /**
  * List all camps (for admin/image processing)
+ * Limited to 8000 to stay under Convex limits
  */
 export const listAllCamps = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query("camps").collect();
+    return await ctx.db.query("camps").take(8000);
+  },
+});
+
+/**
+ * List camps that need image downloads (have URLs but no storage IDs)
+ */
+export const listCampsNeedingImageDownload = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 100;
+    const camps = await ctx.db.query("camps").collect();
+
+    const needingDownload = camps.filter(
+      (camp) =>
+        camp.imageUrls &&
+        camp.imageUrls.length > 0 &&
+        (!camp.imageStorageIds || camp.imageStorageIds.length === 0)
+    );
+
+    return needingDownload.slice(0, limit).map((camp) => ({
+      _id: camp._id,
+      name: camp.name,
+      imageUrls: camp.imageUrls || [],
+    }));
+  },
+});
+
+/**
+ * List camps that need image generation (no URLs and no storage IDs)
+ */
+export const listCampsNeedingImageGeneration = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 100;
+    const camps = await ctx.db.query("camps").collect();
+
+    const needingGeneration = camps.filter(
+      (camp) =>
+        (!camp.imageUrls || camp.imageUrls.length === 0) &&
+        (!camp.imageStorageIds || camp.imageStorageIds.length === 0)
+    );
+
+    return {
+      total: needingGeneration.length,
+      camps: needingGeneration.slice(0, limit).map((camp) => ({
+        _id: camp._id,
+        name: camp.name,
+        description: camp.description,
+        categories: camp.categories,
+        organizationId: camp.organizationId,
+        ageRequirements: camp.ageRequirements,
+      })),
+    };
   },
 });
 

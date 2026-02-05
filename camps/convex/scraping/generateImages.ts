@@ -10,7 +10,6 @@
 import { action, internalAction } from "../_generated/server";
 import { api, internal } from "../_generated/api";
 import { v } from "convex/values";
-import { Doc } from "../_generated/dataModel";
 import { fal } from "@fal-ai/client";
 import { workflow, vWorkflowId } from "./imageWorkflow";
 import Anthropic from "@anthropic-ai/sdk";
@@ -335,20 +334,19 @@ export const startImageGeneration = action({
   }> => {
     const limit = args.limit ?? 10;
 
-    // Get camps without images
-    const camps = await ctx.runQuery(api.camps.queries.listAllCamps, {});
-    const campsNeedingImages = camps.filter(
-      (camp: Doc<"camps">) =>
-        (!camp.imageUrls || camp.imageUrls.length === 0) &&
-        (!camp.imageStorageIds || camp.imageStorageIds.length === 0)
+    // Get camps without images using targeted query
+    const result = await ctx.runQuery(
+      api.camps.queries.listCampsNeedingImageGeneration,
+      { limit }
     );
 
-    const campsToProcess = campsNeedingImages.slice(0, limit);
-    const campNames = campsToProcess.map((c: Doc<"camps">) => c.name);
+    const campsToProcess = result.camps;
+    const campNames = campsToProcess.map((c) => c.name);
+    console.log(`[GenerateImages] Found ${result.total} total camps needing images, processing ${campsToProcess.length}`);
 
     // Pre-compute prompts for each camp (need to await since generatePrompt is async)
     const campData = await Promise.all(
-      campsToProcess.map(async (camp: Doc<"camps">) => {
+      campsToProcess.map(async (camp) => {
         // Get organization name for better prompt context
         const organization = await ctx.runQuery(api.organizations.queries.getOrganization, {
           organizationId: camp.organizationId,
@@ -358,7 +356,11 @@ export const startImageGeneration = action({
           campId: camp._id,
           campName: camp.name,
           prompt: await generatePrompt({
-            ...camp,
+            _id: camp._id as string,
+            name: camp.name,
+            description: camp.description,
+            categories: camp.categories,
+            ageRequirements: camp.ageRequirements,
             organizationName: organization?.name,
           }),
         };
@@ -465,22 +467,22 @@ export const generateCampImage = action({
  * List camps without images (for admin preview)
  */
 export const listCampsWithoutImages = action({
-  args: {},
-  handler: async (ctx): Promise<{
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args): Promise<{
     count: number;
     camps: Array<{ id: string; name: string; categories: string[]; description: string }>;
   }> => {
-    const camps = await ctx.runQuery(api.camps.queries.listAllCamps, {});
-
-    const campsNeedingImages = camps.filter(
-      (camp: Doc<"camps">) =>
-        (!camp.imageUrls || camp.imageUrls.length === 0) &&
-        (!camp.imageStorageIds || camp.imageStorageIds.length === 0)
+    const limit = args.limit ?? 100;
+    const result = await ctx.runQuery(
+      api.camps.queries.listCampsNeedingImageGeneration,
+      { limit }
     );
 
     return {
-      count: campsNeedingImages.length,
-      camps: campsNeedingImages.map((camp: Doc<"camps">) => ({
+      count: result.total,
+      camps: result.camps.map((camp) => ({
         id: camp._id,
         name: camp.name,
         categories: camp.categories,

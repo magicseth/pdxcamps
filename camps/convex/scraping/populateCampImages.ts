@@ -74,21 +74,16 @@ export const populateAllCampImages = action({
     let campsProcessed = 0;
     let imagesStored = 0;
 
-    // Get all camps
-    const camps = await ctx.runQuery(api.camps.queries.listAllCamps, {});
-
-    // Filter to camps with imageUrls but empty imageStorageIds
-    const campsNeedingImages = camps.filter(
-      (camp: any) =>
-        camp.imageUrls &&
-        camp.imageUrls.length > 0 &&
-        (!camp.imageStorageIds || camp.imageStorageIds.length === 0)
+    // Get camps that need image downloads using targeted query
+    const campsNeedingImages = await ctx.runQuery(
+      api.camps.queries.listCampsNeedingImageDownload,
+      { limit }
     );
 
-    console.log(`[CampImages] Found ${campsNeedingImages.length} camps needing images, processing ${limit}`);
+    console.log(`[CampImages] Found ${campsNeedingImages.length} camps needing images`);
 
-    // Process up to limit camps
-    for (const camp of campsNeedingImages.slice(0, limit)) {
+    // Process camps (already limited by query)
+    for (const camp of campsNeedingImages) {
       console.log(`[CampImages] Processing: ${camp.name}`);
       campsProcessed++;
 
