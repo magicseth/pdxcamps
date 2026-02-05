@@ -467,47 +467,52 @@ export const addDomainToNetlifySite = action({
     }
 
     try {
-      // Add domain alias to the site
-      const response = await fetch(
-        `https://api.netlify.com/api/v1/sites/${siteId}/domain_aliases`,
+      // First, get current domain aliases
+      const getResponse = await fetch(
+        `https://api.netlify.com/api/v1/sites/${siteId}`,
         {
-          method: "POST",
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ domain: args.domain }),
         }
       );
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        // 422 often means domain already added, which is fine
-        if (response.status === 422 && errorText.includes("already")) {
-          return { success: true };
-        }
+      if (!getResponse.ok) {
         return {
           success: false,
-          error: `Failed to add domain to site: ${response.status} - ${errorText}`,
+          error: `Failed to get site info: ${getResponse.status}`,
         };
       }
 
-      // Also add www subdomain
-      const wwwResponse = await fetch(
-        `https://api.netlify.com/api/v1/sites/${siteId}/domain_aliases`,
+      const site = await getResponse.json();
+      const currentAliases: string[] = site.domain_aliases || [];
+
+      // Add new domain and www if not already present
+      const newAliases = [...new Set([
+        ...currentAliases,
+        args.domain,
+        `www.${args.domain}`,
+      ])];
+
+      // PATCH the site with updated domain_aliases
+      const patchResponse = await fetch(
+        `https://api.netlify.com/api/v1/sites/${siteId}`,
         {
-          method: "POST",
+          method: "PATCH",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ domain: `www.${args.domain}` }),
+          body: JSON.stringify({ domain_aliases: newAliases }),
         }
       );
 
-      // www failure is not critical
-      if (!wwwResponse.ok) {
-        console.log(`Note: Could not add www subdomain: ${await wwwResponse.text()}`);
+      if (!patchResponse.ok) {
+        const errorText = await patchResponse.text();
+        return {
+          success: false,
+          error: `Failed to add domain to site: ${patchResponse.status} - ${errorText}`,
+        };
       }
 
       return { success: true };
