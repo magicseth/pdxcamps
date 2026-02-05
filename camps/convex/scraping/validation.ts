@@ -305,17 +305,61 @@ export function calculateSourceQuality(
 }
 
 /**
- * Determine what status a session should have based on completeness
+ * Options for determining session status
+ */
+export interface SessionStatusOptions {
+  completenessScore: number;
+  priceInCents?: number;
+  priceRaw?: string;
+}
+
+/**
+ * Determine what status a session should have based on completeness and price.
+ *
+ * Sessions with $0 price are suspicious unless explicitly marked as "free":
+ * - If priceRaw exists but priceInCents is 0 → likely parsing failure → "draft"
+ * - If priceRaw contains "free" → legitimate free camp → allow "active"
+ * - If no priceRaw and price is 0 → suspicious → "draft"
  */
 export function determineSessionStatus(
-  completenessScore: number
+  options: SessionStatusOptions | number
 ): "active" | "draft" | "pending_review" {
+  // Handle legacy single-argument call for backward compatibility
+  if (typeof options === "number") {
+    const completenessScore = options;
+    if (completenessScore === 100) {
+      return "active";
+    } else if (completenessScore >= 50) {
+      return "draft";
+    } else {
+      return "pending_review";
+    }
+  }
+
+  const { completenessScore, priceInCents, priceRaw } = options;
+
+  // First check completeness threshold
+  if (completenessScore < 50) {
+    return "pending_review";
+  }
+
+  // Check for suspicious $0 price
+  if (priceInCents === 0) {
+    // Check if it's legitimately free
+    const isFree = priceRaw && /\bfree\b/i.test(priceRaw);
+
+    if (!isFree) {
+      // $0 price without "free" indicator - likely parsing failure
+      // Return draft even if completeness is 100%
+      return "draft";
+    }
+  }
+
+  // Standard completeness-based status
   if (completenessScore === 100) {
     return "active";
-  } else if (completenessScore >= 50) {
-    return "draft";
   } else {
-    return "pending_review";
+    return "draft";
   }
 }
 

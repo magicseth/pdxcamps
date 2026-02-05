@@ -44,6 +44,8 @@ import type * as scraping_actions from "../scraping/actions.js";
 import type * as scraping_contactExtractor from "../scraping/contactExtractor.js";
 import type * as scraping_contactExtractorHelpers from "../scraping/contactExtractorHelpers.js";
 import type * as scraping_coverage from "../scraping/coverage.js";
+import type * as scraping_dataQualityActions from "../scraping/dataQualityActions.js";
+import type * as scraping_dataQualityChecks from "../scraping/dataQualityChecks.js";
 import type * as scraping_deduplication from "../scraping/deduplication.js";
 import type * as scraping_development from "../scraping/development.js";
 import type * as scraping_directoryDaemon from "../scraping/directoryDaemon.js";
@@ -63,6 +65,7 @@ import type * as scraping_populateOrgLogos from "../scraping/populateOrgLogos.js
 import type * as scraping_queries from "../scraping/queries.js";
 import type * as scraping_refreshTrackersImages from "../scraping/refreshTrackersImages.js";
 import type * as scraping_scrapeWorkflow from "../scraping/scrapeWorkflow.js";
+import type * as scraping_scraperCodeValidation from "../scraping/scraperCodeValidation.js";
 import type * as scraping_scrapers_executor from "../scraping/scrapers/executor.js";
 import type * as scraping_scrapers_omsi from "../scraping/scrapers/omsi.js";
 import type * as scraping_scrapers_types from "../scraping/scrapers/types.js";
@@ -121,6 +124,8 @@ declare const fullApi: ApiFromModules<{
   "scraping/contactExtractor": typeof scraping_contactExtractor;
   "scraping/contactExtractorHelpers": typeof scraping_contactExtractorHelpers;
   "scraping/coverage": typeof scraping_coverage;
+  "scraping/dataQualityActions": typeof scraping_dataQualityActions;
+  "scraping/dataQualityChecks": typeof scraping_dataQualityChecks;
   "scraping/deduplication": typeof scraping_deduplication;
   "scraping/development": typeof scraping_development;
   "scraping/directoryDaemon": typeof scraping_directoryDaemon;
@@ -140,6 +145,7 @@ declare const fullApi: ApiFromModules<{
   "scraping/queries": typeof scraping_queries;
   "scraping/refreshTrackersImages": typeof scraping_refreshTrackersImages;
   "scraping/scrapeWorkflow": typeof scraping_scrapeWorkflow;
+  "scraping/scraperCodeValidation": typeof scraping_scraperCodeValidation;
   "scraping/scrapers/executor": typeof scraping_scrapers_executor;
   "scraping/scrapers/omsi": typeof scraping_scrapers_omsi;
   "scraping/scrapers/types": typeof scraping_scrapers_types;

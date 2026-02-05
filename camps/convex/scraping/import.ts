@@ -258,12 +258,9 @@ export const importFromJob = action({
         };
       }
 
-      // Get Portland city ID
-      const portland = await ctx.runQuery(api.cities.queries.getCityBySlug, {
-        slug: "portland",
-      });
-
-      if (!portland) {
+      // Get the city for this source
+      const cityId = source.cityId;
+      if (!cityId) {
         return {
           success: false,
           campsCreated: 0,
@@ -272,7 +269,7 @@ export const importFromJob = action({
           sessionsPending: 0,
           locationsCreated: 0,
           duplicatesSkipped: 0,
-          errors: ["Portland city not found"],
+          errors: ["Source has no cityId"],
         };
       }
 
@@ -295,7 +292,7 @@ export const importFromJob = action({
             description: "description" in orgData ? orgData.description : undefined,
             website: orgData.website,
             logoUrl: "logoUrl" in orgData ? orgData.logoUrl : undefined,
-            cityId: portland._id,
+            cityId: cityId,
           }
         );
 
@@ -321,6 +318,10 @@ export const importFromJob = action({
 
       // Track completeness scores for quality calculation
       const allCompletenessScores: number[] = [];
+
+      // Track price stats for zero-price alerting
+      let totalSessionsProcessed = 0;
+      let zeroPriceSessions = 0;
 
       // Create camps and sessions
       for (const [themeKey, sessions] of sessionsByTheme) {
@@ -349,14 +350,22 @@ export const importFromJob = action({
           // Enrich session with parsed data from raw fields
           const session = enrichSessionWithParsedData(rawSession);
 
+          // Track price stats for alerting
+          totalSessionsProcessed++;
+          if (session.priceInCents === 0 || session.priceInCents === undefined) {
+            zeroPriceSessions++;
+          }
+
           // Validate the session
           const validation = validateSession(session);
           allCompletenessScores.push(validation.completenessScore);
 
-          // Determine what to do based on completeness
-          const sessionStatus = determineSessionStatus(
-            validation.completenessScore
-          );
+          // Determine what to do based on completeness and price
+          const sessionStatus = determineSessionStatus({
+            completenessScore: validation.completenessScore,
+            priceInCents: session.priceInCents,
+            priceRaw: session.priceRaw,
+          });
 
           // Get or create location
           const locationName = session.location || "Main Location";
@@ -379,7 +388,7 @@ export const importFromJob = action({
             } = {
               organizationId,
               name: locationName,
-              cityId: portland._id,
+              cityId: cityId,
             };
 
             // Use structured address if available from session
@@ -505,7 +514,21 @@ export const importFromJob = action({
           );
 
           if (existingSession) {
-            // Update existing session instead of creating duplicate
+            // Check if we can update price on existing session
+            if (
+              session.priceInCents &&
+              session.priceInCents > 0 &&
+              (!existingSession.price || existingSession.price === 0)
+            ) {
+              // Update the existing session's price
+              await ctx.runMutation(
+                internal.scraping.importMutations.updateSessionPrice,
+                {
+                  sessionId: existingSession._id,
+                  price: session.priceInCents,
+                }
+              );
+            }
             duplicatesSkipped++;
             continue;
           }
@@ -518,7 +541,7 @@ export const importFromJob = action({
                 campId,
                 locationId,
                 organizationId,
-                cityId: portland._id,
+                cityId: cityId,
                 startDate: session.startDate,
                 endDate: session.endDate || session.startDate,
                 dropOffHour: session.dropOffHour ?? 9,
@@ -570,6 +593,25 @@ export const importFromJob = action({
           qualityTier: quality.tier,
         }
       );
+
+      // Check for suspicious zero-price pattern and create alert
+      // Alert if >80% of sessions have $0 price - indicates price extraction may be broken
+      const zeroPriceThreshold = 0.8;
+      if (
+        totalSessionsProcessed >= 3 && // Need at least 3 sessions to be meaningful
+        zeroPriceSessions / totalSessionsProcessed > zeroPriceThreshold
+      ) {
+        const zeroPricePercent = Math.round(
+          (zeroPriceSessions / totalSessionsProcessed) * 100
+        );
+        await ctx.runMutation(internal.scraping.importMutations.createZeroPriceAlert, {
+          sourceId: rawData.sourceId,
+          sourceName: source.name,
+          zeroPricePercent,
+          zeroPriceCount: zeroPriceSessions,
+          totalCount: totalSessionsProcessed,
+        });
+      }
 
       return {
         success: true,

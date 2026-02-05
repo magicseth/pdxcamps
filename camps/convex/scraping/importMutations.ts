@@ -284,6 +284,22 @@ export const createPendingSession = internalMutation({
 });
 
 /**
+ * Update a session's price (used when re-scraping finds a price for existing session)
+ */
+export const updateSessionPrice = internalMutation({
+  args: {
+    sessionId: v.id("sessions"),
+    price: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.sessionId, {
+      price: args.price,
+      lastScrapedAt: Date.now(),
+    });
+  },
+});
+
+/**
  * Update source session counts and quality metrics
  * Now queries actual session counts from database for accuracy
  */
@@ -401,5 +417,52 @@ export const applyUrlUpdate = internalMutation({
       url: source.suggestedUrl,
       suggestedUrl: undefined,
     });
+  },
+});
+
+/**
+ * Create an alert for suspicious zero-price pattern during import.
+ * This indicates that the scraper's price extraction may be broken.
+ *
+ * Avoids creating duplicates by checking for recent unacknowledged alerts.
+ */
+export const createZeroPriceAlert = internalMutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+    sourceName: v.string(),
+    zeroPricePercent: v.number(),
+    zeroPriceCount: v.number(),
+    totalCount: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // Check for existing unacknowledged alert for this source (within last 24 hours)
+    const existingAlerts = await ctx.db
+      .query("scraperAlerts")
+      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .collect();
+
+    const recentDuplicate = existingAlerts.some(
+      (alert) =>
+        alert.alertType === "scraper_degraded" &&
+        alert.acknowledgedAt === undefined &&
+        alert.message.includes("zero-price") &&
+        alert.createdAt > Date.now() - 24 * 60 * 60 * 1000
+    );
+
+    if (recentDuplicate) {
+      return { created: false, reason: "Duplicate alert exists" };
+    }
+
+    await ctx.db.insert("scraperAlerts", {
+      sourceId: args.sourceId,
+      alertType: "scraper_degraded",
+      message: `Scraper "${args.sourceName}" has suspicious zero-price pattern: ${args.zeroPricePercent}% of sessions (${args.zeroPriceCount}/${args.totalCount}) have $0 price. Price extraction may be broken.`,
+      severity: "warning",
+      createdAt: Date.now(),
+      acknowledgedAt: undefined,
+      acknowledgedBy: undefined,
+    });
+
+    return { created: true };
   },
 });

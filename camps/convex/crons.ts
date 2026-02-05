@@ -49,6 +49,16 @@ crons.interval(
 // MAINTENANCE CRONS
 // ============================================
 
+// Run data quality checks daily at 6 AM PST (2 PM UTC)
+// Detects sources with no scrapers, high zero-price ratios, low quality scores,
+// and stale scrapes. Creates alerts for issues found.
+crons.daily(
+  "data quality checks",
+  { hourUTC: 14, minuteUTC: 0 },
+  internal.scraping.dataQualityActions.runDataQualityChecks,
+  {}
+);
+
 // Clean up old scrape data weekly (keep 30 days)
 // Runs on Sunday at midnight PST (8 AM UTC)
 // Uncomment to enable:
