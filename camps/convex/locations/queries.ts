@@ -40,7 +40,7 @@ export const listLocations = query({
     // No filters - return all active locations
     return await ctx.db
       .query("locations")
-      .filter((q) => q.eq(q.field("isActive"), true))
+      .withIndex("by_is_active", (q) => q.eq("isActive", true))
       .collect();
   },
 });

@@ -367,7 +367,7 @@ export const getScrapeJob = query({
     // Get changes recorded for this job
     const changes = await ctx.db
       .query("scrapeChanges")
-      .filter((q) => q.eq(q.field("jobId"), args.jobId))
+      .withIndex("by_job", (q) => q.eq("jobId", args.jobId))
       .collect();
 
     return {

@@ -181,19 +181,18 @@ export const cleanupOldScrapeData = internalMutation({
     let deletedJobs = 0;
     let deletedRawData = 0;
 
-    // Get old completed jobs
-    const oldJobs = await ctx.db
-      .query("scrapeJobs")
-      .filter((q) =>
-        q.and(
-          q.or(
-            q.eq(q.field("status"), "completed"),
-            q.eq(q.field("status"), "failed")
-          ),
-          q.lt(q.field("completedAt"), cutoffTime)
-        )
-      )
-      .take(100); // Process in batches
+    // Get old completed/failed jobs (use index for each status, then filter by time)
+    const [completedJobs, failedJobs] = await Promise.all([
+      ctx.db.query("scrapeJobs")
+        .withIndex("by_status", (q) => q.eq("status", "completed"))
+        .filter((q) => q.lt(q.field("completedAt"), cutoffTime))
+        .take(50),
+      ctx.db.query("scrapeJobs")
+        .withIndex("by_status", (q) => q.eq("status", "failed"))
+        .filter((q) => q.lt(q.field("completedAt"), cutoffTime))
+        .take(50),
+    ]);
+    const oldJobs = [...completedJobs, ...failedJobs];
 
     for (const job of oldJobs) {
       // Delete associated raw data first

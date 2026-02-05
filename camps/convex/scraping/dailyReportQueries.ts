@@ -79,12 +79,8 @@ export const getRecentAlerts = internalQuery({
     // Get unacknowledged alerts from the last 24 hours
     const alerts = await ctx.db
       .query("scraperAlerts")
-      .filter((q) =>
-        q.and(
-          q.eq(q.field("acknowledgedAt"), undefined),
-          q.gte(q.field("createdAt"), cutoff)
-        )
-      )
+      .withIndex("by_unacknowledged", (q) => q.eq("acknowledgedAt", undefined))
+      .filter((q) => q.gte(q.field("createdAt"), cutoff))
       .collect();
 
     // Sort by severity (critical first) then by time

@@ -131,7 +131,7 @@ export const addSourceFromReference = mutation({
     // Check if source already exists
     const existing = await ctx.db
       .query("scrapeSources")
-      .filter((q) => q.eq(q.field("url"), args.url))
+      .withIndex("by_url", (q) => q.eq("url", args.url))
       .first();
 
     if (existing) {

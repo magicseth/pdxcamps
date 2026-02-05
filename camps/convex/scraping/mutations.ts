@@ -174,7 +174,11 @@ export const updateScraperConfig = mutation({
 });
 
 /**
- * Create a new pending scrape job
+ * Create a new pending scrape job.
+ *
+ * IMPORTANT: Workflow starting is decoupled from job creation to avoid
+ * write conflicts on the workflow's runStatus table. The workflow is
+ * started via scheduler in a separate transaction.
  */
 export const createScrapeJob = mutation({
   args: {
@@ -223,20 +227,16 @@ export const createScrapeJob = mutation({
       errorMessage: undefined,
     });
 
-    // Automatically start the scraping workflow
-    const workflowId = await workflow.start(
-      ctx,
-      internal.scraping.scrapeWorkflow.scrapeSourceWorkflow,
+    // Schedule workflow start in a separate transaction to avoid
+    // write conflicts on the workflow's runStatus table
+    await ctx.scheduler.runAfter(
+      0,
+      internal.scraping.scrapeWorkflow.startWorkflowForJob,
       {
         jobId,
         sourceId: args.sourceId,
       }
     );
-
-    // Store workflow ID on the job
-    await ctx.db.patch(jobId, {
-      workflowId: workflowId as string,
-    });
 
     return jobId;
   },
@@ -976,7 +976,7 @@ export const createScrapeSourceSimple = mutation({
     // Check if source already exists for this URL
     const existing = await ctx.db
       .query("scrapeSources")
-      .filter((q) => q.eq(q.field("url"), args.url))
+      .withIndex("by_url", (q) => q.eq("url", args.url))
       .first();
 
     if (existing) {
@@ -1009,6 +1009,28 @@ export const createScrapeSourceSimple = mutation({
       nextScheduledScrape: builtInScraper ? Date.now() : undefined,
       isActive: true,
     });
+
+    // If no built-in scraper, create a development request so daemon can write one
+    if (!builtInScraper) {
+      // Check if dev request already exists for this URL
+      const existingDevRequest = await ctx.db
+        .query("scraperDevelopmentRequests")
+        .withIndex("by_source_url", (q) => q.eq("sourceUrl", args.url))
+        .first();
+
+      if (!existingDevRequest) {
+        await ctx.db.insert("scraperDevelopmentRequests", {
+          sourceName: args.name,
+          sourceUrl: args.url,
+          cityId,
+          sourceId,
+          requestedBy: "auto-source-creation",
+          requestedAt: Date.now(),
+          status: "pending",
+          scraperVersion: 0,
+        });
+      }
+    }
 
     return sourceId;
   },

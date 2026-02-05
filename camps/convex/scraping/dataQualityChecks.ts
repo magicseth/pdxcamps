@@ -130,12 +130,8 @@ export const findBrokenUrlSources = internalQuery({
     // Find sources that were auto-disabled due to 404s
     const sources = await ctx.db
       .query("scrapeSources")
-      .filter((q) =>
-        q.and(
-          q.eq(q.field("isActive"), false),
-          q.eq(q.field("closedBy"), "system")
-        )
-      )
+      .withIndex("by_is_active", (q) => q.eq("isActive", false))
+      .filter((q) => q.eq(q.field("closedBy"), "system"))
       .collect();
 
     const results: Array<{

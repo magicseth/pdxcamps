@@ -139,40 +139,86 @@ export const startScrapeWorkflow = mutation({
 });
 
 /**
- * Process all pending jobs
- * Can be called manually or by a cron
+ * Process all pending jobs.
+ * Can be called manually or by a cron.
+ *
+ * Schedules each job's workflow start in a separate transaction
+ * to avoid write conflicts on the runStatus table.
  */
 export const processPendingJobs = mutation({
   args: {},
   handler: async (ctx) => {
     const pendingJobs = await ctx.db
       .query("scrapeJobs")
-      .filter((q) => q.eq(q.field("status"), "pending"))
+      .withIndex("by_status", (q) => q.eq("status", "pending"))
       .take(10);
 
-    const started: string[] = [];
+    const scheduled: string[] = [];
 
     for (const job of pendingJobs) {
       // Skip if already has a workflow
-      if ((job as any).workflowId) continue;
+      if ((job as Record<string, unknown>).workflowId) continue;
 
-      const workflowId = await workflow.start(
-        ctx,
-        internal.scraping.scrapeWorkflow.scrapeSourceWorkflow,
+      // Schedule workflow start in a separate transaction
+      await ctx.scheduler.runAfter(
+        0,
+        internal.scraping.scrapeWorkflow.startWorkflowForJob,
         {
           jobId: job._id,
           sourceId: job.sourceId,
         }
       );
 
-      await ctx.db.patch(job._id, {
-        workflowId: workflowId as string,
-      });
-
-      started.push(job._id);
+      scheduled.push(job._id);
     }
 
-    return { started, count: started.length };
+    return { scheduled, count: scheduled.length };
+  },
+});
+
+/**
+ * Start a workflow for a job (called via scheduler to avoid write conflicts).
+ *
+ * This is separate from createScrapeJob to ensure workflow.start() runs
+ * in its own transaction, preventing conflicts on the runStatus table
+ * when multiple jobs are created concurrently.
+ */
+export const startWorkflowForJob = internalMutation({
+  args: {
+    jobId: v.id("scrapeJobs"),
+    sourceId: v.id("scrapeSources"),
+  },
+  handler: async (ctx, args) => {
+    const job = await ctx.db.get(args.jobId);
+    if (!job) {
+      console.error(`Job ${args.jobId} not found`);
+      return;
+    }
+
+    // Skip if job is no longer pending (e.g., was cancelled)
+    if (job.status !== "pending") {
+      console.log(`Job ${args.jobId} is not pending (status: ${job.status}), skipping workflow start`);
+      return;
+    }
+
+    // Skip if already has a workflow
+    if ((job as Record<string, unknown>).workflowId) {
+      console.log(`Job ${args.jobId} already has a workflow, skipping`);
+      return;
+    }
+
+    const workflowId = await workflow.start(
+      ctx,
+      internal.scraping.scrapeWorkflow.scrapeSourceWorkflow,
+      {
+        jobId: args.jobId,
+        sourceId: args.sourceId,
+      }
+    );
+
+    await ctx.db.patch(args.jobId, {
+      workflowId: workflowId as string,
+    });
   },
 });
 

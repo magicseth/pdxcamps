@@ -26,13 +26,11 @@ export const requestScraperDevelopment = mutation({
     // Check for existing pending request for same URL
     const existing = await ctx.db
       .query("scraperDevelopmentRequests")
+      .withIndex("by_source_url", (q) => q.eq("sourceUrl", args.sourceUrl))
       .filter((q) =>
-        q.and(
-          q.eq(q.field("sourceUrl"), args.sourceUrl),
-          q.or(
-            q.eq(q.field("status"), "pending"),
-            q.eq(q.field("status"), "in_progress")
-          )
+        q.or(
+          q.eq(q.field("status"), "pending"),
+          q.eq(q.field("status"), "in_progress")
         )
       )
       .first();
@@ -460,11 +458,10 @@ export const bulkApproveNeedsFeedback = mutation({
     cityId: v.optional(v.id("cities")),
   },
   handler: async (ctx, args) => {
-    let query = ctx.db
+    const requests = await ctx.db
       .query("scraperDevelopmentRequests")
-      .filter((q) => q.eq(q.field("status"), "needs_feedback"));
-
-    const requests = await query.collect();
+      .withIndex("by_status", (q) => q.eq("status", "needs_feedback"))
+      .collect();
     const limit = args.limit || 100;
 
     const filtered = args.cityId

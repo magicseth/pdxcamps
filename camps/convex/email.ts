@@ -57,11 +57,11 @@ export const storeInboundEmail = internalMutation({
     const fromName = fromMatch?.[1]?.trim();
 
     // Try to match to an organization by email
-    const orgs = await ctx.db
+    const matchedOrg = await ctx.db
       .query("organizations")
-      .filter((q) => q.eq(q.field("email"), fromEmail))
-      .collect();
-    const matchedOrganizationId = orgs[0]?._id;
+      .withIndex("by_email", (q) => q.eq("email", fromEmail))
+      .first();
+    const matchedOrganizationId = matchedOrg?._id;
 
     const emailId = await ctx.db.insert("inboundEmails", {
       resendId: args.resendId,

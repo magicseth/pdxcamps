@@ -273,7 +273,7 @@ export const addScrapeSource = mutation({
     // Check for duplicate URL
     const existing = await ctx.db
       .query("scrapeSources")
-      .filter((q) => q.eq(q.field("url"), args.url))
+      .withIndex("by_url", (q) => q.eq("url", args.url))
       .first();
 
     if (existing) {

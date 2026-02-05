@@ -130,7 +130,8 @@ export default defineSchema({
     contactExtractionAttemptedAt: v.optional(v.number()),
   })
     .index("by_slug", ["slug"])
-    .index("by_is_active", ["isActive"]),
+    .index("by_is_active", ["isActive"])
+    .index("by_email", ["email"]),
 
   camps: defineTable({
     organizationId: v.id("organizations"),
@@ -180,7 +181,8 @@ export default defineSchema({
   })
     .index("by_city", ["cityId"])
     .index("by_city_and_active", ["cityId", "isActive"])
-    .index("by_organization", ["organizationId"]),
+    .index("by_organization", ["organizationId"])
+    .index("by_is_active", ["isActive"]),
 
   // ============ SESSIONS (Core Entity) ============
 
@@ -261,7 +263,8 @@ export default defineSchema({
     .index("by_city_and_status_and_start_date", ["cityId", "status", "startDate"])
     .index("by_organization_and_status", ["organizationId", "status"])
     .index("by_location", ["locationId"])
-    .index("by_source", ["sourceId"]),
+    .index("by_source", ["sourceId"])
+    .index("by_status", ["status"]),
 
   // ============ FAMILY EVENTS (Planner) ============
 
@@ -479,7 +482,8 @@ export default defineSchema({
     processedAt: v.optional(v.number()),
   })
     .index("by_status", ["status"])
-    .index("by_city", ["cityId"]),
+    .index("by_city", ["cityId"])
+    .index("by_url", ["url"]),
 
   scrapeSources: defineTable({
     organizationId: v.optional(v.id("organizations")),
@@ -615,7 +619,8 @@ export default defineSchema({
     .index("by_organization", ["organizationId"])
     .index("by_city", ["cityId"])
     .index("by_next_scheduled_scrape", ["nextScheduledScrape"])
-    .index("by_is_active", ["isActive"]),
+    .index("by_is_active", ["isActive"])
+    .index("by_url", ["url"]),
 
   // Pending sessions for review (incomplete or failed validation)
   // ============ SCRAPER DEVELOPMENT ============
@@ -695,7 +700,8 @@ export default defineSchema({
   })
     .index("by_status", ["status"])
     .index("by_source", ["sourceId"])
-    .index("by_city", ["cityId"]),
+    .index("by_city", ["cityId"])
+    .index("by_source_url", ["sourceUrl"]),
 
   pendingSessions: defineTable({
     jobId: v.id("scrapeJobs"),
@@ -801,7 +807,9 @@ export default defineSchema({
   })
     .index("by_source", ["sourceId"])
     .index("by_session", ["sessionId"])
-    .index("by_not_notified", ["notified"]),
+    .index("by_not_notified", ["notified"])
+    .index("by_notified_and_change_type", ["notified", "changeType"])
+    .index("by_job", ["jobId"]),
 
   // ============ INBOUND EMAILS ============
 

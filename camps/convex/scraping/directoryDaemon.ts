@@ -45,7 +45,7 @@ export const queueDirectoryUrls = mutation({
       // Skip if already in queue
       const existing = await ctx.db
         .query("directoryQueue")
-        .filter((q) => q.eq(q.field("url"), url))
+        .withIndex("by_url", (q) => q.eq("url", url))
         .first();
 
       if (existing) {
@@ -277,7 +277,7 @@ export const resetFailedItems = mutation({
   handler: async (ctx) => {
     const failed = await ctx.db
       .query("directoryQueue")
-      .filter((q) => q.eq(q.field("status"), "failed"))
+      .withIndex("by_status", (q) => q.eq("status", "failed"))
       .collect();
 
     for (const item of failed) {

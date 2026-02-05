@@ -36,17 +36,13 @@ export const findSourcesNeedingScraperWork = internalQuery({
       .withIndex("by_is_active", (q) => q.eq("isActive", true))
       .collect();
 
-    // Get all pending/in_progress dev requests
-    const pendingRequests = await ctx.db
-      .query("scraperDevelopmentRequests")
-      .filter((q) =>
-        q.or(
-          q.eq(q.field("status"), "pending"),
-          q.eq(q.field("status"), "in_progress"),
-          q.eq(q.field("status"), "testing")
-        )
-      )
-      .collect();
+    // Get all pending/in_progress dev requests (use index for each status)
+    const [pending, inProgress, testing] = await Promise.all([
+      ctx.db.query("scraperDevelopmentRequests").withIndex("by_status", (q) => q.eq("status", "pending")).collect(),
+      ctx.db.query("scraperDevelopmentRequests").withIndex("by_status", (q) => q.eq("status", "in_progress")).collect(),
+      ctx.db.query("scraperDevelopmentRequests").withIndex("by_status", (q) => q.eq("status", "testing")).collect(),
+    ]);
+    const pendingRequests = [...pending, ...inProgress, ...testing];
 
     const sourcesWithPendingRequest = new Set(
       pendingRequests.map((r) => r.sourceId).filter(Boolean)
@@ -120,17 +116,13 @@ export const autoQueueScraperDevelopment = internalMutation({
       .withIndex("by_is_active", (q) => q.eq("isActive", true))
       .collect();
 
-    // Get all pending/in_progress dev requests
-    const pendingRequests = await ctx.db
-      .query("scraperDevelopmentRequests")
-      .filter((q) =>
-        q.or(
-          q.eq(q.field("status"), "pending"),
-          q.eq(q.field("status"), "in_progress"),
-          q.eq(q.field("status"), "testing")
-        )
-      )
-      .collect();
+    // Get all pending/in_progress dev requests (use index for each status)
+    const [pending, inProgress, testing] = await Promise.all([
+      ctx.db.query("scraperDevelopmentRequests").withIndex("by_status", (q) => q.eq("status", "pending")).collect(),
+      ctx.db.query("scraperDevelopmentRequests").withIndex("by_status", (q) => q.eq("status", "in_progress")).collect(),
+      ctx.db.query("scraperDevelopmentRequests").withIndex("by_status", (q) => q.eq("status", "testing")).collect(),
+    ]);
+    const pendingRequests = [...pending, ...inProgress, ...testing];
 
     const sourcesWithPendingRequest = new Set(
       pendingRequests.map((r) => r.sourceId).filter(Boolean)
@@ -302,18 +294,18 @@ export const cleanupStaleDevRequests = internalMutation({
     const maxAgeDays = args.maxAgeDays ?? 7;
     const cutoff = Date.now() - maxAgeDays * 24 * 60 * 60 * 1000;
 
-    const staleRequests = await ctx.db
-      .query("scraperDevelopmentRequests")
-      .filter((q) =>
-        q.and(
-          q.or(
-            q.eq(q.field("status"), "pending"),
-            q.eq(q.field("status"), "in_progress")
-          ),
-          q.lt(q.field("requestedAt"), cutoff)
-        )
-      )
-      .collect();
+    // Query by status using index, then filter by age
+    const [pendingStale, inProgressStale] = await Promise.all([
+      ctx.db.query("scraperDevelopmentRequests")
+        .withIndex("by_status", (q) => q.eq("status", "pending"))
+        .filter((q) => q.lt(q.field("requestedAt"), cutoff))
+        .collect(),
+      ctx.db.query("scraperDevelopmentRequests")
+        .withIndex("by_status", (q) => q.eq("status", "in_progress"))
+        .filter((q) => q.lt(q.field("requestedAt"), cutoff))
+        .collect(),
+    ]);
+    const staleRequests = [...pendingStale, ...inProgressStale];
 
     let cleaned = 0;
     for (const request of staleRequests) {

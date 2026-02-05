@@ -73,10 +73,11 @@ export const getRecentRegistrationOpens = internalQuery({
     // Get status changes where newValue is "active"
     const changes = await ctx.db
       .query("scrapeChanges")
-      .withIndex("by_not_notified", (q) => q.eq("notified", false))
+      .withIndex("by_notified_and_change_type", (q) =>
+        q.eq("notified", false).eq("changeType", "status_changed")
+      )
       .filter((q) =>
         q.and(
-          q.eq(q.field("changeType"), "status_changed"),
           q.eq(q.field("newValue"), "active"),
           q.gte(q.field("detectedAt"), args.sinceTime)
         )
@@ -161,10 +162,9 @@ export const getSessionsWithLowAvailability = internalQuery({
   },
   handler: async (ctx, args) => {
     // Get active sessions with low availability
-    // We need to scan sessions and filter
     const sessions = await ctx.db
       .query("sessions")
-      .filter((q) => q.eq(q.field("status"), "active"))
+      .withIndex("by_status", (q) => q.eq("status", "active"))
       .collect();
 
     const results: {
