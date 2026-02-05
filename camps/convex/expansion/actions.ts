@@ -63,7 +63,7 @@ export const checkDomainAvailability = action({
 
     try {
       // Porkbun pricing endpoint checks availability
-      const response = await fetch("https://porkbun.com/api/json/v3/pricing/get", {
+      const response = await fetch("https://api.porkbun.com/api/json/v3/pricing/get", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -101,7 +101,7 @@ export const checkDomainAvailability = action({
 
       // Check specific domain availability
       const checkResponse = await fetch(
-        `https://porkbun.com/api/json/v3/domain/check/${args.domain}`,
+        `https://api.porkbun.com/api/json/v3/domain/checkDomain/${args.domain}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -121,9 +121,11 @@ export const checkDomainAvailability = action({
 
       const checkData = await checkResponse.json();
 
+      // New API returns { status: "SUCCESS", response: { avail: "yes"|"no", price: "..." } }
+      const isAvailable = checkData.status === "SUCCESS" && checkData.response?.avail === "yes";
       return {
-        available: checkData.status === "SUCCESS" && checkData.your_price !== undefined,
-        price: checkData.your_price,
+        available: isAvailable,
+        price: checkData.response?.price,
         renewalPrice: pricing.renewal,
       };
     } catch (error) {
@@ -166,7 +168,7 @@ export const checkMultipleDomains = action({
     for (const domain of args.domains) {
       try {
         const response = await fetch(
-          `https://porkbun.com/api/json/v3/domain/check/${domain}`,
+          `https://api.porkbun.com/api/json/v3/domain/checkDomain/${domain}`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -177,25 +179,27 @@ export const checkMultipleDomains = action({
           }
         );
 
-        if (!response.ok) {
+        const data = await response.json();
+
+        if (!response.ok || data.status === "ERROR") {
           results.push({
             domain,
             available: false,
-            error: `API error: ${response.status}`,
+            error: data.message || `API error: ${response.status}`,
           });
           continue;
         }
 
-        const data = await response.json();
-
+        // New API returns { status: "SUCCESS", response: { avail: "yes"|"no", price: "..." } }
+        const isAvailable = data.status === "SUCCESS" && data.response?.avail === "yes";
         results.push({
           domain,
-          available: data.status === "SUCCESS" && data.your_price !== undefined,
-          price: data.your_price,
+          available: isAvailable,
+          price: data.response?.price,
         });
 
-        // Small delay to avoid rate limiting
-        await new Promise((resolve) => setTimeout(resolve, 200));
+        // Porkbun rate limits to 1 check per 10 seconds
+        await new Promise((resolve) => setTimeout(resolve, 10500));
       } catch (error) {
         results.push({
           domain,
@@ -236,7 +240,7 @@ export const purchaseDomain = action({
 
     try {
       const response = await fetch(
-        `https://porkbun.com/api/json/v3/domain/register/${args.domain}`,
+        `https://api.porkbun.com/api/json/v3/domain/register/${args.domain}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -299,7 +303,7 @@ export const getNameservers = action({
 
     try {
       const response = await fetch(
-        `https://porkbun.com/api/json/v3/domain/getNameServers/${args.domain}`,
+        `https://api.porkbun.com/api/json/v3/domain/getNameServers/${args.domain}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -350,7 +354,7 @@ export const updateNameservers = action({
 
     try {
       const response = await fetch(
-        `https://porkbun.com/api/json/v3/domain/updateNs/${args.domain}`,
+        `https://api.porkbun.com/api/json/v3/domain/updateNs/${args.domain}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
