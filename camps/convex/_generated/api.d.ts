@@ -65,6 +65,7 @@ import type * as scraping_populateOrgLogos from "../scraping/populateOrgLogos.js
 import type * as scraping_queries from "../scraping/queries.js";
 import type * as scraping_refreshTrackersImages from "../scraping/refreshTrackersImages.js";
 import type * as scraping_scrapeWorkflow from "../scraping/scrapeWorkflow.js";
+import type * as scraping_scraperAutomation from "../scraping/scraperAutomation.js";
 import type * as scraping_scraperCodeValidation from "../scraping/scraperCodeValidation.js";
 import type * as scraping_scrapers_executor from "../scraping/scrapers/executor.js";
 import type * as scraping_scrapers_omsi from "../scraping/scrapers/omsi.js";
@@ -145,6 +146,7 @@ declare const fullApi: ApiFromModules<{
   "scraping/queries": typeof scraping_queries;
   "scraping/refreshTrackersImages": typeof scraping_refreshTrackersImages;
   "scraping/scrapeWorkflow": typeof scraping_scrapeWorkflow;
+  "scraping/scraperAutomation": typeof scraping_scraperAutomation;
   "scraping/scraperCodeValidation": typeof scraping_scraperCodeValidation;
   "scraping/scrapers/executor": typeof scraping_scrapers_executor;
   "scraping/scrapers/omsi": typeof scraping_scrapers_omsi;

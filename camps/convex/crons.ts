@@ -59,6 +59,32 @@ crons.daily(
   {}
 );
 
+// Auto-queue scraper development every 6 hours
+// Finds sources needing regeneration or missing scrapers and creates dev requests
+crons.interval(
+  "auto queue scraper development",
+  { hours: 6 },
+  internal.scraping.scraperAutomation.autoQueueScraperDevelopment,
+  { maxToQueue: 5 }
+);
+
+// Clean up stale dev requests weekly (Sunday 3 AM PST / 11 AM UTC)
+crons.weekly(
+  "cleanup stale dev requests",
+  { dayOfWeek: "sunday", hourUTC: 11, minuteUTC: 0 },
+  internal.scraping.scraperAutomation.cleanupStaleDevRequests,
+  { maxAgeDays: 7 }
+);
+
+// URL discovery for broken sources - runs daily at 7 AM PST (3 PM UTC)
+// Finds sources with 404 errors and tries to discover new URLs
+crons.daily(
+  "url discovery for broken sources",
+  { hourUTC: 15, minuteUTC: 0 },
+  internal.scraping.urlDiscovery.discoverUrlsForBrokenSources,
+  { limit: 10 }
+);
+
 // Clean up old scrape data weekly (keep 30 days)
 // Runs on Sunday at midnight PST (8 AM UTC)
 // Uncomment to enable:

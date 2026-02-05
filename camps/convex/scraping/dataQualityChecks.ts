@@ -114,6 +114,60 @@ export const findSourcesWithHighZeroPriceRatio = internalQuery({
 });
 
 /**
+ * Find sources with broken URLs that need discovery.
+ * These are sources that were auto-disabled due to 404 errors.
+ */
+export const findBrokenUrlSources = internalQuery({
+  args: {},
+  handler: async (ctx): Promise<
+    Array<{
+      sourceId: Id<"scrapeSources">;
+      sourceName: string;
+      brokenUrl: string;
+      orgWebsite?: string;
+    }>
+  > => {
+    // Find sources that were auto-disabled due to 404s
+    const sources = await ctx.db
+      .query("scrapeSources")
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("isActive"), false),
+          q.eq(q.field("closedBy"), "system")
+        )
+      )
+      .collect();
+
+    const results: Array<{
+      sourceId: Id<"scrapeSources">;
+      sourceName: string;
+      brokenUrl: string;
+      orgWebsite?: string;
+    }> = [];
+
+    for (const source of sources) {
+      // Check if it was closed due to 404
+      if (source.closureReason?.includes("404")) {
+        let orgWebsite: string | undefined;
+        if (source.organizationId) {
+          const org = await ctx.db.get(source.organizationId);
+          orgWebsite = org?.website;
+        }
+
+        results.push({
+          sourceId: source._id,
+          sourceName: source.name,
+          brokenUrl: source.url,
+          orgWebsite,
+        });
+      }
+    }
+
+    return results;
+  },
+});
+
+/**
  * Create an alert if one doesn't already exist for this source/type combination.
  * Returns true if alert was created, false if duplicate.
  */

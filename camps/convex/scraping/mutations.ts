@@ -308,7 +308,12 @@ export const completeScrapeJob = mutation({
 });
 
 /**
- * Mark a job as failed and update health metrics
+ * Mark a job as failed and update health metrics.
+ *
+ * Automated responses:
+ * - 3 consecutive failures → flag for regeneration, create warning alert
+ * - 5 consecutive 404 errors → auto-disable source, create error alert
+ * - 5+ failures → create regeneration alert
  */
 export const failScrapeJob = mutation({
   args: {
@@ -343,11 +348,42 @@ export const failScrapeJob = mutation({
       );
       const newSuccessRate = successfulRuns / newTotalRuns;
 
-      // Flag for regeneration if too many consecutive failures
-      const needsRegeneration =
-        newConsecutiveFailures >= 3 || source.scraperHealth.needsRegeneration;
+      // Detect 404 errors - URL is broken
+      const is404Error = /404|not found/i.test(args.errorMessage);
 
-      await ctx.db.patch(job.sourceId, {
+      // Flag for regeneration if too many consecutive failures (but not for 404s)
+      const needsRegeneration =
+        (!is404Error && newConsecutiveFailures >= 3) ||
+        source.scraperHealth.needsRegeneration;
+
+      // Track URL status in history
+      const urlHistory = source.urlHistory || [];
+      if (is404Error) {
+        urlHistory.push({
+          url: source.url,
+          status: "404",
+          checkedAt: now,
+        });
+        // Keep only last 20 entries
+        while (urlHistory.length > 20) {
+          urlHistory.shift();
+        }
+      }
+
+      // Count recent consecutive 404s
+      let consecutive404s = 0;
+      for (let i = urlHistory.length - 1; i >= 0; i--) {
+        if (urlHistory[i].status === "404") {
+          consecutive404s++;
+        } else {
+          break;
+        }
+      }
+
+      // Auto-disable after 5 consecutive 404s - URL is broken, stop wasting resources
+      const shouldAutoDisable = is404Error && consecutive404s >= 5 && source.isActive;
+
+      const updates: Record<string, unknown> = {
         scraperHealth: {
           ...source.scraperHealth,
           lastFailureAt: now,
@@ -357,10 +393,31 @@ export const failScrapeJob = mutation({
           lastError: args.errorMessage,
           needsRegeneration,
         },
-      });
+        urlHistory,
+      };
 
-      // Create alert if needed
-      if (newConsecutiveFailures === 3) {
+      if (shouldAutoDisable) {
+        updates.isActive = false;
+        updates.closureReason = `Auto-disabled: URL returned 404 for ${consecutive404s} consecutive attempts`;
+        updates.closedAt = now;
+        updates.closedBy = "system";
+      }
+
+      await ctx.db.patch(job.sourceId, updates);
+
+      // Create alerts based on failure type
+      if (shouldAutoDisable) {
+        // High-priority alert for auto-disabled source
+        await ctx.db.insert("scraperAlerts", {
+          sourceId: job.sourceId,
+          alertType: "scraper_disabled",
+          message: `Source "${source.name}" auto-disabled after ${consecutive404s} consecutive 404 errors. URL needs to be updated: ${source.url}`,
+          severity: "error",
+          createdAt: now,
+          acknowledgedAt: undefined,
+          acknowledgedBy: undefined,
+        });
+      } else if (newConsecutiveFailures === 3) {
         await ctx.db.insert("scraperAlerts", {
           sourceId: job.sourceId,
           alertType: "scraper_degraded",
@@ -370,7 +427,7 @@ export const failScrapeJob = mutation({
           acknowledgedAt: undefined,
           acknowledgedBy: undefined,
         });
-      } else if (newConsecutiveFailures >= 5) {
+      } else if (newConsecutiveFailures >= 5 && !is404Error) {
         await ctx.db.insert("scraperAlerts", {
           sourceId: job.sourceId,
           alertType: "scraper_needs_regeneration",
