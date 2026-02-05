@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useQuery } from 'convex/react';
+import { api } from '../../../convex/_generated/api';
 
 interface DomainResult {
   domain: string;
@@ -10,33 +12,65 @@ interface DomainResult {
 }
 
 interface DomainCheckerProps {
+  marketKey: string;
   suggestedDomains: string[];
   selectedDomain?: string;
-  onCheck: (domains: string[]) => Promise<DomainResult[]>;
+  onStartCheck: (domains: string[]) => Promise<string>; // Returns workflow ID
   onSelect: (domain: string) => void;
 }
 
 export function DomainChecker({
+  marketKey,
   suggestedDomains,
   selectedDomain,
-  onCheck,
+  onStartCheck,
   onSelect,
 }: DomainCheckerProps) {
   const [results, setResults] = useState<DomainResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [workflowId, setWorkflowId] = useState<string | null>(null);
   const [customDomain, setCustomDomain] = useState('');
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
+
+  // Poll workflow status when we have a workflow ID
+  const workflowStatus = useQuery(
+    api.expansion.domainWorkflow.getDomainCheckStatus,
+    workflowId ? { workflowId } : 'skip'
+  );
+
+  // Update results when workflow completes
+  useEffect(() => {
+    if (workflowStatus?.type === 'completed' && workflowStatus.result) {
+      const workflowResult = workflowStatus.result as { results: DomainResult[] };
+      setResults(workflowResult.results);
+      setLoading(false);
+      setWorkflowId(null);
+      setProgress({ current: 0, total: 0 });
+    } else if (workflowStatus?.type === 'failed') {
+      console.error('Domain check workflow failed');
+      setLoading(false);
+      setWorkflowId(null);
+      setProgress({ current: 0, total: 0 });
+    } else if (workflowStatus?.type === 'inProgress') {
+      // Could parse logs or steps for progress, but for now just show it's running
+    }
+  }, [workflowStatus]);
 
   const handleCheck = async () => {
     setLoading(true);
+    setResults([]);
     try {
       const domainsToCheck = customDomain
         ? [...suggestedDomains, customDomain]
         : suggestedDomains;
-      const checkResults = await onCheck(domainsToCheck);
-      setResults(checkResults);
+
+      setProgress({ current: 0, total: domainsToCheck.length });
+
+      // Start the workflow and get the ID
+      const id = await onStartCheck(domainsToCheck);
+      setWorkflowId(id);
     } catch (error) {
       console.error('Domain check failed:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -46,6 +80,10 @@ export function DomainChecker({
       handleCheck();
     }
   };
+
+  const domainsToShow = customDomain
+    ? [...suggestedDomains, customDomain]
+    : suggestedDomains;
 
   return (
     <div className="space-y-4">
@@ -63,6 +101,23 @@ export function DomainChecker({
         </span>
       </div>
 
+      {/* Progress indicator */}
+      {loading && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <div className="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full" />
+            <div>
+              <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                Checking domains...
+              </p>
+              <p className="text-xs text-blue-600 dark:text-blue-300">
+                Rate limited to 1 check per 11 seconds. This may take ~{domainsToShow.length * 11} seconds.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Custom Domain Input */}
       <div className="flex items-center gap-2">
         <input
@@ -71,6 +126,7 @@ export function DomainChecker({
           onChange={(e) => setCustomDomain(e.target.value.toLowerCase())}
           placeholder="Or enter custom domain..."
           className="flex-1 px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700"
+          disabled={loading}
         />
         <button
           onClick={handleAddCustom}
@@ -133,7 +189,7 @@ export function DomainChecker({
       )}
 
       {/* Suggested Domains List (before check) */}
-      {results.length === 0 && (
+      {results.length === 0 && !loading && (
         <div className="space-y-1">
           <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">Suggested domains:</p>
           <ul className="space-y-1">

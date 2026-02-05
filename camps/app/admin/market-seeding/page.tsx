@@ -278,7 +278,7 @@ function MarketSeedingContent() {
           </div>
           <ul className="divide-y divide-slate-200 dark:divide-slate-700">
             {activeTasks.map((task) => (
-              <TaskRow key={task._id} task={task} onReset={handleReset} />
+              <TaskRow key={task._id} task={task} onReset={handleReset} showReset />
             ))}
           </ul>
         </div>

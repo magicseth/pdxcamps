@@ -5,18 +5,11 @@ import { MarketWithStatus, STATUS_LABELS } from './types';
 import { DomainChecker } from './DomainChecker';
 import { ProgressIndicator } from './ProgressIndicator';
 
-interface DomainResult {
-  domain: string;
-  available: boolean;
-  price?: string;
-  error?: string;
-}
-
 interface ExpansionWizardProps {
   market: MarketWithStatus;
   onClose: () => void;
   onInitialize: () => Promise<void>;
-  onCheckDomains: (domains: string[]) => Promise<DomainResult[]>;
+  onStartDomainCheck: (domains: string[]) => Promise<string>; // Returns workflow ID
   onSelectDomain: (domain: string) => Promise<void>;
   onPurchaseDomain: (domain: string) => Promise<{ success: boolean; orderId?: string; error?: string }>;
   onSetupDns: (domain: string) => Promise<{ success: boolean; zoneId?: string; nameservers?: string[]; error?: string }>;
@@ -40,7 +33,7 @@ export function ExpansionWizard({
   market,
   onClose,
   onInitialize,
-  onCheckDomains,
+  onStartDomainCheck,
   onSelectDomain,
   onPurchaseDomain,
   onSetupDns,
@@ -294,9 +287,10 @@ export function ExpansionWizard({
                 Step 1: Select Domain
               </h3>
               <DomainChecker
+                marketKey={market.key}
                 suggestedDomains={market.suggestedDomains}
                 selectedDomain={selectedDomain}
-                onCheck={onCheckDomains}
+                onStartCheck={onStartDomainCheck}
                 onSelect={handleDomainSelect}
               />
               <div className="flex justify-between pt-4">

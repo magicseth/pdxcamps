@@ -708,6 +708,22 @@ export const saveExploration = mutation({
       registrationSystem: v.optional(v.string()),
       urlPatterns: v.optional(v.array(v.string())),
       navigationNotes: v.optional(v.array(v.string())),
+      // API Discovery results
+      discoveredApis: v.optional(
+        v.array(
+          v.object({
+            url: v.string(),
+            method: v.string(),
+            contentType: v.string(),
+            responseSize: v.number(),
+            matchCount: v.number(),
+            structureHint: v.optional(v.string()),
+            urlPattern: v.optional(v.string()),
+            sampleData: v.optional(v.string()),
+          })
+        )
+      ),
+      apiSearchTerm: v.optional(v.string()),
     }),
   },
   handler: async (ctx, args) => {

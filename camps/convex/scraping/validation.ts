@@ -125,13 +125,15 @@ export function validateSession(session: ScrapedSession): ValidationResult {
   }
 
   // CRITICAL: Check if session spans too long (likely program overview, not actual session)
+  // Skip this check for flexible dates (e.g., "Summer 2026" from directory sources)
   if (session.startDate && session.endDate && isValidDateFormat(session.startDate) && isValidDateFormat(session.endDate)) {
     const start = new Date(session.startDate);
     const end = new Date(session.endDate);
     const daysDiff = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 
     // Most camps are 1 week (5 days) or 2 weeks (10 days). 3 weeks max for overnight camps.
-    if (daysDiff > 21) {
+    // Allow flexible dates (e.g., "Summer 2026") to span the full summer season
+    if (daysDiff > 21 && !session.isFlexible) {
       errors.push({
         field: "dateRange",
         error: `Session spans ${daysDiff} days - likely a program overview, not an individual camp session (max 21 days)`,
@@ -190,15 +192,35 @@ export function validateSession(session: ScrapedSession): ValidationResult {
     // Check if location has any address-like content (street number + name)
     const hasAddressContent = /\d+\s+[A-Za-z]/.test(session.location!);
 
-    if (isGeneric || (!hasAddressContent && session.location!.length < 20)) {
+    // Check if location contains a city name (for directory sources)
+    // Common Pacific Northwest cities that indicate a valid location
+    const cityPattern = /\b(Seattle|Portland|Redmond|Bellevue|Kirkland|Bothell|Issaquah|Sammamish|Mercer Island|Woodinville|Renton|Kent|Federal Way|Tacoma|Olympia|Beaverton|Lake Oswego|Tigard|Tualatin|Gresham|Hillsboro|Vancouver|Milwaukie|Clackamas|Oregon City|West Linn|Wilsonville)\b/i;
+    const hasCityName = cityPattern.test(session.location!);
+
+    // For flexible dates (directory sources), accept city names without full addresses
+    // Directory sources like ParentMap often only have city names like "Redmond, Bothell"
+    const isFlexibleOrDirectorySource = session.isFlexible === true;
+
+    if (isGeneric) {
       errors.push({
         field: "location",
         error: "Location appears incomplete or generic - should include street address",
         attemptedValue: session.location,
       });
+    } else if (!hasAddressContent && !hasCityName && session.location!.length < 20) {
+      // Only flag as incomplete if no address AND no recognized city name AND short
+      errors.push({
+        field: "location",
+        error: "Location appears incomplete or generic - should include street address or city",
+        attemptedValue: session.location,
+      });
+    } else if (!hasAddressContent && !isFlexibleOrDirectorySource && session.location!.length < 20) {
+      // For non-flexible sources, still prefer addresses but don't fail on city names
+      // Just let it through as-is if it has a city name
     }
 
     // CRITICAL: Check for comma-separated list of multiple venues (scraper bug)
+    // But allow reasonable city lists from directory sources like "Redmond, Bothell"
     const commaCount = (session.location!.match(/,/g) || []).length;
     if (commaCount >= 3 && session.location!.length > 100) {
       errors.push({
@@ -393,13 +415,14 @@ function isValidUrl(str: string): boolean {
  */
 export function parseDateRange(
   dateText: string
-): { startDate?: string; endDate?: string } | null {
+): { startDate?: string; endDate?: string; isFlexible?: boolean } | null {
   if (!dateText) return null;
 
   // Common patterns:
   // "June 10-14, 2025" → startDate: 2025-06-10, endDate: 2025-06-14
   // "6/10/2025 - 6/14/2025" → startDate: 2025-06-10, endDate: 2025-06-14
   // "Jun 10 - Jun 14" → needs year inference
+  // "Summer 2026" → flexible dates for summer season
 
   const monthNames = [
     "january",
@@ -431,6 +454,19 @@ export function parseDateRange(
   ];
 
   const normalized = dateText.toLowerCase().trim();
+
+  // Pattern: "Summer YYYY" or "Summer of YYYY" - flexible summer dates
+  const summerPattern = /summer\s*(?:of\s*)?(\d{4})/i;
+  const summerMatch = normalized.match(summerPattern);
+  if (summerMatch) {
+    const year = parseInt(summerMatch[1]);
+    // Summer is roughly June 1 - August 31
+    return {
+      startDate: `${year}-06-01`,
+      endDate: `${year}-08-31`,
+      isFlexible: true,
+    };
+  }
 
   // Pattern: "Month DD-DD, YYYY" (e.g., "June 10-14, 2025")
   const rangePattern1 =

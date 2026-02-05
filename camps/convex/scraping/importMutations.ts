@@ -7,6 +7,7 @@
 
 import { mutation, internalMutation } from "../_generated/server";
 import { v } from "convex/values";
+import { sessionsBySourceAggregate } from "../lib/sessionAggregate";
 
 /**
  * Create an organization
@@ -140,7 +141,7 @@ export const createSession = mutation({
     sourceId: v.id("scrapeSources"),
   },
   handler: async (ctx, args) => {
-    return ctx.db.insert("sessions", {
+    const sessionId = await ctx.db.insert("sessions", {
       campId: args.campId,
       locationId: args.locationId,
       organizationId: args.organizationId,
@@ -167,6 +168,19 @@ export const createSession = mutation({
       sourceId: args.sourceId,
       lastScrapedAt: Date.now(),
     });
+
+    // Update aggregate count for this source (non-blocking - don't fail if aggregate errors)
+    try {
+      const doc = await ctx.db.get(sessionId);
+      if (doc) {
+        await sessionsBySourceAggregate.insert(ctx, doc);
+      }
+    } catch (e) {
+      // Aggregate update failed - log but don't break session creation
+      console.warn(`Failed to update session aggregate: ${e}`);
+    }
+
+    return sessionId;
   },
 });
 
@@ -206,7 +220,7 @@ export const createSessionWithCompleteness = internalMutation({
     enrolledCount: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    return ctx.db.insert("sessions", {
+    const sessionId = await ctx.db.insert("sessions", {
       campId: args.campId,
       locationId: args.locationId,
       organizationId: args.organizationId,
@@ -237,6 +251,19 @@ export const createSessionWithCompleteness = internalMutation({
       missingFields: args.missingFields,
       dataSource: args.dataSource,
     });
+
+    // Update aggregate count for this source (non-blocking - don't fail if aggregate errors)
+    try {
+      const doc = await ctx.db.get(sessionId);
+      if (doc) {
+        await sessionsBySourceAggregate.insert(ctx, doc);
+      }
+    } catch (e) {
+      // Aggregate update failed - log but don't break session creation
+      console.warn(`Failed to update session aggregate: ${e}`);
+    }
+
+    return sessionId;
   },
 });
 
@@ -300,12 +327,17 @@ export const updateSessionPrice = internalMutation({
 });
 
 /**
- * Update source session counts and quality metrics
- * Now queries actual session counts from database for accuracy
+ * Update source session counts and quality metrics.
+ *
+ * IMPORTANT: Session counts are now passed as arguments to avoid read-write conflicts.
+ * Previously, this mutation queried all sessions which caused conflicts when
+ * sessions were being created concurrently by the import pipeline.
  */
 export const updateSourceSessionCounts = internalMutation({
   args: {
     sourceId: v.id("scrapeSources"),
+    sessionCount: v.number(),
+    activeSessionCount: v.number(),
     dataQualityScore: v.number(),
     qualityTier: v.union(
       v.literal("high"),
@@ -314,21 +346,12 @@ export const updateSourceSessionCounts = internalMutation({
     ),
   },
   handler: async (ctx, args) => {
-    // Query actual session counts from database
-    const allSessions = await ctx.db
-      .query("sessions")
-      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
-      .collect();
-
-    const sessionCount = allSessions.length;
-    const activeSessionCount = allSessions.filter(s => s.status === "active").length;
-
     await ctx.db.patch(args.sourceId, {
-      sessionCount,
-      activeSessionCount,
+      sessionCount: args.sessionCount,
+      activeSessionCount: args.activeSessionCount,
       dataQualityScore: args.dataQualityScore,
       qualityTier: args.qualityTier,
-      lastSessionsFoundAt: sessionCount > 0 ? Date.now() : undefined,
+      lastSessionsFoundAt: args.sessionCount > 0 ? Date.now() : undefined,
     });
   },
 });
@@ -417,6 +440,113 @@ export const applyUrlUpdate = internalMutation({
       url: source.suggestedUrl,
       suggestedUrl: undefined,
     });
+  },
+});
+
+// ============ SESSION AGGREGATE FUNCTIONS ============
+
+/**
+ * Get session count for a source from the aggregate.
+ * This is much faster than querying all sessions.
+ */
+export const getSourceSessionCount = internalMutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+  },
+  handler: async (ctx, args) => {
+    const count = await sessionsBySourceAggregate.count(ctx, {
+      namespace: args.sourceId,
+    });
+    return count;
+  },
+});
+
+/**
+ * Delete a session and update the aggregate.
+ * Use this instead of ctx.db.delete() for sessions to keep counts accurate.
+ */
+export const deleteSessionWithAggregate = internalMutation({
+  args: {
+    sessionId: v.id("sessions"),
+  },
+  handler: async (ctx, args) => {
+    const session = await ctx.db.get(args.sessionId);
+    if (!session) return;
+
+    // Remove from aggregate
+    await sessionsBySourceAggregate.delete(ctx, session);
+
+    // Delete the session
+    await ctx.db.delete(args.sessionId);
+  },
+});
+
+/**
+ * Backfill the session aggregate from existing sessions.
+ * Run this once after deploying the aggregate to populate it.
+ *
+ * Processes in batches to avoid timeout. Call repeatedly until done.
+ * Returns { done: true } when complete.
+ */
+export const backfillSessionAggregate = internalMutation({
+  args: {
+    cursor: v.optional(v.string()),
+    batchSize: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const batchSize = args.batchSize ?? 100;
+
+    // Query sessions with pagination
+    const query = ctx.db.query("sessions");
+
+    const sessions = await query.take(batchSize + 1);
+    const hasMore = sessions.length > batchSize;
+    const toProcess = hasMore ? sessions.slice(0, batchSize) : sessions;
+
+    let processed = 0;
+    for (const session of toProcess) {
+      try {
+        await sessionsBySourceAggregate.insert(ctx, session);
+        processed++;
+      } catch (e) {
+        // Item might already exist in aggregate, skip
+        console.log(`Skipping session ${session._id}: ${e}`);
+      }
+    }
+
+    return {
+      processed,
+      hasMore,
+      nextCursor: hasMore ? toProcess[toProcess.length - 1]._id : undefined,
+    };
+  },
+});
+
+/**
+ * Clear and rebuild the session aggregate for a specific source.
+ * Use this if the aggregate gets out of sync.
+ */
+export const rebuildSessionAggregate = internalMutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+  },
+  handler: async (ctx, args) => {
+    // Clear existing entries for this source
+    await sessionsBySourceAggregate.clear(ctx, {
+      namespace: args.sourceId,
+    });
+
+    // Re-add all sessions for this source
+    const sessions = await ctx.db
+      .query("sessions")
+      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .collect();
+
+    for (const session of sessions) {
+      await sessionsBySourceAggregate.insert(ctx, session);
+    }
+
+    return { rebuilt: sessions.length };
   },
 });
 

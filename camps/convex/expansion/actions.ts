@@ -240,7 +240,7 @@ export const purchaseDomain = action({
 
     try {
       const response = await fetch(
-        `https://api.porkbun.com/api/json/v3/domain/register/${args.domain}`,
+        `https://api.porkbun.com/api/json/v3/domain/create/${args.domain}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -303,7 +303,7 @@ export const getNameservers = action({
 
     try {
       const response = await fetch(
-        `https://api.porkbun.com/api/json/v3/domain/getNameServers/${args.domain}`,
+        `https://api.porkbun.com/api/json/v3/domain/getNs/${args.domain}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

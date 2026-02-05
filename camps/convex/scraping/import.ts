@@ -109,6 +109,9 @@ interface ScrapedSession {
   capacity?: number;
   enrolledCount?: number;
   spotsLeft?: number;
+  // Flexible date tracking for directory sources
+  isFlexible?: boolean;
+  flexibleDateRange?: string;
 }
 
 interface ScrapedOrganization {
@@ -149,6 +152,11 @@ function enrichSessionWithParsedData(session: ScrapedSession): ScrapedSession {
     if (parsed) {
       enriched.startDate = parsed.startDate;
       enriched.endDate = parsed.endDate;
+      // Track if this is a flexible date (e.g., "Summer 2026")
+      if (parsed.isFlexible) {
+        enriched.isFlexible = true;
+        enriched.flexibleDateRange = enriched.dateRaw;
+      }
     }
   }
 
@@ -161,6 +169,17 @@ function enrichSessionWithParsedData(session: ScrapedSession): ScrapedSession {
       enriched.pickUpHour = parsed.pickUpHour;
       enriched.pickUpMinute = parsed.pickUpMinute;
     }
+  }
+
+  // Default times to typical camp hours (9am-3pm) if not specified
+  // This allows directory sources to pass validation
+  if (enriched.dropOffHour === undefined) {
+    enriched.dropOffHour = 9;
+    enriched.dropOffMinute = 0;
+  }
+  if (enriched.pickUpHour === undefined) {
+    enriched.pickUpHour = 15; // 3pm
+    enriched.pickUpMinute = 0;
   }
 
   // Try to parse price from priceRaw if priceInCents missing
@@ -187,6 +206,74 @@ function enrichSessionWithParsedData(session: ScrapedSession): ScrapedSession {
   }
 
   return enriched;
+}
+
+/**
+ * Expand flexible date sessions (e.g., "Summer 2026") into weekly sessions.
+ * This is necessary because camps with "Summer 2026" dates need to be broken
+ * into individual weeks so users can actually book specific weeks.
+ */
+function expandFlexibleSessions(sessions: ScrapedSession[]): ScrapedSession[] {
+  const expanded: ScrapedSession[] = [];
+
+  for (const session of sessions) {
+    // If not a flexible date session, keep as-is
+    if (!session.isFlexible || !session.startDate || !session.endDate) {
+      expanded.push(session);
+      continue;
+    }
+
+    // Calculate the span in days
+    const startDate = new Date(session.startDate);
+    const endDate = new Date(session.endDate);
+    const daysDiff = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    // If span is 3 weeks or less, keep as single session
+    if (daysDiff <= 21) {
+      expanded.push(session);
+      continue;
+    }
+
+    // Generate weekly sessions (Mon-Fri)
+    // Find the first Monday on or after the start date
+    const currentDate = new Date(startDate);
+    const dayOfWeek = currentDate.getDay();
+    if (dayOfWeek !== 1) {
+      // Move to next Monday (or current day if already Monday)
+      const daysUntilMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek);
+      currentDate.setDate(currentDate.getDate() + daysUntilMonday);
+    }
+
+    let weekNumber = 1;
+    while (currentDate < endDate) {
+      const weekStart = new Date(currentDate);
+      const weekEnd = new Date(currentDate);
+      weekEnd.setDate(weekEnd.getDate() + 4); // Friday (4 days after Monday)
+
+      // Don't create sessions that extend past the end date
+      if (weekStart > endDate) break;
+
+      // Create a weekly session
+      const weeklySession: ScrapedSession = {
+        ...session,
+        name: `${session.name} - Week ${weekNumber}`,
+        startDate: weekStart.toISOString().split('T')[0],
+        endDate: weekEnd.toISOString().split('T')[0],
+        // Clear flexible flag since this is now a concrete week
+        isFlexible: false,
+        // Keep original date range for reference
+        flexibleDateRange: session.dateRaw || session.flexibleDateRange,
+      };
+
+      expanded.push(weeklySession);
+      weekNumber++;
+
+      // Move to next Monday
+      currentDate.setDate(currentDate.getDate() + 7);
+    }
+  }
+
+  return expanded;
 }
 
 /**
@@ -303,10 +390,19 @@ export const importFromJob = action({
         });
       }
 
+      // Pre-process sessions:
+      // 1. Enrich with parsed data (to detect flexible dates like "Summer 2026")
+      // 2. Expand flexible date sessions into weekly sessions
+      const enrichedSessions = result.sessions.map(s => enrichSessionWithParsedData(s));
+      const expandedSessions = expandFlexibleSessions(enrichedSessions);
+
       // Group sessions by camp name (theme)
+      // Use original name (without week suffix) for grouping
       const sessionsByTheme = new Map<string, ScrapedSession[]>();
-      for (const session of result.sessions) {
-        const key = session.sourceProductId || session.name;
+      for (const session of expandedSessions) {
+        // Strip " - Week N" suffix for grouping purposes
+        const baseName = session.name.replace(/ - Week \d+$/, '');
+        const key = session.sourceProductId || baseName;
         if (!sessionsByTheme.has(key)) {
           sessionsByTheme.set(key, []);
         }
@@ -346,10 +442,8 @@ export const importFromJob = action({
         campsCreated++;
 
         // Create sessions for this camp
-        for (const rawSession of sessions) {
-          // Enrich session with parsed data from raw fields
-          const session = enrichSessionWithParsedData(rawSession);
-
+        // Note: sessions are already enriched and expanded from pre-processing
+        for (const session of sessions) {
           // Track price stats for alerting
           totalSessionsProcessed++;
           if (session.priceInCents === 0 || session.priceInCents === undefined) {
@@ -474,7 +568,7 @@ export const importFromJob = action({
               {
                 jobId: args.jobId,
                 sourceId: rawData.sourceId,
-                rawData: JSON.stringify(rawSession),
+                rawData: JSON.stringify(session),
                 partialData: {
                   name: session.name,
                   dateRaw: session.dateRaw,
@@ -580,15 +674,20 @@ export const importFromJob = action({
       }
 
       // Update source session counts and quality
-      // Note: sessionCount is now queried from DB in the mutation for accuracy
+      // Session counts are passed as arguments to avoid read-write conflicts
       const quality = calculateSourceQuality(
         allCompletenessScores.map((score) => ({ completenessScore: score }))
       );
+
+      // Total sessions created (both active and draft)
+      const totalSessionCount = sessionsCreated + sessionsAsDraft;
 
       await ctx.runMutation(
         internal.scraping.importMutations.updateSourceSessionCounts,
         {
           sourceId: rawData.sourceId,
+          sessionCount: totalSessionCount,
+          activeSessionCount: sessionsCreated, // Only fully complete sessions are "active"
           dataQualityScore: quality.score,
           qualityTier: quality.tier,
         }

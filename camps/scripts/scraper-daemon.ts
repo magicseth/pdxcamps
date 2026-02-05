@@ -251,6 +251,20 @@ async function processRequestAsync(worker: WorkerState, request: DevelopmentRequ
 /**
  * Site exploration result - discovered navigation structure
  */
+/**
+ * Discovered API endpoint with camp data
+ */
+interface DiscoveredApi {
+  url: string;
+  method: string;
+  contentType: string;
+  responseSize: number;
+  matchCount: number; // How many times the search term was found
+  structureHint?: string; // e.g., "Array[45]" or "Object with keys: data, meta"
+  urlPattern?: string; // Parameterized version of the URL
+  sampleData?: string; // First 2KB of response for preview (truncated)
+}
+
 interface SiteExplorationResult {
   siteType: string;
   hasMultipleLocations: boolean;
@@ -263,6 +277,65 @@ interface SiteExplorationResult {
   rawPageSummary?: string;
   isDirectory?: boolean; // True if this is a listing/directory site with links to multiple camp orgs
   directoryLinks?: Array<{ url: string; name: string; isInternal?: boolean }>; // Camp links found on directory
+  discoveredApis?: DiscoveredApi[]; // APIs found via network monitoring
+  apiSearchTerm?: string; // The term used to search API responses
+}
+
+/**
+ * Extract search terms from the source name or URL for API discovery
+ */
+function extractSearchTerms(sourceName: string, url: string): string[] {
+  const terms: string[] = [];
+
+  // Extract meaningful words from the source name (skip common words)
+  const skipWords = new Set(['the', 'and', 'of', 'for', 'a', 'an', 'in', 'at', 'to', 'summer', 'camp', 'camps', 'kids', 'youth', 'portland', 'seattle', 'oregon', 'washington', 'inc', 'llc', 'org', 'com']);
+  const words = sourceName.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length > 2 && !skipWords.has(w));
+
+  // Take up to 3 meaningful words
+  terms.push(...words.slice(0, 3));
+
+  // Also try to extract from URL path
+  try {
+    const parsed = new URL(url);
+    const pathParts = parsed.pathname.split('/').filter(Boolean);
+    for (const part of pathParts) {
+      const cleanPart = part.replace(/[-_]/g, ' ').toLowerCase();
+      if (cleanPart.length > 3 && !skipWords.has(cleanPart) && !terms.includes(cleanPart)) {
+        terms.push(cleanPart);
+        if (terms.length >= 5) break;
+      }
+    }
+  } catch {}
+
+  return [...new Set(terms)].slice(0, 5);
+}
+
+/**
+ * Extract a URL pattern by replacing IDs with placeholders
+ */
+function extractUrlPattern(url: string): string | undefined {
+  try {
+    const parsed = new URL(url);
+    const pathParts = parsed.pathname.split('/').filter(Boolean);
+
+    // Look for numeric IDs or UUIDs that could be parameters
+    const pattern = pathParts.map(part => {
+      if (/^\d+$/.test(part)) {
+        return '{id}';
+      }
+      if (/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(part)) {
+        return '{uuid}';
+      }
+      if (/^[a-f0-9]{24}$/i.test(part)) {
+        return '{objectId}';
+      }
+      return part;
+    }).join('/');
+
+    return `${parsed.origin}/${pattern}`;
+  } catch {
+    return undefined;
+  }
 }
 
 /**
@@ -316,6 +389,105 @@ async function exploreSiteNavigation(
 
     await stagehand.init();
     const page = stagehand.context.pages()[0];
+
+    // ========== API DISCOVERY: Set up network monitoring ==========
+    // Track all network requests and search for camp data in JSON responses
+    const capturedRequests = new Map<string, {
+      url: string;
+      method: string;
+      resourceType: string;
+    }>();
+    const discoveredApis: DiscoveredApi[] = [];
+
+    // Extract a search term from the source name or URL for API discovery
+    const searchTerms = extractSearchTerms(sourceName, url);
+    if (searchTerms.length > 0) {
+      result.apiSearchTerm = searchTerms[0];
+      log(`   🔎 API Discovery: searching responses for "${searchTerms.join('", "')}"`);
+    }
+
+    // Monitor requests
+    page.on('request', (request: any) => {
+      const reqUrl = request.url();
+      const resourceType = request.resourceType();
+      // Track API-like requests (XHR, fetch) and anything with /api/ in the URL
+      if (['xhr', 'fetch'].includes(resourceType) || reqUrl.includes('/api/')) {
+        capturedRequests.set(reqUrl, {
+          url: reqUrl,
+          method: request.method(),
+          resourceType,
+        });
+      }
+    });
+
+    // Monitor responses
+    page.on('response', async (response: any) => {
+      const respUrl = response.url();
+      const request = capturedRequests.get(respUrl);
+
+      if (request && response.status() === 200) {
+        try {
+          const contentType = response.headers()['content-type'] || '';
+          if (contentType.includes('application/json')) {
+            const body = await response.text();
+            const bodySize = body.length;
+
+            // Search for camp-related terms in the response
+            let totalMatches = 0;
+            for (const term of searchTerms) {
+              const regex = new RegExp(term, 'gi');
+              const matches = (body.match(regex) || []).length;
+              totalMatches += matches;
+            }
+
+            // Also check for generic camp indicators
+            const campIndicators = /camp|session|program|registration|enroll|price|cost|age|grade/gi;
+            const campMatches = (body.match(campIndicators) || []).length;
+
+            // If we found matches or camp indicators, record this API
+            if (totalMatches > 0 || campMatches >= 5) {
+              let structureHint: string | undefined;
+              try {
+                const json = JSON.parse(body);
+                if (Array.isArray(json)) {
+                  structureHint = `Array[${json.length}]`;
+                } else if (typeof json === 'object' && json !== null) {
+                  const keys = Object.keys(json).slice(0, 5);
+                  structureHint = `Object with keys: ${keys.join(', ')}${Object.keys(json).length > 5 ? '...' : ''}`;
+                }
+              } catch {}
+
+              // Capture sample data (truncated to 2KB for storage)
+              let sampleData: string | undefined;
+              try {
+                const json = JSON.parse(body);
+                // Pretty print with limited depth and truncate
+                sampleData = JSON.stringify(json, null, 2).slice(0, 2000);
+                if (sampleData.length >= 2000) {
+                  sampleData += '\n... (truncated)';
+                }
+              } catch {
+                sampleData = body.slice(0, 2000);
+              }
+
+              discoveredApis.push({
+                url: respUrl,
+                method: request.method,
+                contentType,
+                responseSize: bodySize,
+                matchCount: totalMatches + campMatches,
+                structureHint,
+                urlPattern: extractUrlPattern(respUrl),
+                sampleData,
+              });
+            }
+          }
+        } catch {
+          // Response body not available
+        }
+      }
+    });
+    // ========== END API DISCOVERY SETUP ==========
 
     log(`   📄 Loading ${url}...`);
     await page.goto(url, { waitUntil: 'networkidle', timeoutMs: 30000 });
@@ -622,6 +794,20 @@ Look for links in lists, tables, or navigation that point to facility-specific c
       }
     }
 
+    // ========== API DISCOVERY: Save results ==========
+    if (discoveredApis.length > 0) {
+      // Sort by match count (most matches first)
+      discoveredApis.sort((a, b) => b.matchCount - a.matchCount);
+      result.discoveredApis = discoveredApis;
+      log(`   🎯 API Discovery: found ${discoveredApis.length} APIs with camp data`);
+      for (const api of discoveredApis.slice(0, 3)) {
+        log(`      - ${api.method} ${api.url.slice(0, 80)}... (${api.matchCount} matches)`);
+      }
+    } else {
+      log(`   ℹ️ API Discovery: no APIs found with camp data (captured ${capturedRequests.size} requests)`);
+    }
+    // ========== END API DISCOVERY RESULTS ==========
+
     await stagehand.close();
     stagehand = null;
 
@@ -644,6 +830,9 @@ Look for links in lists, tables, or navigation that point to facility-specific c
   log(`      Locations: ${result.locations.length}`);
   log(`      Categories: ${result.categories.length}`);
   log(`      Registration system: ${result.registrationSystem || 'unknown'}`);
+  if (result.discoveredApis && result.discoveredApis.length > 0) {
+    log(`      🎯 APIs with camp data: ${result.discoveredApis.length}`);
+  }
 
   return result;
 }
@@ -706,6 +895,51 @@ function formatExplorationForPrompt(exploration: SiteExplorationResult): string 
     }
   }
 
+  // ========== API DISCOVERY RESULTS ==========
+  if (exploration.discoveredApis && exploration.discoveredApis.length > 0) {
+    lines.push('\n### 🎯 DISCOVERED APIs (High Priority!)\n');
+    lines.push('**These APIs were found by monitoring network traffic. They likely contain the camp data you need.**\n');
+    lines.push('**STRONGLY PREFER using these APIs over scraping HTML.**\n\n');
+
+    if (exploration.apiSearchTerm) {
+      lines.push(`Search term used: "${exploration.apiSearchTerm}"\n\n`);
+    }
+
+    for (const api of exploration.discoveredApis.slice(0, 3)) {
+      lines.push(`#### ${api.method} ${api.url}\n`);
+      lines.push(`- Response size: ${(api.responseSize / 1024).toFixed(1)} KB\n`);
+      lines.push(`- Match count: ${api.matchCount} camp-related terms\n`);
+      if (api.structureHint) {
+        lines.push(`- Structure: ${api.structureHint}\n`);
+      }
+      if (api.urlPattern && api.urlPattern !== api.url) {
+        lines.push(`- URL Pattern: ${api.urlPattern}\n`);
+      }
+      // Include sample data if available (show first 1500 chars)
+      if ((api as any).sampleData) {
+        const sample = (api as any).sampleData.slice(0, 1500);
+        lines.push(`\n**Sample Response:**\n\`\`\`json\n${sample}\n\`\`\`\n`);
+      }
+      lines.push('\n');
+    }
+
+    lines.push('**IMPORTANT: Use API-based scraping when APIs are discovered!**\n\n');
+    lines.push('**Recommended approach:**\n');
+    lines.push('1. Use `fetch()` or `page.evaluate(() => fetch(...))` to call these APIs directly\n');
+    lines.push('2. Parse the JSON response to extract camp session data\n');
+    lines.push('3. Map the API fields to our ExtractedSession interface\n');
+    lines.push('4. The Stagehand page object is available if you need cookies/auth from the browser context\n\n');
+    lines.push('**Example API-based scraper pattern:**\n');
+    lines.push('```typescript\n');
+    lines.push('const response = await page.evaluate(async () => {\n');
+    lines.push('  const res = await fetch("API_URL_HERE");\n');
+    lines.push('  return res.json();\n');
+    lines.push('});\n');
+    lines.push('// Map API response to ExtractedSession[]\n');
+    lines.push('```\n\n');
+  }
+  // ========== END API DISCOVERY RESULTS ==========
+
   return lines.join('');
 }
 
@@ -741,6 +975,8 @@ async function processRequest(request: DevelopmentRequest, verbose: boolean = fa
         registrationSystem: request.siteExploration.registrationSystem,
         urlPatterns: request.siteExploration.urlPatterns || [],
         navigationNotes: request.siteExploration.navigationNotes || [],
+        discoveredApis: request.siteExploration.discoveredApis,
+        apiSearchTerm: request.siteExploration.apiSearchTerm,
       };
     } else if (!request.generatedScraperCode) {
       // Only explore on first attempt when no exploration exists
@@ -760,6 +996,8 @@ async function processRequest(request: DevelopmentRequest, verbose: boolean = fa
               registrationSystem: explorationResult.registrationSystem,
               urlPatterns: explorationResult.urlPatterns,
               navigationNotes: explorationResult.navigationNotes,
+              discoveredApis: explorationResult.discoveredApis,
+              apiSearchTerm: explorationResult.apiSearchTerm,
             },
           });
           log(`   💾 Saved site exploration to database`);

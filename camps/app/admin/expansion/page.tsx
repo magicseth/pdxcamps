@@ -67,7 +67,9 @@ function ExpansionContent() {
   const createCityForMarket = useMutation(api.expansion.mutations.createCityForMarket);
   const launchMarket = useMutation(api.expansion.mutations.launchMarket);
 
-  const checkMultipleDomains = useAction(api.expansion.actions.checkMultipleDomains);
+  // Domain check workflow
+  const startDomainCheck = useMutation(api.expansion.domainWorkflow.startDomainCheck);
+
   const purchaseDomain = useAction(api.expansion.actions.purchaseDomain);
   const setupDns = useAction(api.expansion.actions.setupDnsForDomain);
 
@@ -194,8 +196,8 @@ function ExpansionContent() {
           onInitialize={async () => {
             await initializeMarket({ marketKey: selectedMarket.key });
           }}
-          onCheckDomains={async (domains) => {
-            return await checkMultipleDomains({ domains });
+          onStartDomainCheck={async (domains) => {
+            return await startDomainCheck({ marketKey: selectedMarket.key, domains });
           }}
           onSelectDomain={async (domain) => {
             await selectDomain({ marketKey: selectedMarket.key, domain });
