@@ -4,6 +4,7 @@ import { Doc, Id } from "../_generated/dataModel";
 import { getFamily } from "../lib/auth";
 import {
   generateSummerWeeks,
+  generateWeeksForRange,
   doDateRangesOverlap,
   countOverlappingWeekdays,
   calculateAge,
@@ -21,7 +22,8 @@ export type CoverageStatus =
   | "partial" // 1-4 days covered
   | "gap" // No coverage
   | "tentative" // Interested/waitlisted only
-  | "event"; // Covered by family event
+  | "event" // Covered by family event
+  | "school"; // Week is outside child's summer (still in school)
 
 /**
  * Coverage info for a single child in a single week
@@ -86,8 +88,32 @@ export const getSummerCoverage = query({
       return [];
     }
 
-    // Generate summer weeks
-    const weeks = generateSummerWeeks(args.year);
+    // Calculate summer date range for each child
+    // Default: June 1 - August 31
+    const defaultStart = `${args.year}-06-01`;
+    const defaultEnd = `${args.year}-08-31`;
+
+    // Build a map of child ID to their summer date range
+    const childSummerRanges = new Map<
+      string,
+      { start: string; end: string }
+    >();
+
+    let overallStart = defaultStart;
+    let overallEnd = defaultEnd;
+
+    for (const child of children) {
+      const start = child.summerStartDate || defaultStart;
+      const end = child.summerEndDate || defaultEnd;
+      childSummerRanges.set(child._id, { start, end });
+
+      // Expand overall range to include all children's ranges
+      if (start < overallStart) overallStart = start;
+      if (end > overallEnd) overallEnd = end;
+    }
+
+    // Generate weeks for the overall range (union of all children's summers)
+    const weeks = generateWeeksForRange(overallStart, overallEnd);
     const summerStart = weeks[0]?.startDate;
     const summerEnd = weeks[weeks.length - 1]?.endDate;
 
@@ -176,6 +202,30 @@ export const getSummerCoverage = query({
     // Build coverage for each week
     return weeks.map((week) => {
       const childCoverage: ChildWeekCoverage[] = children.map((child) => {
+        // Check if this week is within the child's summer range
+        const childRange = childSummerRanges.get(child._id);
+        const isInChildSummer =
+          childRange &&
+          doDateRangesOverlap(
+            week.startDate,
+            week.endDate,
+            childRange.start,
+            childRange.end
+          );
+
+        // If this week is outside the child's summer, mark as "school"
+        if (!isInChildSummer) {
+          return {
+            childId: child._id,
+            childName: child.firstName,
+            status: "school" as CoverageStatus,
+            coveredDays: 0,
+            availableSessionCount: undefined,
+            registrations: [],
+            events: [],
+          };
+        }
+
         // Find registrations for this child that overlap this week
         const childRegistrations = activeRegistrations
           .filter((r) => r.childId === child._id)

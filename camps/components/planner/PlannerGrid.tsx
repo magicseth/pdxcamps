@@ -87,20 +87,45 @@ interface PlannerGridProps {
 export function PlannerGrid({ coverage, children, citySlug, onGapClick, onRegistrationClick, onEventClick, onAddChild }: PlannerGridProps) {
   const generateShareToken = useMutation(api.children.mutations.generateShareToken);
   const [generatingToken, setGeneratingToken] = useState<Id<'children'> | null>(null);
+  const [copiedChildId, setCopiedChildId] = useState<Id<'children'> | null>(null);
 
-  const handleShareClick = async (childId: Id<'children'>, existingToken?: string) => {
-    if (existingToken) {
-      window.open(`/share/${existingToken}`, '_blank');
-      return;
-    }
-    setGeneratingToken(childId);
-    try {
-      const token = await generateShareToken({ childId });
-      if (token) {
-        window.open(`/share/${token}`, '_blank');
+  const handleShareClick = async (childId: Id<'children'>, childName: string, existingToken?: string) => {
+    let token = existingToken;
+    if (!token) {
+      setGeneratingToken(childId);
+      try {
+        token = await generateShareToken({ childId }) || undefined;
+      } finally {
+        setGeneratingToken(null);
       }
-    } finally {
-      setGeneratingToken(null);
+    }
+    if (!token) return;
+
+    const shareUrl = `${window.location.origin}/share/${token}`;
+    const shareData = {
+      title: `${childName}'s Summer Camp Schedule`,
+      text: `Check out ${childName}'s summer camp schedule!`,
+      url: shareUrl,
+    };
+
+    // Try native share API first (mobile)
+    if (navigator.share && navigator.canShare?.(shareData)) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err) {
+        // User cancelled or share failed, fall back to copy
+      }
+    }
+
+    // Fall back to copying the URL
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopiedChildId(childId);
+      setTimeout(() => setCopiedChildId(null), 2000);
+    } catch (err) {
+      // Fallback for older browsers
+      prompt('Copy this link to share:', shareUrl);
     }
   };
 
@@ -219,14 +244,18 @@ export function PlannerGrid({ coverage, children, citySlug, onGapClick, onRegist
                     </span>
                     <span>{child.firstName}</span>
                     <button
-                      onClick={() => handleShareClick(child._id, child.shareToken)}
+                      onClick={() => handleShareClick(child._id, child.firstName, child.shareToken)}
                       disabled={generatingToken === child._id}
                       className="text-slate-400 hover:text-primary transition-colors disabled:opacity-50"
                       title={`Share ${child.firstName}'s schedule`}
                     >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                      </svg>
+                      {copiedChildId === child._id ? (
+                        <span className="text-xs text-green-600 dark:text-green-400 font-medium">Copied!</span>
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                        </svg>
+                      )}
                     </button>
                     <button
                       onClick={() => handleCalendarClick(child._id, child.firstName, child.shareToken)}
@@ -329,6 +358,10 @@ function CoverageCell({ data, week, childId, childName, isCurrentWeek, isPastWee
     bgColor = 'bg-surface/30 dark:bg-surface-dark/40';
     icon = '✈️';
     tooltip = eventTitle || 'Family Event';
+  } else if (status === 'school') {
+    bgColor = 'bg-slate-100 dark:bg-slate-800';
+    icon = '📚';
+    tooltip = 'Still in school';
   } else if (status === 'full') {
     bgColor = 'bg-green-100 dark:bg-green-900/40';
     icon = '✓';
@@ -361,6 +394,8 @@ function CoverageCell({ data, week, childId, childName, isCurrentWeek, isPastWee
         />
       ) : hasEvent ? (
         <span className="text-base">{icon}</span>
+      ) : status === 'school' ? (
+        <span className="text-slate-400 dark:text-slate-500 text-sm">{icon}</span>
       ) : status === 'full' ? (
         <span className="text-green-600 dark:text-green-400 font-bold text-sm">{icon}</span>
       ) : status === 'partial' ? (

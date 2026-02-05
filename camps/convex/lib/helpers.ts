@@ -168,6 +168,65 @@ export interface SummerWeek {
 }
 
 /**
+ * Generate summer weeks (Mon-Fri) for a given date range.
+ *
+ * @param startDate ISO date string for start (finds first Monday on or after)
+ * @param endDate ISO date string for end
+ * @returns Array of summer weeks
+ */
+export function generateWeeksForRange(startDate: string, endDate: string): SummerWeek[] {
+  const weeks: SummerWeek[] = [];
+
+  const start = new Date(startDate + "T00:00:00");
+  const end = new Date(endDate + "T00:00:00");
+
+  // Find the first Monday on or after startDate
+  let currentDate = new Date(start);
+  const dayOfWeek = currentDate.getDay();
+  if (dayOfWeek === 0) {
+    // Sunday - move to next day (Monday)
+    currentDate.setDate(currentDate.getDate() + 1);
+  } else if (dayOfWeek > 1) {
+    // Tuesday-Saturday - move to next Monday
+    currentDate.setDate(currentDate.getDate() + (8 - dayOfWeek));
+  }
+  // If dayOfWeek === 1 (Monday), we're already on Monday
+
+  let weekNumber = 1;
+
+  while (currentDate <= end) {
+    const monday = new Date(currentDate);
+    const friday = new Date(currentDate);
+    friday.setDate(friday.getDate() + 4);
+
+    // Format dates as ISO strings
+    const weekStartDate = formatISODate(monday);
+    const weekEndDate = formatISODate(friday);
+
+    // Get month name for the week's Monday
+    const monthName = monday.toLocaleDateString('en-US', { month: 'long' });
+
+    // Create label like "Jun 3-7"
+    const monthShort = monday.toLocaleDateString('en-US', { month: 'short' });
+    const label = `${monthShort} ${monday.getDate()}-${friday.getDate()}`;
+
+    weeks.push({
+      weekNumber,
+      startDate: weekStartDate,
+      endDate: weekEndDate,
+      monthName,
+      label,
+    });
+
+    // Move to next Monday
+    currentDate.setDate(currentDate.getDate() + 7);
+    weekNumber++;
+  }
+
+  return weeks;
+}
+
+/**
  * Generate all Mon-Fri weeks for June through August of a given year.
  * Each week starts on Monday and ends on Friday.
  *

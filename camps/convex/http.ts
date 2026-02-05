@@ -52,40 +52,21 @@ http.route({
         });
       }
 
-      const resendApiKey = process.env.RESEND_API_KEY;
-      if (!resendApiKey) {
-        console.error("RESEND_API_KEY not set");
-        return new Response(JSON.stringify({ error: "API key not configured" }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-
       // Check if this is Seth replying to a forwarded email
       const isSethReply = from.includes("seth@magicseth.com");
 
-      // Fetch the email content
-      const emailResponse = await fetch(
-        `https://api.resend.com/emails/received/${email_id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${resendApiKey}`,
-          },
-        }
-      );
+      // Fetch the email content using SDK (requires Node.js action)
+      const emailContent = await ctx.runAction(internal.emailForward.getReceivedEmailContent, {
+        emailId: email_id,
+      });
 
-      let textBody: string | undefined;
-      let htmlBody: string | undefined;
+      let textBody: string | undefined = emailContent.text ?? undefined;
+      let htmlBody: string | undefined = emailContent.html ?? undefined;
 
-      if (emailResponse.ok) {
-        const emailData = await emailResponse.json();
-        console.log("Fetched email data keys:", Object.keys(emailData));
-        console.log("Email data:", JSON.stringify(emailData).slice(0, 1000));
-        textBody = emailData.text;
-        htmlBody = emailData.html;
+      if (emailContent.error) {
+        console.error("Failed to fetch email content:", emailContent.error);
       } else {
-        const errorText = await emailResponse.text();
-        console.error("Failed to fetch email content:", emailResponse.status, errorText);
+        console.log("Fetched email content successfully");
       }
 
       if (isSethReply) {

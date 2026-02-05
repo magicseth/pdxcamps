@@ -142,15 +142,21 @@ export const completeOnboarding = mutation({
         onboardingCompletedAt: Date.now(),
       });
 
-      // Get the city name for personalized emails
+      // Get the city info for personalized emails
       const city = await ctx.db.get(family.primaryCityId);
       const cityName = city?.name || "your area";
+      const brandName = city?.brandName || "PDX Camps";
+      const domain = city?.domain || "pdxcamps.com";
+      const fromEmail = city?.fromEmail || "hello@pdxcamps.com";
 
       // Send welcome email immediately
       await ctx.scheduler.runAfter(0, internal.email.sendWelcomeEmail, {
         to: family.email,
         displayName: family.displayName,
         cityName,
+        brandName,
+        domain,
+        fromEmail,
       });
 
       // Schedule tips email for 24 hours later
@@ -159,6 +165,9 @@ export const completeOnboarding = mutation({
         to: family.email,
         displayName: family.displayName,
         cityName,
+        brandName,
+        domain,
+        fromEmail,
       });
     }
 

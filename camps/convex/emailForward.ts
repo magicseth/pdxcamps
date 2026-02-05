@@ -5,6 +5,42 @@ import { v } from "convex/values";
 import { Resend } from "resend";
 
 /**
+ * Fetch the content of a received email using the SDK
+ */
+export const getReceivedEmailContent = internalAction({
+  args: {
+    emailId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (!resendApiKey) {
+      throw new Error("RESEND_API_KEY not set");
+    }
+
+    const resend = new Resend(resendApiKey);
+
+    try {
+      const { data, error } = await resend.emails.receiving.get(args.emailId);
+
+      if (error) {
+        console.error("Failed to get email content:", error);
+        return { text: undefined, html: undefined, error: error.message };
+      }
+
+      console.log("Fetched email content, keys:", Object.keys(data || {}));
+      return {
+        text: data?.text,
+        html: data?.html,
+        error: undefined,
+      };
+    } catch (err) {
+      console.error("Error fetching email:", err);
+      return { text: undefined, html: undefined, error: String(err) };
+    }
+  },
+});
+
+/**
  * Forward an inbound email to Seth using Resend SDK
  * Runs in Node.js environment to access the SDK
  */

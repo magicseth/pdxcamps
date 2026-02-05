@@ -15,7 +15,7 @@ export function TopBar({ title }: TopBarProps) {
       <div className="max-w-4xl mx-auto flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
           <Image
-            src={`${market.iconPath}/icon-192.png`}
+            src={`${market.iconPath}/apple-icon.png`}
             alt={market.tagline}
             width={192}
             height={192}

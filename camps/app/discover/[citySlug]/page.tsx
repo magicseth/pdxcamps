@@ -11,6 +11,7 @@ import { OrgLogo } from '../../../components/shared/OrgLogo';
 import { BottomNav } from '../../../components/shared/BottomNav';
 import { MapWrapper, MapSession } from '../../../components/map';
 import { UpgradeModal } from '../../../components/shared/UpgradeModal';
+import { AddChildModal } from '../../../components/planner/AddChildModal';
 import { useMarket } from '../../../hooks/useMarket';
 
 // Categories for filtering
@@ -81,6 +82,7 @@ export default function DiscoverPage() {
   const [childGrade, setChildGrade] = useState<number | undefined>(() => getInitialState().childGrade);
   const [selectedChildId, setSelectedChildId] = useState<Id<'children'> | null>(null);
   const [showFilters, setShowFilters] = useState(true);
+  const [showAddChildModal, setShowAddChildModal] = useState(false);
   const [selectedOrganizations, setSelectedOrganizations] = useState<string[]>(() => getInitialState().selectedOrganizations);
   const [selectedLocations, setSelectedLocations] = useState<string[]>(() => getInitialState().selectedLocations);
   const [maxDistanceMiles, setMaxDistanceMiles] = useState<number | undefined>(() => getInitialState().maxDistanceMiles);
@@ -611,13 +613,12 @@ export default function DiscoverPage() {
               {/* Age/Grade */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Child Age or Grade
+                  {myChildren && myChildren.length > 0 ? 'Filter by Child' : 'Child Age or Grade'}
                 </label>
-                {/* Quick child filter buttons */}
-                {myChildren && myChildren.length > 0 && (
-                  <div className="mb-3">
-                    <label className="text-xs text-slate-500 dark:text-slate-400 mb-1.5 block">My Kids</label>
-                    <div className="flex flex-wrap gap-1.5">
+                {/* Child filter buttons when user has children */}
+                {myChildren && myChildren.length > 0 ? (
+                  <div>
+                    <div className="flex flex-wrap gap-1.5 mb-2">
                       {myChildren.map((child) => {
                         const age = getChildAge(child.birthdate);
                         const grade = child.currentGrade;
@@ -658,46 +659,61 @@ export default function DiscoverPage() {
                           </button>
                         );
                       })}
+                      <button
+                        type="button"
+                        onClick={() => setShowAddChildModal(true)}
+                        className="px-2 py-1 text-xs rounded-md font-medium transition-colors border border-dashed border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-primary hover:text-primary"
+                      >
+                        + Add Child
+                      </button>
                     </div>
                   </div>
-                )}
-                <div className="space-y-2">
-                  <div>
-                    <label htmlFor="discover-child-age" className="text-xs text-slate-500 dark:text-slate-400">Age (years)</label>
-                    <input
-                      id="discover-child-age"
-                      type="number"
-                      inputMode="numeric"
-                      min={3}
-                      max={18}
-                      value={childAge ?? ''}
-                      onChange={(e) =>
-                        setChildAge(e.target.value ? parseInt(e.target.value) : undefined)
-                      }
-                      placeholder="e.g., 8"
-                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                    />
-                  </div>
-                  <div className="text-center text-xs text-slate-400">or</div>
-                  <div>
-                    <label htmlFor="discover-child-grade" className="text-xs text-slate-500 dark:text-slate-400">Grade</label>
-                    <select
-                      id="discover-child-grade"
-                      value={childGrade ?? ''}
-                      onChange={(e) =>
-                        setChildGrade(e.target.value ? parseInt(e.target.value) : undefined)
-                      }
-                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                ) : (
+                  <div className="space-y-2">
+                    <div>
+                      <label htmlFor="discover-child-age" className="text-xs text-slate-500 dark:text-slate-400">Age (years)</label>
+                      <input
+                        id="discover-child-age"
+                        type="number"
+                        inputMode="numeric"
+                        min={3}
+                        max={18}
+                        value={childAge ?? ''}
+                        onChange={(e) =>
+                          setChildAge(e.target.value ? parseInt(e.target.value) : undefined)
+                        }
+                        placeholder="e.g., 8"
+                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                      />
+                    </div>
+                    <div className="text-center text-xs text-slate-400">or</div>
+                    <div>
+                      <label htmlFor="discover-child-grade" className="text-xs text-slate-500 dark:text-slate-400">Grade</label>
+                      <select
+                        id="discover-child-grade"
+                        value={childGrade ?? ''}
+                        onChange={(e) =>
+                          setChildGrade(e.target.value ? parseInt(e.target.value) : undefined)
+                        }
+                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                      >
+                        <option value="">Any grade</option>
+                        {Object.entries(GRADE_LABELS).map(([value, label]) => (
+                          <option key={value} value={value}>
+                            {label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddChildModal(true)}
+                      className="w-full mt-2 px-3 py-2 text-sm rounded-md font-medium transition-colors border border-dashed border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-primary hover:text-primary"
                     >
-                      <option value="">Any grade</option>
-                      {Object.entries(GRADE_LABELS).map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
+                      + Add a Child
+                    </button>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Categories */}
@@ -1255,6 +1271,12 @@ export default function DiscoverPage() {
 
       {/* Back to Top Button */}
       <BackToTopButton />
+
+      {/* Add Child Modal */}
+      <AddChildModal
+        isOpen={showAddChildModal}
+        onClose={() => setShowAddChildModal(false)}
+      />
     </div>
   );
 }

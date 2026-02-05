@@ -347,7 +347,7 @@ export function EditEventModal({ isOpen, onClose, event }: EditEventModalProps) 
                 type="text"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                placeholder="e.g., San Diego, CA"
+                placeholder="e.g., Grandma's house"
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
               />
             </div>

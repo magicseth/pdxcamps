@@ -2,7 +2,7 @@
 
 import { OrgLogo } from '../shared/OrgLogo';
 
-export type CoverageStatus = 'full' | 'partial' | 'gap' | 'tentative' | 'event';
+export type CoverageStatus = 'full' | 'partial' | 'gap' | 'tentative' | 'event' | 'school';
 
 interface CoverageIndicatorProps {
   status: CoverageStatus;
@@ -44,6 +44,12 @@ const STATUS_CONFIG: Record<
     icon: '✈',
     label: 'Event',
     title: 'Family event',
+  },
+  school: {
+    bg: 'bg-slate-400',
+    icon: '📚',
+    label: 'School',
+    title: 'Still in school',
   },
 };
 
@@ -99,6 +105,7 @@ export function CoverageChip({ status, childName, eventTitle, campName, organiza
     gap: 'bg-accent/10 text-accent-dark dark:bg-accent/20 dark:text-accent ring-1 ring-accent/30 dark:ring-accent/50',
     tentative: 'bg-accent/15 text-accent-dark dark:bg-accent/25 dark:text-accent',
     event: 'bg-surface/30 text-primary dark:bg-surface-dark/40 dark:text-surface-light',
+    school: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400',
   };
 
   return (
@@ -122,6 +129,7 @@ export function CoverageLegend() {
     { bg: 'bg-accent/20 dark:bg-accent/30', icon: '◐', iconColor: 'text-accent-dark dark:text-accent', label: 'Partial', tooltip: 'Some days covered, some gaps' },
     { bg: 'bg-accent/10 dark:bg-accent/20', icon: '•', iconColor: 'text-accent/60 dark:text-accent', label: 'Gap', tooltip: 'No coverage - click to find camps!' },
     { bg: 'bg-surface/30 dark:bg-surface-dark/40', icon: '✈️', iconColor: '', label: 'Event', tooltip: 'Family vacation or trip' },
+    { bg: 'bg-slate-100 dark:bg-slate-800', icon: '📚', iconColor: '', label: 'School', tooltip: 'Still in school - no camp needed' },
   ];
 
   return (

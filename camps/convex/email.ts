@@ -253,21 +253,28 @@ export const sendWelcomeEmail = internalAction({
     to: v.string(),
     displayName: v.string(),
     cityName: v.string(),
+    brandName: v.optional(v.string()),
+    domain: v.optional(v.string()),
+    fromEmail: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const brandName = args.brandName || FROM_NAME;
+    const domain = args.domain || "pdxcamps.com";
+    const fromEmail = args.fromEmail || FROM_EMAIL;
+
     const result = await resend.sendEmail(ctx, {
-      from: `${FROM_NAME} <${FROM_EMAIL}>`,
+      from: `${brandName} <${fromEmail}>`,
       to: [args.to],
-      subject: `Welcome to PDX Camps, ${args.displayName}! 🏕️`,
+      subject: `Welcome to ${brandName}, ${args.displayName}!`,
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="text-align: center; padding: 24px 0;">
-            <h1 style="color: #1a1a1a; margin: 0;">Welcome to PDX Camps!</h1>
+            <h1 style="color: #1a1a1a; margin: 0;">Welcome to ${brandName}!</h1>
           </div>
 
           <p>Hi ${args.displayName},</p>
 
-          <p>Thanks for joining PDX Camps! We're excited to help you plan an amazing summer for your family in ${args.cityName}.</p>
+          <p>Thanks for joining ${brandName}! We're excited to help you plan an amazing summer for your family in ${args.cityName}.</p>
 
           <p>Your account is all set up and ready to go. Here's what you can do right now:</p>
 
@@ -278,21 +285,21 @@ export const sendWelcomeEmail = internalAction({
           </ul>
 
           <p style="text-align: center; margin: 32px 0;">
-            <a href="https://pdxcamps.com" style="display: inline-block; padding: 14px 28px; background-color: #E5A33B; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">Start Exploring Camps</a>
+            <a href="https://${domain}" style="display: inline-block; padding: 14px 28px; background-color: #E5A33B; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">Start Exploring Camps</a>
           </p>
 
           <p>Happy planning!</p>
 
           <p style="color: #666; font-size: 14px; margin-top: 32px; border-top: 1px solid #eee; padding-top: 16px;">
-            — The PDX Camps Team<br/>
-            <a href="https://pdxcamps.com" style="color: #E5A33B;">pdxcamps.com</a>
+            — The ${brandName} Team<br/>
+            <a href="https://${domain}" style="color: #E5A33B;">${domain}</a>
           </p>
         </div>
       `,
       text: `
 Hi ${args.displayName},
 
-Thanks for joining PDX Camps! We're excited to help you plan an amazing summer for your family in ${args.cityName}.
+Thanks for joining ${brandName}! We're excited to help you plan an amazing summer for your family in ${args.cityName}.
 
 Your account is all set up and ready to go. Here's what you can do right now:
 
@@ -300,12 +307,12 @@ Your account is all set up and ready to go. Here's what you can do right now:
 - Save favorites — Keep track of camps you're interested in
 - Plan your summer — See your whole summer at a glance with our week-by-week planner
 
-Start exploring at https://pdxcamps.com
+Start exploring at https://${domain}
 
 Happy planning!
 
-— The PDX Camps Team
-https://pdxcamps.com
+— The ${brandName} Team
+https://${domain}
       `,
     });
 
@@ -321,12 +328,19 @@ export const sendTipsEmail = internalAction({
     to: v.string(),
     displayName: v.string(),
     cityName: v.string(),
+    brandName: v.optional(v.string()),
+    domain: v.optional(v.string()),
+    fromEmail: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const brandName = args.brandName || FROM_NAME;
+    const domain = args.domain || "pdxcamps.com";
+    const fromEmail = args.fromEmail || FROM_EMAIL;
+
     const result = await resend.sendEmail(ctx, {
-      from: `${FROM_NAME} <${FROM_EMAIL}>`,
+      from: `${brandName} <${fromEmail}>`,
       to: [args.to],
-      subject: `Get the most out of PDX Camps — Tips for ${args.cityName} families`,
+      subject: `Get the most out of ${brandName} — Tips for ${args.cityName} families`,
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
           <p>Hi ${args.displayName},</p>
@@ -352,14 +366,14 @@ export const sendTipsEmail = internalAction({
           <p>Popular camps fill up fast — especially in ${args.cityName}! When you find something you love, click through to register right away.</p>
 
           <p style="text-align: center; margin: 32px 0;">
-            <a href="https://pdxcamps.com" style="display: inline-block; padding: 14px 28px; background-color: #E5A33B; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">Continue Planning</a>
+            <a href="https://${domain}" style="display: inline-block; padding: 14px 28px; background-color: #E5A33B; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">Continue Planning</a>
           </p>
 
           <p>Questions? Just reply to this email — we'd love to hear from you!</p>
 
           <p style="color: #666; font-size: 14px; margin-top: 32px; border-top: 1px solid #eee; padding-top: 16px;">
-            — The PDX Camps Team<br/>
-            <a href="https://pdxcamps.com" style="color: #E5A33B;">pdxcamps.com</a>
+            — The ${brandName} Team<br/>
+            <a href="https://${domain}" style="color: #E5A33B;">${domain}</a>
           </p>
         </div>
       `,
@@ -384,12 +398,12 @@ Found a camp you like? Save it to your list! You can compare multiple options be
 🔔 REGISTER EARLY
 Popular camps fill up fast — especially in ${args.cityName}! When you find something you love, click through to register right away.
 
-Continue planning at https://pdxcamps.com
+Continue planning at https://${domain}
 
 Questions? Just reply to this email — we'd love to hear from you!
 
-— The PDX Camps Team
-https://pdxcamps.com
+— The ${brandName} Team
+https://${domain}
       `,
     });
 
@@ -411,21 +425,24 @@ export const triggerWelcomeSequence = action({
     }
 
     const cityName = family.cityName || "your area";
+    const brandName = family.brandName;
+    const domain = family.domain;
+    const fromEmail = family.fromEmail;
 
     // Send welcome email immediately
     await resend.sendEmail(ctx, {
-      from: `${FROM_NAME} <${FROM_EMAIL}>`,
+      from: `${brandName} <${fromEmail}>`,
       to: [family.email],
-      subject: `Welcome to PDX Camps, ${family.displayName}!`,
+      subject: `Welcome to ${brandName}, ${family.displayName}!`,
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="text-align: center; padding: 24px 0;">
-            <h1 style="color: #1a1a1a; margin: 0;">Welcome to PDX Camps!</h1>
+            <h1 style="color: #1a1a1a; margin: 0;">Welcome to ${brandName}!</h1>
           </div>
 
           <p>Hi ${family.displayName},</p>
 
-          <p>Thanks for joining PDX Camps! We're excited to help you plan an amazing summer for your family in ${cityName}.</p>
+          <p>Thanks for joining ${brandName}! We're excited to help you plan an amazing summer for your family in ${cityName}.</p>
 
           <p>Your account is all set up and ready to go. Here's what you can do right now:</p>
 
@@ -436,14 +453,14 @@ export const triggerWelcomeSequence = action({
           </ul>
 
           <p style="text-align: center; margin: 32px 0;">
-            <a href="https://pdxcamps.com" style="display: inline-block; padding: 14px 28px; background-color: #E5A33B; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">Start Exploring Camps</a>
+            <a href="https://${domain}" style="display: inline-block; padding: 14px 28px; background-color: #E5A33B; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">Start Exploring Camps</a>
           </p>
 
           <p>Happy planning!</p>
 
           <p style="color: #666; font-size: 14px; margin-top: 32px; border-top: 1px solid #eee; padding-top: 16px;">
-            — The PDX Camps Team<br/>
-            <a href="https://pdxcamps.com" style="color: #E5A33B;">pdxcamps.com</a>
+            — The ${brandName} Team<br/>
+            <a href="https://${domain}" style="color: #E5A33B;">${domain}</a>
           </p>
         </div>
       `,
@@ -455,6 +472,9 @@ export const triggerWelcomeSequence = action({
       to: family.email,
       displayName: family.displayName,
       cityName,
+      brandName,
+      domain,
+      fromEmail,
     });
 
     return { success: true, email: family.email };
@@ -527,7 +547,7 @@ export const listInboundEmails = query({
 });
 
 /**
- * Internal query to get current user's family with city name
+ * Internal query to get current user's family with city and brand info
  * Used by triggerWelcomeSequence to avoid circular references
  */
 export const getCurrentFamilyForEmail = internalQuery({
@@ -543,13 +563,17 @@ export const getCurrentFamilyForEmail = internalQuery({
 
     if (!family) return null;
 
-    // Get city name
+    // Get city with brand info
     const city = await ctx.db.get(family.primaryCityId);
 
     return {
       email: family.email,
       displayName: family.displayName,
       cityName: city?.name || null,
+      // Brand info with defaults
+      brandName: city?.brandName || "PDX Camps",
+      domain: city?.domain || "pdxcamps.com",
+      fromEmail: city?.fromEmail || "hello@pdxcamps.com",
     };
   },
 });

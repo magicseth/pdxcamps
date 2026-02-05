@@ -14,6 +14,8 @@ export const addChild = mutation({
     interests: v.array(v.string()),
     notes: v.optional(v.string()),
     color: v.optional(v.string()),
+    summerStartDate: v.optional(v.string()),
+    summerEndDate: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const family = await requireFamily(ctx);
@@ -33,6 +35,19 @@ export const addChild = mutation({
       throw new Error("Birthdate cannot be in the future");
     }
 
+    // Validate summer dates if provided
+    if (args.summerStartDate && !dateRegex.test(args.summerStartDate)) {
+      throw new Error("Summer start date must be in YYYY-MM-DD format");
+    }
+    if (args.summerEndDate && !dateRegex.test(args.summerEndDate)) {
+      throw new Error("Summer end date must be in YYYY-MM-DD format");
+    }
+    if (args.summerStartDate && args.summerEndDate) {
+      if (new Date(args.summerStartDate) > new Date(args.summerEndDate)) {
+        throw new Error("Summer start date must be before end date");
+      }
+    }
+
     const childId = await ctx.db.insert("children", {
       familyId: family._id,
       firstName: args.firstName,
@@ -42,6 +57,8 @@ export const addChild = mutation({
       interests: args.interests,
       notes: args.notes,
       color: args.color,
+      summerStartDate: args.summerStartDate,
+      summerEndDate: args.summerEndDate,
       isActive: true,
     });
 
@@ -64,6 +81,8 @@ export const updateChild = mutation({
     notes: v.optional(v.string()),
     color: v.optional(v.string()),
     isActive: v.optional(v.boolean()),
+    summerStartDate: v.optional(v.string()),
+    summerEndDate: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const family = await requireFamily(ctx);
@@ -80,6 +99,7 @@ export const updateChild = mutation({
 
     // Build update object with only provided fields
     const updates: Record<string, unknown> = {};
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 
     if (args.firstName !== undefined) {
       updates.firstName = args.firstName;
@@ -91,7 +111,6 @@ export const updateChild = mutation({
 
     if (args.birthdate !== undefined) {
       // Validate birthdate format
-      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!dateRegex.test(args.birthdate)) {
         throw new Error("Birthdate must be in YYYY-MM-DD format");
       }
@@ -125,6 +144,27 @@ export const updateChild = mutation({
 
     if (args.isActive !== undefined) {
       updates.isActive = args.isActive;
+    }
+
+    if (args.summerStartDate !== undefined) {
+      if (args.summerStartDate && !dateRegex.test(args.summerStartDate)) {
+        throw new Error("Summer start date must be in YYYY-MM-DD format");
+      }
+      updates.summerStartDate = args.summerStartDate || undefined;
+    }
+
+    if (args.summerEndDate !== undefined) {
+      if (args.summerEndDate && !dateRegex.test(args.summerEndDate)) {
+        throw new Error("Summer end date must be in YYYY-MM-DD format");
+      }
+      updates.summerEndDate = args.summerEndDate || undefined;
+    }
+
+    // Validate that start is before end if both are being set
+    const finalStart = args.summerStartDate ?? child.summerStartDate;
+    const finalEnd = args.summerEndDate ?? child.summerEndDate;
+    if (finalStart && finalEnd && new Date(finalStart) > new Date(finalEnd)) {
+      throw new Error("Summer start date must be before end date");
     }
 
     // Only update if there are changes

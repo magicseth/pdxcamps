@@ -189,7 +189,7 @@ export function AddEventModal({
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g., San Diego Trip"
+              placeholder="e.g., Visit Grandparents"
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
               required
               aria-required="true"
@@ -363,7 +363,7 @@ export function AddEventModal({
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="e.g., San Diego, CA"
+              placeholder="e.g., Grandma's house"
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
             />
           </div>

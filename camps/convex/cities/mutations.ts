@@ -133,6 +133,71 @@ export const createCity = mutation({
 });
 
 /**
+ * Admin mutation to set brand info for a city
+ */
+export const setCityBrand = mutation({
+  args: {
+    cityId: v.id("cities"),
+    brandName: v.string(),
+    domain: v.string(),
+    fromEmail: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const city = await ctx.db.get(args.cityId);
+    if (!city) {
+      throw new Error("City not found");
+    }
+
+    await ctx.db.patch(args.cityId, {
+      brandName: args.brandName,
+      domain: args.domain,
+      fromEmail: args.fromEmail,
+    });
+
+    return { success: true, cityId: args.cityId };
+  },
+});
+
+/**
+ * Admin mutation to set brand info for all cities by slug mapping
+ */
+export const setBrandInfoForAllCities = mutation({
+  args: {},
+  handler: async (ctx) => {
+    // Brand mapping by city slug
+    const brandMapping: Record<string, { brandName: string; domain: string; fromEmail: string }> = {
+      portland: {
+        brandName: "PDX Camps",
+        domain: "pdxcamps.com",
+        fromEmail: "hello@pdxcamps.com",
+      },
+      boston: {
+        brandName: "BOS Camps",
+        domain: "boscamps.com",
+        fromEmail: "hello@boscamps.com",
+      },
+    };
+
+    const cities = await ctx.db.query("cities").collect();
+    const updates: string[] = [];
+
+    for (const city of cities) {
+      const brand = brandMapping[city.slug];
+      if (brand) {
+        await ctx.db.patch(city._id, {
+          brandName: brand.brandName,
+          domain: brand.domain,
+          fromEmail: brand.fromEmail,
+        });
+        updates.push(`${city.name}: ${brand.brandName}`);
+      }
+    }
+
+    return { success: true, updated: updates };
+  },
+});
+
+/**
  * Admin mutation to create a new neighborhood
  */
 export const createNeighborhood = mutation({
