@@ -445,83 +445,72 @@ export const createNetlifyDnsZone = action({
 });
 
 /**
- * Add DNS records to a Netlify zone
- * Sets up A records for root and CNAME for www
+ * Add a custom domain to the Netlify site
+ * This connects the domain to the project so Netlify serves it
  */
-export const configureNetlifyDnsRecords = action({
+export const addDomainToNetlifySite = action({
   args: {
-    zoneId: v.string(),
     domain: v.string(),
-    // Netlify load balancer IP for A record
-    netlifyIp: v.optional(v.string()),
   },
   handler: async (_, args): Promise<{
     success: boolean;
-    records?: Array<{ type: string; hostname: string; value: string }>;
     error?: string;
   }> => {
     const token = process.env.NETLIFY_ACCESS_TOKEN;
+    const siteId = process.env.NETLIFY_SITE_ID;
 
     if (!token) {
       return { success: false, error: "Netlify access token not configured" };
     }
-
-    // Default Netlify load balancer IP
-    const netlifyIp = args.netlifyIp || "75.2.60.5";
-
-    const recordsToCreate = [
-      // A record for root domain
-      {
-        type: "A",
-        hostname: args.domain,
-        value: netlifyIp,
-        ttl: 3600,
-      },
-      // CNAME for www subdomain pointing to Netlify
-      {
-        type: "CNAME",
-        hostname: `www.${args.domain}`,
-        value: `${args.domain}.netlify.app`,
-        ttl: 3600,
-      },
-    ];
-
-    const createdRecords = [];
+    if (!siteId) {
+      return { success: false, error: "Netlify site ID not configured" };
+    }
 
     try {
-      for (const record of recordsToCreate) {
-        const response = await fetch(
-          `https://api.netlify.com/api/v1/dns_zones/${args.zoneId}/dns_records`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(record),
-          }
-        );
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          return {
-            success: false,
-            error: `Failed to create ${record.type} record: ${errorText}`,
-          };
+      // Add domain alias to the site
+      const response = await fetch(
+        `https://api.netlify.com/api/v1/sites/${siteId}/domain_aliases`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ domain: args.domain }),
         }
+      );
 
-        const created: NetlifyDnsRecord = await response.json();
-        createdRecords.push({
-          type: created.type,
-          hostname: created.hostname,
-          value: created.value,
-        });
+      if (!response.ok) {
+        const errorText = await response.text();
+        // 422 often means domain already added, which is fine
+        if (response.status === 422 && errorText.includes("already")) {
+          return { success: true };
+        }
+        return {
+          success: false,
+          error: `Failed to add domain to site: ${response.status} - ${errorText}`,
+        };
       }
 
-      return {
-        success: true,
-        records: createdRecords,
-      };
+      // Also add www subdomain
+      const wwwResponse = await fetch(
+        `https://api.netlify.com/api/v1/sites/${siteId}/domain_aliases`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ domain: `www.${args.domain}` }),
+        }
+      );
+
+      // www failure is not critical
+      if (!wwwResponse.ok) {
+        console.log(`Note: Could not add www subdomain: ${await wwwResponse.text()}`);
+      }
+
+      return { success: true };
     } catch (error) {
       return {
         success: false,
@@ -532,7 +521,7 @@ export const configureNetlifyDnsRecords = action({
 });
 
 /**
- * Full DNS setup workflow: Create zone, add records, update nameservers
+ * Full DNS setup workflow: Add domain to site, create zone, update nameservers
  */
 export const setupDnsForDomain = action({
   args: {
@@ -544,7 +533,20 @@ export const setupDnsForDomain = action({
     nameservers?: string[];
     error?: string;
   }> => {
-    // Step 1: Create Netlify DNS zone
+    // Step 1: Add domain to Netlify site (connects domain to project)
+    const siteResult = await ctx.runAction(
+      api.expansion.actions.addDomainToNetlifySite,
+      { domain: args.domain }
+    );
+
+    if (!siteResult.success) {
+      return {
+        success: false,
+        error: siteResult.error || "Failed to add domain to Netlify site",
+      };
+    }
+
+    // Step 2: Create Netlify DNS zone
     const zoneResult = await ctx.runAction(
       api.expansion.actions.createNetlifyDnsZone,
       { domain: args.domain }
@@ -554,20 +556,6 @@ export const setupDnsForDomain = action({
       return {
         success: false,
         error: zoneResult.error || "Failed to create DNS zone",
-      };
-    }
-
-    // Step 2: Add DNS records
-    const recordsResult = await ctx.runAction(
-      api.expansion.actions.configureNetlifyDnsRecords,
-      { zoneId: zoneResult.zoneId, domain: args.domain }
-    );
-
-    if (!recordsResult.success) {
-      return {
-        success: false,
-        zoneId: zoneResult.zoneId,
-        error: recordsResult.error || "Failed to create DNS records",
       };
     }
 
