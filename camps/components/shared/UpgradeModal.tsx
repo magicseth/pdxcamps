@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { usePricingVariant } from '../../hooks/usePricingVariant';
 
 interface UpgradeModalProps {
   isOpen: boolean;
@@ -10,8 +11,14 @@ interface UpgradeModalProps {
 
 export function UpgradeModal({ isOpen, onClose, savedCount = 4 }: UpgradeModalProps) {
   const router = useRouter();
+  const pricing = usePricingVariant();
 
   if (!isOpen) return null;
+
+  // Format price display for button
+  const priceDisplay = pricing
+    ? `${pricing.price}${pricing.period}`
+    : '$4.99/week';
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -38,7 +45,7 @@ export function UpgradeModal({ isOpen, onClose, savedCount = 4 }: UpgradeModalPr
               onClick={() => router.push('/upgrade')}
               className="w-full py-3 px-4 bg-primary text-white rounded-lg font-medium hover:bg-primary-dark transition-colors"
             >
-              Get Summer Pass — $29
+              Upgrade — {priceDisplay}
             </button>
 
             <button

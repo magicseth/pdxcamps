@@ -6,21 +6,24 @@ import { api } from '../../convex/_generated/api';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useMarket } from '../../hooks/useMarket';
+import { usePricingVariant } from '../../hooks/usePricingVariant';
 
 export default function UpgradePage() {
   const searchParams = useSearchParams();
   const canceled = searchParams.get('canceled') === 'true';
   const market = useMarket();
+  const pricing = usePricingVariant();
 
   const subscription = useQuery(api.subscriptions.getSubscription);
   const createCheckout = useAction(api.subscriptions.createCheckoutSession);
 
-  const [loading, setLoading] = useState<'monthly' | 'summer' | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleUpgrade = async (plan: 'monthly' | 'summer') => {
-    setLoading(plan);
+  const handleUpgrade = async () => {
+    if (!pricing) return;
+    setLoading(true);
     try {
-      const result = await createCheckout({ plan });
+      const result = await createCheckout({ plan: pricing.stripePlan });
       if (result.url) {
         window.location.href = result.url;
       }
@@ -28,7 +31,7 @@ export default function UpgradePage() {
       console.error('Failed to create checkout:', error);
       alert('Failed to start checkout. Please try again.');
     } finally {
-      setLoading(null);
+      setLoading(false);
     }
   };
 
@@ -57,19 +60,33 @@ export default function UpgradePage() {
     );
   }
 
+  // Loading state while determining variant
+  if (!pricing) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 py-16 px-4">
+        <div className="max-w-lg mx-auto text-center">
+          <div className="animate-pulse">
+            <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-48 mx-auto mb-4"></div>
+            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-64 mx-auto"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 py-16 px-4">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-lg mx-auto">
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <Link href="/" className="text-primary hover:text-primary-dark text-sm mb-4 inline-block">
             &larr; Back to Planner
           </Link>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
-            Upgrade to Premium
+            Unlock Your Summer
           </h1>
-          <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-            Plan your entire summer with unlimited children, all 12 weeks, and deadline reminders.
+          <p className="text-lg text-slate-600 dark:text-slate-400">
+            Plan your entire summer with unlimited camps and deadline reminders.
           </p>
 
           {canceled && (
@@ -79,117 +96,81 @@ export default function UpgradePage() {
           )}
         </div>
 
-        {/* Pricing Cards */}
-        <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
-          {/* Monthly Plan */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-8">
-            <div className="text-center mb-6">
-              <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
-                Monthly
-              </h2>
-              <div className="flex items-baseline justify-center gap-1">
-                <span className="text-4xl font-bold text-slate-900 dark:text-white">$8.99</span>
-                <span className="text-slate-500 dark:text-slate-400">/month</span>
-              </div>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
-                Cancel anytime
-              </p>
+        {/* Single Pricing Card */}
+        <div className="bg-gradient-to-br from-primary to-surface-dark rounded-2xl shadow-lg p-8 text-white">
+          <div className="text-center mb-6">
+            <div className="flex items-baseline justify-center gap-1">
+              <span className="text-5xl font-bold">{pricing.price}</span>
+              {pricing.period && (
+                <span className="text-white/70 text-xl">{pricing.period}</span>
+              )}
             </div>
-
-            <ul className="space-y-3 mb-8">
-              <FeatureItem>Unlimited children</FeatureItem>
-              <FeatureItem>All 12 weeks of summer</FeatureItem>
-              <FeatureItem>Unlimited saved camps</FeatureItem>
-              <FeatureItem>Registration deadline alerts</FeatureItem>
-              <FeatureItem>Export to calendar</FeatureItem>
-            </ul>
-
-            <button
-              onClick={() => handleUpgrade('monthly')}
-              disabled={loading !== null}
-              className="w-full py-3 px-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-lg font-medium hover:bg-slate-800 dark:hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading === 'monthly' ? 'Loading...' : 'Subscribe Monthly'}
-            </button>
+            <p className="text-white/70 mt-2">
+              {pricing.description}
+            </p>
           </div>
 
-          {/* Summer Pass */}
-          <div className="bg-gradient-to-br from-primary to-surface-dark rounded-2xl shadow-lg p-8 relative overflow-hidden">
-            <div className="absolute top-4 right-4 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full">
-              BEST VALUE
-            </div>
+          <ul className="space-y-3 mb-8">
+            <FeatureItem>Unlimited children</FeatureItem>
+            <FeatureItem>All 12 weeks of summer</FeatureItem>
+            <FeatureItem>Unlimited saved camps</FeatureItem>
+            <FeatureItem>Registration deadline alerts</FeatureItem>
+            <FeatureItem>Export to calendar</FeatureItem>
+          </ul>
 
-            <div className="text-center mb-6">
-              <h2 className="text-xl font-semibold text-white mb-2">
-                Summer Pass
-              </h2>
-              <div className="flex items-baseline justify-center gap-1">
-                <span className="text-4xl font-bold text-white">$25</span>
-                <span className="text-white/70">/summer</span>
-              </div>
-              <p className="text-sm text-white/70 mt-2">
-                One-time payment • Full summer access
-              </p>
-            </div>
-
-            <ul className="space-y-3 mb-8">
-              <FeatureItem light>Unlimited children</FeatureItem>
-              <FeatureItem light>All 12 weeks of summer</FeatureItem>
-              <FeatureItem light>Unlimited saved camps</FeatureItem>
-              <FeatureItem light>Registration deadline alerts</FeatureItem>
-              <FeatureItem light>Export to calendar</FeatureItem>
-              <FeatureItem light>Priority support</FeatureItem>
-            </ul>
-
-            <button
-              onClick={() => handleUpgrade('summer')}
-              disabled={loading !== null}
-              className="w-full py-3 px-4 bg-white text-primary-dark rounded-lg font-medium hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading === 'summer' ? 'Loading...' : 'Get Summer Pass'}
-            </button>
-          </div>
+          <button
+            onClick={handleUpgrade}
+            disabled={loading}
+            className="w-full py-4 px-4 bg-white text-primary-dark rounded-lg font-semibold text-lg hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {loading ? 'Loading...' : pricing.ctaText}
+          </button>
         </div>
 
         {/* Free tier comparison */}
-        <div className="mt-12 text-center">
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-            Free Plan Includes
-          </h3>
-          <div className="flex flex-wrap justify-center gap-4 text-sm text-slate-600 dark:text-slate-400">
-            <span>Browse all camps</span>
-            <span>•</span>
-            <span>1 child in planner</span>
-            <span>•</span>
-            <span>4 weeks visible</span>
-            <span>•</span>
-            <span>5 saved camps</span>
+        <div className="mt-8 text-center">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
+            Free plan includes:
+          </p>
+          <div className="flex flex-wrap justify-center gap-2 text-xs">
+            <span className="px-2 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded">
+              Browse all camps
+            </span>
+            <span className="px-2 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded">
+              4 weeks visible
+            </span>
+            <span className="px-2 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded">
+              5 saved camps
+            </span>
           </div>
         </div>
 
         {/* FAQ */}
-        <div className="mt-16 max-w-2xl mx-auto">
-          <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-6 text-center">
+        <div className="mt-12">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 text-center">
             Questions?
           </h3>
-          <div className="space-y-4">
-            <FAQItem question="Can I cancel anytime?">
-              Yes! Monthly subscriptions can be canceled anytime from your account settings.
-              You'll retain access until the end of your billing period.
-            </FAQItem>
-            <FAQItem question="What's the difference between Monthly and Summer Pass?">
-              Monthly is a recurring subscription at $8.99/month. Summer Pass is a one-time $25
-              payment that gives you full access for the entire summer season (May through August).
-            </FAQItem>
+          <div className="space-y-3">
+            {pricing.variant === 'weekly' ? (
+              <FAQItem question="Can I cancel anytime?">
+                Yes! You can cancel your subscription anytime from your account settings.
+                You'll retain access until the end of your current billing period.
+              </FAQItem>
+            ) : (
+              <FAQItem question="How long does my access last?">
+                Your Summer Pass gives you full access for the entire summer season,
+                from now through August.
+              </FAQItem>
+            )}
             <FAQItem question="Do I need Premium to browse camps?">
               No! Browsing and searching camps is completely free. Premium unlocks unlimited
-              planning features, more children, and deadline alerts.
+              planning features and deadline alerts.
             </FAQItem>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="mt-16 text-center text-slate-500 text-sm">
+        <div className="mt-12 text-center text-slate-500 text-sm">
           <div className="flex justify-center gap-4">
             <Link href="/terms" className="hover:text-slate-700 dark:hover:text-slate-300">Terms</Link>
             <Link href="/privacy" className="hover:text-slate-700 dark:hover:text-slate-300">Privacy</Link>
@@ -200,10 +181,10 @@ export default function UpgradePage() {
   );
 }
 
-function FeatureItem({ children, light }: { children: React.ReactNode; light?: boolean }) {
+function FeatureItem({ children }: { children: React.ReactNode }) {
   return (
-    <li className={`flex items-center gap-3 ${light ? 'text-white' : 'text-slate-700 dark:text-slate-300'}`}>
-      <CheckIcon className={`w-5 h-5 flex-shrink-0 ${light ? 'text-white/70' : 'text-green-500'}`} />
+    <li className="flex items-center gap-3 text-white">
+      <CheckIcon className="w-5 h-5 flex-shrink-0 text-white/70" />
       <span>{children}</span>
     </li>
   );

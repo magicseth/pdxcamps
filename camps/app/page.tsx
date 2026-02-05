@@ -62,7 +62,7 @@ function LandingPage() {
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link href="/" className="flex items-center">
             <Image
-              src={`${market.iconPath}/icon.png`}
+              src={`${market.iconPath}/apple-icon.png`}
               alt={market.tagline}
               width={120}
               height={40}
@@ -559,10 +559,9 @@ function LandingPage() {
                   BEST VALUE
                 </div>
                 <div className="text-center mb-6">
-                  <h3 className="text-xl font-bold mb-2">Summer Pass</h3>
-                  <div className="text-4xl font-bold">$29</div>
-                  <p className="text-white/70 mt-1">one-time for summer 2025</p>
-                  <p className="text-sm text-white/60 mt-2">or $5/month</p>
+                  <h3 className="text-xl font-bold mb-2">Premium</h3>
+                  <div className="text-4xl font-bold">From $4.99</div>
+                  <p className="text-white/70 mt-1">Plan your entire summer</p>
                 </div>
                 <ul className="space-y-3 mb-8">
                   <PricingFeature included light>Browse all {market.name} camps</PricingFeature>
@@ -600,7 +599,7 @@ function LandingPage() {
             <div className="space-y-4">
               <FAQItem
                 question="Is this really free? What's the catch?"
-                answer={`The free plan lets you browse all camps, plan for all your kids, and see 4 weeks of summer. That's enough for many families! If you need to see all 12 weeks, save unlimited camps, or export to your calendar, our Summer Pass is $25 one-time (or $8.99/month). We're ${market.name} parents too—we keep it affordable.`}
+                answer={`The free plan lets you browse all camps, plan for all your kids, and see 4 weeks of summer. That's enough for many families! If you need to see all 12 weeks, save unlimited camps, or export to your calendar, Premium starts at just $4.99. We're ${market.name} parents too—we keep it affordable.`}
               />
               <FAQItem
                 question="How do I actually book a camp?"
@@ -654,7 +653,7 @@ function LandingPage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-3">
               <Image
-                src={`${market.iconPath}/icon.png`}
+                src={`${market.iconPath}/apple-icon.png`}
                 alt={market.tagline}
                 width={100}
                 height={32}
@@ -1207,7 +1206,7 @@ function PlannerHub({
                   </div>
                 </div>
                 <span className="text-sm font-medium text-accent group-hover:text-accent-dark">
-                  $29/summer →
+                  Upgrade →
                 </span>
               </div>
             </Link>
@@ -1534,7 +1533,7 @@ function AppHeader({ user, onSignOut, isPremium }: { user: User | null; onSignOu
       <div className="max-w-4xl mx-auto flex items-center justify-between">
         <Link href="/" className="flex items-center">
           <Image
-            src={`${market.iconPath}/icon.png`}
+            src={`${market.iconPath}/apple-icon.png`}
             alt={market.tagline}
             width={100}
             height={32}

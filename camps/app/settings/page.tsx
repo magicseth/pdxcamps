@@ -938,7 +938,7 @@ function SubscriptionSection() {
             href="/upgrade"
             className="block w-full px-4 py-3 text-center bg-gradient-to-r from-accent to-accent-dark text-white font-medium rounded-md hover:from-accent-dark hover:to-primary transition-all"
           >
-            Upgrade to Summer Pass - $29
+            Upgrade to Premium
           </Link>
         </div>
       )}
@@ -1054,6 +1054,8 @@ function ChildrenSection({
     currentGrade?: number;
     interests: string[];
     color?: string;
+    summerStartDate?: string;
+    summerEndDate?: string;
   }[];
 }) {
   const [editingChildId, setEditingChildId] = useState<Id<'children'> | null>(
@@ -1133,6 +1135,8 @@ function ChildCard({
     currentGrade?: number;
     interests: string[];
     color?: string;
+    summerStartDate?: string;
+    summerEndDate?: string;
   };
   onEdit: () => void;
 }) {
@@ -1181,6 +1185,8 @@ function EditChildForm({
     currentGrade?: number;
     interests: string[];
     color?: string;
+    summerStartDate?: string;
+    summerEndDate?: string;
   };
   onClose: () => void;
 }) {
@@ -1191,6 +1197,8 @@ function EditChildForm({
     child.currentGrade
   );
   const [color, setColor] = useState(child.color || '#3B82F6');
+  const [summerStartDate, setSummerStartDate] = useState(child.summerStartDate ?? '');
+  const [summerEndDate, setSummerEndDate] = useState(child.summerEndDate ?? '');
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -1207,6 +1215,11 @@ function EditChildForm({
       setError('Birthdate is required');
       return;
     }
+    // Validate summer dates
+    if (summerStartDate && summerEndDate && new Date(summerStartDate) > new Date(summerEndDate)) {
+      setError('Summer start date must be before end date');
+      return;
+    }
 
     try {
       setIsSaving(true);
@@ -1218,6 +1231,8 @@ function EditChildForm({
         birthdate,
         currentGrade,
         color,
+        summerStartDate: summerStartDate || undefined,
+        summerEndDate: summerEndDate || undefined,
       });
       onClose();
     } catch (err) {
@@ -1361,6 +1376,42 @@ function EditChildForm({
               aria-label={`Select ${c.label}`}
             />
           ))}
+        </div>
+      </div>
+
+      {/* Summer Date Range */}
+      <div className="border-t border-slate-200 dark:border-slate-700 pt-3 mt-3">
+        <label className="block text-xs text-slate-500 mb-2">
+          Summer Schedule (optional)
+        </label>
+        <p className="text-xs text-slate-400 dark:text-slate-500 mb-2">
+          When does {child.firstName}&apos;s summer start and end? Leave blank to use default (June 1 - Aug 31).
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label htmlFor={`edit-child-summer-start-${child._id}`} className="block text-xs text-slate-500 mb-1">
+              First day of summer
+            </label>
+            <input
+              type="date"
+              id={`edit-child-summer-start-${child._id}`}
+              value={summerStartDate}
+              onChange={(e) => setSummerStartDate(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
+            />
+          </div>
+          <div>
+            <label htmlFor={`edit-child-summer-end-${child._id}`} className="block text-xs text-slate-500 mb-1">
+              Last day of summer
+            </label>
+            <input
+              type="date"
+              id={`edit-child-summer-end-${child._id}`}
+              value={summerEndDate}
+              onChange={(e) => setSummerEndDate(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
+            />
+          </div>
         </div>
       </div>
 

@@ -26,13 +26,19 @@ const stripeClient = new StripeSubscriptions(components.stripe, {});
 
 // Price IDs from Stripe Dashboard (test vs live)
 const LIVE_PRICES = {
-  monthly: "price_1SwdYiAOaA3WFe0KMiXaSSr6", // $5/month
-  summer: "price_1SwdZOAOaA3WFe0Kv1cQZC3O", // $29 one-time Summer Pass
+  monthly: "price_1SwdYiAOaA3WFe0KMiXaSSr6", // $5/month (legacy)
+  summer: "price_1SwdZOAOaA3WFe0Kv1cQZC3O", // $29 one-time Summer Pass (legacy)
+  // A/B Test prices (simplified pricing)
+  weekly: "price_1SxLcZAOaA3WFe0KSFecrZrG", // $4.99/week
+  monthlyOneshot: "price_1SxLdIAOaA3WFe0K3UYbemGZ", // $39.99 one-time
 };
 
 const TEST_PRICES = {
   monthly: "price_1SweagA8NcUZvwFV3wqpcPLf", // $5/month test
   summer: "price_1SweatA8NcUZvwFVu7yBk3cu", // $29 Summer Pass test
+  // A/B Test prices - use live prices for now (update with test prices if needed)
+  weekly: "price_1SxLcZAOaA3WFe0KSFecrZrG", // $4.99/week
+  monthlyOneshot: "price_1SxLdIAOaA3WFe0K3UYbemGZ", // $39.99 one-time
 };
 
 // Select prices based on Stripe key
@@ -110,10 +116,21 @@ export const getSubscription = query({
 /**
  * Create a checkout session for subscription
  * Uses Stripe SDK directly to support promotion codes
+ *
+ * Plans:
+ * - monthly: $5/month recurring (legacy)
+ * - summer: $29 one-time (legacy)
+ * - weekly: $4.99/week recurring (A/B test)
+ * - monthlyOneshot: $39.99 one-time (A/B test)
  */
 export const createCheckoutSession = action({
   args: {
-    plan: v.union(v.literal("monthly"), v.literal("summer")),
+    plan: v.union(
+      v.literal("monthly"),
+      v.literal("summer"),
+      v.literal("weekly"),
+      v.literal("monthlyOneshot")
+    ),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -129,11 +146,17 @@ export const createCheckoutSession = action({
     });
 
     // Get the price ID for the selected plan
-    const priceId = args.plan === "monthly" ? PRICES.monthly : PRICES.summer;
+    const priceMap: Record<string, string> = {
+      monthly: PRICES.monthly,
+      summer: PRICES.summer,
+      weekly: PRICES.weekly,
+      monthlyOneshot: PRICES.monthlyOneshot,
+    };
+    const priceId = priceMap[args.plan];
 
-    // For summer pass, use payment mode (one-time)
-    // For monthly, use subscription mode
-    const mode = args.plan === "summer" ? "payment" : "subscription";
+    // One-time payments use payment mode, recurring use subscription mode
+    const oneshotPlans = ["summer", "monthlyOneshot"];
+    const mode = oneshotPlans.includes(args.plan) ? "payment" : "subscription";
 
     const baseUrl = process.env.SITE_URL || "http://localhost:3000";
 
