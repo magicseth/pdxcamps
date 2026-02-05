@@ -112,13 +112,21 @@ function GrowthContent() {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-          Growth & Expansion
-        </h2>
-        <p className="text-slate-500 mt-1">
-          Add new markets, discover sources, and manage organizations
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+            Growth & Expansion
+          </h2>
+          <p className="text-slate-500 mt-1">
+            Add new markets, discover sources, and manage organizations
+          </p>
+        </div>
+        <Link
+          href="/admin/market-seeding"
+          className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium"
+        >
+          Web Search Discovery
+        </Link>
       </div>
 
       {/* Tabs */}

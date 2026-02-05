@@ -19,6 +19,7 @@ const KNOWN_DIRECTORIES = [
   "acacamps.org",
   "campnavigator.com",
   "kidscamps.com",
+  "summercampdirectories.com",
 ];
 
 /**

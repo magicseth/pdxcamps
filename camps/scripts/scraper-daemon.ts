@@ -2266,9 +2266,272 @@ async function processContactExtraction(verbose: boolean = false) {
   }
 }
 
+// ============================================
+// MARKET DISCOVERY PROCESSING
+// ============================================
+
+interface DiscoveryTask {
+  _id: string;
+  cityId: string;
+  regionName: string;
+  status: string;
+  searchQueries: string[];
+  maxSearchResults?: number;
+}
+
+interface DiscoveredUrl {
+  url: string;
+  source: string;
+  title?: string;
+  domain: string;
+}
+
+// Known camp directory domains to prioritize for deep crawl
+const KNOWN_DIRECTORIES = [
+  "activityhero.com",
+  "sawyer.com",
+  "campsearch.com",
+  "mysummercamps.com",
+  "acacamps.org",
+  "campnavigator.com",
+  "kidscamps.com",
+  "summercampdirectories.com",
+];
+
+// URL patterns that indicate a camp-related page
+const CAMP_SIGNAL_KEYWORDS = [
+  "summer camp",
+  "day camp",
+  "kids camp",
+  "registration",
+  "enroll",
+  "sign up",
+  "ages",
+  "grades",
+  "children",
+  "youth",
+  "program",
+];
+
+// URLs to skip (not camp organizations)
+const SKIP_URL_PATTERNS = [
+  /facebook\.com/i,
+  /twitter\.com/i,
+  /instagram\.com/i,
+  /linkedin\.com/i,
+  /youtube\.com/i,
+  /wikipedia\.org/i,
+  /yelp\.com/i,
+  /tripadvisor/i,
+  /google\.(com|maps)/i,
+  /pinterest\.com/i,
+  /reddit\.com/i,
+  /indeed\.com/i,
+  /glassdoor\.com/i,
+  /\.(pdf|doc|docx|xls|xlsx)$/i,
+];
+
+function shouldSkipDiscoveryUrl(url: string): boolean {
+  return SKIP_URL_PATTERNS.some((pattern) => pattern.test(url));
+}
+
+function extractDomainFromUrl(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Process pending market discovery tasks
+ */
+async function processMarketDiscoveryQueue(verbose: boolean = false) {
+  const log = (msg: string) => {
+    writeLog(msg);
+    if (verbose) console.log(msg);
+  };
+
+  // Check if Stagehand is available
+  if (!Stagehand) {
+    if (verbose) log("🌍 Market discovery skipped - Stagehand not available");
+    return;
+  }
+
+  // Get pending tasks
+  const tasks = await client.query(api.scraping.marketDiscovery.getPendingDiscoveryTasks, { limit: 1 });
+
+  if (!tasks || tasks.length === 0) {
+    if (verbose) log("🌍 No pending market discovery tasks");
+    return;
+  }
+
+  const task = tasks[0] as DiscoveryTask;
+  log(`🌍 Processing market discovery: ${task.regionName}`);
+  await logQueueStatus("   ");
+
+  // Claim the task
+  const claimed = await client.mutation(api.scraping.marketDiscovery.claimDiscoveryTask, {
+    taskId: task._id as any,
+    sessionId: `daemon-${Date.now()}`,
+  });
+
+  if (!claimed) {
+    log(`   Already claimed by another worker`);
+    return;
+  }
+
+  let stagehand: any = null;
+  const discoveredUrls: DiscoveredUrl[] = [];
+  const seenDomains = new Set<string>();
+  let searchesCompleted = 0;
+  let directoriesFound = 0;
+
+  try {
+    // Initialize Stagehand
+    log(`   🔧 Initializing Stagehand...`);
+    stagehand = new Stagehand({
+      env: "BROWSERBASE",
+      apiKey: process.env.BROWSERBASE_API_KEY,
+      projectId: process.env.BROWSERBASE_PROJECT_ID,
+      model: {
+        modelName: "anthropic/claude-sonnet-4-20250514",
+        apiKey: process.env.MODEL_API_KEY,
+      },
+      disablePino: true,
+      verbose: 0,
+    });
+
+    await stagehand.init();
+    const page = stagehand.context.pages()[0];
+
+    // Search Google for each query
+    for (const query of task.searchQueries) {
+      if (shutdownRequested) break;
+
+      log(`   🔍 Searching: "${query}"`);
+
+      try {
+        const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}&num=20`;
+        await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+        await page.waitForTimeout(3000);
+
+        // Extract search results using Stagehand
+        const results = await page.extract({
+          instruction: `Extract all organic search results from this Google search page.
+For each result, extract:
+- The URL (href of the main link)
+- The title text
+Skip ads, "People also ask", and other non-result elements.
+Focus on actual website links that could be summer camp organizations.`,
+          schema: {
+            type: "object",
+            properties: {
+              results: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    url: { type: "string" },
+                    title: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        const extracted = results as { results?: Array<{ url: string; title: string }> };
+
+        if (extracted.results) {
+          for (const result of extracted.results) {
+            if (!result.url || shouldSkipDiscoveryUrl(result.url)) continue;
+
+            const domain = extractDomainFromUrl(result.url);
+            if (!domain || seenDomains.has(domain)) continue;
+
+            seenDomains.add(domain);
+            discoveredUrls.push({
+              url: result.url,
+              source: "google",
+              title: result.title,
+              domain,
+            });
+
+            // Check if it's a known directory
+            if (KNOWN_DIRECTORIES.some(d => domain.includes(d))) {
+              directoriesFound++;
+            }
+          }
+        }
+
+        searchesCompleted++;
+
+        // Update progress
+        await client.mutation(api.scraping.marketDiscovery.updateDiscoveryProgress, {
+          taskId: task._id as any,
+          searchesCompleted,
+          urlsDiscovered: discoveredUrls.length,
+          directoriesFound,
+        });
+
+        log(`      Found ${extracted.results?.length || 0} results (${discoveredUrls.length} total unique)`);
+
+        // Rate limit between searches
+        await page.waitForTimeout(2000);
+
+      } catch (searchError) {
+        const errorMsg = searchError instanceof Error ? searchError.message : String(searchError);
+        log(`      ⚠️ Search error: ${errorMsg.slice(0, 100)}`);
+      }
+    }
+
+    // Close Stagehand
+    await stagehand.close();
+    stagehand = null;
+
+    log(`   ✅ Discovery complete: ${discoveredUrls.length} URLs from ${searchesCompleted} searches`);
+
+    // Process results and create organizations
+    if (discoveredUrls.length > 0) {
+      log(`   📥 Creating organizations from discovered URLs...`);
+
+      const result = await client.action(api.scraping.marketDiscoveryAction.processDiscoveryResults, {
+        taskId: task._id as any,
+        discoveredUrls,
+      });
+
+      log(`   ✅ Created ${result.orgsCreated} orgs, ${result.orgsExisted} existed, ${result.sourcesCreated} scraper requests queued`);
+    } else {
+      // No URLs found - mark as completed with zeros
+      await client.mutation(api.scraping.marketDiscovery.completeDiscoveryTask, {
+        taskId: task._id as any,
+        orgsCreated: 0,
+        orgsExisted: 0,
+        sourcesCreated: 0,
+      });
+      log(`   ⚠️ No camp URLs discovered`);
+    }
+
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    log(`   ❌ Discovery failed: ${errorMsg}`);
+
+    await client.mutation(api.scraping.marketDiscovery.failDiscoveryTask, {
+      taskId: task._id as any,
+      error: errorMsg,
+    });
+
+    if (stagehand) {
+      try { await stagehand.close(); } catch { }
+    }
+  }
+}
+
 // Check for --directory flag to only process directory queue
 const directoryOnly = process.argv.includes("--directory") || process.argv.includes("-d");
 const contactOnly = process.argv.includes("--contact") || process.argv.includes("-c");
+const discoveryOnly = process.argv.includes("--discovery") || process.argv.includes("-D");
 
 if (directoryOnly) {
   // One-shot directory processing
@@ -2290,8 +2553,18 @@ if (directoryOnly) {
     console.error("Error:", err);
     process.exit(1);
   });
+} else if (discoveryOnly) {
+  // One-shot market discovery processing
+  console.log("🌍 Processing market discovery only...");
+  processMarketDiscoveryQueue(true).then(() => {
+    console.log("Done.");
+    process.exit(0);
+  }).catch((err) => {
+    console.error("Error:", err);
+    process.exit(1);
+  });
 } else {
-  // Run the full daemon (scraper development + directory queue + contact extraction)
+  // Run the full daemon (scraper development + directory queue + contact extraction + market discovery)
   const originalMain = main;
   main = async function() {
     // Start the original main loop
@@ -2319,13 +2592,26 @@ if (directoryOnly) {
       }
     }, 60000); // Check every 60 seconds
 
+    // Also periodically check market discovery queue
+    const discoveryInterval = setInterval(async () => {
+      if (!shutdownRequested) {
+        try {
+          await processMarketDiscoveryQueue(process.argv.includes("-v") || process.argv.includes("--verbose"));
+        } catch (err) {
+          console.error("Market discovery error:", err);
+        }
+      }
+    }, 30000); // Check every 30 seconds
+
     // Initial checks
     setTimeout(() => processDirectoryQueue(process.argv.includes("-v")), 5000);
     setTimeout(() => processContactExtraction(process.argv.includes("-v")), 10000);
+    setTimeout(() => processMarketDiscoveryQueue(process.argv.includes("-v")), 15000);
 
     await mainPromise;
     clearInterval(directoryInterval);
     clearInterval(contactInterval);
+    clearInterval(discoveryInterval);
   };
 
   main().catch(console.error);

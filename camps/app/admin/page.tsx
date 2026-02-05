@@ -266,10 +266,16 @@ function AdminContent() {
       {/* Quick Actions */}
       <div className="flex flex-wrap gap-3">
         <Link
-          href="/admin/growth"
+          href="/admin/market-seeding"
           className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium"
         >
-          + Seed Market
+          + Discover Market
+        </Link>
+        <Link
+          href="/admin/growth"
+          className="px-4 py-2 bg-slate-600 text-white rounded-md hover:bg-slate-700 text-sm font-medium"
+        >
+          Manual Seeding
         </Link>
         <Link
           href="/admin/development"

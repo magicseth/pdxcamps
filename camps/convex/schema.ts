@@ -403,6 +403,62 @@ export default defineSchema({
 
   // ============ SCRAPING ============
 
+  // ============ MARKET DISCOVERY ============
+
+  // Tasks for discovering camp organizations in new markets via web search
+  marketDiscoveryTasks: defineTable({
+    // Target market
+    cityId: v.id("cities"),
+    regionName: v.string(), // "Phoenix, Arizona" - for search queries
+
+    // Task state
+    status: v.union(
+      v.literal("pending"),
+      v.literal("searching"), // Web search phase
+      v.literal("discovering"), // Directory crawl phase
+      v.literal("completed"),
+      v.literal("failed")
+    ),
+
+    // Search configuration
+    searchQueries: v.array(v.string()), // Generated search queries
+    maxSearchResults: v.optional(v.number()), // Default 50
+
+    // Progress tracking
+    searchesCompleted: v.optional(v.number()),
+    directoriesFound: v.optional(v.number()),
+    urlsDiscovered: v.optional(v.number()),
+    orgsCreated: v.optional(v.number()),
+    orgsExisted: v.optional(v.number()),
+    sourcesCreated: v.optional(v.number()),
+
+    // Results
+    discoveredUrls: v.optional(
+      v.array(
+        v.object({
+          url: v.string(),
+          source: v.string(), // "google", "bing", "directory"
+          title: v.optional(v.string()),
+          domain: v.string(),
+        })
+      )
+    ),
+    directoryUrls: v.optional(v.array(v.string())), // Camp listing sites found
+
+    // Error handling
+    error: v.optional(v.string()),
+
+    // Daemon tracking
+    claimedAt: v.optional(v.number()),
+    claimedBy: v.optional(v.string()), // Daemon session ID
+
+    // Timestamps
+    createdAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_status", ["status"])
+    .index("by_city", ["cityId"]),
+
   // Queue for directory URLs to be scraped and seeded
   directoryQueue: defineTable({
     cityId: v.id("cities"),
