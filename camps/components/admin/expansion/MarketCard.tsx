@@ -54,10 +54,28 @@ export function MarketCard({ market, onSelect, isSelected }: MarketCardProps) {
         </span>
       </div>
 
-      {/* Stats */}
+      {/* Market Info */}
       <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 mb-2">
         {market.keyStats}
       </p>
+
+      {/* Data Stats - only show if city exists */}
+      {market.stats && (
+        <div className="flex gap-3 text-xs mb-2">
+          <div className="flex items-center gap-1">
+            <span className="text-slate-500">Sources:</span>
+            <span className="font-medium text-slate-700 dark:text-slate-300">{market.stats.sources}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-slate-500">Orgs:</span>
+            <span className="font-medium text-slate-700 dark:text-slate-300">{market.stats.orgs}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-slate-500">Sessions:</span>
+            <span className="font-medium text-slate-700 dark:text-slate-300">{market.stats.sessions}</span>
+          </div>
+        </div>
+      )}
 
       {/* Domain info if purchased */}
       {market.selectedDomain && (

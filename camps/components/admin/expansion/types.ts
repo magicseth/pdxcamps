@@ -32,6 +32,13 @@ export interface MarketWithStatus {
     | 'launched';
   createdAt?: number;
   updatedAt?: number;
+
+  // Stats (only available if city exists)
+  stats?: {
+    sources: number;
+    orgs: number;
+    sessions: number;
+  } | null;
 }
 
 export type ExpansionStatus = MarketWithStatus['status'];

@@ -20,8 +20,43 @@ export const listExpansionMarkets = query({
       markets = markets.filter((m) => m.tier === args.tier);
     }
 
+    // Get stats for all cities that have been created
+    const cityIds = dbRecords
+      .filter((r) => r.cityId)
+      .map((r) => r.cityId!);
+
+    // Fetch all orgs once (they have cityIds array, no index)
+    const allOrgs = await ctx.db.query("organizations").collect();
+
+    // Batch fetch counts for each city
+    const statsPromises = cityIds.map(async (cityId) => {
+      const [sources, sessions] = await Promise.all([
+        ctx.db
+          .query("scrapeSources")
+          .withIndex("by_city", (q) => q.eq("cityId", cityId))
+          .collect(),
+        ctx.db
+          .query("sessions")
+          .withIndex("by_city_and_status", (q) => q.eq("cityId", cityId))
+          .collect(),
+      ]);
+      // Filter orgs that include this cityId
+      const orgsInCity = allOrgs.filter((org) => org.cityIds.includes(cityId));
+      return {
+        cityId,
+        sources: sources.length,
+        orgs: orgsInCity.length,
+        sessions: sessions.length,
+      };
+    });
+
+    const allStats = await Promise.all(statsPromises);
+    const statsByCityId = new Map(allStats.map((s) => [s.cityId, s]));
+
     return markets.map((market) => {
       const dbRecord = recordsByKey.get(market.key);
+      const stats = dbRecord?.cityId ? statsByCityId.get(dbRecord.cityId) : null;
+
       return {
         ...market,
         // DB fields (or defaults)
@@ -35,6 +70,12 @@ export const listExpansionMarkets = query({
         status: dbRecord?.status ?? "not_started",
         createdAt: dbRecord?.createdAt,
         updatedAt: dbRecord?.updatedAt,
+        // Stats
+        stats: stats ? {
+          sources: stats.sources,
+          orgs: stats.orgs,
+          sessions: stats.sessions,
+        } : null,
       };
     });
   },
