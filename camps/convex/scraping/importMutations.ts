@@ -327,6 +327,32 @@ export const updateSessionPrice = internalMutation({
 });
 
 /**
+ * Update session price and capacity (availability)
+ * Used when re-scraping to update existing sessions with fresh data
+ */
+export const updateSessionPriceAndCapacity = internalMutation({
+  args: {
+    sessionId: v.id("sessions"),
+    price: v.optional(v.number()),
+    capacity: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const updates: Record<string, number> = {
+      lastScrapedAt: Date.now(),
+    };
+    if (args.price !== undefined && args.price > 0) {
+      updates.price = args.price;
+    }
+    if (args.capacity !== undefined && args.capacity > 0) {
+      updates.capacity = args.capacity;
+    }
+    if (Object.keys(updates).length > 1) {
+      await ctx.db.patch(args.sessionId, updates);
+    }
+  },
+});
+
+/**
  * Update source session counts and quality metrics.
  *
  * IMPORTANT: Session counts are now passed as arguments to avoid read-write conflicts.

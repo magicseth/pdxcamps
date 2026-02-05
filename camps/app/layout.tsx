@@ -17,10 +17,25 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
+// Convex HTTP actions URL for serving dynamic assets
+const CONVEX_SITE_URL = process.env.NEXT_PUBLIC_CONVEX_SITE_URL || 'https://deafening-schnauzer-923.convex.site';
+
+/**
+ * Get icon URL for a city - uses Convex storage if available, falls back to static
+ */
+function getIconUrl(city: { slug: string; iconStorageId?: string }): string {
+  if (city.iconStorageId) {
+    // Serve from Convex HTTP action
+    return `${CONVEX_SITE_URL}/city-icon/${city.slug}`;
+  }
+  // Fallback to static icons (first part of slug, e.g., "san" from "san-francisco-bay-area")
+  return `/icons/${city.slug.split('-')[0]}/icon.png`;
+}
+
 /**
  * Get market from database (SSR) with fallback to static config
  */
-async function getMarketSSR(hostname: string): Promise<Market> {
+async function getMarketSSR(hostname: string): Promise<Market & { iconStorageId?: string }> {
   const domain = hostname.split(':')[0].toLowerCase().replace(/^www\./, '');
 
   try {
@@ -38,8 +53,9 @@ async function getMarketSSR(hostname: string): Promise<Market> {
         neighborhoods: '',
         testimonialAttribution: `${city.name} parent of 2`,
         madeIn: city.name,
-        iconPath: `/icons/${city.slug.split('-')[0]}`, // Use first part of slug for icon path
+        iconPath: `/icons/${city.slug.split('-')[0]}`, // Fallback static path
         themeColor: '#2563eb',
+        iconStorageId: city.iconStorageId,
       };
     }
   } catch (error) {
@@ -55,6 +71,19 @@ export async function generateMetadata(): Promise<Metadata> {
   const host = headersList.get('host') || 'localhost';
   const market = await getMarketSSR(host);
 
+  // Use Convex storage URL if icon is stored there, otherwise static path
+  const iconUrl = market.iconStorageId
+    ? `${CONVEX_SITE_URL}/city-icon/${market.slug}`
+    : `${market.iconPath}/icon.png`;
+
+  const icon192Url = market.iconStorageId
+    ? `${CONVEX_SITE_URL}/city-icon/${market.slug}` // Same URL, browser will cache
+    : `${market.iconPath}/icon-192.png`;
+
+  const appleIconUrl = market.iconStorageId
+    ? `${CONVEX_SITE_URL}/city-icon/${market.slug}`
+    : `${market.iconPath}/apple-icon.png`;
+
   return {
     title: {
       default: market.tagline,
@@ -63,11 +92,11 @@ export async function generateMetadata(): Promise<Metadata> {
     description: `Discover and organize summer camps for your kids in ${market.name}`,
     icons: {
       icon: [
-        { url: `${market.iconPath}/icon.png`, sizes: '32x32', type: 'image/png' },
-        { url: `${market.iconPath}/icon-192.png`, sizes: '192x192', type: 'image/png' },
+        { url: iconUrl, sizes: '32x32', type: 'image/png' },
+        { url: icon192Url, sizes: '192x192', type: 'image/png' },
       ],
       apple: [
-        { url: `${market.iconPath}/apple-icon.png`, sizes: '180x180', type: 'image/png' },
+        { url: appleIconUrl, sizes: '180x180', type: 'image/png' },
       ],
     },
     openGraph: {

@@ -3,7 +3,8 @@
 /**
  * AI Icon Generation for New Markets
  *
- * Uses FAL.ai to generate branded city icons based on the PDX icon style.
+ * Uses FAL.ai to generate branded city icons using the PDX icon as a style reference.
+ * This ensures consistent branding colors and design across all city icons.
  */
 
 import { action } from "../_generated/server";
@@ -27,6 +28,7 @@ const CITY_LANDMARKS: Record<string, string[]> = {
   boston: ["Fenway Park", "Freedom Trail", "Boston skyline", "sailboats on Charles River"],
   portland: ["Mt Hood", "Portland skyline", "Douglas fir trees", "bridges"],
   "san-francisco": ["Golden Gate Bridge", "cable cars", "Victorian houses"],
+  "san": ["Golden Gate Bridge", "cable cars", "San Francisco skyline", "Bay Bridge"],
   chicago: ["Willis Tower", "Cloud Gate Bean", "Lake Michigan"],
   miami: ["Art Deco buildings", "palm trees", "ocean waves"],
   "los-angeles": ["Hollywood sign", "palm trees", "LA skyline"],
@@ -34,16 +36,21 @@ const CITY_LANDMARKS: Record<string, string[]> = {
 };
 
 /**
- * Generate icon prompt using Claude
+ * Generate icon prompt using Claude - includes full style description for text-to-image
  */
 async function generateIconPromptWithClaude(params: {
   cityName: string;
   cityCode: string;
   landmarks: string[];
+  customGuidance?: string;
 }): Promise<string> {
   const client = new Anthropic({
     apiKey: process.env.MODEL_API_KEY,
   });
+
+  const customSection = params.customGuidance
+    ? `\n\nADDITIONAL GUIDANCE FROM USER:\n${params.customGuidance}\n`
+    : "";
 
   const response = await client.messages.create({
     model: "claude-sonnet-4-20250514",
@@ -55,34 +62,40 @@ async function generateIconPromptWithClaude(params: {
 
 I need a prompt for a city-branded summer camp app icon for ${params.cityName}.
 
-The icon should:
-1. Be a square app icon design (like iOS/Android app icons)
-2. Include the 3-letter city code "${params.cityCode}" prominently
-3. Feature iconic ${params.cityName} landmarks: ${params.landmarks.join(", ")}
-4. Have a playful, family-friendly summer camp vibe
-5. Use bright, cheerful colors appropriate for a kids/family app
-6. Be simple enough to work at small sizes (192x192px)
-7. Have a clean, modern design like the PDX Camps icon
+The icon MUST have these exact characteristics:
+1. Square app icon with rounded corners
+2. The 3-letter city code "${params.cityCode}" in bold white text at the bottom
+3. Feature ${params.cityName} landmarks: ${params.landmarks.join(", ")}
+4. Playful, family-friendly summer camp vibe
+5. Simple, clean vector-style illustration
 
-Style: Modern flat design with subtle gradients, clean vectors, vibrant summer colors (blues, greens, yellows, oranges). Think Airbnb meets summer camp.
+CRITICAL COLOR REQUIREMENTS (match our brand exactly):
+- Sky/background: Bright blue (#3B82F6)
+- Nature elements (trees, grass): Emerald green (#10B981)
+- Sun/warm accents: Amber yellow-orange (#F59E0B)
+- Text: Bold white on dark background strip
+- Keep it simple: only these 4-5 colors maximum
 
-Write ONLY the image prompt, no explanation. Keep it under 150 words.`
+Style: Modern flat design, clean geometric shapes, minimal detail, no gradients, bold colors, looks great at 192x192px. Think Airbnb or Duolingo app icon style.${customSection}
+
+Write ONLY the image prompt, no explanation. Be very specific about colors and composition.`
       }
     ]
   });
 
   const textContent = response.content.find(c => c.type === "text");
-  return textContent?.text || `App icon for ${params.cityName} summer camps featuring "${params.cityCode}" text and local landmarks. Modern flat design, vibrant colors, family-friendly.`;
+  return textContent?.text || `Square app icon for ${params.cityName} summer camps. Bold "${params.cityCode}" text in white at bottom. ${params.landmarks[0]} illustration in blue (#3B82F6), green (#10B981), amber (#F59E0B). Clean flat vector style.`;
 }
 
 /**
- * Generate city icon options using FAL
+ * Generate city icon options using FAL with style reference
  */
 export const generateCityIcons = action({
   args: {
     marketKey: v.string(),
     cityName: v.string(),
     cityCode: v.string(), // 3-letter code like "DEN", "SEA", "ATX"
+    customGuidance: v.optional(v.string()), // Optional custom guidance for the icon
   },
   handler: async (ctx, args): Promise<{
     success: boolean;
@@ -90,6 +103,8 @@ export const generateCityIcons = action({
     error?: string;
   }> => {
     try {
+      console.log(`Generating icons for market: ${args.marketKey}, city: ${args.cityName}, code: ${args.cityCode}`);
+
       // Get landmarks for this city
       const normalizedKey = args.marketKey.split("-")[0].toLowerCase();
       const landmarks = CITY_LANDMARKS[normalizedKey] || [
@@ -98,16 +113,20 @@ export const generateCityIcons = action({
         "regional nature",
       ];
 
+      console.log(`Using landmarks for ${normalizedKey}:`, landmarks);
+
       // Generate prompt with Claude
       const prompt = await generateIconPromptWithClaude({
         cityName: args.cityName,
         cityCode: args.cityCode,
         landmarks,
+        customGuidance: args.customGuidance,
       });
 
       console.log(`Generated prompt for ${args.cityName}: ${prompt}`);
 
-      // Generate 4 options with FAL
+      // Use FLUX text-to-image with detailed style prompt
+      // The prompt includes full brand color and style specifications
       const result = await fal.subscribe("fal-ai/flux/schnell", {
         input: {
           prompt,

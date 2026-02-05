@@ -72,6 +72,12 @@ function ExpansionContent() {
   const createCityForMarket = useMutation(api.expansion.mutations.createCityForMarket);
   const launchMarket = useMutation(api.expansion.mutations.launchMarket);
 
+  // Multi-domain mutations
+  const addDomain = useMutation(api.expansion.mutations.addDomain);
+  const removeDomain = useMutation(api.expansion.mutations.removeDomain);
+  const setPrimaryDomain = useMutation(api.expansion.mutations.setPrimaryDomain);
+  const recordDomainDnsConfiguration = useMutation(api.expansion.mutations.recordDomainDnsConfiguration);
+
   // Domain check workflow
   const startDomainCheck = useMutation(api.expansion.domainWorkflow.startDomainCheck);
 
@@ -239,13 +245,14 @@ function ExpansionContent() {
           onLaunch={async () => {
             await launchMarket({ marketKey: selectedMarket.key });
           }}
-          onGenerateIcons={async () => {
+          onGenerateIcons={async (customGuidance) => {
             // Extract 3-letter code from brand name (e.g., "DEN Camps" -> "DEN")
             const cityCode = selectedMarket.suggestedBrandName.split(' ')[0];
             return await generateIcons({
               marketKey: selectedMarket.key,
               cityName: selectedMarket.name,
               cityCode,
+              customGuidance,
             });
           }}
           onSelectIcon={async (imageUrl) => {
@@ -253,6 +260,37 @@ function ExpansionContent() {
               marketKey: selectedMarket.key,
               imageUrl,
             });
+          }}
+          onAddDomain={async (domain, orderId, makePrimary) => {
+            await addDomain({
+              marketKey: selectedMarket.key,
+              domain,
+              orderId,
+              makePrimary,
+            });
+          }}
+          onRemoveDomain={async (domain) => {
+            await removeDomain({
+              marketKey: selectedMarket.key,
+              domain,
+            });
+          }}
+          onSetPrimaryDomain={async (domain) => {
+            await setPrimaryDomain({
+              marketKey: selectedMarket.key,
+              domain,
+            });
+          }}
+          onSetupDomainDns={async (domain) => {
+            const result = await setupDns({ domain });
+            if (result.success && result.zoneId) {
+              await recordDomainDnsConfiguration({
+                marketKey: selectedMarket.key,
+                domain,
+                netlifyZoneId: result.zoneId,
+              });
+            }
+            return result;
           }}
         />
       )}

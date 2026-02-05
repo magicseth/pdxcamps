@@ -1,5 +1,15 @@
 import { Id } from '../../../convex/_generated/dataModel';
 
+// Domain entry for multiple domains support
+export interface DomainEntry {
+  domain: string;
+  isPrimary: boolean;
+  purchasedAt?: number;
+  orderId?: string;
+  dnsConfigured?: boolean;
+  netlifyZoneId?: string;
+}
+
 export interface MarketWithStatus {
   // Static market data
   key: string;
@@ -32,6 +42,9 @@ export interface MarketWithStatus {
     | 'launched';
   createdAt?: number;
   updatedAt?: number;
+
+  // Multiple domains support
+  domains?: DomainEntry[];
 
   // Stats (only available if city exists)
   stats?: {

@@ -198,6 +198,79 @@ export const setBrandInfoForAllCities = mutation({
 });
 
 /**
+ * Admin mutation to update city info
+ */
+export const updateCity = mutation({
+  args: {
+    cityId: v.id("cities"),
+    name: v.optional(v.string()),
+    brandName: v.optional(v.string()),
+    domain: v.optional(v.string()),
+    fromEmail: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const city = await ctx.db.get(args.cityId);
+    if (!city) {
+      throw new Error("City not found");
+    }
+
+    const updates: Partial<typeof city> = {};
+    if (args.name !== undefined) updates.name = args.name;
+    if (args.brandName !== undefined) updates.brandName = args.brandName;
+    if (args.domain !== undefined) updates.domain = args.domain;
+    if (args.fromEmail !== undefined) updates.fromEmail = args.fromEmail;
+
+    await ctx.db.patch(args.cityId, updates);
+
+    return { success: true, cityId: args.cityId };
+  },
+});
+
+/**
+ * Set icon storage ID for a city
+ */
+export const setCityIcon = mutation({
+  args: {
+    cityId: v.id("cities"),
+    iconStorageId: v.id("_storage"),
+  },
+  handler: async (ctx, args) => {
+    const city = await ctx.db.get(args.cityId);
+    if (!city) {
+      throw new Error("City not found");
+    }
+
+    await ctx.db.patch(args.cityId, {
+      iconStorageId: args.iconStorageId,
+    });
+
+    return { success: true };
+  },
+});
+
+/**
+ * Set header image storage ID for a city
+ */
+export const setCityHeaderImage = mutation({
+  args: {
+    cityId: v.id("cities"),
+    headerImageStorageId: v.id("_storage"),
+  },
+  handler: async (ctx, args) => {
+    const city = await ctx.db.get(args.cityId);
+    if (!city) {
+      throw new Error("City not found");
+    }
+
+    await ctx.db.patch(args.cityId, {
+      headerImageStorageId: args.headerImageStorageId,
+    });
+
+    return { success: true };
+  },
+});
+
+/**
  * Admin mutation to create a new neighborhood
  */
 export const createNeighborhood = mutation({

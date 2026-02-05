@@ -145,17 +145,74 @@ function getWorkerCount(): number {
   return 1;
 }
 
+// Parse --city <slug> flag to filter by locale
+function getCitySlug(): string | undefined {
+  const idx = process.argv.findIndex(arg => arg === "--city" || arg === "-c");
+  if (idx !== -1 && process.argv[idx + 1]) {
+    return process.argv[idx + 1];
+  }
+  return undefined;
+}
+
+// Look up cityId from slug
+async function getCityIdFromSlug(slug: string): Promise<string | null> {
+  try {
+    const cities = await client.query(api.cities.queries.listAllCities, {});
+    const city = (cities as any[]).find((c: any) => c.slug === slug);
+    if (city) {
+      return city._id;
+    }
+    // Try partial match (e.g., "sf" matches "san-francisco-bay-area")
+    const partialMatch = (cities as any[]).find((c: any) =>
+      c.slug.includes(slug) || c.name.toLowerCase().includes(slug.toLowerCase())
+    );
+    if (partialMatch) {
+      console.log(`   (Matched "${slug}" to "${partialMatch.name}")`);
+      return partialMatch._id;
+    }
+    return null;
+  } catch (error) {
+    console.error(`Error looking up city: ${error}`);
+    return null;
+  }
+}
+
 async function main() {
   const verbose = process.argv.includes("--verbose") || process.argv.includes("-v");
   const workerCount = getWorkerCount();
+  const citySlug = getCitySlug();
+
+  // Look up cityId if slug provided
+  let cityId: string | undefined;
+  let cityName: string | undefined;
+  if (citySlug) {
+    const id = await getCityIdFromSlug(citySlug);
+    if (!id) {
+      console.error(`Error: City "${citySlug}" not found. Available cities:`);
+      const cities = await client.query(api.cities.queries.listAllCities, {});
+      for (const city of cities as any[]) {
+        console.log(`   - ${city.slug} (${city.name})`);
+      }
+      process.exit(1);
+    }
+    cityId = id;
+    const cities = await client.query(api.cities.queries.listAllCities, {});
+    const city = (cities as any[]).find((c: any) => c._id === cityId);
+    cityName = city?.name;
+  }
 
   // Clear log file
   fs.writeFileSync(LOG_FILE, `=== Scraper Daemon Started ${new Date().toISOString()} ===\n`);
-  writeLog(`Starting with ${workerCount} worker(s)`);
+  writeLog(`Starting with ${workerCount} worker(s)${cityId ? ` for ${cityName}` : ''}`);
 
   console.log("🤖 Scraper Development Daemon Started");
   console.log(`   Convex: ${CONVEX_URL}`);
   console.log(`   Workers: ${workerCount}`);
+  if (cityId && cityName) {
+    console.log(`   City: ${cityName} (${citySlug})`);
+  } else {
+    console.log(`   City: All markets`);
+  }
   console.log(`   Logs: tail -f ${LOG_FILE}`);
   if (verbose) {
     console.log("   Mode: Verbose");
@@ -193,9 +250,10 @@ async function main() {
         if (shutdownRequested) break;
 
         try {
-          // Atomically get and claim next request
+          // Atomically get and claim next request (optionally filtered by city)
           const request = await client.mutation(api.scraping.development.getNextAndClaim, {
             workerId: worker.id,
+            ...(cityId ? { cityId: cityId as any } : {}),
           });
 
           if (request) {
@@ -406,21 +464,26 @@ async function exploreSiteNavigation(
       log(`   🔎 API Discovery: searching responses for "${searchTerms.join('", "')}"`);
     }
 
-    // Monitor requests
-    page.on('request', (request: any) => {
-      const reqUrl = request.url();
-      const resourceType = request.resourceType();
-      // Track API-like requests (XHR, fetch) and anything with /api/ in the URL
-      if (['xhr', 'fetch'].includes(resourceType) || reqUrl.includes('/api/')) {
-        capturedRequests.set(reqUrl, {
-          url: reqUrl,
-          method: request.method(),
-          resourceType,
-        });
-      }
-    });
+    // Monitor requests - wrapped in try-catch as some browsers don't support this event
+    try {
+      page.on('request', (request: any) => {
+        const reqUrl = request.url();
+        const resourceType = request.resourceType();
+        // Track API-like requests (XHR, fetch) and anything with /api/ in the URL
+        if (['xhr', 'fetch'].includes(resourceType) || reqUrl.includes('/api/')) {
+          capturedRequests.set(reqUrl, {
+            url: reqUrl,
+            method: request.method(),
+            resourceType,
+          });
+        }
+      });
+    } catch (e) {
+      log(`   ⚠️ Request monitoring not supported, skipping API discovery`);
+    }
 
-    // Monitor responses
+    // Monitor responses - wrapped in try-catch
+    try {
     page.on('response', async (response: any) => {
       const respUrl = response.url();
       const request = capturedRequests.get(respUrl);
@@ -487,6 +550,9 @@ async function exploreSiteNavigation(
         }
       }
     });
+    } catch (e) {
+      log(`   ⚠️ Response monitoring not supported, skipping API discovery`);
+    }
     // ========== END API DISCOVERY SETUP ==========
 
     log(`   📄 Loading ${url}...`);

@@ -38,6 +38,9 @@ export default defineSchema({
     brandName: v.optional(v.string()), // e.g., "PDX Camps", "BOS Camps"
     domain: v.optional(v.string()), // e.g., "pdxcamps.com", "boscamps.com"
     fromEmail: v.optional(v.string()), // e.g., "hello@pdxcamps.com"
+    // Icon/branding assets stored in Convex storage
+    iconStorageId: v.optional(v.id("_storage")), // City icon (used for favicon, PWA icon)
+    headerImageStorageId: v.optional(v.id("_storage")), // Header/hero image
   })
     .index("by_slug", ["slug"])
     .index("by_is_active", ["isActive"])

@@ -70,6 +70,8 @@ export const listExpansionMarkets = query({
         status: dbRecord?.status ?? "not_started",
         createdAt: dbRecord?.createdAt,
         updatedAt: dbRecord?.updatedAt,
+        // Multiple domains
+        domains: dbRecord?.domains,
         // Stats
         stats: stats ? {
           sources: stats.sources,
@@ -121,6 +123,7 @@ export const getExpansionMarket = query({
       netlifyZoneId: dbRecord?.netlifyZoneId,
       cityId: dbRecord?.cityId,
       city,
+      domains: dbRecord?.domains,
       status: dbRecord?.status ?? "not_started",
       createdAt: dbRecord?.createdAt,
       updatedAt: dbRecord?.updatedAt,

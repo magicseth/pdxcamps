@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MarketWithStatus, STATUS_LABELS } from './types';
+import { MarketWithStatus, STATUS_LABELS, DomainEntry } from './types';
 import { DomainChecker } from './DomainChecker';
 import { ProgressIndicator } from './ProgressIndicator';
 
@@ -25,8 +25,13 @@ interface ExpansionWizardProps {
     fromEmail: string;
   }) => Promise<{ cityId?: string; success: boolean }>;
   onLaunch: () => Promise<void>;
-  onGenerateIcons?: () => Promise<{ success: boolean; images?: string[]; error?: string }>;
+  onGenerateIcons?: (customGuidance?: string) => Promise<{ success: boolean; images?: string[]; error?: string }>;
   onSelectIcon?: (imageUrl: string) => Promise<{ success: boolean; error?: string }>;
+  // New callbacks for multi-domain support
+  onAddDomain?: (domain: string, orderId?: string, makePrimary?: boolean) => Promise<void>;
+  onRemoveDomain?: (domain: string) => Promise<void>;
+  onSetPrimaryDomain?: (domain: string) => Promise<void>;
+  onSetupDomainDns?: (domain: string) => Promise<{ success: boolean; zoneId?: string; error?: string }>;
 }
 
 type WizardStep = 'overview' | 'domain' | 'purchase' | 'dns' | 'city' | 'launch';
@@ -43,6 +48,10 @@ export function ExpansionWizard({
   onLaunch,
   onGenerateIcons,
   onSelectIcon,
+  onAddDomain,
+  onRemoveDomain,
+  onSetPrimaryDomain,
+  onSetupDomainDns,
 }: ExpansionWizardProps) {
   const [step, setStep] = useState<WizardStep>('overview');
   const [loading, setLoading] = useState(false);
@@ -55,6 +64,9 @@ export function ExpansionWizard({
   const [citySlug, setCitySlug] = useState(market.key.split('-').slice(0, -1).join('-') || market.name.toLowerCase().replace(/\s+/g, '-'));
   const [brandName, setBrandName] = useState(market.suggestedBrandName);
   const [fromEmail, setFromEmail] = useState('');
+
+  // Icon generation state
+  const [iconGuidance, setIconGuidance] = useState('');
 
   // Determine which step we should be on based on market status
   useEffect(() => {
@@ -138,7 +150,19 @@ export function ExpansionWizard({
         setError(result.error || 'Purchase failed');
         return;
       }
-      setStep('dns');
+      // If onAddDomain is available, use it to add to domains array
+      // Otherwise fall back to the page handler which calls recordDomainPurchase
+      if (onAddDomain) {
+        const isFirstDomain = !market.domains || market.domains.length === 0;
+        await onAddDomain(selectedDomain, result.orderId, isFirstDomain);
+      }
+      // Clear selected domain so user can add another
+      setSelectedDomain('');
+      setSelectedDomainPrice('');
+      // If this is the first domain, auto-advance to DNS
+      if (!market.domains || market.domains.length === 0) {
+        setStep('dns');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Purchase failed');
     } finally {
@@ -234,11 +258,18 @@ export function ExpansionWizard({
           </button>
         </div>
 
-        {/* Progress */}
+        {/* Progress - clickable for navigation */}
         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
           <ProgressIndicator
             currentStatus={market.status}
             activeStep={stepToNumber[step]}
+            onStepClick={(stepNum) => {
+              // Map step number back to step name
+              const stepNames: WizardStep[] = ['overview', 'domain', 'dns', 'city', 'launch'];
+              if (stepNames[stepNum]) {
+                setStep(stepNames[stepNum]);
+              }
+            }}
           />
         </div>
 
@@ -319,10 +350,17 @@ export function ExpansionWizard({
                               </button>
                             ))}
                           </div>
+                          <textarea
+                            value={iconGuidance}
+                            onChange={(e) => setIconGuidance(e.target.value)}
+                            placeholder="Optional: Custom guidance for regeneration"
+                            className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 resize-none"
+                            rows={2}
+                          />
                           <button
                             onClick={async () => {
                               setLoading(true);
-                              await onGenerateIcons();
+                              await onGenerateIcons(iconGuidance || undefined);
                               setLoading(false);
                             }}
                             disabled={loading}
@@ -336,11 +374,18 @@ export function ExpansionWizard({
                           <p className="text-sm text-slate-600 dark:text-slate-400">
                             Generate AI-powered city icons featuring local landmarks.
                           </p>
+                          <textarea
+                            value={iconGuidance}
+                            onChange={(e) => setIconGuidance(e.target.value)}
+                            placeholder="Optional: Add custom guidance (e.g., 'include Space Needle prominently', 'use sunset colors', 'add palm trees')"
+                            className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 resize-none"
+                            rows={2}
+                          />
                           <button
                             onClick={async () => {
                               setLoading(true);
                               setError(null);
-                              const result = await onGenerateIcons();
+                              const result = await onGenerateIcons(iconGuidance || undefined);
                               if (!result.success) {
                                 setError(result.error || 'Failed to generate icons');
                               }
@@ -372,15 +417,90 @@ export function ExpansionWizard({
           {step === 'domain' && (
             <div className="space-y-4">
               <h3 className="font-medium text-slate-900 dark:text-white">
-                Step 1: Select Domain
+                Step 1: Manage Domains
               </h3>
-              <DomainChecker
-                marketKey={market.key}
-                suggestedDomains={market.suggestedDomains}
-                selectedDomain={selectedDomain}
-                onStartCheck={onStartDomainCheck}
-                onSelect={handleDomainSelect}
-              />
+
+              {/* Registered Domains List */}
+              {market.domains && market.domains.length > 0 && (
+                <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                    Registered Domains ({market.domains.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {market.domains.map((d) => (
+                      <div
+                        key={d.domain}
+                        className={`flex items-center justify-between p-3 rounded-md border ${
+                          d.isPrimary
+                            ? 'border-primary bg-primary/5'
+                            : 'border-slate-200 dark:border-slate-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-mono text-sm">{d.domain}</span>
+                          {d.isPrimary && (
+                            <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">
+                              Primary
+                            </span>
+                          )}
+                          {d.dnsConfigured && (
+                            <span className="text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 px-2 py-0.5 rounded">
+                              DNS OK
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {!d.isPrimary && onSetPrimaryDomain && (
+                            <button
+                              onClick={async () => {
+                                setLoading(true);
+                                await onSetPrimaryDomain(d.domain);
+                                setLoading(false);
+                              }}
+                              disabled={loading}
+                              className="text-xs text-primary hover:underline disabled:opacity-50"
+                            >
+                              Make Primary
+                            </button>
+                          )}
+                          {!d.dnsConfigured && onSetupDomainDns && (
+                            <button
+                              onClick={async () => {
+                                setLoading(true);
+                                setError(null);
+                                const result = await onSetupDomainDns(d.domain);
+                                if (!result.success) {
+                                  setError(result.error || 'DNS setup failed');
+                                }
+                                setLoading(false);
+                              }}
+                              disabled={loading}
+                              className="text-xs text-purple-600 hover:underline disabled:opacity-50"
+                            >
+                              Setup DNS
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Add New Domain */}
+              <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
+                <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                  {market.domains?.length ? 'Add Another Domain' : 'Find & Purchase Domain'}
+                </h4>
+                <DomainChecker
+                  marketKey={market.key}
+                  suggestedDomains={market.suggestedDomains}
+                  selectedDomain={selectedDomain}
+                  onStartCheck={onStartDomainCheck}
+                  onSelect={handleDomainSelect}
+                />
+              </div>
+
               <div className="flex justify-between pt-4">
                 <button
                   onClick={() => setStep('overview')}
@@ -388,13 +508,23 @@ export function ExpansionWizard({
                 >
                   Back
                 </button>
-                <button
-                  onClick={handlePurchase}
-                  disabled={!selectedDomain || loading}
-                  className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark disabled:opacity-50"
-                >
-                  {loading ? 'Purchasing...' : `Purchase ${selectedDomain || 'Domain'}`}
-                </button>
+                <div className="flex gap-2">
+                  {market.domains && market.domains.length > 0 && (
+                    <button
+                      onClick={() => setStep('dns')}
+                      className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700"
+                    >
+                      Skip to DNS
+                    </button>
+                  )}
+                  <button
+                    onClick={handlePurchase}
+                    disabled={!selectedDomain || loading}
+                    className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark disabled:opacity-50"
+                  >
+                    {loading ? 'Purchasing...' : `Purchase ${selectedDomain || 'Domain'}`}
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -579,10 +709,17 @@ export function ExpansionWizard({
                           </button>
                         ))}
                       </div>
+                      <textarea
+                        value={iconGuidance}
+                        onChange={(e) => setIconGuidance(e.target.value)}
+                        placeholder="Optional: Custom guidance for regeneration"
+                        className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 resize-none"
+                        rows={2}
+                      />
                       <button
                         onClick={async () => {
                           setLoading(true);
-                          await onGenerateIcons();
+                          await onGenerateIcons(iconGuidance || undefined);
                           setLoading(false);
                         }}
                         disabled={loading}
@@ -594,13 +731,20 @@ export function ExpansionWizard({
                   ) : (
                     <div className="space-y-3">
                       <p className="text-sm text-slate-600 dark:text-slate-400">
-                        Generate AI-powered city icons featuring Denver landmarks.
+                        Generate AI-powered city icons featuring {market.name} landmarks.
                       </p>
+                      <textarea
+                        value={iconGuidance}
+                        onChange={(e) => setIconGuidance(e.target.value)}
+                        placeholder="Optional: Add custom guidance (e.g., 'include Space Needle prominently', 'use sunset colors')"
+                        className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 resize-none"
+                        rows={2}
+                      />
                       <button
                         onClick={async () => {
                           setLoading(true);
                           setError(null);
-                          const result = await onGenerateIcons();
+                          const result = await onGenerateIcons(iconGuidance || undefined);
                           if (!result.success) {
                             setError(result.error || 'Failed to generate icons');
                           }

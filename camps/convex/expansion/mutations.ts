@@ -314,3 +314,211 @@ export const resetMarketStatus = mutation({
     return { success: true };
   },
 });
+
+// Domain entry type for the domains array
+const domainEntryValidator = v.object({
+  domain: v.string(),
+  isPrimary: v.boolean(),
+  purchasedAt: v.optional(v.number()),
+  orderId: v.optional(v.string()),
+  dnsConfigured: v.optional(v.boolean()),
+  netlifyZoneId: v.optional(v.string()),
+});
+
+/**
+ * Add a purchased domain to the market's domains list
+ */
+export const addDomain = mutation({
+  args: {
+    marketKey: v.string(),
+    domain: v.string(),
+    orderId: v.optional(v.string()),
+    makePrimary: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const record = await ctx.db
+      .query("expansionMarkets")
+      .withIndex("by_market_key", (q) => q.eq("marketKey", args.marketKey))
+      .unique();
+
+    if (!record) {
+      throw new Error(`Market not initialized: ${args.marketKey}`);
+    }
+
+    const now = Date.now();
+    const existingDomains = record.domains || [];
+
+    // Check if domain already exists
+    if (existingDomains.some(d => d.domain === args.domain)) {
+      throw new Error(`Domain ${args.domain} already registered for this market`);
+    }
+
+    // If this is the first domain or makePrimary is true, make it primary
+    const isFirstDomain = existingDomains.length === 0;
+    const shouldBePrimary = args.makePrimary || isFirstDomain;
+
+    // If making this primary, unset primary on others
+    const updatedDomains = shouldBePrimary
+      ? existingDomains.map(d => ({ ...d, isPrimary: false }))
+      : existingDomains;
+
+    const newDomain = {
+      domain: args.domain,
+      isPrimary: shouldBePrimary,
+      purchasedAt: now,
+      orderId: args.orderId,
+      dnsConfigured: false,
+    };
+
+    await ctx.db.patch(record._id, {
+      domains: [...updatedDomains, newDomain],
+      // Also update legacy fields for backwards compatibility
+      selectedDomain: shouldBePrimary ? args.domain : record.selectedDomain,
+      domainPurchased: true,
+      domainPurchasedAt: isFirstDomain ? now : record.domainPurchasedAt,
+      porkbunOrderId: isFirstDomain ? args.orderId : record.porkbunOrderId,
+      status: record.status === "not_started" ? "domain_purchased" : record.status,
+      updatedAt: now,
+    });
+
+    return { success: true };
+  },
+});
+
+/**
+ * Remove a domain from the market
+ */
+export const removeDomain = mutation({
+  args: {
+    marketKey: v.string(),
+    domain: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const record = await ctx.db
+      .query("expansionMarkets")
+      .withIndex("by_market_key", (q) => q.eq("marketKey", args.marketKey))
+      .unique();
+
+    if (!record) {
+      throw new Error(`Market not initialized: ${args.marketKey}`);
+    }
+
+    const existingDomains = record.domains || [];
+    const domainToRemove = existingDomains.find(d => d.domain === args.domain);
+
+    if (!domainToRemove) {
+      throw new Error(`Domain ${args.domain} not found for this market`);
+    }
+
+    const updatedDomains = existingDomains.filter(d => d.domain !== args.domain);
+
+    // If we removed the primary, make the first remaining domain primary
+    if (domainToRemove.isPrimary && updatedDomains.length > 0) {
+      updatedDomains[0].isPrimary = true;
+    }
+
+    const newPrimaryDomain = updatedDomains.find(d => d.isPrimary)?.domain;
+
+    await ctx.db.patch(record._id, {
+      domains: updatedDomains,
+      selectedDomain: newPrimaryDomain,
+      domainPurchased: updatedDomains.length > 0,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true };
+  },
+});
+
+/**
+ * Set a domain as the primary domain for the market
+ */
+export const setPrimaryDomain = mutation({
+  args: {
+    marketKey: v.string(),
+    domain: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const record = await ctx.db
+      .query("expansionMarkets")
+      .withIndex("by_market_key", (q) => q.eq("marketKey", args.marketKey))
+      .unique();
+
+    if (!record) {
+      throw new Error(`Market not initialized: ${args.marketKey}`);
+    }
+
+    const existingDomains = record.domains || [];
+    const targetDomain = existingDomains.find(d => d.domain === args.domain);
+
+    if (!targetDomain) {
+      throw new Error(`Domain ${args.domain} not found for this market`);
+    }
+
+    // Update all domains: unset primary on others, set on target
+    const updatedDomains = existingDomains.map(d => ({
+      ...d,
+      isPrimary: d.domain === args.domain,
+    }));
+
+    await ctx.db.patch(record._id, {
+      domains: updatedDomains,
+      selectedDomain: args.domain,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true };
+  },
+});
+
+/**
+ * Record DNS configuration for a specific domain
+ */
+export const recordDomainDnsConfiguration = mutation({
+  args: {
+    marketKey: v.string(),
+    domain: v.string(),
+    netlifyZoneId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const record = await ctx.db
+      .query("expansionMarkets")
+      .withIndex("by_market_key", (q) => q.eq("marketKey", args.marketKey))
+      .unique();
+
+    if (!record) {
+      throw new Error(`Market not initialized: ${args.marketKey}`);
+    }
+
+    const existingDomains = record.domains || [];
+    const targetIndex = existingDomains.findIndex(d => d.domain === args.domain);
+
+    if (targetIndex === -1) {
+      throw new Error(`Domain ${args.domain} not found for this market`);
+    }
+
+    const updatedDomains = [...existingDomains];
+    updatedDomains[targetIndex] = {
+      ...updatedDomains[targetIndex],
+      dnsConfigured: true,
+      netlifyZoneId: args.netlifyZoneId,
+    };
+
+    // Check if primary domain has DNS configured
+    const primaryDomain = updatedDomains.find(d => d.isPrimary);
+    const primaryDnsConfigured = primaryDomain?.dnsConfigured || false;
+
+    await ctx.db.patch(record._id, {
+      domains: updatedDomains,
+      // Update legacy field if this is the primary domain
+      dnsConfigured: primaryDnsConfigured,
+      netlifyZoneId: primaryDomain?.netlifyZoneId || record.netlifyZoneId,
+      status: primaryDnsConfigured && record.status === "domain_purchased"
+        ? "dns_configured"
+        : record.status,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true };
+  },
+});

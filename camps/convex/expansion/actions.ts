@@ -4,6 +4,9 @@ import { action } from "../_generated/server";
 import { api } from "../_generated/api";
 import { v } from "convex/values";
 
+// Standard .com price on Porkbun (checked via slkjsdlfkjsdfljsc.com Feb 2026)
+const STANDARD_COM_PRICE = "11.08";
+
 // Porkbun API types
 interface PorkbunPricingResponse {
   status: string;
@@ -38,6 +41,147 @@ interface NetlifyDnsRecord {
   value: string;
   ttl: number;
 }
+
+/**
+ * Check domain availability using Domainr API via RapidAPI
+ * Fast and reliable - no rate limiting issues like Porkbun
+ */
+async function checkDomainDomainr(domain: string): Promise<{ available: boolean; error?: string }> {
+  const rapidApiKey = process.env.RAPIDAPI_KEY;
+
+  if (!rapidApiKey) {
+    return { available: false, error: "RapidAPI key not configured" };
+  }
+
+  try {
+    const response = await fetch(
+      `https://domainr.p.rapidapi.com/v2/status?domain=${encodeURIComponent(domain)}`,
+      {
+        method: "GET",
+        headers: {
+          "X-RapidAPI-Key": rapidApiKey,
+          "X-RapidAPI-Host": "domainr.p.rapidapi.com",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      return { available: false, error: `Domainr API error: ${response.status}` };
+    }
+
+    const data = await response.json();
+
+    // Domainr returns status array with zone info
+    // Status contains: "undelegated" (available), "active" (taken), etc.
+    const status = data.status?.[0];
+    if (!status) {
+      return { available: false, error: "No status returned" };
+    }
+
+    // "undelegated" or "inactive" means available
+    // "active", "marketed", "parked" means taken
+    const availableStatuses = ["undelegated", "inactive"];
+    const isAvailable = availableStatuses.some(s => status.status?.includes(s));
+
+    return { available: isAvailable };
+  } catch (error) {
+    return {
+      available: false,
+      error: error instanceof Error ? error.message : "Unknown error"
+    };
+  }
+}
+
+/**
+ * Fast bulk domain availability check using Domainr API (via RapidAPI)
+ * No rate limits like Porkbun! Checks all domains in parallel.
+ * Assumes standard .com price ($9.73). If price is wrong, purchase will verify with Porkbun.
+ */
+export const checkDomainsQuick = action({
+  args: {
+    domains: v.array(v.string()),
+  },
+  handler: async (_, args): Promise<
+    Array<{
+      domain: string;
+      available: boolean;
+      price?: string;
+      error?: string;
+    }>
+  > => {
+    // Check all domains in parallel - Domainr has generous rate limits
+    const results = await Promise.all(
+      args.domains.map(async (domain) => {
+        const result = await checkDomainDomainr(domain);
+        return {
+          domain,
+          available: result.available,
+          // Assume standard .com price for available domains
+          price: result.available ? STANDARD_COM_PRICE : undefined,
+          error: result.error,
+        };
+      })
+    );
+
+    return results;
+  },
+});
+
+/**
+ * Get actual price from Porkbun for a specific domain
+ * Called when user wants to purchase to verify/get exact price
+ */
+export const getDomainPrice = action({
+  args: {
+    domain: v.string(),
+  },
+  handler: async (_, args): Promise<{
+    available: boolean;
+    price?: string;
+    error?: string;
+  }> => {
+    const apiKey = process.env.PORKBUN_API_KEY;
+    const secretKey = process.env.PORKBUN_SECRET_KEY;
+
+    if (!apiKey || !secretKey) {
+      return { available: false, error: "Porkbun API credentials not configured" };
+    }
+
+    try {
+      const response = await fetch(
+        `https://api.porkbun.com/api/json/v3/domain/checkDomain/${args.domain}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            apikey: apiKey,
+            secretapikey: secretKey,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || data.status === "ERROR") {
+        return {
+          available: false,
+          error: data.message || `API error: ${response.status}`,
+        };
+      }
+
+      const isAvailable = data.status === "SUCCESS" && data.response?.avail === "yes";
+      return {
+        available: isAvailable,
+        price: data.response?.price,
+      };
+    } catch (error) {
+      return {
+        available: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  },
+});
 
 /**
  * Check domain availability and pricing via Porkbun
@@ -216,16 +360,18 @@ export const checkMultipleDomains = action({
 
 /**
  * Purchase a domain via Porkbun
+ * If price is wrong (e.g., assumed standard price), will fetch actual price and retry
  */
 export const purchaseDomain = action({
   args: {
     domain: v.string(),
-    // Price from domain check (e.g., "5.07" for $5.07)
+    // Price from domain check (e.g., "9.73" for $9.73) - may be assumed price
     price: v.string(),
   },
-  handler: async (_, args): Promise<{
+  handler: async (ctx, args): Promise<{
     success: boolean;
     orderId?: string;
+    actualPrice?: string;
     error?: string;
   }> => {
     const apiKey = process.env.PORKBUN_API_KEY;
@@ -238,17 +384,19 @@ export const purchaseDomain = action({
       };
     }
 
-    // Convert price (e.g., "5.07") to pennies (507)
-    const priceFloat = parseFloat(args.price);
-    if (isNaN(priceFloat)) {
-      return {
-        success: false,
-        error: `Invalid price: ${args.price}`,
-      };
-    }
-    const costInPennies = Math.round(priceFloat * 100);
+    // Helper to attempt purchase with given price
+    async function attemptPurchase(priceStr: string): Promise<{
+      success: boolean;
+      orderId?: string;
+      error?: string;
+      needsPriceCheck?: boolean;
+    }> {
+      const priceFloat = parseFloat(priceStr);
+      if (isNaN(priceFloat)) {
+        return { success: false, error: `Invalid price: ${priceStr}` };
+      }
+      const costInPennies = Math.round(priceFloat * 100);
 
-    try {
       const response = await fetch(
         `https://api.porkbun.com/api/json/v3/domain/create/${args.domain}`,
         {
@@ -266,15 +414,69 @@ export const purchaseDomain = action({
       const data: PorkbunRegisterResponse = await response.json();
 
       if (!response.ok || data.status !== "SUCCESS") {
-        return {
-          success: false,
-          error: data.message || `Registration failed: ${response.status}`,
-        };
+        const errorMsg = data.message || `Registration failed: ${response.status}`;
+        // Check if error is about wrong price
+        if (errorMsg.toLowerCase().includes("price") || errorMsg.toLowerCase().includes("cost")) {
+          return { success: false, error: errorMsg, needsPriceCheck: true };
+        }
+        return { success: false, error: errorMsg };
       }
 
       return {
         success: true,
         orderId: data.orderId ? String(data.orderId) : undefined,
+      };
+    }
+
+    try {
+      // First attempt with provided price
+      const firstAttempt = await attemptPurchase(args.price);
+
+      if (firstAttempt.success) {
+        return {
+          success: true,
+          orderId: firstAttempt.orderId,
+          actualPrice: args.price,
+        };
+      }
+
+      // If price was wrong, get actual price from Porkbun and retry
+      if (firstAttempt.needsPriceCheck) {
+        console.log(`Price mismatch for ${args.domain}, fetching actual price from Porkbun...`);
+
+        const priceResult = await ctx.runAction(
+          api.expansion.actions.getDomainPrice,
+          { domain: args.domain }
+        );
+
+        if (!priceResult.available || !priceResult.price) {
+          return {
+            success: false,
+            error: priceResult.error || "Domain no longer available",
+          };
+        }
+
+        // Retry with actual price
+        const secondAttempt = await attemptPurchase(priceResult.price);
+
+        if (secondAttempt.success) {
+          return {
+            success: true,
+            orderId: secondAttempt.orderId,
+            actualPrice: priceResult.price,
+          };
+        }
+
+        return {
+          success: false,
+          actualPrice: priceResult.price,
+          error: secondAttempt.error,
+        };
+      }
+
+      return {
+        success: false,
+        error: firstAttempt.error,
       };
     } catch (error) {
       return {
@@ -526,6 +728,182 @@ export const addDomainToNetlifySite = action({
 });
 
 /**
+ * Debug: Get current Netlify site domain configuration
+ */
+export const getNetlifySiteConfig = action({
+  args: {},
+  handler: async (): Promise<{
+    customDomain?: string;
+    domainAliases?: string[];
+    ssl?: unknown;
+    sslUrl?: string;
+    error?: string;
+  }> => {
+    const token = process.env.NETLIFY_ACCESS_TOKEN;
+    const siteId = process.env.NETLIFY_SITE_ID;
+
+    if (!token || !siteId) {
+      return { error: "Netlify credentials not configured" };
+    }
+
+    try {
+      const response = await fetch(
+        `https://api.netlify.com/api/v1/sites/${siteId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (!response.ok) {
+        return { error: `Netlify API error: ${response.status}` };
+      }
+
+      const site = await response.json();
+      return {
+        customDomain: site.custom_domain,
+        domainAliases: site.domain_aliases,
+        ssl: site.ssl,
+        sslUrl: site.ssl_url,
+      };
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  },
+});
+
+/**
+ * List all Netlify DNS zones to check domain configuration
+ */
+export const listNetlifyDnsZones = action({
+  args: {},
+  handler: async (): Promise<{
+    zones?: Array<{ id: string; name: string }>;
+    error?: string;
+  }> => {
+    const token = process.env.NETLIFY_ACCESS_TOKEN;
+
+    if (!token) {
+      return { error: "Netlify credentials not configured" };
+    }
+
+    try {
+      const response = await fetch(
+        "https://api.netlify.com/api/v1/dns_zones",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (!response.ok) {
+        return { error: `Netlify API error: ${response.status}` };
+      }
+
+      const zones = await response.json();
+      return {
+        zones: zones.map((z: { id: string; name: string }) => ({
+          id: z.id,
+          name: z.name,
+        })),
+      };
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  },
+});
+
+/**
+ * Check SSL status for the Netlify site
+ */
+export const getSslStatus = action({
+  args: {},
+  handler: async (): Promise<{
+    success: boolean;
+    ssl?: unknown;
+    error?: string;
+  }> => {
+    const token = process.env.NETLIFY_ACCESS_TOKEN;
+    const siteId = process.env.NETLIFY_SITE_ID;
+
+    if (!token || !siteId) {
+      return { success: false, error: "Netlify credentials not configured" };
+    }
+
+    try {
+      const response = await fetch(
+        `https://api.netlify.com/api/v1/sites/${siteId}/ssl`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        return {
+          success: false,
+          error: `Failed to get SSL status: ${response.status} - ${errorText}`,
+        };
+      }
+
+      const ssl = await response.json();
+      return { success: true, ssl };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  },
+});
+
+/**
+ * Provision SSL for the Netlify site (triggers Let's Encrypt cert)
+ */
+export const provisionSsl = action({
+  args: {},
+  handler: async (): Promise<{
+    success: boolean;
+    error?: string;
+  }> => {
+    const token = process.env.NETLIFY_ACCESS_TOKEN;
+    const siteId = process.env.NETLIFY_SITE_ID;
+
+    if (!token || !siteId) {
+      return { success: false, error: "Netlify credentials not configured" };
+    }
+
+    try {
+      // Netlify provisions SSL automatically when domain is added
+      // but we can trigger it explicitly via the certificates endpoint
+      const response = await fetch(
+        `https://api.netlify.com/api/v1/sites/${siteId}/ssl`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        return {
+          success: false,
+          error: `SSL provision failed: ${response.status} - ${errorText}`,
+        };
+      }
+
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  },
+});
+
+/**
  * Full DNS setup workflow: Add domain to site, create zone, update nameservers
  */
 export const setupDnsForDomain = action({
@@ -586,5 +964,242 @@ export const setupDnsForDomain = action({
       zoneId: zoneResult.zoneId,
       nameservers: zoneResult.nameservers,
     };
+  },
+});
+
+/**
+ * Ensure a domain is fully configured in Netlify (idempotent)
+ * Checks existing config and only sets up what's missing
+ */
+export const ensureDomainConfigured = action({
+  args: {
+    domain: v.string(),
+  },
+  handler: async (ctx, args): Promise<{
+    success: boolean;
+    addedToSite: boolean;
+    createdDnsZone: boolean;
+    zoneId?: string;
+    error?: string;
+  }> => {
+    const token = process.env.NETLIFY_ACCESS_TOKEN;
+    const siteId = process.env.NETLIFY_SITE_ID;
+
+    if (!token || !siteId) {
+      return {
+        success: false,
+        addedToSite: false,
+        createdDnsZone: false,
+        error: "Netlify credentials not configured",
+      };
+    }
+
+    let addedToSite = false;
+    let createdDnsZone = false;
+    let zoneId: string | undefined;
+
+    try {
+      // Step 1: Check if domain is already in site aliases
+      const siteResponse = await fetch(
+        `https://api.netlify.com/api/v1/sites/${siteId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (!siteResponse.ok) {
+        return {
+          success: false,
+          addedToSite: false,
+          createdDnsZone: false,
+          error: `Failed to get site info: ${siteResponse.status}`,
+        };
+      }
+
+      const site = await siteResponse.json();
+      const currentAliases: string[] = site.domain_aliases || [];
+      const domainInAliases = currentAliases.includes(args.domain) ||
+                             currentAliases.includes(`www.${args.domain}`);
+
+      // Add domain to site if not present
+      if (!domainInAliases) {
+        const addResult = await ctx.runAction(
+          api.expansion.actions.addDomainToNetlifySite,
+          { domain: args.domain }
+        );
+
+        if (!addResult.success) {
+          return {
+            success: false,
+            addedToSite: false,
+            createdDnsZone: false,
+            error: addResult.error || "Failed to add domain to site",
+          };
+        }
+        addedToSite = true;
+      }
+
+      // Step 2: Check if DNS zone exists
+      const zonesResponse = await fetch(
+        "https://api.netlify.com/api/v1/dns_zones",
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (!zonesResponse.ok) {
+        return {
+          success: false,
+          addedToSite,
+          createdDnsZone: false,
+          error: `Failed to list DNS zones: ${zonesResponse.status}`,
+        };
+      }
+
+      const zones = await zonesResponse.json();
+      const existingZone = zones.find((z: { name: string; id: string }) =>
+        z.name === args.domain
+      );
+
+      if (existingZone) {
+        zoneId = existingZone.id;
+      } else {
+        // Create DNS zone
+        const zoneResult = await ctx.runAction(
+          api.expansion.actions.createNetlifyDnsZone,
+          { domain: args.domain }
+        );
+
+        if (zoneResult.success && zoneResult.zoneId) {
+          createdDnsZone = true;
+          zoneId = zoneResult.zoneId;
+
+          // Update nameservers at registrar if possible
+          if (zoneResult.nameservers && zoneResult.nameservers.length > 0) {
+            await ctx.runAction(
+              api.expansion.actions.updateNameservers,
+              { domain: args.domain, nameservers: zoneResult.nameservers }
+            );
+          }
+        }
+      }
+
+      return {
+        success: true,
+        addedToSite,
+        createdDnsZone,
+        zoneId,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        addedToSite,
+        createdDnsZone,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  },
+});
+
+/**
+ * Create a city with full automation: DB record + Netlify domain setup
+ * This is the preferred way to create new cities as it handles everything
+ */
+export const createCityWithDomainSetup = action({
+  args: {
+    marketKey: v.string(),
+    name: v.string(),
+    slug: v.string(),
+    state: v.string(),
+    timezone: v.string(),
+    centerLatitude: v.number(),
+    centerLongitude: v.number(),
+    brandName: v.string(),
+    domain: v.string(),
+    fromEmail: v.string(),
+  },
+  handler: async (ctx, args): Promise<{
+    success: boolean;
+    cityId?: string;
+    domainConfigured: boolean;
+    error?: string;
+  }> => {
+    // Step 1: Create the city in the database
+    let cityId: string;
+    try {
+      const result = await ctx.runMutation(
+        api.expansion.mutations.createCityForMarket,
+        args
+      );
+      cityId = result.cityId;
+    } catch (error) {
+      return {
+        success: false,
+        domainConfigured: false,
+        error: `City creation failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      };
+    }
+
+    // Step 2: Configure domain in Netlify
+    const domainResult = await ctx.runAction(
+      api.expansion.actions.ensureDomainConfigured,
+      { domain: args.domain }
+    );
+
+    if (!domainResult.success) {
+      // City was created but domain setup failed - log but don't fail
+      console.error(`Domain setup failed for ${args.domain}: ${domainResult.error}`);
+      return {
+        success: true,
+        cityId,
+        domainConfigured: false,
+        error: `City created but domain setup failed: ${domainResult.error}`,
+      };
+    }
+
+    return {
+      success: true,
+      cityId,
+      domainConfigured: true,
+    };
+  },
+});
+
+/**
+ * Setup all domains for active cities that aren't configured in Netlify
+ * Run this to catch any cities that were created without proper Netlify setup
+ */
+export const ensureAllCityDomainsConfigured = action({
+  args: {},
+  handler: async (ctx): Promise<{
+    processed: Array<{
+      city: string;
+      domain: string;
+      success: boolean;
+      addedToSite: boolean;
+      createdDnsZone: boolean;
+      error?: string;
+    }>;
+  }> => {
+    // Get all active cities with domains
+    const cities = await ctx.runQuery(api.cities.queries.listAllCities, {});
+
+    const results = [];
+
+    for (const city of cities) {
+      if (!city.domain || !city.isActive) continue;
+
+      const result = await ctx.runAction(
+        api.expansion.actions.ensureDomainConfigured,
+        { domain: city.domain }
+      );
+
+      results.push({
+        city: city.name,
+        domain: city.domain,
+        success: result.success,
+        addedToSite: result.addedToSite,
+        createdDnsZone: result.createdDnsZone,
+        error: result.error,
+      });
+    }
+
+    return { processed: results };
   },
 });

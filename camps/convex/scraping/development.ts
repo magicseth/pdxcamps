@@ -176,17 +176,30 @@ export const claimRequest = mutation({
 /**
  * Atomically get next pending request AND claim it
  * Safe for parallel workers - only one worker will get each request
+ * Optionally filter by cityId to focus on a specific market
  */
 export const getNextAndClaim = mutation({
   args: {
     workerId: v.string(),
+    cityId: v.optional(v.id("cities")),
   },
   handler: async (ctx, args) => {
-    // Get the first pending request
-    const pending = await ctx.db
-      .query("scraperDevelopmentRequests")
-      .withIndex("by_status", (q) => q.eq("status", "pending"))
-      .first();
+    let pending;
+
+    if (args.cityId) {
+      // Filter by city - use city index then filter by status
+      pending = await ctx.db
+        .query("scraperDevelopmentRequests")
+        .withIndex("by_city", (q) => q.eq("cityId", args.cityId!))
+        .filter((q) => q.eq(q.field("status"), "pending"))
+        .first();
+    } else {
+      // Get any pending request
+      pending = await ctx.db
+        .query("scraperDevelopmentRequests")
+        .withIndex("by_status", (q) => q.eq("status", "pending"))
+        .first();
+    }
 
     if (!pending) {
       return null; // No work available
@@ -339,16 +352,83 @@ export const recordTestResults = mutation({
         finalScraperCode: request.generatedScraperCode,
       });
 
-      // Deploy the scraper code to the source, activate it, and trigger a scrape
-      if (request.sourceId && request.generatedScraperCode) {
-        await ctx.db.patch(request.sourceId, {
-          scraperCode: request.generatedScraperCode,
-          isActive: true,
-        });
+      // Deploy the scraper code to a source
+      if (request.generatedScraperCode) {
+        let sourceId = request.sourceId;
+
+        // If no sourceId, try to find existing source by URL
+        if (!sourceId) {
+          const existingSource = await ctx.db
+            .query("scrapeSources")
+            .withIndex("by_url", (q) => q.eq("url", request.sourceUrl))
+            .first();
+
+          if (existingSource) {
+            sourceId = existingSource._id;
+            // Link the request to this source for future reference
+            await ctx.db.patch(args.requestId, { sourceId });
+          }
+        }
+
+        // If still no source, create one
+        if (!sourceId) {
+          // Find or create organization based on domain
+          const domain = new URL(request.sourceUrl).hostname.replace(/^www\./, "");
+          const slug = domain.replace(/\./g, "-");
+
+          let organization = await ctx.db
+            .query("organizations")
+            .withIndex("by_slug", (q) => q.eq("slug", slug))
+            .first();
+
+          if (!organization) {
+            // Create a new organization
+            const orgId = await ctx.db.insert("organizations", {
+              name: request.sourceName,
+              slug,
+              website: `https://${domain}`,
+              cityIds: [request.cityId],
+              isActive: true,
+              isVerified: false,
+            });
+            organization = await ctx.db.get(orgId);
+          } else if (!organization.cityIds.includes(request.cityId)) {
+            // Add this city to existing org
+            await ctx.db.patch(organization._id, {
+              cityIds: [...organization.cityIds, request.cityId],
+            });
+          }
+
+          // Create the source
+          sourceId = await ctx.db.insert("scrapeSources", {
+            name: request.sourceName,
+            url: request.sourceUrl,
+            organizationId: organization!._id,
+            cityId: request.cityId,
+            scrapeFrequencyHours: 168, // Weekly
+            scraperCode: request.generatedScraperCode,
+            isActive: true,
+            scraperHealth: {
+              consecutiveFailures: 0,
+              successRate: 0,
+              totalRuns: 0,
+              needsRegeneration: false,
+            },
+          });
+
+          // Link the request to the new source
+          await ctx.db.patch(args.requestId, { sourceId });
+        } else {
+          // Update existing source with new scraper code
+          await ctx.db.patch(sourceId, {
+            scraperCode: request.generatedScraperCode,
+            isActive: true,
+          });
+        }
 
         // Create a scrape job to run the newly approved scraper
         await ctx.db.insert("scrapeJobs", {
-          sourceId: request.sourceId,
+          sourceId: sourceId,
           status: "pending",
           triggeredBy: "auto-approval",
           startedAt: Date.now(),
@@ -557,6 +637,369 @@ export const activateSourcesWithScrapers = mutation({
       ).length,
       activated,
       jobsCreated,
+    };
+  },
+});
+
+/**
+ * Retroactively deploy scrapers from completed requests that weren't deployed
+ * This fixes requests where sourceId was missing during original completion
+ */
+export const deployCompletedScrapers = mutation({
+  args: {
+    cityId: v.optional(v.id("cities")),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit || 50;
+
+    // Find requests with scraper code
+    let requests = await ctx.db
+      .query("scraperDevelopmentRequests")
+      .collect();
+
+    // Filter to those with scraper code (either generated or final)
+    requests = requests.filter(
+      (r) => r.generatedScraperCode || r.finalScraperCode
+    );
+
+    if (args.cityId) {
+      requests = requests.filter((r) => r.cityId === args.cityId);
+    }
+
+    requests = requests.slice(0, limit);
+
+    let deployed = 0;
+    let skipped = 0;
+    let jobsCreated = 0;
+    const results: string[] = [];
+
+    for (const request of requests) {
+      const scraperCode = request.finalScraperCode || request.generatedScraperCode;
+      if (!scraperCode) {
+        skipped++;
+        continue;
+      }
+
+      // Check if source already has this scraper deployed
+      let source = request.sourceId ? await ctx.db.get(request.sourceId) : null;
+
+      if (!source) {
+        // Try to find source by URL
+        source = await ctx.db
+          .query("scrapeSources")
+          .withIndex("by_url", (q) => q.eq("url", request.sourceUrl))
+          .first();
+      }
+
+      if (source) {
+        // Check if already has scraper code
+        if (source.scraperCode && source.isActive) {
+          skipped++;
+          continue;
+        }
+
+        // Deploy scraper to existing source
+        await ctx.db.patch(source._id, {
+          scraperCode,
+          isActive: true,
+        });
+
+        // Link request to source if not already linked
+        if (!request.sourceId) {
+          await ctx.db.patch(request._id, { sourceId: source._id });
+        }
+
+        // Create scrape job
+        await ctx.db.insert("scrapeJobs", {
+          sourceId: source._id,
+          status: "pending",
+          triggeredBy: "retroactive-deployment",
+          startedAt: Date.now(),
+        });
+
+        deployed++;
+        jobsCreated++;
+        results.push(`Deployed to existing source: ${source.name}`);
+      } else {
+        // Need to create source - find or create organization first
+        const domain = new URL(request.sourceUrl).hostname.replace(/^www\./, "");
+        const slug = domain.replace(/\./g, "-");
+
+        let organization = await ctx.db
+          .query("organizations")
+          .withIndex("by_slug", (q) => q.eq("slug", slug))
+          .first();
+
+        if (!organization) {
+          const orgId = await ctx.db.insert("organizations", {
+            name: request.sourceName,
+            slug,
+            website: `https://${domain}`,
+            cityIds: [request.cityId],
+            isActive: true,
+            isVerified: false,
+          });
+          organization = await ctx.db.get(orgId);
+        } else if (!organization.cityIds.includes(request.cityId)) {
+          await ctx.db.patch(organization._id, {
+            cityIds: [...organization.cityIds, request.cityId],
+          });
+        }
+
+        // Create source
+        const sourceId = await ctx.db.insert("scrapeSources", {
+          name: request.sourceName,
+          url: request.sourceUrl,
+          organizationId: organization!._id,
+          cityId: request.cityId,
+          scrapeFrequencyHours: 168,
+          scraperCode,
+          isActive: true,
+          scraperHealth: {
+            consecutiveFailures: 0,
+            successRate: 0,
+            totalRuns: 0,
+            needsRegeneration: false,
+          },
+        });
+
+        // Link request to new source
+        await ctx.db.patch(request._id, { sourceId });
+
+        // Create scrape job
+        await ctx.db.insert("scrapeJobs", {
+          sourceId,
+          status: "pending",
+          triggeredBy: "retroactive-deployment",
+          startedAt: Date.now(),
+        });
+
+        deployed++;
+        jobsCreated++;
+        results.push(`Created new source: ${request.sourceName}`);
+      }
+    }
+
+    return {
+      processed: requests.length,
+      deployed,
+      skipped,
+      jobsCreated,
+      results: results.slice(0, 20),
+    };
+  },
+});
+
+/**
+ * Copy scraper code from development requests to their linked sources
+ * and activate them. For sources created by market discovery.
+ */
+export const syncScrapersToSources = mutation({
+  args: {
+    cityId: v.id("cities"),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit || 100;
+
+    // Get all sources for this city
+    const sources = await ctx.db
+      .query("scrapeSources")
+      .withIndex("by_city", (q) => q.eq("cityId", args.cityId))
+      .collect();
+
+    // Get all development requests for this city that have scraper code
+    const requests = await ctx.db
+      .query("scraperDevelopmentRequests")
+      .withIndex("by_city", (q) => q.eq("cityId", args.cityId))
+      .collect();
+
+    const requestsByUrl = new Map(
+      requests
+        .filter((r) => r.generatedScraperCode || r.finalScraperCode)
+        .map((r) => [r.sourceUrl, r])
+    );
+
+    let synced = 0;
+    let jobsCreated = 0;
+    const results: string[] = [];
+
+    for (const source of sources.slice(0, limit)) {
+      // Skip if already has scraper code and is active
+      if (source.scraperCode && source.isActive) {
+        continue;
+      }
+
+      // Find matching request by URL
+      const request = requestsByUrl.get(source.url);
+      if (!request) {
+        continue;
+      }
+
+      const scraperCode = request.finalScraperCode || request.generatedScraperCode;
+      if (!scraperCode) {
+        continue;
+      }
+
+      // Update source with scraper code and activate
+      await ctx.db.patch(source._id, {
+        scraperCode,
+        isActive: true,
+      });
+
+      // Link request to source if not already linked
+      if (!request.sourceId) {
+        await ctx.db.patch(request._id, { sourceId: source._id });
+      }
+
+      // Create scrape job
+      await ctx.db.insert("scrapeJobs", {
+        sourceId: source._id,
+        status: "pending",
+        triggeredBy: "scraper-sync",
+        startedAt: Date.now(),
+      });
+
+      synced++;
+      jobsCreated++;
+      results.push(`Synced: ${source.name}`);
+    }
+
+    return {
+      sourcesChecked: Math.min(sources.length, limit),
+      requestsWithCode: requestsByUrl.size,
+      synced,
+      jobsCreated,
+      results: results.slice(0, 20),
+    };
+  },
+});
+
+/**
+ * Fix broken sourceId references and redeploy scrapers
+ * For requests where sourceId points to non-existent source
+ */
+export const fixAndDeployBrokenRequests = mutation({
+  args: {
+    cityId: v.id("cities"),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit || 50;
+
+    // Get requests with scraper code for this city
+    const requests = await ctx.db
+      .query("scraperDevelopmentRequests")
+      .withIndex("by_city", (q) => q.eq("cityId", args.cityId))
+      .collect();
+
+    const withCode = requests.filter(
+      (r) => r.generatedScraperCode || r.finalScraperCode
+    );
+
+    let fixed = 0;
+    let deployed = 0;
+    let jobsCreated = 0;
+    const results: string[] = [];
+
+    for (const request of withCode.slice(0, limit)) {
+      const scraperCode = request.finalScraperCode || request.generatedScraperCode;
+      if (!scraperCode) continue;
+
+      // Check if sourceId is valid
+      let source = request.sourceId ? await ctx.db.get(request.sourceId) : null;
+
+      if (!source) {
+        // Clear invalid sourceId
+        if (request.sourceId) {
+          await ctx.db.patch(request._id, { sourceId: undefined });
+          fixed++;
+        }
+
+        // Try to find source by URL
+        source = await ctx.db
+          .query("scrapeSources")
+          .withIndex("by_url", (q) => q.eq("url", request.sourceUrl))
+          .first();
+      }
+
+      // If still no source, create one
+      if (!source) {
+        const domain = new URL(request.sourceUrl).hostname.replace(/^www\./, "");
+        const slug = domain.replace(/\./g, "-");
+
+        // Find or create organization
+        let org = await ctx.db
+          .query("organizations")
+          .withIndex("by_slug", (q) => q.eq("slug", slug))
+          .first();
+
+        if (!org) {
+          const orgId = await ctx.db.insert("organizations", {
+            name: request.sourceName,
+            slug,
+            website: `https://${domain}`,
+            cityIds: [request.cityId],
+            isActive: true,
+            isVerified: false,
+          });
+          org = await ctx.db.get(orgId);
+        }
+
+        // Create source with scraper code
+        const sourceId = await ctx.db.insert("scrapeSources", {
+          name: request.sourceName,
+          url: request.sourceUrl,
+          organizationId: org!._id,
+          cityId: request.cityId,
+          scrapeFrequencyHours: 168,
+          scraperCode,
+          isActive: true,
+          scraperHealth: {
+            consecutiveFailures: 0,
+            successRate: 0,
+            totalRuns: 0,
+            needsRegeneration: false,
+          },
+        });
+
+        // Link request to new source
+        await ctx.db.patch(request._id, { sourceId });
+        source = await ctx.db.get(sourceId);
+        deployed++;
+        results.push(`Created: ${request.sourceName}`);
+      } else {
+        // Update existing source if needed
+        if (!source.scraperCode || !source.isActive) {
+          await ctx.db.patch(source._id, {
+            scraperCode,
+            isActive: true,
+          });
+          deployed++;
+          results.push(`Updated: ${source.name}`);
+        } else {
+          results.push(`Already active: ${source.name}`);
+          continue; // Don't create another job
+        }
+      }
+
+      // Create scrape job
+      await ctx.db.insert("scrapeJobs", {
+        sourceId: source!._id,
+        status: "pending",
+        triggeredBy: "fix-and-deploy",
+        startedAt: Date.now(),
+      });
+      jobsCreated++;
+    }
+
+    return {
+      requestsWithCode: withCode.length,
+      fixed,
+      deployed,
+      jobsCreated,
+      results: results.slice(0, 30),
     };
   },
 });

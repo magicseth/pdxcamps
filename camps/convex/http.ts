@@ -6,6 +6,128 @@ import { resend } from './email';
 
 const http = httpRouter();
 
+// ============ CITY ASSET ROUTES ============
+// Using pathPrefix to support dynamic path segments
+
+/**
+ * Serve city icon from Convex storage
+ * Route: /city-icon/{citySlug}
+ * Falls back to a default icon if city doesn't have one
+ */
+http.route({
+  pathPrefix: '/city-icon/',
+  method: 'GET',
+  handler: httpAction(async (ctx, req) => {
+    const url = new URL(req.url);
+    // Extract city slug from path: /city-icon/san-francisco-bay-area -> san-francisco-bay-area
+    const citySlug = url.pathname.replace('/city-icon/', '').replace(/\/$/, '');
+
+    if (!citySlug) {
+      return new Response('City slug required', { status: 400 });
+    }
+
+    // Look up city by slug
+    const city = await ctx.runQuery(internal.cities.queries.getCityBySlugInternal, {
+      slug: citySlug,
+    });
+
+    if (!city || !city.iconStorageId) {
+      // Return 404 - frontend should fall back to default icon
+      return new Response('Icon not found', { status: 404 });
+    }
+
+    // Get the blob from storage
+    const blob = await ctx.storage.get(city.iconStorageId);
+    if (!blob) {
+      return new Response('Icon file not found', { status: 404 });
+    }
+
+    return new Response(blob, {
+      headers: {
+        'Content-Type': 'image/png',
+        'Cache-Control': 'public, max-age=86400', // Cache for 24 hours
+      },
+    });
+  }),
+});
+
+/**
+ * Serve city header image from Convex storage
+ * Route: /city-header/{citySlug}
+ */
+http.route({
+  pathPrefix: '/city-header/',
+  method: 'GET',
+  handler: httpAction(async (ctx, req) => {
+    const url = new URL(req.url);
+    const citySlug = url.pathname.replace('/city-header/', '').replace(/\/$/, '');
+
+    if (!citySlug) {
+      return new Response('City slug required', { status: 400 });
+    }
+
+    // Look up city by slug
+    const city = await ctx.runQuery(internal.cities.queries.getCityBySlugInternal, {
+      slug: citySlug,
+    });
+
+    if (!city || !city.headerImageStorageId) {
+      return new Response('Header image not found', { status: 404 });
+    }
+
+    // Get the blob from storage
+    const blob = await ctx.storage.get(city.headerImageStorageId);
+    if (!blob) {
+      return new Response('Header image file not found', { status: 404 });
+    }
+
+    return new Response(blob, {
+      headers: {
+        'Content-Type': 'image/png',
+        'Cache-Control': 'public, max-age=86400',
+      },
+    });
+  }),
+});
+
+/**
+ * Serve icon by domain - useful for favicon requests
+ * Route: /icon-by-domain/{domain}
+ */
+http.route({
+  pathPrefix: '/icon-by-domain/',
+  method: 'GET',
+  handler: httpAction(async (ctx, req) => {
+    const url = new URL(req.url);
+    const domain = url.pathname.replace('/icon-by-domain/', '').replace(/\/$/, '');
+
+    if (!domain) {
+      return new Response('Domain required', { status: 400 });
+    }
+
+    // Look up city by domain
+    const city = await ctx.runQuery(internal.cities.queries.getCityByDomainInternal, {
+      domain,
+    });
+
+    if (!city || !city.iconStorageId) {
+      return new Response('Icon not found', { status: 404 });
+    }
+
+    const blob = await ctx.storage.get(city.iconStorageId);
+    if (!blob) {
+      return new Response('Icon file not found', { status: 404 });
+    }
+
+    return new Response(blob, {
+      headers: {
+        'Content-Type': 'image/png',
+        'Cache-Control': 'public, max-age=86400',
+      },
+    });
+  }),
+});
+
 // Register Stripe webhook handler at /stripe/webhook
 // Configure in Stripe Dashboard: https://<your-convex-deployment>.convex.site/stripe/webhook
 registerRoutes(http, components.stripe, {

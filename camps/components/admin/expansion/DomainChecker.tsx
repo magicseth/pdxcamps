@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useQuery } from 'convex/react';
+import { useState } from 'react';
+import { useAction } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 
 interface DomainResult {
@@ -15,7 +15,7 @@ interface DomainCheckerProps {
   marketKey: string;
   suggestedDomains: string[];
   selectedDomain?: string;
-  onStartCheck: (domains: string[]) => Promise<string>; // Returns workflow ID
+  onStartCheck?: (domains: string[]) => Promise<string>; // Legacy - not used anymore
   onSelect: (domain: string, price?: string) => void;
 }
 
@@ -23,38 +23,14 @@ export function DomainChecker({
   marketKey,
   suggestedDomains,
   selectedDomain,
-  onStartCheck,
   onSelect,
 }: DomainCheckerProps) {
   const [results, setResults] = useState<DomainResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const [workflowId, setWorkflowId] = useState<string | null>(null);
   const [customDomain, setCustomDomain] = useState('');
-  const [progress, setProgress] = useState({ current: 0, total: 0 });
 
-  // Poll workflow status when we have a workflow ID
-  const workflowStatus = useQuery(
-    api.expansion.domainWorkflow.getDomainCheckStatus,
-    workflowId ? { workflowId } : 'skip'
-  );
-
-  // Update results when workflow completes
-  useEffect(() => {
-    if (workflowStatus?.type === 'completed' && workflowStatus.result) {
-      const workflowResult = workflowStatus.result as { results: DomainResult[] };
-      setResults(workflowResult.results);
-      setLoading(false);
-      setWorkflowId(null);
-      setProgress({ current: 0, total: 0 });
-    } else if (workflowStatus?.type === 'failed') {
-      console.error('Domain check workflow failed');
-      setLoading(false);
-      setWorkflowId(null);
-      setProgress({ current: 0, total: 0 });
-    } else if (workflowStatus?.type === 'inProgress') {
-      // Could parse logs or steps for progress, but for now just show it's running
-    }
-  }, [workflowStatus]);
+  // Use the fast Domainr-based check
+  const checkDomainsQuick = useAction(api.expansion.actions.checkDomainsQuick);
 
   const handleCheck = async () => {
     setLoading(true);
@@ -64,13 +40,12 @@ export function DomainChecker({
         ? [...suggestedDomains, customDomain]
         : suggestedDomains;
 
-      setProgress({ current: 0, total: domainsToCheck.length });
-
-      // Start the workflow and get the ID
-      const id = await onStartCheck(domainsToCheck);
-      setWorkflowId(id);
+      // Fast check using Domainr API - returns in ~1-2 seconds!
+      const checkResults = await checkDomainsQuick({ domains: domainsToCheck });
+      setResults(checkResults);
     } catch (error) {
       console.error('Domain check failed:', error);
+    } finally {
       setLoading(false);
     }
   };
@@ -108,10 +83,10 @@ export function DomainChecker({
             <div className="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full" />
             <div>
               <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                Checking domains...
+                Checking {domainsToShow.length} domains...
               </p>
               <p className="text-xs text-blue-600 dark:text-blue-300">
-                Rate limited to 1 check per 11 seconds. This may take ~{domainsToShow.length * 11} seconds.
+                Using fast Domainr API - should complete in a few seconds.
               </p>
             </div>
           </div>

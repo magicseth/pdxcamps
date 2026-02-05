@@ -608,18 +608,23 @@ export const importFromJob = action({
           );
 
           if (existingSession) {
-            // Check if we can update price on existing session
-            if (
+            // Update price and/or capacity on existing session if we have better data
+            const shouldUpdatePrice =
               session.priceInCents &&
               session.priceInCents > 0 &&
-              (!existingSession.price || existingSession.price === 0)
-            ) {
-              // Update the existing session's price
+              (!existingSession.price || existingSession.price === 0);
+            const shouldUpdateCapacity =
+              session.spotsLeft !== undefined &&
+              session.spotsLeft > 0 &&
+              (!existingSession.capacity || existingSession.capacity === 20); // 20 is the default
+
+            if (shouldUpdatePrice || shouldUpdateCapacity) {
               await ctx.runMutation(
-                internal.scraping.importMutations.updateSessionPrice,
+                internal.scraping.importMutations.updateSessionPriceAndCapacity,
                 {
                   sessionId: existingSession._id,
-                  price: session.priceInCents,
+                  price: shouldUpdatePrice ? session.priceInCents : undefined,
+                  capacity: shouldUpdateCapacity ? session.spotsLeft : undefined,
                 }
               );
             }
