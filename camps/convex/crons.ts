@@ -85,6 +85,15 @@ crons.daily(
   { limit: 10 }
 );
 
+// Daily scraper report email - runs at 8 AM PST (4 PM UTC)
+// Sends summary of scraping activity to seth@magicseth.com
+crons.daily(
+  "daily scraper report email",
+  { hourUTC: 16, minuteUTC: 0 },
+  internal.scraping.dailyReport.sendDailyReport,
+  {}
+);
+
 // Clean up old scrape data weekly (keep 30 days)
 // Runs on Sunday at midnight PST (8 AM UTC)
 // Uncomment to enable:

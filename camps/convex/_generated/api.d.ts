@@ -44,6 +44,8 @@ import type * as scraping_actions from "../scraping/actions.js";
 import type * as scraping_contactExtractor from "../scraping/contactExtractor.js";
 import type * as scraping_contactExtractorHelpers from "../scraping/contactExtractorHelpers.js";
 import type * as scraping_coverage from "../scraping/coverage.js";
+import type * as scraping_dailyReport from "../scraping/dailyReport.js";
+import type * as scraping_dailyReportQueries from "../scraping/dailyReportQueries.js";
 import type * as scraping_dataQualityActions from "../scraping/dataQualityActions.js";
 import type * as scraping_dataQualityChecks from "../scraping/dataQualityChecks.js";
 import type * as scraping_deduplication from "../scraping/deduplication.js";
@@ -125,6 +127,8 @@ declare const fullApi: ApiFromModules<{
   "scraping/contactExtractor": typeof scraping_contactExtractor;
   "scraping/contactExtractorHelpers": typeof scraping_contactExtractorHelpers;
   "scraping/coverage": typeof scraping_coverage;
+  "scraping/dailyReport": typeof scraping_dailyReport;
+  "scraping/dailyReportQueries": typeof scraping_dailyReportQueries;
   "scraping/dataQualityActions": typeof scraping_dataQualityActions;
   "scraping/dataQualityChecks": typeof scraping_dataQualityChecks;
   "scraping/deduplication": typeof scraping_deduplication;
