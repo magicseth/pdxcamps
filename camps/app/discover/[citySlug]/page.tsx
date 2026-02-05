@@ -363,9 +363,15 @@ export default function DiscoverPage() {
     (maxDistanceMiles !== undefined ? 1 : 0);
 
   const handleOrganizationToggle = (orgId: string) => {
-    setSelectedOrganizations((prev) =>
-      prev.includes(orgId) ? prev.filter((id) => id !== orgId) : [...prev, orgId]
-    );
+    setSelectedOrganizations((prev) => {
+      const isRemoving = prev.includes(orgId);
+      const newSelection = isRemoving ? prev.filter((id) => id !== orgId) : [...prev, orgId];
+      // Clear location filters when all organizations are deselected
+      if (newSelection.length === 0) {
+        setSelectedLocations([]);
+      }
+      return newSelection;
+    });
   };
 
   const handleLocationToggle = (locationId: string) => {
@@ -893,8 +899,8 @@ export default function DiscoverPage() {
               </div>
             )}
 
-            {/* Location Filter Chips */}
-            {relevantLocations && relevantLocations.length > 0 && (
+            {/* Location Filter Chips - only show when organizations are selected */}
+            {selectedOrganizations.length > 0 && relevantLocations && relevantLocations.length > 0 && (
               <div className="mb-4">
                 <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">
                   Filter by Location
