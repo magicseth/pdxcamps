@@ -1,5 +1,228 @@
 import { query } from "../_generated/server";
 import { v } from "convex/values";
+import { Id } from "../_generated/dataModel";
+
+/**
+ * List camps for admin interface with filtering
+ */
+export const listCampsForAdmin = query({
+  args: {
+    cityId: v.optional(v.id("cities")),
+    organizationId: v.optional(v.id("organizations")),
+    hasImage: v.optional(v.boolean()),
+    hasAvailability: v.optional(v.boolean()),
+    search: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Get all camps
+    let camps = await ctx.db.query("camps").collect();
+
+    // Filter by city (via organization)
+    if (args.cityId) {
+      const orgsInCity = await ctx.db
+        .query("organizations")
+        .collect();
+      const orgIdsInCity = new Set(
+        orgsInCity
+          .filter((org) => org.cityIds.includes(args.cityId as Id<"cities">))
+          .map((org) => org._id)
+      );
+      camps = camps.filter((camp) => orgIdsInCity.has(camp.organizationId));
+    }
+
+    // Filter by organization
+    if (args.organizationId) {
+      camps = camps.filter((camp) => camp.organizationId === args.organizationId);
+    }
+
+    // Filter by image presence
+    if (args.hasImage !== undefined) {
+      camps = camps.filter((camp) => {
+        const hasStorageImage = camp.imageStorageIds && camp.imageStorageIds.length > 0;
+        const hasExternalImage = camp.imageUrls && camp.imageUrls.length > 0;
+        const hasImage = hasStorageImage || hasExternalImage;
+        return args.hasImage ? hasImage : !hasImage;
+      });
+    }
+
+    // Filter by search
+    if (args.search) {
+      const searchLower = args.search.toLowerCase();
+      camps = camps.filter((camp) =>
+        camp.name.toLowerCase().includes(searchLower) ||
+        camp.description.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Enrich camps with organization and session data
+    const enrichedCamps = await Promise.all(
+      camps.map(async (camp) => {
+        const org = await ctx.db.get(camp.organizationId);
+
+        // Resolve image URLs
+        const resolvedImageUrls: string[] = [];
+        for (const storageId of camp.imageStorageIds || []) {
+          const url = await ctx.storage.getUrl(storageId);
+          if (url) resolvedImageUrls.push(url);
+        }
+
+        // Get session counts
+        const sessions = await ctx.db
+          .query("sessions")
+          .withIndex("by_camp", (q) => q.eq("campId", camp._id))
+          .collect();
+
+        const today = new Date().toISOString().split("T")[0];
+        const activeSessions = sessions.filter(
+          (s) => s.status === "active" && s.startDate >= today
+        );
+
+        // Check for availability data (sessions with capacity > 0)
+        const sessionsWithAvailability = sessions.filter((s) => s.capacity > 0);
+        const hasAvailabilityData = sessionsWithAvailability.length > 0;
+
+        // Get org logo URL
+        let orgLogoUrl: string | undefined;
+        if (org?.logoStorageId) {
+          orgLogoUrl = await ctx.storage.getUrl(org.logoStorageId) ?? undefined;
+        }
+        orgLogoUrl = orgLogoUrl || org?.logoUrl;
+
+        return {
+          _id: camp._id,
+          name: camp.name,
+          slug: camp.slug,
+          description: camp.description,
+          categories: camp.categories,
+          ageRequirements: camp.ageRequirements,
+          isActive: camp.isActive,
+          organizationId: camp.organizationId,
+          organizationName: org?.name,
+          organizationSlug: org?.slug,
+          organizationLogoUrl: orgLogoUrl,
+          imageUrl: resolvedImageUrls[0] || camp.imageUrls?.[0],
+          resolvedImageUrls,
+          externalImageUrls: camp.imageUrls || [],
+          hasImage: resolvedImageUrls.length > 0 || (camp.imageUrls && camp.imageUrls.length > 0),
+          totalSessions: sessions.length,
+          activeSessions: activeSessions.length,
+          sessionsWithAvailability: sessionsWithAvailability.length,
+          hasAvailabilityData,
+        };
+      })
+    );
+
+    // Filter by availability data if specified
+    let filteredCamps = enrichedCamps;
+    if (args.hasAvailability !== undefined) {
+      filteredCamps = enrichedCamps.filter((c) =>
+        args.hasAvailability ? c.hasAvailabilityData : !c.hasAvailabilityData
+      );
+    }
+
+    // Sort by name
+    filteredCamps.sort((a, b) => a.name.localeCompare(b.name));
+
+    // Calculate stats (from all enriched camps, not filtered)
+    const stats = {
+      totalCamps: enrichedCamps.length,
+      campsWithImages: enrichedCamps.filter((c) => c.hasImage).length,
+      campsMissingImages: enrichedCamps.filter((c) => !c.hasImage).length,
+      campsWithAvailability: enrichedCamps.filter((c) => c.hasAvailabilityData).length,
+      campsMissingAvailability: enrichedCamps.filter((c) => !c.hasAvailabilityData).length,
+      totalSessions: enrichedCamps.reduce((sum, c) => sum + c.totalSessions, 0),
+      sessionsWithAvailability: enrichedCamps.reduce((sum, c) => sum + c.sessionsWithAvailability, 0),
+    };
+
+    return { camps: filteredCamps, stats };
+  },
+});
+
+/**
+ * Get a single camp with all its sessions for admin view
+ */
+export const getCampWithSessions = query({
+  args: {
+    campId: v.id("camps"),
+  },
+  handler: async (ctx, args) => {
+    const camp = await ctx.db.get(args.campId);
+    if (!camp) return null;
+
+    const org = await ctx.db.get(camp.organizationId);
+
+    // Resolve image URLs
+    const resolvedImageUrls: string[] = [];
+    for (const storageId of camp.imageStorageIds || []) {
+      const url = await ctx.storage.getUrl(storageId);
+      if (url) resolvedImageUrls.push(url);
+    }
+
+    // Get org logo
+    let orgLogoUrl: string | undefined;
+    if (org?.logoStorageId) {
+      orgLogoUrl = await ctx.storage.getUrl(org.logoStorageId) ?? undefined;
+    }
+    orgLogoUrl = orgLogoUrl || org?.logoUrl;
+
+    // Get all sessions for this camp
+    const sessions = await ctx.db
+      .query("sessions")
+      .withIndex("by_camp", (q) => q.eq("campId", args.campId))
+      .collect();
+
+    // Enrich sessions with location data
+    const enrichedSessions = await Promise.all(
+      sessions.map(async (session) => {
+        const location = await ctx.db.get(session.locationId);
+        return {
+          _id: session._id,
+          campId: session.campId,
+          campName: session.campName || camp.name,
+          startDate: session.startDate,
+          endDate: session.endDate,
+          dropOffTime: session.dropOffTime,
+          pickUpTime: session.pickUpTime,
+          price: session.price,
+          currency: session.currency,
+          status: session.status,
+          capacity: session.capacity,
+          enrolledCount: session.enrolledCount,
+          waitlistCount: session.waitlistCount,
+          ageRequirements: session.ageRequirements,
+          locationId: session.locationId,
+          locationName: session.locationName || location?.name,
+          locationAddress: session.locationAddress || location?.address,
+          externalRegistrationUrl: session.externalRegistrationUrl,
+          completenessScore: session.completenessScore,
+          missingFields: session.missingFields,
+        };
+      })
+    );
+
+    // Sort sessions by start date
+    enrichedSessions.sort((a, b) => a.startDate.localeCompare(b.startDate));
+
+    return {
+      _id: camp._id,
+      name: camp.name,
+      slug: camp.slug,
+      description: camp.description,
+      categories: camp.categories,
+      ageRequirements: camp.ageRequirements,
+      website: camp.website,
+      isActive: camp.isActive,
+      isFeatured: camp.isFeatured,
+      organizationId: camp.organizationId,
+      organizationName: org?.name,
+      organizationSlug: org?.slug,
+      organizationLogoUrl: orgLogoUrl,
+      resolvedImageUrls,
+      externalImageUrls: camp.imageUrls || [],
+      sessions: enrichedSessions,
+    };
+  },
+});
 
 /**
  * List camps for an organization

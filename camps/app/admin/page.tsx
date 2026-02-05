@@ -278,6 +278,12 @@ function AdminContent() {
           + Request Scraper
         </Link>
         <Link
+          href="/admin/camps"
+          className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm font-medium"
+        >
+          Camps Catalog
+        </Link>
+        <Link
           href="/admin/sources"
           className="px-4 py-2 bg-slate-600 text-white rounded-md hover:bg-slate-700 text-sm font-medium"
         >
