@@ -52,4 +52,5 @@ next-env.d.ts
 
 # Local env files with secrets
 .env.prod
+.env.production
 .env.production.local
