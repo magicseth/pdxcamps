@@ -62,6 +62,8 @@ import type * as scraping_images from "../scraping/images.js";
 import type * as scraping_import from "../scraping/import.js";
 import type * as scraping_importMutations from "../scraping/importMutations.js";
 import type * as scraping_internal from "../scraping/internal.js";
+import type * as scraping_marketDiscovery from "../scraping/marketDiscovery.js";
+import type * as scraping_marketDiscoveryAction from "../scraping/marketDiscoveryAction.js";
 import type * as scraping_marketSeeding from "../scraping/marketSeeding.js";
 import type * as scraping_mutations from "../scraping/mutations.js";
 import type * as scraping_omsi from "../scraping/omsi.js";
@@ -148,6 +150,8 @@ declare const fullApi: ApiFromModules<{
   "scraping/import": typeof scraping_import;
   "scraping/importMutations": typeof scraping_importMutations;
   "scraping/internal": typeof scraping_internal;
+  "scraping/marketDiscovery": typeof scraping_marketDiscovery;
+  "scraping/marketDiscoveryAction": typeof scraping_marketDiscoveryAction;
   "scraping/marketSeeding": typeof scraping_marketSeeding;
   "scraping/mutations": typeof scraping_mutations;
   "scraping/omsi": typeof scraping_omsi;
