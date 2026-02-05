@@ -281,8 +281,30 @@ export const recordTestResults = mutation({
         });
       }
     } else if (args.sessionsFound === 0) {
-      // Test passed but found no sessions - treat as failure
-      if (currentRetries < maxRetries) {
+      // Check if 0 sessions is expected/valid (seasonal catalog, site not yet published, etc.)
+      let zeroIsExpected = false;
+      if (args.sampleData) {
+        try {
+          const sampleParsed = JSON.parse(args.sampleData);
+          if (sampleParsed.expectedEmpty === true) {
+            zeroIsExpected = true;
+          }
+        } catch {
+          // Not JSON, treat as regular 0-session failure
+        }
+      }
+
+      if (zeroIsExpected) {
+        // Valid 0 sessions - mark as completed (seasonal catalog, etc.)
+        await ctx.db.patch(args.requestId, {
+          lastTestRun: Date.now(),
+          lastTestSessionsFound: 0,
+          lastTestSampleData: args.sampleData,
+          lastTestError: undefined,
+          status: "completed",
+        });
+      } else if (currentRetries < maxRetries) {
+        // Test passed but found no sessions - treat as failure
         const feedbackHistory = request.feedbackHistory || [];
         feedbackHistory.push({
           feedbackAt: Date.now(),
@@ -308,14 +330,32 @@ export const recordTestResults = mutation({
         });
       }
     } else {
-      // Test succeeded with sessions found
+      // Test succeeded with sessions found - auto-approve and deploy!
       await ctx.db.patch(args.requestId, {
         lastTestRun: Date.now(),
         lastTestSessionsFound: args.sessionsFound,
         lastTestSampleData: args.sampleData,
         lastTestError: undefined,
-        status: "needs_feedback",
+        status: "completed",
+        completedAt: Date.now(),
+        finalScraperCode: request.generatedScraperCode,
       });
+
+      // Deploy the scraper code to the source, activate it, and trigger a scrape
+      if (request.sourceId && request.generatedScraperCode) {
+        await ctx.db.patch(request.sourceId, {
+          scraperCode: request.generatedScraperCode,
+          isActive: true,
+        });
+
+        // Create a scrape job to run the newly approved scraper
+        await ctx.db.insert("scrapeJobs", {
+          sourceId: request.sourceId,
+          status: "pending",
+          triggeredBy: "auto-approval",
+          startedAt: Date.now(),
+        });
+      }
     }
 
     return args.requestId;
@@ -411,6 +451,120 @@ export const approveScraperCode = mutation({
 });
 
 /**
+ * Bulk approve all scrapers in needs_feedback status
+ * This deploys them to their sources and kicks off scrape jobs
+ */
+export const bulkApproveNeedsFeedback = mutation({
+  args: {
+    limit: v.optional(v.number()),
+    cityId: v.optional(v.id("cities")),
+  },
+  handler: async (ctx, args) => {
+    let query = ctx.db
+      .query("scraperDevelopmentRequests")
+      .filter((q) => q.eq(q.field("status"), "needs_feedback"));
+
+    const requests = await query.collect();
+    const limit = args.limit || 100;
+
+    const filtered = args.cityId
+      ? requests.filter((r) => r.cityId === args.cityId)
+      : requests;
+
+    const toProcess = filtered.slice(0, limit);
+    let approved = 0;
+    let deployed = 0;
+
+    for (const request of toProcess) {
+      if (!request.generatedScraperCode) continue;
+
+      // Mark as completed
+      await ctx.db.patch(request._id, {
+        status: "completed",
+        completedAt: Date.now(),
+        finalScraperCode: request.generatedScraperCode,
+      });
+      approved++;
+
+      // Deploy to source, activate it, and create scrape job
+      if (request.sourceId) {
+        await ctx.db.patch(request.sourceId, {
+          scraperCode: request.generatedScraperCode,
+          isActive: true,
+        });
+
+        await ctx.db.insert("scrapeJobs", {
+          sourceId: request.sourceId,
+          status: "pending",
+          triggeredBy: "bulk-approval",
+          startedAt: Date.now(),
+        });
+        deployed++;
+      }
+    }
+
+    return {
+      totalInNeedsFeedback: filtered.length,
+      approved,
+      deployed,
+    };
+  },
+});
+
+/**
+ * Activate all sources that have scraper code but are inactive
+ * Also creates scrape jobs to run them
+ */
+export const activateSourcesWithScrapers = mutation({
+  args: {
+    cityId: v.optional(v.id("cities")),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const sources = await ctx.db.query("scrapeSources").collect();
+    const limit = args.limit || 100;
+
+    // Filter to sources with scraper code that are inactive
+    let toActivate = sources.filter(
+      (s) => (s.scraperCode || s.scraperModule) && !s.isActive
+    );
+
+    if (args.cityId) {
+      toActivate = toActivate.filter((s) => s.cityId === args.cityId);
+    }
+
+    toActivate = toActivate.slice(0, limit);
+
+    let activated = 0;
+    let jobsCreated = 0;
+
+    for (const source of toActivate) {
+      await ctx.db.patch(source._id, {
+        isActive: true,
+      });
+      activated++;
+
+      // Create a scrape job
+      await ctx.db.insert("scrapeJobs", {
+        sourceId: source._id,
+        status: "pending",
+        triggeredBy: "bulk-activation",
+        startedAt: Date.now(),
+      });
+      jobsCreated++;
+    }
+
+    return {
+      totalInactiveWithScrapers: sources.filter(
+        (s) => (s.scraperCode || s.scraperModule) && !s.isActive
+      ).length,
+      activated,
+      jobsCreated,
+    };
+  },
+});
+
+/**
  * Mark request as failed
  */
 export const markFailed = mutation({
@@ -427,6 +581,35 @@ export const markFailed = mutation({
     await ctx.db.patch(args.requestId, {
       status: "failed",
       lastTestError: args.reason || "Marked as failed",
+    });
+
+    return args.requestId;
+  },
+});
+
+/**
+ * Mark a request as directory processed (completed without building a scraper)
+ * Used when a URL is detected as a directory/listing site containing links to other camps
+ */
+export const markDirectoryProcessed = mutation({
+  args: {
+    requestId: v.id("scraperDevelopmentRequests"),
+    notes: v.string(),
+    linksFound: v.number(),
+    requestsCreated: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const request = await ctx.db.get(args.requestId);
+    if (!request) {
+      throw new Error("Request not found");
+    }
+
+    await ctx.db.patch(args.requestId, {
+      status: "completed",
+      completedAt: Date.now(),
+      notes: args.notes,
+      // Store metadata about the directory processing
+      generatedScraperCode: `// DIRECTORY: This URL was detected as a listing/directory site.\n// ${args.linksFound} camp links were found.\n// ${args.requestsCreated} new scraper development requests were created.\n// No scraper was built for this directory.`,
     });
 
     return args.requestId;
@@ -544,6 +727,79 @@ export const saveExploration = mutation({
     });
 
     return args.requestId;
+  },
+});
+
+/**
+ * Create scraper dev requests for all sources without scrapers in a city
+ * This fills the gap where directory seeding creates sources but not dev requests
+ */
+export const createDevRequestsForOrphanedSources = mutation({
+  args: {
+    cityId: v.id("cities"),
+    dryRun: v.optional(v.boolean()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const dryRun = args.dryRun ?? true;
+    const limit = args.limit ?? 100;
+
+    // Get all sources for this city
+    const sources = await ctx.db
+      .query("scrapeSources")
+      .withIndex("by_city", (q) => q.eq("cityId", args.cityId))
+      .collect();
+
+    // Filter to sources without scrapers (include inactive - they need scrapers before activation)
+    const orphanedSources = sources.filter(
+      (s) => !s.scraperModule && !s.scraperCode
+    );
+
+    // Get existing dev requests to avoid duplicates
+    const existingRequests = await ctx.db
+      .query("scraperDevelopmentRequests")
+      .withIndex("by_city", (q) => q.eq("cityId", args.cityId))
+      .collect();
+
+    const existingSourceIds = new Set(
+      existingRequests
+        .filter((r) => r.sourceId)
+        .map((r) => r.sourceId)
+    );
+    const existingUrls = new Set(existingRequests.map((r) => r.sourceUrl));
+
+    // Find sources that need dev requests
+    const needsDevRequest = orphanedSources.filter(
+      (s) => !existingSourceIds.has(s._id) && !existingUrls.has(s.url)
+    );
+
+    const created: Array<{ name: string; url: string }> = [];
+
+    for (const source of needsDevRequest.slice(0, limit)) {
+      if (!dryRun) {
+        await ctx.db.insert("scraperDevelopmentRequests", {
+          sourceName: source.name,
+          sourceUrl: source.url,
+          cityId: args.cityId,
+          sourceId: source._id,
+          requestedBy: "auto-orphan-fill",
+          requestedAt: Date.now(),
+          status: "pending",
+          scraperVersion: 0,
+        });
+      }
+      created.push({ name: source.name, url: source.url });
+    }
+
+    return {
+      dryRun,
+      totalSources: sources.length,
+      orphanedSources: orphanedSources.length,
+      alreadyHaveRequests: orphanedSources.length - needsDevRequest.length,
+      needDevRequests: needsDevRequest.length,
+      created: created.length,
+      createdList: created.slice(0, 20),
+    };
   },
 });
 

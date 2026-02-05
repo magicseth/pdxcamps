@@ -261,6 +261,8 @@ interface SiteExplorationResult {
   urlPatterns: string[];
   navigationNotes: string[];
   rawPageSummary?: string;
+  isDirectory?: boolean; // True if this is a listing/directory site with links to multiple camp orgs
+  directoryLinks?: Array<{ url: string; name: string; isInternal?: boolean }>; // Camp links found on directory
 }
 
 /**
@@ -490,6 +492,136 @@ Look for links in lists, tables, or navigation that point to facility-specific c
       }
     }
 
+    // Check if this is a directory/listing site (lists multiple camp organizations)
+    const urlLower = url.toLowerCase();
+    const directoryIndicators = [
+      'kidsoutandabout.com', 'parentmap.com', 'seattlesummercamps.com',
+      'summercamps.com', 'campnavigator.com', 'kidscamps.com',
+      'activityhero.com', 'sawyer.com', 'acacamps.org',
+      '/guide', '/list', '/directory', '/best-', '/top-'
+    ];
+
+    const isLikelyDirectory = directoryIndicators.some(ind => urlLower.includes(ind)) ||
+      (extracted.estimatedCampCount && parseInt(extracted.estimatedCampCount) > 20);
+
+    if (isLikelyDirectory) {
+      log(`   📂 Detected directory/listing site - extracting camp links...`);
+      result.isDirectory = true;
+
+      // Extract both external camp organization links AND internal camp detail pages
+      // Many directory sites host camp details internally (e.g., kidsoutandabout.com/content/camp-name)
+      const dirLinks = await page.evaluate(() => {
+        const links: Array<{ url: string; name: string; isInternal: boolean }> = [];
+        const seenUrls = new Set<string>();
+        const seenDomains = new Set<string>();
+        const hostDomain = window.location.hostname.replace(/^www\./, '');
+        const currentPath = window.location.pathname;
+
+        // Patterns that indicate a camp detail page (internal links)
+        const campDetailPatterns = [
+          /\/content\/.*camp/i,
+          /\/camp[s]?\/[^/]+$/i,
+          /\/program[s]?\/[^/]+$/i,
+          /\/activit(y|ies)\/[^/]+$/i,
+          /\/class(es)?\/[^/]+$/i,
+          /\/event[s]?\/.*camp/i,
+          /\/listing[s]?\/[^/]+$/i,
+          /\/provider[s]?\/[^/]+$/i,
+          /\/organization[s]?\/[^/]+$/i,
+          /\/venue[s]?\/[^/]+$/i,
+          /camp.*-\d{4}$/i,  // e.g., "summer-camp-2026"
+        ];
+
+        // Patterns to exclude (navigation, pagination, filters)
+        const excludePatterns = [
+          /\/search/i,
+          /\/filter/i,
+          /\/page\/\d+/i,
+          /\/category\//i,
+          /\/tag\//i,
+          /\/author\//i,
+          /\/login/i,
+          /\/register/i,
+          /\/cart/i,
+          /\/checkout/i,
+          /\/account/i,
+          /\/about/i,
+          /\/contact/i,
+          /\/privacy/i,
+          /\/terms/i,
+          /\/faq/i,
+          /^\/?$/,  // Homepage
+        ];
+
+        // Social and non-camp domains to skip
+        const skipDomains = /facebook|twitter|instagram|linkedin|youtube|google|yelp|tripadvisor|amazon|pinterest|reddit|tiktok|snapchat/i;
+
+        document.querySelectorAll('a[href]').forEach(a => {
+          const href = a.getAttribute('href');
+          if (!href) return;
+
+          try {
+            // Handle both absolute and relative URLs
+            const url = new URL(href, window.location.origin);
+            const fullUrl = url.href;
+            const domain = url.hostname.replace(/^www\./, '');
+            const path = url.pathname;
+
+            // Skip if we've seen this exact URL
+            if (seenUrls.has(fullUrl)) return;
+
+            // Skip excluded patterns
+            if (excludePatterns.some(p => p.test(path))) return;
+
+            // Skip current page
+            if (path === currentPath) return;
+
+            const isInternal = domain === hostDomain;
+            const name = a.textContent?.trim() || '';
+
+            if (isInternal) {
+              // For internal links, check if it looks like a camp detail page
+              const isCampDetail = campDetailPatterns.some(p => p.test(path));
+
+              // Also check if the link text suggests it's a camp
+              const textSuggestsCamp = /camp|program|class|activity|workshop|lesson/i.test(name);
+
+              if (isCampDetail || textSuggestsCamp) {
+                seenUrls.add(fullUrl);
+                if (name.length > 2 && name.length < 200) {
+                  links.push({ url: fullUrl, name, isInternal: true });
+                }
+              }
+            } else {
+              // For external links, collect camp organization websites
+              if (skipDomains.test(domain)) return;
+              if (seenDomains.has(domain)) return;
+
+              seenDomains.add(domain);
+              seenUrls.add(fullUrl);
+              const linkName = name.length > 2 ? name : domain.split('.')[0];
+              if (linkName.length > 2 && linkName.length < 200) {
+                links.push({ url: fullUrl, name: linkName, isInternal: false });
+              }
+            }
+          } catch { }
+        });
+
+        return links;
+      });
+
+      const externalLinks = dirLinks.filter(l => !l.isInternal);
+      const internalLinks = dirLinks.filter(l => l.isInternal);
+
+      log(`   ✅ Found ${externalLinks.length} external camp org links`);
+      log(`   ✅ Found ${internalLinks.length} internal camp detail pages`);
+
+      if (dirLinks.length > 0) {
+        result.directoryLinks = dirLinks;
+        log(`   ✅ Total: ${dirLinks.length} camp links found in directory`);
+      }
+    }
+
     await stagehand.close();
     stagehand = null;
 
@@ -506,6 +638,9 @@ Look for links in lists, tables, or navigation that point to facility-specific c
   // Log summary
   log(`   📊 Exploration results:`);
   log(`      Site type: ${result.siteType}`);
+  if (result.isDirectory) {
+    log(`      📂 DIRECTORY: ${result.directoryLinks?.length || 0} camp links found`);
+  }
   log(`      Locations: ${result.locations.length}`);
   log(`      Categories: ${result.categories.length}`);
   log(`      Registration system: ${result.registrationSystem || 'unknown'}`);
@@ -631,6 +766,100 @@ async function processRequest(request: DevelopmentRequest, verbose: boolean = fa
         } catch (saveError) {
           log(`   ⚠️ Failed to save exploration: ${saveError instanceof Error ? saveError.message : saveError}`);
         }
+
+        // Handle directory sites - extract camp links and create requests for each
+        if (explorationResult.isDirectory && explorationResult.directoryLinks && explorationResult.directoryLinks.length > 0) {
+          const allLinks = explorationResult.directoryLinks as Array<{ url: string; name: string; isInternal?: boolean }>;
+          const externalLinks = allLinks.filter(l => !l.isInternal);
+          const internalLinks = allLinks.filter(l => l.isInternal);
+
+          log(`   📂 Directory detected:`);
+          log(`      - ${externalLinks.length} external camp organization links`);
+          log(`      - ${internalLinks.length} internal camp detail pages`);
+          log(`   📥 Creating scraper requests from directory...`);
+
+          try {
+            // Filter out known non-camp URLs
+            const filterNonCamp = (link: { url: string; name: string }) => {
+              const url = link.url.toLowerCase();
+              if (/facebook|twitter|instagram|linkedin|youtube|google|yelp|tripadvisor|amazon|pinterest|reddit|wikipedia|tiktok/i.test(url)) {
+                return false;
+              }
+              return true;
+            };
+
+            const validExternalLinks = externalLinks.filter(filterNonCamp);
+            const validInternalLinks = internalLinks.filter(filterNonCamp);
+
+            let createdExternal = 0;
+            let createdInternal = 0;
+            let existed = 0;
+
+            // Process external links - these are camp organization websites
+            // Create scraper requests to build scrapers for their sites
+            for (const link of validExternalLinks.slice(0, 30)) {
+              try {
+                const domain = new URL(link.url).hostname.replace(/^www\./, '');
+                const name = link.name.length > 3 ? link.name : domain.split('.')[0];
+
+                await client.mutation(api.scraping.development.requestScraperDevelopment, {
+                  sourceName: name.slice(0, 100),
+                  sourceUrl: link.url,
+                  cityId: request.cityId as any,
+                  notes: `Discovered from directory: ${request.sourceName} (external camp website)`,
+                  requestedBy: 'directory-crawler',
+                });
+
+                createdExternal++;
+                log(`      + [ext] ${domain}`);
+              } catch (e) {
+                existed++;
+              }
+            }
+
+            // Process internal links - these are camp detail pages hosted on the directory
+            // Create scraper requests to extract camp data from each detail page
+            for (const link of validInternalLinks.slice(0, 50)) {
+              try {
+                const urlObj = new URL(link.url);
+                const pathSlug = urlObj.pathname.split('/').filter(Boolean).pop() || '';
+                const name = link.name.length > 3 ? link.name : pathSlug.replace(/-/g, ' ');
+
+                await client.mutation(api.scraping.development.requestScraperDevelopment, {
+                  sourceName: name.slice(0, 100),
+                  sourceUrl: link.url,
+                  cityId: request.cityId as any,
+                  notes: `Directory detail page from: ${request.sourceName}. Extract camp info (name, dates, price, ages, location, registration URL) from this page.`,
+                  requestedBy: 'directory-crawler-internal',
+                });
+
+                createdInternal++;
+                log(`      + [int] ${urlObj.pathname.slice(0, 50)}`);
+              } catch (e) {
+                existed++;
+              }
+            }
+
+            const totalCreated = createdExternal + createdInternal;
+            log(`   ✅ Directory processed:`);
+            log(`      - ${createdExternal} external org requests created`);
+            log(`      - ${createdInternal} internal page requests created`);
+            log(`      - ${existed} skipped (already exist)`);
+
+            // Mark this request as completed (directory processed)
+            await client.mutation(api.scraping.development.markDirectoryProcessed, {
+              requestId: requestId as any,
+              notes: `Directory processed: ${createdExternal} external + ${createdInternal} internal = ${totalCreated} new scraper requests queued`,
+              linksFound: allLinks.length,
+              requestsCreated: totalCreated,
+            });
+
+            return; // Don't build a scraper for the directory listing page itself
+          } catch (dirError) {
+            log(`   ⚠️ Directory processing error: ${dirError instanceof Error ? dirError.message : dirError}`);
+            // Fall through to normal scraper building as fallback
+          }
+        }
       }
     }
 
@@ -662,6 +891,14 @@ async function processRequest(request: DevelopmentRequest, verbose: boolean = fa
 
     // Run Claude with --print and stream-json to see what it's doing
     // IMPORTANT: stdin must be "ignore" or Claude hangs waiting for input
+    // Ensure PATH includes common locations for claude binary
+    const pathAdditions = [
+      `${process.env.HOME}/.local/bin`,
+      '/usr/local/bin',
+      '/opt/homebrew/bin',
+    ].join(':');
+    const enhancedPath = `${pathAdditions}:${process.env.PATH || ''}`;
+
     const claudeProcess = spawn(
       "claude",
       [
@@ -676,6 +913,7 @@ async function processRequest(request: DevelopmentRequest, verbose: boolean = fa
         stdio: ["ignore", "pipe", "pipe"], // ignore stdin or Claude hangs!
         env: {
           ...process.env,
+          PATH: enhancedPath,
           SCRAPER_OUTPUT_FILE: outputFile,
         },
       }
@@ -858,20 +1096,39 @@ async function processRequest(request: DevelopmentRequest, verbose: boolean = fa
           feedbackBy: "auto-diagnosis",
         });
       } else if (testResult.sessions.length === 0) {
-        console.log(`   ⚠️  Test found 0 sessions - analyzing and auto-retrying`);
-        writeLog(`Test found 0 sessions - analyzing site characteristics`);
+        // Check if 0 sessions is expected/valid (seasonal catalog, not published yet, etc.)
+        const zeroIsValid = isZeroSessionsValid(scraperCode, request.sourceUrl);
 
-        // Generate intelligent auto-feedback
-        const autoFeedback = generateAutoFeedback(request.sourceUrl, scraperCode);
-        log(`   🤖 Auto-generating feedback based on site analysis...`);
+        if (zeroIsValid.valid) {
+          console.log(`   ✅ Found 0 sessions (expected): ${zeroIsValid.reason}`);
+          writeLog(`Test PASSED with 0 sessions: ${zeroIsValid.reason}`);
 
-        await client.mutation(api.scraping.development.submitFeedback, {
-          requestId: requestId as any,
-          feedback: autoFeedback,
-          feedbackBy: "auto-diagnosis",
-        });
+          // Record as successful with explanatory note
+          await client.mutation(api.scraping.development.recordTestResults, {
+            requestId: requestId as any,
+            sessionsFound: 0,
+            sampleData: JSON.stringify({
+              note: zeroIsValid.reason,
+              expectedEmpty: true,
+              checkAgainAfter: zeroIsValid.checkAfter
+            }),
+          });
+        } else {
+          console.log(`   ⚠️  Test found 0 sessions - analyzing and auto-retrying`);
+          writeLog(`Test found 0 sessions - analyzing site characteristics`);
 
-        console.log(`   📝 Submitted auto-feedback - will retry with better guidance`);
+          // Generate intelligent auto-feedback
+          const autoFeedback = generateAutoFeedback(request.sourceUrl, scraperCode);
+          log(`   🤖 Auto-generating feedback based on site analysis...`);
+
+          await client.mutation(api.scraping.development.submitFeedback, {
+            requestId: requestId as any,
+            feedback: autoFeedback,
+            feedbackBy: "auto-diagnosis",
+          });
+
+          console.log(`   📝 Submitted auto-feedback - will retry with better guidance`);
+        }
       } else {
         console.log(`   ✅ Found ${testResult.sessions.length} sessions - ready for review`);
         writeLog(`Test PASSED: Found ${testResult.sessions.length} sessions`);
@@ -1248,6 +1505,67 @@ function diagnoseSiteCharacteristics(url: string, scraperCode: string): ScraperD
   }
 
   return diagnostics;
+}
+
+/**
+ * Check if 0 sessions is a valid/expected result
+ * Returns true for seasonal catalogs, not-yet-published schedules, etc.
+ */
+function isZeroSessionsValid(scraperCode: string, url: string): { valid: boolean; reason: string; checkAfter?: string } {
+  const codeLower = scraperCode.toLowerCase();
+  const urlLower = url.toLowerCase();
+
+  // Patterns that indicate scraper intentionally handles 0 sessions
+  const seasonalPatterns = [
+    { pattern: /not (yet )?(published|available|posted|released)/i, reason: "Catalog not yet published" },
+    { pattern: /coming soon/i, reason: "Coming soon" },
+    { pattern: /check back (later|in|after)/i, reason: "Seasonal - check back later" },
+    { pattern: /registration (opens|begins|starts) (in|on|after)/i, reason: "Registration not yet open" },
+    { pattern: /(\d{4}) (summer|camp|program)s? (will be|are) (posted|published|available)/i, reason: "Future catalog - not yet published" },
+    { pattern: /schedule (for )?\d{4} (not|isn't|is not) (yet )?(available|ready|published)/i, reason: "Schedule not yet available" },
+    { pattern: /late (may|june|winter|spring|summer|fall)/i, reason: "Seasonal catalog" },
+    { pattern: /catalog (is )?(empty|unavailable)/i, reason: "Catalog currently empty" },
+    { pattern: /no (camps?|sessions?|programs?) (are )?(currently|presently) (listed|available|scheduled)/i, reason: "No programs currently scheduled" },
+  ];
+
+  for (const { pattern, reason } of seasonalPatterns) {
+    if (pattern.test(scraperCode)) {
+      // Try to extract a date for when to check again
+      const monthMatch = scraperCode.match(/(?:after|in|on|by)\s+(january|february|march|april|may|june|july|august|september|october|november|december)\s*(\d{1,2})?\s*,?\s*(\d{4})?/i);
+      let checkAfter: string | undefined;
+      if (monthMatch) {
+        const month = monthMatch[1];
+        const day = monthMatch[2] || "1";
+        const year = monthMatch[3] || new Date().getFullYear().toString();
+        checkAfter = `${month} ${day}, ${year}`;
+      }
+      return { valid: true, reason, checkAfter };
+    }
+  }
+
+  // Known sites that have seasonal catalogs
+  const seasonalSites = [
+    { pattern: /pcc\.edu/i, reason: "PCC - publishes catalog late May", checkAfter: "May 28" },
+    { pattern: /college|university/i, reason: "Academic institution - likely seasonal catalog" },
+  ];
+
+  for (const { pattern, reason, checkAfter } of seasonalSites) {
+    if (pattern.test(urlLower) && codeLower.includes("0 sessions") || codeLower.includes("no sessions") || codeLower.includes("empty")) {
+      return { valid: true, reason, checkAfter };
+    }
+  }
+
+  // Check if scraper explicitly returns empty with explanation
+  if (codeLower.includes("return []") && (
+    codeLower.includes("// no camps") ||
+    codeLower.includes("// empty") ||
+    codeLower.includes("// seasonal") ||
+    codeLower.includes("// not published")
+  )) {
+    return { valid: true, reason: "Scraper explicitly handles empty state" };
+  }
+
+  return { valid: false, reason: "" };
 }
 
 /**
@@ -2347,9 +2665,10 @@ function extractDomainFromUrl(url: string): string {
  * Process pending market discovery tasks
  */
 async function processMarketDiscoveryQueue(verbose: boolean = false) {
+  // For discovery, always log to console since it's a long-running visual task
   const log = (msg: string) => {
     writeLog(msg);
-    if (verbose) console.log(msg);
+    console.log(msg);
   };
 
   // Check if Stagehand is available
@@ -2406,18 +2725,34 @@ async function processMarketDiscoveryQueue(verbose: boolean = false) {
     const page = stagehand.context.pages()[0];
 
     // Search Google for each query
+    const totalSearches = task.searchQueries.length;
     for (const query of task.searchQueries) {
       if (shutdownRequested) break;
 
-      log(`   🔍 Searching: "${query}"`);
+      log(`   🔍 [${searchesCompleted + 1}/${totalSearches}] Searching: "${query}"`);
 
       try {
         const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}&num=20`;
         await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
         await page.waitForTimeout(3000);
 
+        // Debug: Check page title to detect captcha/consent
+        const pageTitle = await page.title();
+        if (pageTitle.toLowerCase().includes("captcha") || pageTitle.toLowerCase().includes("consent") || pageTitle.toLowerCase().includes("before you continue")) {
+          log(`      ⚠️ Detected blocking page: "${pageTitle}"`);
+          // Try to handle consent
+          try {
+            const acceptButton = await page.$('button[id*="accept"], button[aria-label*="Accept"], button:has-text("Accept all")');
+            if (acceptButton) {
+              await acceptButton.click();
+              await page.waitForTimeout(2000);
+              log(`      ✓ Clicked consent button`);
+            }
+          } catch { }
+        }
+
         // Extract search results using Stagehand
-        const results = await page.extract({
+        const results = await stagehand.extract({
           instruction: `Extract all organic search results from this Google search page.
 For each result, extract:
 - The URL (href of the main link)
@@ -2441,7 +2776,37 @@ Focus on actual website links that could be summer camp organizations.`,
           },
         });
 
-        const extracted = results as { results?: Array<{ url: string; title: string }> };
+        let extracted = results as { results?: Array<{ url: string; title: string }> };
+
+        // If AI extraction returned nothing, try DOM extraction as fallback
+        if (!extracted.results || extracted.results.length === 0) {
+          log(`      ⚠️ AI extraction returned 0, trying DOM fallback...`);
+          const domResults = await page.evaluate(() => {
+            const results: Array<{ url: string; title: string }> = [];
+            // Google search results are in divs with class 'g' or data-hveid
+            const searchResults = document.querySelectorAll('div.g, div[data-hveid]');
+            searchResults.forEach(div => {
+              const linkEl = div.querySelector('a[href^="http"]');
+              const titleEl = div.querySelector('h3');
+              if (linkEl && titleEl) {
+                const url = linkEl.getAttribute('href');
+                const title = titleEl.textContent;
+                if (url && title && !url.includes('google.com')) {
+                  results.push({ url, title });
+                }
+              }
+            });
+            return results;
+          });
+          if (domResults.length > 0) {
+            extracted = { results: domResults };
+            log(`      ✓ DOM fallback found ${domResults.length} results`);
+          } else {
+            // Last resort: check what's actually on the page
+            const bodyText = await page.evaluate(() => document.body?.innerText?.slice(0, 500) || '');
+            log(`      ⚠️ Page content preview: ${bodyText.replace(/\n/g, ' ').slice(0, 200)}...`);
+          }
+        }
 
         if (extracted.results) {
           for (const result of extracted.results) {
@@ -2459,8 +2824,12 @@ Focus on actual website links that could be summer camp organizations.`,
             });
 
             // Check if it's a known directory
-            if (KNOWN_DIRECTORIES.some(d => domain.includes(d))) {
+            const isDirectory = KNOWN_DIRECTORIES.some(d => domain.includes(d));
+            if (isDirectory) {
               directoriesFound++;
+              log(`         📂 Directory: ${domain}`);
+            } else {
+              log(`         + ${domain}`);
             }
           }
         }
@@ -2475,7 +2844,8 @@ Focus on actual website links that could be summer camp organizations.`,
           directoriesFound,
         });
 
-        log(`      Found ${extracted.results?.length || 0} results (${discoveredUrls.length} total unique)`);
+        const newResults = extracted.results?.length || 0;
+        log(`      ✓ Found ${newResults} results | Total: ${discoveredUrls.length} unique URLs, ${directoriesFound} directories`);
 
         // Rate limit between searches
         await page.waitForTimeout(2000);
@@ -2486,11 +2856,140 @@ Focus on actual website links that could be summer camp organizations.`,
       }
     }
 
+    // Phase 2: Search for combinations of discovered camp names to find more directories
+    const discoveredCampNames = discoveredUrls
+      .filter(u => !KNOWN_DIRECTORIES.some(d => u.domain.includes(d)))
+      .slice(0, 10)
+      .map(u => u.title || u.domain.split('.')[0]);
+
+    if (discoveredCampNames.length >= 3 && !shutdownRequested) {
+      log(`   🔍 Phase 2: Searching for camp name combinations...`);
+
+      // Create 2-3 combo searches using discovered camp names
+      const comboSearches = [
+        `"${discoveredCampNames[0]}" "${discoveredCampNames[1]}" "${discoveredCampNames[2]}" ${task.regionName}`,
+        discoveredCampNames.length > 5
+          ? `"${discoveredCampNames[3]}" "${discoveredCampNames[4]}" summer camps ${task.regionName}`
+          : null,
+      ].filter(Boolean) as string[];
+
+      for (const comboQuery of comboSearches) {
+        if (shutdownRequested) break;
+        log(`      🔍 Combo search: ${comboQuery.slice(0, 60)}...`);
+
+        try {
+          await page.goto(`https://www.google.com/search?q=${encodeURIComponent(comboQuery)}&num=20`, {
+            waitUntil: "domcontentloaded",
+            timeout: 30000
+          });
+          await page.waitForTimeout(3000);
+
+          const comboResults = await page.evaluate(() => {
+            const results: Array<{ url: string; title: string }> = [];
+            document.querySelectorAll('div.g, div[data-hveid]').forEach(div => {
+              const linkEl = div.querySelector('a[href^="http"]');
+              const titleEl = div.querySelector('h3');
+              if (linkEl && titleEl) {
+                const url = linkEl.getAttribute('href');
+                const title = titleEl.textContent;
+                if (url && title && !url.includes('google.com')) {
+                  results.push({ url, title });
+                }
+              }
+            });
+            return results;
+          });
+
+          let newFromCombo = 0;
+          for (const result of comboResults) {
+            if (!result.url || shouldSkipDiscoveryUrl(result.url)) continue;
+            const domain = extractDomainFromUrl(result.url);
+            if (!domain || seenDomains.has(domain)) continue;
+
+            seenDomains.add(domain);
+            discoveredUrls.push({ url: result.url, source: "google-combo", title: result.title, domain });
+            newFromCombo++;
+            log(`         + ${domain}`);
+          }
+          log(`      ✓ Found ${newFromCombo} new URLs from combo search`);
+          await page.waitForTimeout(2000);
+        } catch (e) {
+          log(`      ⚠️ Combo search error: ${e instanceof Error ? e.message.slice(0, 50) : 'unknown'}`);
+        }
+      }
+    }
+
+    // Phase 3: Crawl discovered directories to extract all camp links
+    const directoryUrls = discoveredUrls.filter(u => {
+      const domainLower = u.domain.toLowerCase();
+      // Known directories + sites that look like camp listing pages
+      return KNOWN_DIRECTORIES.some(d => domainLower.includes(d)) ||
+        u.url.includes('/camps') ||
+        u.url.includes('/summer') ||
+        u.title?.toLowerCase().includes('best') ||
+        u.title?.toLowerCase().includes('guide') ||
+        u.title?.toLowerCase().includes('list');
+    }).slice(0, 5); // Limit to 5 directories to avoid timeout
+
+    if (directoryUrls.length > 0 && !shutdownRequested) {
+      log(`   📂 Phase 3: Crawling ${directoryUrls.length} directories for more camps...`);
+
+      for (const dir of directoryUrls) {
+        if (shutdownRequested) break;
+        log(`      📂 Crawling: ${dir.domain}`);
+
+        try {
+          await page.goto(dir.url, { waitUntil: "domcontentloaded", timeout: 30000 });
+          await page.waitForTimeout(3000);
+
+          // Extract all external links that look like camp websites
+          const campLinks = await page.evaluate(() => {
+            const links: Array<{ url: string; title: string }> = [];
+            const seenUrls = new Set<string>();
+
+            document.querySelectorAll('a[href^="http"]').forEach(a => {
+              const href = a.getAttribute('href');
+              if (!href || seenUrls.has(href)) return;
+
+              // Skip internal links and common non-camp sites
+              const url = new URL(href);
+              const domain = url.hostname.replace(/^www\./, '');
+              if (domain === window.location.hostname) return;
+              if (/facebook|twitter|instagram|linkedin|youtube|google|yelp|tripadvisor/i.test(domain)) return;
+
+              seenUrls.add(href);
+              const title = a.textContent?.trim() || '';
+              if (title.length > 2) {
+                links.push({ url: href, title });
+              }
+            });
+
+            return links;
+          });
+
+          let newFromDir = 0;
+          for (const link of campLinks) {
+            const domain = extractDomainFromUrl(link.url);
+            if (!domain || seenDomains.has(domain)) continue;
+            if (shouldSkipDiscoveryUrl(link.url)) continue;
+
+            seenDomains.add(domain);
+            discoveredUrls.push({ url: link.url, source: `directory:${dir.domain}`, title: link.title, domain });
+            newFromDir++;
+          }
+          log(`      ✓ Found ${newFromDir} new camps from ${dir.domain}`);
+          await page.waitForTimeout(2000);
+        } catch (e) {
+          log(`      ⚠️ Directory crawl error: ${e instanceof Error ? e.message.slice(0, 50) : 'unknown'}`);
+        }
+      }
+    }
+
     // Close Stagehand
     await stagehand.close();
     stagehand = null;
 
-    log(`   ✅ Discovery complete: ${discoveredUrls.length} URLs from ${searchesCompleted} searches`);
+    log(`   ✅ Discovery complete: ${discoveredUrls.length} URLs from ${searchesCompleted}/${totalSearches} searches + directory crawl`);
 
     // Process results and create organizations
     if (discoveredUrls.length > 0) {
