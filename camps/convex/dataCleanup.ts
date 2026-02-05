@@ -1878,3 +1878,235 @@ export const autoDeduplicateSessions = internalMutation({
     };
   },
 });
+
+// ============================================
+// LOCATION DEDUPLICATION
+// ============================================
+
+/**
+ * Find duplicate locations (same name, same organization)
+ */
+export const findDuplicateLocations = mutation({
+  args: {
+    organizationId: v.optional(v.id("organizations")),
+  },
+  handler: async (ctx, args) => {
+    // Get locations, optionally filtered by organization
+    let locations;
+    const orgId = args.organizationId;
+    if (orgId) {
+      locations = await ctx.db
+        .query("locations")
+        .withIndex("by_organization", (q) => q.eq("organizationId", orgId))
+        .collect();
+    } else {
+      locations = await ctx.db.query("locations").collect();
+    }
+
+    // Group by normalized name + organization
+    const byKey = new Map<string, typeof locations>();
+    for (const location of locations) {
+      const normalizedName = location.name.toLowerCase().trim();
+      const key = `${location.organizationId}|${normalizedName}`;
+      const existing = byKey.get(key) || [];
+      existing.push(location);
+      byKey.set(key, existing);
+    }
+
+    // Find duplicates
+    const duplicateGroups: Array<{
+      name: string;
+      organizationId: string | undefined;
+      count: number;
+      locations: Array<{
+        id: string;
+        name: string;
+        address: string;
+        hasCoords: boolean;
+        sessionCount: number;
+      }>;
+    }> = [];
+
+    for (const [, locationList] of byKey) {
+      if (locationList.length > 1) {
+        // Count sessions for each location
+        const locsWithCounts = await Promise.all(
+          locationList.map(async (loc) => {
+            const sessions = await ctx.db
+              .query("sessions")
+              .withIndex("by_location", (q) => q.eq("locationId", loc._id))
+              .collect();
+            const addressStr = loc.address
+              ? `${loc.address.street}, ${loc.address.city}, ${loc.address.state} ${loc.address.zip}`
+              : "No address";
+            return {
+              id: loc._id,
+              name: loc.name,
+              address: addressStr,
+              hasCoords: loc.latitude !== undefined && loc.longitude !== undefined,
+              sessionCount: sessions.length,
+            };
+          })
+        );
+
+        duplicateGroups.push({
+          name: locationList[0].name,
+          organizationId: locationList[0].organizationId,
+          count: locationList.length,
+          locations: locsWithCounts,
+        });
+      }
+    }
+
+    // Sort by count descending
+    duplicateGroups.sort((a, b) => b.count - a.count);
+
+    const totalDuplicates = duplicateGroups.reduce((sum, g) => sum + g.count - 1, 0);
+
+    return {
+      totalLocations: locations.length,
+      duplicateGroups: duplicateGroups.length,
+      totalDuplicatesToRemove: totalDuplicates,
+      groups: duplicateGroups.slice(0, 50),
+    };
+  },
+});
+
+/**
+ * Score a location for deduplication - higher is better
+ */
+function scoreLocation(location: {
+  address?: { street: string; city: string; state: string; zip: string };
+  latitude?: number;
+  longitude?: number;
+  sessionCount: number;
+}): number {
+  let score = 0;
+
+  // Prefer locations with more sessions
+  score += location.sessionCount * 10;
+
+  // Prefer locations with addresses (not TBD)
+  if (location.address && location.address.street && location.address.street !== "TBD") score += 20;
+
+  // Prefer locations with coordinates
+  if (location.latitude !== undefined && location.longitude !== undefined) score += 30;
+
+  return score;
+}
+
+/**
+ * Merge duplicate locations - keeps the best one and reassigns sessions
+ */
+export const mergeDuplicateLocations = mutation({
+  args: {
+    dryRun: v.optional(v.boolean()),
+    organizationId: v.optional(v.id("organizations")),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const dryRun = args.dryRun ?? true;
+    const limit = args.limit ?? 500;
+
+    // Get locations
+    let locations;
+    const orgId = args.organizationId;
+    if (orgId) {
+      locations = await ctx.db
+        .query("locations")
+        .withIndex("by_organization", (q) => q.eq("organizationId", orgId))
+        .collect();
+    } else {
+      locations = await ctx.db.query("locations").collect();
+    }
+
+    // Group by normalized name + organization
+    const byKey = new Map<string, typeof locations>();
+    for (const location of locations) {
+      const normalizedName = location.name.toLowerCase().trim();
+      const key = `${location.organizationId}|${normalizedName}`;
+      const existing = byKey.get(key) || [];
+      existing.push(location);
+      byKey.set(key, existing);
+    }
+
+    let mergedCount = 0;
+    let deletedCount = 0;
+    let sessionsReassigned = 0;
+    const mergeResults: Array<{
+      keptId: string;
+      deletedIds: string[];
+      name: string;
+    }> = [];
+
+    for (const [, locationList] of byKey) {
+      if (locationList.length <= 1) continue;
+      if (mergedCount >= limit) break;
+
+      // Get session counts for scoring
+      const locsWithCounts = await Promise.all(
+        locationList.map(async (loc) => {
+          const sessions = await ctx.db
+            .query("sessions")
+            .withIndex("by_location", (q) => q.eq("locationId", loc._id))
+            .collect();
+          return {
+            location: loc,
+            sessionCount: sessions.length,
+          };
+        })
+      );
+
+      // Score and pick the best
+      const scored = locsWithCounts.map((l) => ({
+        location: l.location,
+        sessionCount: l.sessionCount,
+        score: scoreLocation({
+          ...l.location,
+          sessionCount: l.sessionCount,
+        }),
+      }));
+      scored.sort((a, b) => b.score - a.score);
+
+      const keep = scored[0].location;
+      const toDelete = scored.slice(1).map((s) => s.location);
+
+      // Reassign sessions from deleted locations to kept location
+      for (const deleteLocation of toDelete) {
+        const sessions = await ctx.db
+          .query("sessions")
+          .withIndex("by_location", (q) => q.eq("locationId", deleteLocation._id))
+          .collect();
+
+        for (const session of sessions) {
+          if (!dryRun) {
+            await ctx.db.patch(session._id, { locationId: keep._id });
+          }
+          sessionsReassigned++;
+        }
+
+        // Delete the duplicate location
+        if (!dryRun) {
+          await ctx.db.delete(deleteLocation._id);
+        }
+        deletedCount++;
+      }
+
+      mergeResults.push({
+        keptId: keep._id,
+        deletedIds: toDelete.map((l) => l._id),
+        name: keep.name,
+      });
+      mergedCount++;
+    }
+
+    return {
+      dryRun,
+      totalLocations: locations.length,
+      duplicateGroupsMerged: mergedCount,
+      locationsDeleted: deletedCount,
+      sessionsReassigned,
+      sampleMerges: mergeResults.slice(0, 20),
+    };
+  },
+});

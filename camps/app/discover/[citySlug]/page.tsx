@@ -273,7 +273,18 @@ export default function DiscoverPage() {
     // Also include any currently selected locations (so they don't disappear)
     selectedLocations.forEach((locId) => locationsWithSessions.add(locId));
 
-    return allLocations.filter((loc) => locationsWithSessions.has(loc._id));
+    const filtered = allLocations.filter((loc) => locationsWithSessions.has(loc._id));
+
+    // Deduplicate by name - keep the first occurrence of each unique name
+    const seenNames = new Set<string>();
+    return filtered.filter((loc) => {
+      const normalizedName = loc.name.toLowerCase().trim();
+      if (seenNames.has(normalizedName)) {
+        return false;
+      }
+      seenNames.add(normalizedName);
+      return true;
+    });
   }, [allLocations, sessions, selectedOrganizations, selectedLocations]);
 
   // Loading state
