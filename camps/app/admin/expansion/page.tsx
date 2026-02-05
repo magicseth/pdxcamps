@@ -50,7 +50,7 @@ export default function ExpansionPage() {
 
 function ExpansionContent() {
   const [selectedTier, setSelectedTier] = useState<'all' | '1' | '2' | '3'>('all');
-  const [selectedMarket, setSelectedMarket] = useState<MarketWithStatus | null>(null);
+  const [selectedMarketKey, setSelectedMarketKey] = useState<string | null>(null);
 
   const isAdmin = useQuery(api.admin.queries.isAdmin);
   const summary = useQuery(api.expansion.queries.getExpansionSummary);
@@ -58,6 +58,11 @@ function ExpansionContent() {
     api.expansion.queries.listExpansionMarkets,
     selectedTier === 'all' ? {} : { tier: parseInt(selectedTier) }
   );
+
+  // Derive selectedMarket from current markets data so it stays in sync
+  const selectedMarket = selectedMarketKey && markets
+    ? (markets.find(m => m.key === selectedMarketKey) as MarketWithStatus | undefined) ?? null
+    : null;
 
   // Mutations and actions for the wizard
   const initializeMarket = useMutation(api.expansion.mutations.initializeMarket);
@@ -172,7 +177,7 @@ function ExpansionContent() {
             <MarketCard
               key={market.key}
               market={market as MarketWithStatus}
-              onSelect={() => setSelectedMarket(market as MarketWithStatus)}
+              onSelect={() => setSelectedMarketKey(market.key)}
               isSelected={selectedMarket?.key === market.key}
             />
           ))}
@@ -192,7 +197,7 @@ function ExpansionContent() {
       {selectedMarket && (
         <ExpansionWizard
           market={selectedMarket}
-          onClose={() => setSelectedMarket(null)}
+          onClose={() => setSelectedMarketKey(null)}
           onInitialize={async () => {
             await initializeMarket({ marketKey: selectedMarket.key });
           }}
