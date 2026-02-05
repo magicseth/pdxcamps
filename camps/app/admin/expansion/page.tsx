@@ -77,6 +77,8 @@ function ExpansionContent() {
 
   const purchaseDomain = useAction(api.expansion.actions.purchaseDomain);
   const setupDns = useAction(api.expansion.actions.setupDnsForDomain);
+  const generateIcons = useAction(api.expansion.iconGeneration.generateCityIcons);
+  const selectIcon = useAction(api.expansion.iconGeneration.selectCityIcon);
 
   if (isAdmin === undefined) {
     return <LoadingState />;
@@ -236,6 +238,21 @@ function ExpansionContent() {
           }}
           onLaunch={async () => {
             await launchMarket({ marketKey: selectedMarket.key });
+          }}
+          onGenerateIcons={async () => {
+            // Extract 3-letter code from brand name (e.g., "DEN Camps" -> "DEN")
+            const cityCode = selectedMarket.suggestedBrandName.split(' ')[0];
+            return await generateIcons({
+              marketKey: selectedMarket.key,
+              cityName: selectedMarket.name,
+              cityCode,
+            });
+          }}
+          onSelectIcon={async (imageUrl) => {
+            return await selectIcon({
+              marketKey: selectedMarket.key,
+              imageUrl,
+            });
           }}
         />
       )}

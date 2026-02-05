@@ -25,6 +25,8 @@ interface ExpansionWizardProps {
     fromEmail: string;
   }) => Promise<{ cityId?: string; success: boolean }>;
   onLaunch: () => Promise<void>;
+  onGenerateIcons?: () => Promise<{ success: boolean; images?: string[]; error?: string }>;
+  onSelectIcon?: (imageUrl: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 type WizardStep = 'overview' | 'domain' | 'purchase' | 'dns' | 'city' | 'launch';
@@ -39,6 +41,8 @@ export function ExpansionWizard({
   onSetupDns,
   onCreateCity,
   onLaunch,
+  onGenerateIcons,
+  onSelectIcon,
 }: ExpansionWizardProps) {
   const [step, setStep] = useState<WizardStep>('overview');
   const [loading, setLoading] = useState(false);
@@ -469,6 +473,77 @@ export function ExpansionWizard({
                   <li>City: Created</li>
                 </ul>
               </div>
+
+              {/* Icon Generation */}
+              {onGenerateIcons && (
+                <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4">
+                  <h4 className="font-medium text-slate-700 dark:text-slate-300 mb-3">City Icon</h4>
+                  {market.iconOptions && market.iconOptions.length > 0 ? (
+                    <div className="space-y-3">
+                      <p className="text-sm text-slate-600 dark:text-slate-400">Select an icon for this market:</p>
+                      <div className="grid grid-cols-4 gap-2">
+                        {market.iconOptions.map((url, i) => (
+                          <button
+                            key={i}
+                            onClick={async () => {
+                              if (onSelectIcon) {
+                                setLoading(true);
+                                await onSelectIcon(url);
+                                setLoading(false);
+                              }
+                            }}
+                            className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                              market.selectedIconSourceUrl === url
+                                ? 'border-primary ring-2 ring-primary'
+                                : 'border-slate-200 dark:border-slate-700 hover:border-primary/50'
+                            }`}
+                          >
+                            <img src={url} alt={`Icon option ${i + 1}`} className="w-full h-full object-cover" />
+                            {market.selectedIconSourceUrl === url && (
+                              <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                                <span className="text-white text-xl">✓</span>
+                              </div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        onClick={async () => {
+                          setLoading(true);
+                          await onGenerateIcons();
+                          setLoading(false);
+                        }}
+                        disabled={loading}
+                        className="text-sm text-primary hover:underline disabled:opacity-50"
+                      >
+                        {loading ? 'Generating...' : 'Regenerate icons'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-sm text-slate-600 dark:text-slate-400">
+                        Generate AI-powered city icons featuring Denver landmarks.
+                      </p>
+                      <button
+                        onClick={async () => {
+                          setLoading(true);
+                          setError(null);
+                          const result = await onGenerateIcons();
+                          if (!result.success) {
+                            setError(result.error || 'Failed to generate icons');
+                          }
+                          setLoading(false);
+                        }}
+                        disabled={loading}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
+                      >
+                        {loading ? 'Generating Icons...' : 'Generate City Icons'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4">
                 <h4 className="font-medium text-slate-700 dark:text-slate-300 mb-2">Next Steps After Launch</h4>
                 <ul className="text-sm text-slate-600 dark:text-slate-400 space-y-1">

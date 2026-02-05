@@ -39,6 +39,12 @@ export interface MarketWithStatus {
     orgs: number;
     sessions: number;
   } | null;
+
+  // Icon generation
+  iconOptions?: string[] | null;
+  iconPrompt?: string;
+  selectedIconStorageId?: string;
+  selectedIconSourceUrl?: string;
 }
 
 export type ExpansionStatus = MarketWithStatus['status'];

@@ -76,6 +76,11 @@ export const listExpansionMarkets = query({
           orgs: stats.orgs,
           sessions: stats.sessions,
         } : null,
+        // Icons
+        iconOptions: dbRecord?.iconOptions,
+        iconPrompt: dbRecord?.iconPrompt,
+        selectedIconStorageId: dbRecord?.selectedIconStorageId,
+        selectedIconSourceUrl: dbRecord?.selectedIconSourceUrl,
       };
     });
   },
