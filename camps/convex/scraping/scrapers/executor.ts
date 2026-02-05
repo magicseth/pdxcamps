@@ -598,6 +598,12 @@ For EACH session, you MUST extract these fields if present on the page:
 5. Age range OR grade range
 6. Price (convert to cents, e.g., $350 = 35000)
 7. Capacity/spots available if shown
+8. IMAGES - Extract image URLs for each camp/session:
+   - Look for camp photos, activity images, or promotional images
+   - Include hero images, thumbnails, gallery images
+   - Extract the full image URL (not thumbnails if full-size available)
+   - Common locations: img tags, background-image CSS, data-src attributes
+   - Prefer high-resolution images over thumbnails
 
 Extract EVERY individual session - if there are 10 weeks of the same camp, extract all 10 as separate sessions with different dates.
 Mark any sold-out or unavailable sessions as isAvailable: false.

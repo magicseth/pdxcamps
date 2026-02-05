@@ -138,6 +138,94 @@ export const listCampsForAdmin = query({
 });
 
 /**
+ * Debug query to analyze camp image data
+ */
+export const analyzeImageData = query({
+  args: {},
+  handler: async (ctx) => {
+    const camps = await ctx.db.query("camps").collect();
+
+    let withStorageIds = 0;
+    let withUrls = 0;
+    let withBoth = 0;
+    let withNeither = 0;
+    let emptyStorageArray = 0;
+    const sampleMissing: { name: string; orgId: string; storageIdsLength: number; urlsLength: number }[] = [];
+
+    for (const camp of camps) {
+      const storageCount = camp.imageStorageIds?.length ?? 0;
+      const urlsCount = camp.imageUrls?.length ?? 0;
+      const hasStorage = storageCount > 0;
+      const hasUrls = urlsCount > 0;
+
+      if (camp.imageStorageIds && camp.imageStorageIds.length === 0) {
+        emptyStorageArray++;
+      }
+
+      if (hasStorage && hasUrls) withBoth++;
+      else if (hasStorage) withStorageIds++;
+      else if (hasUrls) withUrls++;
+      else {
+        withNeither++;
+        if (sampleMissing.length < 15) {
+          sampleMissing.push({
+            name: camp.name,
+            orgId: camp.organizationId,
+            storageIdsLength: storageCount,
+            urlsLength: urlsCount,
+          });
+        }
+      }
+    }
+
+    // Count by organization
+    const orgs = await ctx.db.query("organizations").collect();
+    const orgMap = new Map(orgs.map((o) => [o._id, o.name]));
+
+    const missingByOrg = new Map<string, number>();
+    const totalByOrg = new Map<string, number>();
+
+    for (const camp of camps) {
+      const orgName = orgMap.get(camp.organizationId) || "Unknown";
+      totalByOrg.set(orgName, (totalByOrg.get(orgName) || 0) + 1);
+
+      const hasImage = (camp.imageStorageIds?.length ?? 0) > 0 || (camp.imageUrls?.length ?? 0) > 0;
+      if (!hasImage) {
+        missingByOrg.set(orgName, (missingByOrg.get(orgName) || 0) + 1);
+      }
+    }
+
+    // Get top orgs with missing images
+    const orgStats = Array.from(missingByOrg.entries())
+      .map(([name, missing]) => ({ name, missing, total: totalByOrg.get(name) || 0 }))
+      .sort((a, b) => b.missing - a.missing)
+      .slice(0, 15);
+
+    // Count camps with URLs but no storage (need downloading)
+    let urlsNotDownloaded = 0;
+    for (const camp of camps) {
+      const hasUrls = (camp.imageUrls?.length ?? 0) > 0;
+      const hasStorage = (camp.imageStorageIds?.length ?? 0) > 0;
+      if (hasUrls && !hasStorage) {
+        urlsNotDownloaded++;
+      }
+    }
+
+    return {
+      total: camps.length,
+      withStorageIdsOnly: withStorageIds,
+      withUrlsOnly: withUrls,
+      withBoth,
+      withNeither,
+      emptyStorageArray,
+      hasAnyImage: withStorageIds + withUrls + withBoth,
+      urlsNeedDownloading: urlsNotDownloaded,
+      topOrgsMissingImages: orgStats,
+    };
+  },
+});
+
+/**
  * Get a single camp with all its sessions for admin view
  */
 export const getCampWithSessions = query({
