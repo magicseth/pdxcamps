@@ -202,8 +202,8 @@ function ExpansionContent() {
           onSelectDomain={async (domain) => {
             await selectDomain({ marketKey: selectedMarket.key, domain });
           }}
-          onPurchaseDomain={async (domain) => {
-            const result = await purchaseDomain({ domain });
+          onPurchaseDomain={async (domain, price) => {
+            const result = await purchaseDomain({ domain, price });
             if (result.success) {
               await recordDomainPurchase({
                 marketKey: selectedMarket.key,

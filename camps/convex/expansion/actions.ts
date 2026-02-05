@@ -219,9 +219,8 @@ export const checkMultipleDomains = action({
 export const purchaseDomain = action({
   args: {
     domain: v.string(),
-    // Contact info for WHOIS (required for registration)
-    contactEmail: v.optional(v.string()),
-    contactName: v.optional(v.string()),
+    // Price from domain check (e.g., "5.07" for $5.07)
+    price: v.string(),
   },
   handler: async (_, args): Promise<{
     success: boolean;
@@ -238,6 +237,16 @@ export const purchaseDomain = action({
       };
     }
 
+    // Convert price (e.g., "5.07") to pennies (507)
+    const priceFloat = parseFloat(args.price);
+    if (isNaN(priceFloat)) {
+      return {
+        success: false,
+        error: `Invalid price: ${args.price}`,
+      };
+    }
+    const costInPennies = Math.round(priceFloat * 100);
+
     try {
       const response = await fetch(
         `https://api.porkbun.com/api/json/v3/domain/create/${args.domain}`,
@@ -247,26 +256,18 @@ export const purchaseDomain = action({
           body: JSON.stringify({
             apikey: apiKey,
             secretapikey: secretKey,
-            // Porkbun uses account contact info by default
-            // Add years: 1 for single year registration
-            years: 1,
+            cost: costInPennies,
+            agreeToTerms: "yes",
           }),
         }
       );
 
-      if (!response.ok) {
-        return {
-          success: false,
-          error: `Registration failed: ${response.status}`,
-        };
-      }
-
       const data: PorkbunRegisterResponse = await response.json();
 
-      if (data.status !== "SUCCESS") {
+      if (!response.ok || data.status !== "SUCCESS") {
         return {
           success: false,
-          error: data.message || "Registration failed",
+          error: data.message || `Registration failed: ${response.status}`,
         };
       }
 

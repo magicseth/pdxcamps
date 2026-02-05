@@ -16,7 +16,7 @@ interface DomainCheckerProps {
   suggestedDomains: string[];
   selectedDomain?: string;
   onStartCheck: (domains: string[]) => Promise<string>; // Returns workflow ID
-  onSelect: (domain: string) => void;
+  onSelect: (domain: string, price?: string) => void;
 }
 
 export function DomainChecker({
@@ -170,7 +170,7 @@ export function DomainChecker({
                   <td className="px-4 py-2">
                     {result.available && !result.error && (
                       <button
-                        onClick={() => onSelect(result.domain)}
+                        onClick={() => onSelect(result.domain, result.price)}
                         className={`px-3 py-1 text-xs rounded ${
                           selectedDomain === result.domain
                             ? 'bg-primary text-white'

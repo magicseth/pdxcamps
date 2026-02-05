@@ -11,7 +11,7 @@ interface ExpansionWizardProps {
   onInitialize: () => Promise<void>;
   onStartDomainCheck: (domains: string[]) => Promise<string>; // Returns workflow ID
   onSelectDomain: (domain: string) => Promise<void>;
-  onPurchaseDomain: (domain: string) => Promise<{ success: boolean; orderId?: string; error?: string }>;
+  onPurchaseDomain: (domain: string, price: string) => Promise<{ success: boolean; orderId?: string; error?: string }>;
   onSetupDns: (domain: string) => Promise<{ success: boolean; zoneId?: string; nameservers?: string[]; error?: string }>;
   onCreateCity: (cityData: {
     name: string;
@@ -44,6 +44,7 @@ export function ExpansionWizard({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedDomain, setSelectedDomain] = useState(market.selectedDomain || '');
+  const [selectedDomainPrice, setSelectedDomainPrice] = useState<string>('');
 
   // City form state
   const [cityName, setCityName] = useState(market.name);
@@ -103,8 +104,11 @@ export function ExpansionWizard({
     }
   };
 
-  const handleDomainSelect = async (domain: string) => {
+  const handleDomainSelect = async (domain: string, price?: string) => {
     setSelectedDomain(domain);
+    if (price) {
+      setSelectedDomainPrice(price);
+    }
     await onSelectDomain(domain);
   };
 
@@ -113,11 +117,15 @@ export function ExpansionWizard({
       setError('Please select a domain first');
       return;
     }
+    if (!selectedDomainPrice) {
+      setError('No price available - please check domain availability first');
+      return;
+    }
 
     setLoading(true);
     setError(null);
     try {
-      const result = await onPurchaseDomain(selectedDomain);
+      const result = await onPurchaseDomain(selectedDomain, selectedDomainPrice);
       if (!result.success) {
         setError(result.error || 'Purchase failed');
         return;
