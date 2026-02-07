@@ -397,6 +397,16 @@ export default defineSchema({
 
   // ============ SOCIAL ============
 
+  // Pending friend invitations for users not yet on the platform
+  friendInvitations: defineTable({
+    inviterFamilyId: v.id('families'),
+    invitedEmail: v.string(),
+    status: v.union(v.literal('pending'), v.literal('accepted'), v.literal('expired')),
+    createdAt: v.number(),
+  })
+    .index('by_invited_email', ['invitedEmail', 'status'])
+    .index('by_inviter', ['inviterFamilyId']),
+
   friendships: defineTable({
     requesterId: v.id('families'),
     addresseeId: v.id('families'),

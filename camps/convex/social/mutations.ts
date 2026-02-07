@@ -22,11 +22,29 @@ export const sendFriendRequest = mutation({
       .unique();
 
     if (!addressee) {
-      // Person isn't on the platform — send them an invite email
+      // Check if we already sent an invitation to this email
+      const existingInvite = await ctx.db
+        .query('friendInvitations')
+        .withIndex('by_invited_email', (q) => q.eq('invitedEmail', args.addresseeEmail).eq('status', 'pending'))
+        .filter((q) => q.eq(q.field('inviterFamilyId'), family._id))
+        .first();
+
+      if (existingInvite) {
+        return null; // Already invited
+      }
+
+      // Store the pending invitation
+      await ctx.db.insert('friendInvitations', {
+        inviterFamilyId: family._id,
+        invitedEmail: args.addresseeEmail,
+        status: 'pending',
+        createdAt: Date.now(),
+      });
+
+      // Send them an invite email
       const city = await ctx.db.get(family.primaryCityId);
       const brandName = city?.brandName || 'PDX Camps';
       const domain = city?.domain || 'pdxcamps.com';
-      const fromEmail = city?.fromEmail || 'hello@pdxcamps.com';
 
       await ctx.scheduler.runAfter(0, internal.email.sendEmail, {
         to: args.addresseeEmail,

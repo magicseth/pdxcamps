@@ -63,6 +63,23 @@ export const createFamily = mutation({
       });
     }
 
+    // Check for pending friend invitations and auto-create friend requests
+    const pendingInvites = await ctx.db
+      .query('friendInvitations')
+      .withIndex('by_invited_email', (q) => q.eq('invitedEmail', args.email).eq('status', 'pending'))
+      .collect();
+
+    for (const invite of pendingInvites) {
+      // Create a friend request from the inviter
+      await ctx.db.insert('friendships', {
+        requesterId: invite.inviterFamilyId,
+        addresseeId: familyId,
+        status: 'pending',
+      });
+      // Mark the invitation as accepted
+      await ctx.db.patch(invite._id, { status: 'accepted' });
+    }
+
     // Notify Seth about new signups
     if (NOTIFY_ON_SIGNUP) {
       await ctx.scheduler.runAfter(0, internal.email.sendNewUserNotification, {
