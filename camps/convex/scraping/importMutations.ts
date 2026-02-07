@@ -335,16 +335,24 @@ export const updateSessionPriceAndCapacity = internalMutation({
     sessionId: v.id("sessions"),
     price: v.optional(v.number()),
     capacity: v.optional(v.number()),
+    sourceId: v.optional(v.id("scrapeSources")),
   },
   handler: async (ctx, args) => {
-    const updates: Record<string, number> = {
+    const updates: Record<string, unknown> = {
       lastScrapedAt: Date.now(),
     };
     if (args.price !== undefined && args.price > 0) {
       updates.price = args.price;
     }
-    if (args.capacity !== undefined && args.capacity > 0) {
+    if (args.capacity !== undefined && args.capacity >= 0) {
       updates.capacity = args.capacity;
+    }
+    // Backfill sourceId on sessions that were imported before tracking
+    if (args.sourceId) {
+      const session = await ctx.db.get(args.sessionId);
+      if (session && !session.sourceId) {
+        updates.sourceId = args.sourceId;
+      }
     }
     if (Object.keys(updates).length > 1) {
       await ctx.db.patch(args.sessionId, updates);

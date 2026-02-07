@@ -602,21 +602,21 @@ export const importFromJob = action({
             internal.scraping.deduplication.findExistingSession,
             {
               sourceId: rawData.sourceId,
+              organizationId,
               name: session.name,
               startDate: session.startDate,
             }
           );
 
           if (existingSession) {
-            // Update price and/or capacity on existing session if we have better data
+            // Update price if we have better data and existing is missing
             const shouldUpdatePrice =
               session.priceInCents &&
               session.priceInCents > 0 &&
               (!existingSession.price || existingSession.price === 0);
+            // Always update availability when we have fresh spotsLeft data
             const shouldUpdateCapacity =
-              session.spotsLeft !== undefined &&
-              session.spotsLeft > 0 &&
-              (!existingSession.capacity || existingSession.capacity === 20); // 20 is the default
+              session.spotsLeft !== undefined && session.spotsLeft >= 0;
 
             if (shouldUpdatePrice || shouldUpdateCapacity) {
               await ctx.runMutation(
@@ -625,6 +625,7 @@ export const importFromJob = action({
                   sessionId: existingSession._id,
                   price: shouldUpdatePrice ? session.priceInCents : undefined,
                   capacity: shouldUpdateCapacity ? session.spotsLeft : undefined,
+                  sourceId: rawData.sourceId,
                 }
               );
             }

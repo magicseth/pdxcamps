@@ -16,6 +16,7 @@ import { Doc } from "../_generated/dataModel";
 export const findExistingSession = internalQuery({
   args: {
     sourceId: v.id("scrapeSources"),
+    organizationId: v.optional(v.id("organizations")),
     name: v.string(),
     startDate: v.string(),
   },
@@ -32,6 +33,23 @@ export const findExistingSession = internalQuery({
       const sessionName = session.campName || "";
       if (similarity(sessionName, args.name) > 0.8) {
         return session;
+      }
+    }
+
+    // Fallback: search by organization if no source match found
+    // This handles sessions imported before sourceId tracking was added
+    if (args.organizationId) {
+      const orgCandidates = await ctx.db
+        .query("sessions")
+        .withIndex("by_organization_and_status", (q) => q.eq("organizationId", args.organizationId!))
+        .filter((q) => q.eq(q.field("startDate"), args.startDate))
+        .collect();
+
+      for (const session of orgCandidates) {
+        const sessionName = session.campName || "";
+        if (similarity(sessionName, args.name) > 0.8) {
+          return session;
+        }
       }
     }
 
