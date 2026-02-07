@@ -23,6 +23,7 @@ import { PlusIcon, SearchIcon } from '../shared/icons';
 import { generateSummerWeeks, type SummerWeek, isAgeInRange, isGradeInRange, calculateAge } from '../../convex/lib/helpers';
 import { RegistrationProgressBanner } from './RegistrationProgressBanner';
 import { RegistrationChecklist, ChecklistFAB } from './RegistrationChecklist';
+import { CampSelectorDrawer } from './CampSelectorDrawer';
 
 export function PlannerHub({
   user,
@@ -55,6 +56,14 @@ export function PlannerHub({
   const [showChecklist, setShowChecklist] = useState(false);
   const [selectedRegistration, setSelectedRegistration] = useState<RegistrationClickData | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<Id<'familyEvents'> | null>(null);
+  const [selectedGap, setSelectedGap] = useState<{
+    weekStart: string;
+    weekEnd: string;
+    childId: Id<'children'>;
+    childName: string;
+    childAge?: number;
+    childGrade?: number;
+  } | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -265,32 +274,30 @@ export function PlannerHub({
 
   const handleGapClick = useCallback((weekStart: string, weekEnd: string, childId: Id<'children'>) => {
     const child = children.find(c => c._id === childId);
-    if (!defaultCity) return;
+    if (!child) return;
 
-    const params = new URLSearchParams();
-    params.set('from', weekStart);
-    params.set('to', weekEnd);
-    params.set('childId', childId);
-
-    if (child?.birthdate) {
+    // Calculate child's age at the time of the camp
+    let age: number | undefined;
+    if (child.birthdate) {
       const birthDate = new Date(child.birthdate);
       const weekStartDate = new Date(weekStart);
-      let age = weekStartDate.getFullYear() - birthDate.getFullYear();
+      age = weekStartDate.getFullYear() - birthDate.getFullYear();
       const monthDiff = weekStartDate.getMonth() - birthDate.getMonth();
       if (monthDiff < 0 || (monthDiff === 0 && weekStartDate.getDate() < birthDate.getDate())) {
         age--;
       }
-      if (age > 0) {
-        params.set('age', age.toString());
-      }
+      if (age <= 0) age = undefined;
     }
 
-    if (child?.currentGrade !== undefined) {
-      params.set('grade', child.currentGrade.toString());
-    }
-
-    router.push(`/discover/${defaultCity.slug}?${params.toString()}`);
-  }, [children, defaultCity, router]);
+    setSelectedGap({
+      weekStart,
+      weekEnd,
+      childId,
+      childName: child.firstName,
+      childAge: age,
+      childGrade: child.currentGrade,
+    });
+  }, [children]);
 
   const handleRegistrationClick = useCallback((data: RegistrationClickData) => {
     setSelectedRegistration(data);
@@ -703,6 +710,21 @@ export function PlannerHub({
         onClose={() => setShowChecklist(false)}
         children={children}
       />
+
+      {/* Camp Selector Drawer (for gap clicks) */}
+      {selectedGap && defaultCity && (
+        <CampSelectorDrawer
+          isOpen={selectedGap !== null}
+          onClose={() => setSelectedGap(null)}
+          weekStart={selectedGap.weekStart}
+          weekEnd={selectedGap.weekEnd}
+          childId={selectedGap.childId}
+          childName={selectedGap.childName}
+          childAge={selectedGap.childAge}
+          childGrade={selectedGap.childGrade}
+          cityId={defaultCity._id}
+        />
+      )}
 
       {/* Floating Action Button for quick access to checklist */}
       <ChecklistFAB
