@@ -19,6 +19,7 @@ export interface SessionCardSession {
   endDate: string;
   dropOffTime: { hour: number; minute: number };
   pickUpTime: { hour: number; minute: number };
+  isOvernight?: boolean;
   extendedCareAvailable: boolean;
   price: number;
   currency: string;
@@ -595,25 +596,35 @@ export function SessionCard({
           <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
             <ClockIcon />
             <span>
-              {formatTime(session.dropOffTime)} - {formatTime(session.pickUpTime)}
-              {(() => {
-                const dayType = getDayTypeLabel(session.dropOffTime, session.pickUpTime);
-                return (
-                  <span
-                    className={`ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
-                      dayType.isHalfDay
-                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                        : 'bg-primary/20 text-primary-dark dark:bg-primary-dark/30 dark:text-primary-light'
-                    }`}
-                  >
-                    {dayType.label}
+              {session.isOvernight ? (
+                <>
+                  <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
+                    Overnight
                   </span>
-                );
-              })()}
-              {session.extendedCareAvailable && (
-                <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                  +Extended care
-                </span>
+                </>
+              ) : (
+                <>
+                  {formatTime(session.dropOffTime)} - {formatTime(session.pickUpTime)}
+                  {(() => {
+                    const dayType = getDayTypeLabel(session.dropOffTime, session.pickUpTime);
+                    return (
+                      <span
+                        className={`ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
+                          dayType.isHalfDay
+                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                            : 'bg-primary/20 text-primary-dark dark:bg-primary-dark/30 dark:text-primary-light'
+                        }`}
+                      >
+                        {dayType.label}
+                      </span>
+                    );
+                  })()}
+                  {session.extendedCareAvailable && (
+                    <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                      +Extended care
+                    </span>
+                  )}
+                </>
               )}
             </span>
           </div>

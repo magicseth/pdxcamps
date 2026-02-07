@@ -112,6 +112,8 @@ interface ScrapedSession {
   // Flexible date tracking for directory sources
   isFlexible?: boolean;
   flexibleDateRange?: string;
+  // Overnight/residential camp flag
+  isOvernight?: boolean;
 }
 
 interface ScrapedOrganization {
@@ -203,6 +205,13 @@ function enrichSessionWithParsedData(session: ScrapedSession): ScrapedSession {
       enriched.minGrade = parsed.minGrade;
       enriched.maxGrade = parsed.maxGrade;
     }
+  }
+
+  // Detect overnight camps from name or description
+  if (enriched.isOvernight === undefined) {
+    const textToSearch = `${enriched.name || ''} ${enriched.description || ''}`.toLowerCase();
+    const overnightKeywords = ['overnight', 'sleepaway', 'residential', 'sleep-away'];
+    enriched.isOvernight = overnightKeywords.some(keyword => textToSearch.includes(keyword));
   }
 
   return enriched;
@@ -663,6 +672,8 @@ export const importFromJob = action({
                 // Capacity fields - use spotsLeft as capacity if capacity not provided
                 capacity: session.capacity ?? session.spotsLeft,
                 enrolledCount: session.enrolledCount,
+                // Overnight camp detection
+                isOvernight: session.isOvernight,
               }
             );
 

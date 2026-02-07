@@ -12,6 +12,7 @@ import { api } from "../_generated/api";
 import { v } from "convex/values";
 import { Id } from "../_generated/dataModel";
 import { ActionCtx } from "../_generated/server";
+import { Stagehand } from "@browserbasehq/stagehand";
 
 /**
  * Helper function to download and store an image
@@ -317,6 +318,234 @@ export const storeMultipleImages = action({
       stored,
       failed,
       results,
+    };
+  },
+});
+
+/**
+ * Extract real images from Trackers Earth camp pages using Stagehand.
+ * Visits each camp's detail page, waits for JS rendering, extracts
+ * rendered image URLs, downloads and stores them in Convex.
+ */
+export const extractTrackersImagesWithBrowser = action({
+  args: {
+    limit: v.optional(v.number()),
+    forceRefresh: v.optional(v.boolean()),
+  },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    success: boolean;
+    pagesVisited: number;
+    imagesStored: number;
+    campsUpdated: number;
+    errors: string[];
+  }> => {
+    const limit = args.limit ?? 10;
+    const forceRefresh = args.forceRefresh ?? false;
+    const errors: string[] = [];
+    let pagesVisited = 0;
+    let imagesStored = 0;
+    let campsUpdated = 0;
+
+    const TRACKERS_ORG_ID = "kh7f4thw13306rys338we33kqd80dkrm" as Id<"organizations">;
+
+    // Get Trackers camps
+    const allCamps = await ctx.runQuery(api.camps.queries.listAllCamps, {});
+    const trackersCamps = allCamps.filter(
+      (c: { organizationId: string; imageStorageIds: string[] }) => {
+        if (c.organizationId !== TRACKERS_ORG_ID) return false;
+        if (!forceRefresh && c.imageStorageIds && c.imageStorageIds.length > 0) return false;
+        return true;
+      }
+    );
+
+    if (trackersCamps.length === 0) {
+      return { success: true, pagesVisited: 0, imagesStored: 0, campsUpdated: 0, errors: ["No camps need images"] };
+    }
+
+    // Build map: campId → detail page URL from camp.website field
+    const campUrlMap = new Map<string, string>();
+    for (const camp of trackersCamps) {
+      if (camp.website) {
+        campUrlMap.set(camp._id, camp.website);
+      }
+    }
+
+    // Also check sessions for externalRegistrationUrl
+    if (campUrlMap.size < trackersCamps.length) {
+      // Find a city ID from one of the camps via sessions
+      const firstCamp = trackersCamps[0];
+      const campSessions = await ctx.runQuery(api.sessions.queries.listSessionsByCamp, {
+        campId: firstCamp._id as Id<"camps">,
+      });
+      if (campSessions.length > 0) {
+        const cityId = campSessions[0].cityId;
+        // Get all sessions for this city to map camp → URL
+        const allSessions = await ctx.runQuery(api.sessions.queries.listUpcomingSessions, {
+          cityId,
+          limit: 500,
+        });
+        for (const session of allSessions) {
+          if (session.externalRegistrationUrl && !campUrlMap.has(session.campId)) {
+            campUrlMap.set(session.campId, session.externalRegistrationUrl);
+          }
+        }
+      }
+    }
+
+    // Filter to camps that have a detail page URL
+    const campsWithUrls = trackersCamps.filter((c: { _id: string }) => campUrlMap.has(c._id));
+
+    // Deduplicate by URL — group camps by their detail page URL
+    const urlToCamps = new Map<string, Array<{ _id: string; name: string }>>();
+    for (const camp of campsWithUrls) {
+      const url = campUrlMap.get(camp._id)!;
+      if (!urlToCamps.has(url)) {
+        urlToCamps.set(url, []);
+      }
+      urlToCamps.get(url)!.push({ _id: camp._id, name: camp.name });
+    }
+
+    // Take only `limit` unique URLs to visit
+    const uniqueUrls = Array.from(urlToCamps.entries()).slice(0, limit);
+
+    console.log(`[TrackersImages] Processing ${uniqueUrls.length} unique pages for ${campsWithUrls.length} camps with Stagehand`);
+
+    // Initialize Stagehand
+    let stagehand: Stagehand | null = null;
+    try {
+      stagehand = new Stagehand({
+        env: "BROWSERBASE",
+        apiKey: process.env.BROWSERBASE_API_KEY,
+        projectId: process.env.BROWSERBASE_PROJECT_ID!,
+        model: {
+          modelName: "anthropic/claude-sonnet-4-20250514",
+          apiKey: process.env.MODEL_API_KEY!,
+        },
+        disablePino: true,
+        verbose: 0,
+      });
+
+      await stagehand.init();
+      const page = stagehand.context.pages()[0];
+
+      for (const [url, camps] of uniqueUrls) {
+        console.log(`[TrackersImages] Visiting: ${url} for ${camps.length} camp(s): ${camps[0].name}`);
+
+        try {
+          await page.goto(url, { waitUntil: "networkidle" as any, timeoutMs: 20000 });
+          await page.waitForTimeout(3000); // Wait for JS-rendered images
+
+          // Extract all image URLs from the rendered page
+          const imageData = await page.evaluate(() => {
+            const imgs = Array.from(document.querySelectorAll("img"));
+            return imgs.map((img) => ({
+              src: img.src || img.getAttribute("data-src") || "",
+              alt: img.alt || "",
+              width: img.naturalWidth || img.width || 0,
+              height: img.naturalHeight || img.height || 0,
+            }));
+          });
+
+          // Also check for background images in hero sections
+          const bgImages = await page.evaluate(() => {
+            const elements = document.querySelectorAll(
+              '[style*="background-image"], .hero, .banner, .camp-image, .theme-image, [class*="hero"], [class*="banner"], [class*="image"]'
+            );
+            const urls: string[] = [];
+            elements.forEach((el) => {
+              const style = window.getComputedStyle(el);
+              const bg = style.backgroundImage;
+              if (bg && bg !== "none") {
+                const match = bg.match(/url\(["']?([^"')]+)["']?\)/);
+                if (match) urls.push(match[1]);
+              }
+            });
+            return urls;
+          });
+
+          pagesVisited++;
+
+          // Filter to relevant camp images (not logos, icons, gifs, etc.)
+          const relevantImages = imageData.filter((img) => {
+            if (!img.src || img.src.includes("data:")) return false;
+            if (img.src.includes("logo")) return false;
+            if (img.src.includes("countdownmail")) return false;
+            if (img.src.includes("favicon")) return false;
+            if (img.src.endsWith(".gif")) return false;
+            if (img.src.endsWith(".svg")) return false;
+            // Prefer larger images (likely camp photos)
+            if (img.width > 0 && img.width < 100) return false;
+            return true;
+          });
+
+          // Combine with background images
+          const allImageUrls = [
+            ...relevantImages.map((img) => img.src),
+            ...bgImages.filter((u) => !u.includes("logo") && !u.endsWith(".gif")),
+          ];
+
+          // Deduplicate
+          const dedupedImageUrls = [...new Set(allImageUrls)];
+
+          console.log(`[TrackersImages] Found ${dedupedImageUrls.length} relevant images for ${camps[0].name}`);
+
+          if (dedupedImageUrls.length === 0) {
+            errors.push(`${camps[0].name}: No images found`);
+            continue;
+          }
+
+          // Download the best image (first large one)
+          let stored = false;
+          for (const imageUrl of dedupedImageUrls.slice(0, 3)) {
+            try {
+              const result = await downloadAndStoreImage(ctx, imageUrl);
+              if (result.storageId) {
+                // Apply to all camps that share this URL
+                for (const camp of camps) {
+                  await ctx.runMutation(api.camps.mutations.updateCampImages, {
+                    campId: camp._id as Id<"camps">,
+                    imageStorageIds: [result.storageId],
+                  });
+                  campsUpdated++;
+                }
+                imagesStored++;
+                stored = true;
+                console.log(`[TrackersImages] Stored image for ${camps.length} camp(s): ${imageUrl}`);
+                break;
+              }
+            } catch (e) {
+              console.log(`[TrackersImages] Failed to download ${imageUrl}: ${e}`);
+            }
+          }
+
+          if (!stored) {
+            errors.push(`${camps[0].name}: All image downloads failed`);
+          }
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          errors.push(`${camps[0].name}: ${msg}`);
+          console.log(`[TrackersImages] Error for ${camps[0].name}: ${msg}`);
+        }
+      }
+    } finally {
+      if (stagehand) {
+        try {
+          await stagehand.close();
+        } catch {
+          // Ignore close errors
+        }
+      }
+    }
+
+    return {
+      success: imagesStored > 0,
+      pagesVisited,
+      imagesStored,
+      campsUpdated,
+      errors: errors.slice(0, 20),
     };
   },
 });

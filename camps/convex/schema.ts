@@ -190,6 +190,7 @@ export default defineSchema({
     // Daily schedule
     dropOffTime: timeValidator,
     pickUpTime: timeValidator,
+    isOvernight: v.optional(v.boolean()), // True for residential/overnight camps
 
     // Extended care
     extendedCareAvailable: v.boolean(),

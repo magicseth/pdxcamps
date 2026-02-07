@@ -218,6 +218,8 @@ export const createSessionWithCompleteness = internalMutation({
     // Capacity fields
     capacity: v.optional(v.number()),
     enrolledCount: v.optional(v.number()),
+    // Overnight camp flag
+    isOvernight: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const sessionId = await ctx.db.insert("sessions", {
@@ -229,6 +231,7 @@ export const createSessionWithCompleteness = internalMutation({
       endDate: args.endDate,
       dropOffTime: { hour: args.dropOffHour, minute: args.dropOffMinute },
       pickUpTime: { hour: args.pickUpHour, minute: args.pickUpMinute },
+      isOvernight: args.isOvernight,
       extendedCareAvailable: false,
       price: args.price,
       currency: "USD",
@@ -581,6 +584,61 @@ export const rebuildSessionAggregate = internalMutation({
     }
 
     return { rebuilt: sessions.length };
+  },
+});
+
+/**
+ * Migration: Flag existing overnight camps based on name/description keywords.
+ * Run this once after deploying the isOvernight field.
+ *
+ * Processes in batches to avoid timeout. Call repeatedly until done.
+ * Returns { done: true } when complete.
+ */
+export const migrateOvernightCamps = internalMutation({
+  args: {
+    batchSize: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const batchSize = args.batchSize ?? 100;
+    const overnightKeywords = ['overnight', 'sleepaway', 'residential', 'sleep-away'];
+
+    // Get sessions that haven't been checked yet (isOvernight is undefined)
+    const sessions = await ctx.db
+      .query("sessions")
+      .filter((q) => q.eq(q.field("isOvernight"), undefined))
+      .take(batchSize + 1);
+
+    const hasMore = sessions.length > batchSize;
+    const toProcess = hasMore ? sessions.slice(0, batchSize) : sessions;
+
+    let updated = 0;
+    let checked = 0;
+
+    for (const session of toProcess) {
+      checked++;
+
+      // Get the camp to check its name and description
+      const camp = await ctx.db.get(session.campId);
+      if (!camp) continue;
+
+      const textToSearch = `${camp.name || ''} ${camp.description || ''} ${session.campName || ''}`.toLowerCase();
+      const isOvernight = overnightKeywords.some(keyword => textToSearch.includes(keyword));
+
+      // Only update if it's an overnight camp (saves write operations)
+      if (isOvernight) {
+        await ctx.db.patch(session._id, { isOvernight: true });
+        updated++;
+      } else {
+        // Set to false so we don't reprocess
+        await ctx.db.patch(session._id, { isOvernight: false });
+      }
+    }
+
+    return {
+      checked,
+      updated,
+      hasMore,
+    };
   },
 });
 

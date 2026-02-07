@@ -1,7 +1,44 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery } from 'convex/react';
+
+// Animated count component with slide-up effect
+function AnimatedCount({ count, className = '' }: { count: number; className?: string }) {
+  const [displayCount, setDisplayCount] = useState(count);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [slideDirection, setSlideDirection] = useState<'up' | 'down'>('up');
+  const prevCount = useRef(count);
+
+  useEffect(() => {
+    if (count !== prevCount.current) {
+      setSlideDirection(count > prevCount.current ? 'up' : 'down');
+      setIsAnimating(true);
+      const timer = setTimeout(() => {
+        setDisplayCount(count);
+        setIsAnimating(false);
+      }, 150);
+      prevCount.current = count;
+      return () => clearTimeout(timer);
+    }
+  }, [count]);
+
+  return (
+    <span className={`inline-flex items-center overflow-hidden min-w-[1.5ch] justify-center ${className}`}>
+      <span
+        className={`transition-all duration-200 ease-out tabular-nums ${
+          isAnimating
+            ? slideDirection === 'up'
+              ? 'opacity-0 -translate-y-3 scale-90'
+              : 'opacity-0 translate-y-3 scale-90'
+            : 'opacity-100 translate-y-0 scale-100'
+        }`}
+      >
+        {displayCount}
+      </span>
+    </span>
+  );
+}
 import Link from 'next/link';
 import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
@@ -233,7 +270,7 @@ export function CampSelectorDrawer({
                   }`}
                 >
                   <span className="truncate max-w-[100px]">{org.name}</span>
-                  <span className="opacity-60">{org.count}</span>
+                  <AnimatedCount count={org.count} />
                 </button>
               ))}
             </div>
@@ -267,7 +304,16 @@ export function CampSelectorDrawer({
           ) : totalCount === 0 ? (
             'No camps available'
           ) : (
-            `${sessions.length}${totalCount > sessions.length ? ` of ${totalCount}` : ''} camp${totalCount === 1 ? '' : 's'} available`
+            <span className="inline-flex items-center gap-1">
+              <AnimatedCount
+                count={sessions.length}
+                className="font-semibold text-slate-700 dark:text-slate-200 min-w-[2ch]"
+              />
+              {totalCount > sessions.length && (
+                <span>of {totalCount}</span>
+              )}
+              <span>camp{totalCount === 1 ? '' : 's'} available</span>
+            </span>
           )}
         </div>
 

@@ -101,6 +101,12 @@ export const searchSessions = query({
     const locations = await Promise.all(locationIds.map((id) => ctx.db.get(id)));
     const locationMap = new Map(locations.filter(Boolean).map((loc) => [loc!._id, loc!]));
 
+    // Fetch organizations for sessions missing organizationName (backfill for older sessions)
+    const sessionsNeedingOrgName = sessions.filter((s) => !s.organizationName);
+    const orgIdsToFetch = [...new Set(sessionsNeedingOrgName.map((s) => s.organizationId))];
+    const orgs = await Promise.all(orgIdsToFetch.map((id) => ctx.db.get(id)));
+    const orgMap = new Map(orgs.filter(Boolean).map((org) => [org!._id, org!]));
+
     // Calculate distance if home coordinates provided
     const hasHomeCoords = args.homeLatitude !== undefined && args.homeLongitude !== undefined;
 
@@ -113,8 +119,17 @@ export const searchSessions = query({
 
     let enrichedSessions: SessionWithLocationAndDistance[] = sessions.map((session) => {
       const location = locationMap.get(session.locationId);
+
+      // Backfill organizationName if missing
+      let organizationName = session.organizationName;
+      if (!organizationName) {
+        const org = orgMap.get(session.organizationId);
+        organizationName = org?.name;
+      }
+
       const result: SessionWithLocationAndDistance = {
         ...session,
+        organizationName,
         locationLatitude: location?.latitude,
         locationLongitude: location?.longitude,
       };
