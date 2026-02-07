@@ -1,10 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import {
-  getChildAge,
-  formatDateShort,
-  getThisWeekDates,
-  getNextWeekDates,
-} from '@/lib/dateUtils';
+import { getChildAge, formatDateShort, getThisWeekDates, getNextWeekDates } from '@/lib/dateUtils';
 
 describe('getChildAge', () => {
   afterEach(() => {

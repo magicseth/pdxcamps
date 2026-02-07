@@ -1,6 +1,6 @@
-import { mutation } from "../_generated/server";
-import { v } from "convex/values";
-import { internal } from "../_generated/api";
+import { mutation } from '../_generated/server';
+import { v } from 'convex/values';
+import { internal } from '../_generated/api';
 
 /**
  * Create a new pending scrape job.
@@ -11,41 +11,37 @@ import { internal } from "../_generated/api";
  */
 export const createScrapeJob = mutation({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
     triggeredBy: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const source = await ctx.db.get(args.sourceId);
     if (!source) {
-      throw new Error("Scrape source not found");
+      throw new Error('Scrape source not found');
     }
 
     // Check if there's already a pending or running job
     const existingJob = await ctx.db
-      .query("scrapeJobs")
-      .withIndex("by_source_and_status", (q) =>
-        q.eq("sourceId", args.sourceId).eq("status", "pending")
-      )
+      .query('scrapeJobs')
+      .withIndex('by_source_and_status', (q) => q.eq('sourceId', args.sourceId).eq('status', 'pending'))
       .first();
 
     if (existingJob) {
-      throw new Error("A pending job already exists for this source");
+      throw new Error('A pending job already exists for this source');
     }
 
     const runningJob = await ctx.db
-      .query("scrapeJobs")
-      .withIndex("by_source_and_status", (q) =>
-        q.eq("sourceId", args.sourceId).eq("status", "running")
-      )
+      .query('scrapeJobs')
+      .withIndex('by_source_and_status', (q) => q.eq('sourceId', args.sourceId).eq('status', 'running'))
       .first();
 
     if (runningJob) {
-      throw new Error("A job is already running for this source");
+      throw new Error('A job is already running for this source');
     }
 
-    const jobId = await ctx.db.insert("scrapeJobs", {
+    const jobId = await ctx.db.insert('scrapeJobs', {
       sourceId: args.sourceId,
-      status: "pending",
+      status: 'pending',
       triggeredBy: args.triggeredBy,
       startedAt: undefined,
       completedAt: undefined,
@@ -61,14 +57,10 @@ export const createScrapeJob = mutation({
     // Use a small random delay (100-2000ms) to stagger concurrent job creations
     // and prevent scheduler write conflicts on _scheduled_functions.
     const jitterMs = 100 + Math.floor(Math.random() * 1900);
-    await ctx.scheduler.runAfter(
-      jitterMs,
-      internal.scraping.scrapeWorkflow.startWorkflowForJob,
-      {
-        jobId,
-        sourceId: args.sourceId,
-      }
-    );
+    await ctx.scheduler.runAfter(jitterMs, internal.scraping.scrapeWorkflow.startWorkflowForJob, {
+      jobId,
+      sourceId: args.sourceId,
+    });
 
     return jobId;
   },
@@ -79,20 +71,20 @@ export const createScrapeJob = mutation({
  */
 export const startScrapeJob = mutation({
   args: {
-    jobId: v.id("scrapeJobs"),
+    jobId: v.id('scrapeJobs'),
   },
   handler: async (ctx, args) => {
     const job = await ctx.db.get(args.jobId);
     if (!job) {
-      throw new Error("Scrape job not found");
+      throw new Error('Scrape job not found');
     }
 
-    if (job.status !== "pending") {
+    if (job.status !== 'pending') {
       throw new Error(`Cannot start job in "${job.status}" status`);
     }
 
     await ctx.db.patch(args.jobId, {
-      status: "running",
+      status: 'running',
       startedAt: Date.now(),
     });
 
@@ -105,7 +97,7 @@ export const startScrapeJob = mutation({
  */
 export const completeScrapeJob = mutation({
   args: {
-    jobId: v.id("scrapeJobs"),
+    jobId: v.id('scrapeJobs'),
     sessionsFound: v.number(),
     sessionsCreated: v.number(),
     sessionsUpdated: v.number(),
@@ -113,17 +105,17 @@ export const completeScrapeJob = mutation({
   handler: async (ctx, args) => {
     const job = await ctx.db.get(args.jobId);
     if (!job) {
-      throw new Error("Scrape job not found");
+      throw new Error('Scrape job not found');
     }
 
-    if (job.status !== "running") {
+    if (job.status !== 'running') {
       throw new Error(`Cannot complete job in "${job.status}" status`);
     }
 
     const now = Date.now();
 
     await ctx.db.patch(args.jobId, {
-      status: "completed",
+      status: 'completed',
       completedAt: now,
       sessionsFound: args.sessionsFound,
       sessionsCreated: args.sessionsCreated,
@@ -159,23 +151,23 @@ export const completeScrapeJob = mutation({
  */
 export const failScrapeJob = mutation({
   args: {
-    jobId: v.id("scrapeJobs"),
+    jobId: v.id('scrapeJobs'),
     errorMessage: v.string(),
   },
   handler: async (ctx, args) => {
     const job = await ctx.db.get(args.jobId);
     if (!job) {
-      throw new Error("Scrape job not found");
+      throw new Error('Scrape job not found');
     }
 
-    if (job.status !== "running" && job.status !== "pending") {
+    if (job.status !== 'running' && job.status !== 'pending') {
       throw new Error(`Cannot fail job in "${job.status}" status`);
     }
 
     const now = Date.now();
 
     await ctx.db.patch(args.jobId, {
-      status: "failed",
+      status: 'failed',
       completedAt: now,
       errorMessage: args.errorMessage,
     });
@@ -194,22 +186,19 @@ export const failScrapeJob = mutation({
         ? source.scraperHealth.consecutiveFailures
         : source.scraperHealth.consecutiveFailures + 1;
       const newTotalRuns = source.scraperHealth.totalRuns + 1;
-      const successfulRuns = Math.round(
-        source.scraperHealth.successRate * source.scraperHealth.totalRuns
-      );
+      const successfulRuns = Math.round(source.scraperHealth.successRate * source.scraperHealth.totalRuns);
       const newSuccessRate = successfulRuns / newTotalRuns;
 
       // Flag for regeneration if too many consecutive failures (but not for 404s or rate limits)
       const needsRegeneration =
-        (!is404Error && !isRateLimited && newConsecutiveFailures >= 3) ||
-        source.scraperHealth.needsRegeneration;
+        (!is404Error && !isRateLimited && newConsecutiveFailures >= 3) || source.scraperHealth.needsRegeneration;
 
       // Track URL status in history
       const urlHistory = source.urlHistory || [];
       if (is404Error) {
         urlHistory.push({
           url: source.url,
-          status: "404",
+          status: '404',
           checkedAt: now,
         });
         // Keep only last 20 entries
@@ -221,7 +210,7 @@ export const failScrapeJob = mutation({
       // Count recent consecutive 404s
       let consecutive404s = 0;
       for (let i = urlHistory.length - 1; i >= 0; i--) {
-        if (urlHistory[i].status === "404") {
+        if (urlHistory[i].status === '404') {
           consecutive404s++;
         } else {
           break;
@@ -236,13 +225,13 @@ export const failScrapeJob = mutation({
       // Normal failure: exponential backoff capped at 1 week
       let nextScheduledScrape: number;
       if (isRateLimited) {
-        nextScheduledScrape = now + (6 * 60 * 60 * 1000); // 6 hours
+        nextScheduledScrape = now + 6 * 60 * 60 * 1000; // 6 hours
       } else {
         const backoffHours = Math.min(
           source.scrapeFrequencyHours * Math.pow(2, newConsecutiveFailures),
-          168 // cap at 1 week
+          168, // cap at 1 week
         );
-        nextScheduledScrape = now + (backoffHours * 60 * 60 * 1000);
+        nextScheduledScrape = now + backoffHours * 60 * 60 * 1000;
       }
 
       const updates: Record<string, unknown> = {
@@ -263,7 +252,7 @@ export const failScrapeJob = mutation({
         updates.isActive = false;
         updates.closureReason = `Auto-disabled: URL returned 404 for ${consecutive404s} consecutive attempts`;
         updates.closedAt = now;
-        updates.closedBy = "system";
+        updates.closedBy = 'system';
       }
 
       await ctx.db.patch(job.sourceId, updates);
@@ -271,42 +260,42 @@ export const failScrapeJob = mutation({
       // Create alerts based on failure type
       if (isRateLimited) {
         // 10C: Info-level alert for rate limiting
-        await ctx.db.insert("scraperAlerts", {
+        await ctx.db.insert('scraperAlerts', {
           sourceId: job.sourceId,
-          alertType: "rate_limited",
+          alertType: 'rate_limited',
           message: `Source "${source.name}" was rate-limited. Next attempt in 6 hours.`,
-          severity: "info",
+          severity: 'info',
           createdAt: now,
           acknowledgedAt: undefined,
           acknowledgedBy: undefined,
         });
       } else if (shouldAutoDisable) {
         // High-priority alert for auto-disabled source
-        await ctx.db.insert("scraperAlerts", {
+        await ctx.db.insert('scraperAlerts', {
           sourceId: job.sourceId,
-          alertType: "scraper_disabled",
+          alertType: 'scraper_disabled',
           message: `Source "${source.name}" auto-disabled after ${consecutive404s} consecutive 404 errors. URL needs to be updated: ${source.url}`,
-          severity: "error",
+          severity: 'error',
           createdAt: now,
           acknowledgedAt: undefined,
           acknowledgedBy: undefined,
         });
       } else if (newConsecutiveFailures === 3) {
-        await ctx.db.insert("scraperAlerts", {
+        await ctx.db.insert('scraperAlerts', {
           sourceId: job.sourceId,
-          alertType: "scraper_degraded",
+          alertType: 'scraper_degraded',
           message: `Scraper "${source.name}" has failed 3 times consecutively. Last error: ${args.errorMessage}`,
-          severity: "warning",
+          severity: 'warning',
           createdAt: now,
           acknowledgedAt: undefined,
           acknowledgedBy: undefined,
         });
       } else if (newConsecutiveFailures >= 5 && !is404Error) {
-        await ctx.db.insert("scraperAlerts", {
+        await ctx.db.insert('scraperAlerts', {
           sourceId: job.sourceId,
-          alertType: "scraper_needs_regeneration",
+          alertType: 'scraper_needs_regeneration',
           message: `Scraper "${source.name}" needs regeneration after ${newConsecutiveFailures} consecutive failures.`,
-          severity: "error",
+          severity: 'error',
           createdAt: now,
           acknowledgedAt: undefined,
           acknowledgedBy: undefined,
@@ -323,30 +312,26 @@ export const failScrapeJob = mutation({
  */
 export const cleanupStuckJobs = mutation({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
   },
   handler: async (ctx, args) => {
     const stuckJobs = await ctx.db
-      .query("scrapeJobs")
-      .withIndex("by_source_and_status", (q) =>
-        q.eq("sourceId", args.sourceId).eq("status", "pending")
-      )
+      .query('scrapeJobs')
+      .withIndex('by_source_and_status', (q) => q.eq('sourceId', args.sourceId).eq('status', 'pending'))
       .collect();
 
     const runningJobs = await ctx.db
-      .query("scrapeJobs")
-      .withIndex("by_source_and_status", (q) =>
-        q.eq("sourceId", args.sourceId).eq("status", "running")
-      )
+      .query('scrapeJobs')
+      .withIndex('by_source_and_status', (q) => q.eq('sourceId', args.sourceId).eq('status', 'running'))
       .collect();
 
     const allStuck = [...stuckJobs, ...runningJobs];
 
     for (const job of allStuck) {
       await ctx.db.patch(job._id, {
-        status: "failed",
+        status: 'failed',
         completedAt: Date.now(),
-        errorMessage: "Manually marked as failed (cleanup)",
+        errorMessage: 'Manually marked as failed (cleanup)',
       });
     }
 
@@ -359,13 +344,13 @@ export const cleanupStuckJobs = mutation({
  */
 export const flagForRescan = mutation({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
     reason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const source = await ctx.db.get(args.sourceId);
     if (!source) {
-      throw new Error("Scrape source not found");
+      throw new Error('Scrape source not found');
     }
 
     await ctx.db.patch(args.sourceId, {
@@ -385,12 +370,12 @@ export const flagForRescan = mutation({
  */
 export const clearRescanFlag = mutation({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
   },
   handler: async (ctx, args) => {
     const source = await ctx.db.get(args.sourceId);
     if (!source) {
-      throw new Error("Scrape source not found");
+      throw new Error('Scrape source not found');
     }
 
     await ctx.db.patch(args.sourceId, {

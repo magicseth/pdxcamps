@@ -12,7 +12,10 @@ export default function AdminPage() {
   return (
     <>
       <header className="sticky top-0 z-10 bg-background p-4 border-b-2 border-slate-200 dark:border-slate-800 flex flex-row justify-between items-center">
-        <Link href="/" className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+        <Link
+          href="/"
+          className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
           PDX Camps
         </Link>
         <h1 className="text-lg font-semibold">Command Center</h1>
@@ -23,13 +26,8 @@ export default function AdminPage() {
         </Authenticated>
         <Unauthenticated>
           <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-            <p className="text-slate-600 dark:text-slate-400">
-              Please sign in to access the admin dashboard.
-            </p>
-            <a
-              href="/sign-in"
-              className="bg-foreground text-background px-6 py-2 rounded-md"
-            >
+            <p className="text-slate-600 dark:text-slate-400">Please sign in to access the admin dashboard.</p>
+            <a href="/sign-in" className="bg-foreground text-background px-6 py-2 rounded-md">
               Sign in
             </a>
           </div>
@@ -40,7 +38,7 @@ export default function AdminPage() {
 }
 
 function AdminContent() {
-  const [selectedCityId, setSelectedCityId] = useState<Id<"cities"> | undefined>(undefined);
+  const [selectedCityId, setSelectedCityId] = useState<Id<'cities'> | undefined>(undefined);
   const [welcomeEmailStatus, setWelcomeEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [outreachEmailStatus, setOutreachEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
 
@@ -100,9 +98,7 @@ function AdminContent() {
     return (
       <div className="max-w-2xl mx-auto text-center py-16">
         <h2 className="text-xl font-semibold mb-2 text-red-600">Access Denied</h2>
-        <p className="text-slate-600 dark:text-slate-400">
-          You don't have permission to access the admin dashboard.
-        </p>
+        <p className="text-slate-600 dark:text-slate-400">You don't have permission to access the admin dashboard.</p>
         <Link
           href="/"
           className="inline-block mt-4 text-primary hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
@@ -134,9 +130,7 @@ function AdminContent() {
     return (
       <div className="max-w-2xl mx-auto text-center py-16">
         <h2 className="text-xl font-semibold mb-2 text-red-600">Access Denied</h2>
-        <p className="text-slate-600 dark:text-slate-400">
-          You don't have permission to access the admin dashboard.
-        </p>
+        <p className="text-slate-600 dark:text-slate-400">You don't have permission to access the admin dashboard.</p>
         <Link
           href="/"
           className="inline-block mt-4 text-primary hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
@@ -203,12 +197,10 @@ function AdminContent() {
       {/* Header with Market Filter */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Command Center
-          </h2>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Command Center</h2>
           <select
             value={selectedCityId || ''}
-            onChange={(e) => setSelectedCityId(e.target.value ? e.target.value as Id<"cities"> : undefined)}
+            onChange={(e) => setSelectedCityId(e.target.value ? (e.target.value as Id<'cities'>) : undefined)}
             className="px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
           >
             <option value="">All Markets</option>
@@ -320,17 +312,17 @@ function AdminContent() {
             welcomeEmailStatus === 'sent'
               ? 'bg-green-600 text-white'
               : welcomeEmailStatus === 'error'
-              ? 'bg-red-600 text-white'
-              : 'bg-purple-600 text-white hover:bg-purple-700'
+                ? 'bg-red-600 text-white'
+                : 'bg-purple-600 text-white hover:bg-purple-700'
           } disabled:opacity-50`}
         >
           {welcomeEmailStatus === 'sending'
             ? 'Sending...'
             : welcomeEmailStatus === 'sent'
-            ? 'Sent!'
-            : welcomeEmailStatus === 'error'
-            ? 'Failed'
-            : 'Test Welcome Emails'}
+              ? 'Sent!'
+              : welcomeEmailStatus === 'error'
+                ? 'Failed'
+                : 'Test Welcome Emails'}
         </button>
         <button
           onClick={handleSendOutreachEmail}
@@ -339,17 +331,17 @@ function AdminContent() {
             outreachEmailStatus === 'sent'
               ? 'bg-green-600 text-white'
               : outreachEmailStatus === 'error'
-              ? 'bg-red-600 text-white'
-              : 'bg-orange-600 text-white hover:bg-orange-700'
+                ? 'bg-red-600 text-white'
+                : 'bg-orange-600 text-white hover:bg-orange-700'
           } disabled:opacity-50`}
         >
           {outreachEmailStatus === 'sending'
             ? 'Sending...'
             : outreachEmailStatus === 'sent'
-            ? 'Sent!'
-            : outreachEmailStatus === 'error'
-            ? 'Failed'
-            : 'Test Outreach Email'}
+              ? 'Sent!'
+              : outreachEmailStatus === 'error'
+                ? 'Failed'
+                : 'Test Outreach Email'}
         </button>
       </div>
 
@@ -411,9 +403,7 @@ function AdminContent() {
             <CheckCircleIcon />
           </div>
           <h3 className="font-semibold text-green-800 dark:text-green-200">All Systems Healthy</h3>
-          <p className="text-sm text-green-600 dark:text-green-300 mt-1">
-            No immediate issues detected. Great job!
-          </p>
+          <p className="text-sm text-green-600 dark:text-green-300 mt-1">No immediate issues detected. Great job!</p>
         </div>
       )}
 
@@ -482,12 +472,8 @@ function AdminContent() {
                     )}
                   </div>
                   <div className="ml-4 flex-shrink-0 text-right">
-                    <p className="text-xs text-slate-500">
-                      {new Date(email.receivedAt).toLocaleDateString()}
-                    </p>
-                    <p className="text-xs text-slate-400">
-                      {new Date(email.receivedAt).toLocaleTimeString()}
-                    </p>
+                    <p className="text-xs text-slate-500">{new Date(email.receivedAt).toLocaleDateString()}</p>
+                    <p className="text-xs text-slate-400">{new Date(email.receivedAt).toLocaleTimeString()}</p>
                   </div>
                 </div>
               </li>
@@ -518,13 +504,7 @@ function AttentionRow({ item }: { item: AttentionItem }) {
     <li className="px-6 py-4 flex items-center justify-between">
       <div className="flex items-center gap-3">
         <div className={`flex-shrink-0 ${iconStyles[item.type]}`}>
-          {item.type === 'error' ? (
-            <ErrorIcon />
-          ) : item.type === 'warning' ? (
-            <WarningIcon />
-          ) : (
-            <InfoIcon />
-          )}
+          {item.type === 'error' ? <ErrorIcon /> : item.type === 'warning' ? <WarningIcon /> : <InfoIcon />}
         </div>
         <div>
           <p className="font-medium text-slate-900 dark:text-white">{item.title}</p>
@@ -555,7 +535,12 @@ function AttentionRow({ item }: { item: AttentionItem }) {
 function ErrorIcon() {
   return (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+      />
     </svg>
   );
 }
@@ -563,7 +548,12 @@ function ErrorIcon() {
 function WarningIcon() {
   return (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+      />
     </svg>
   );
 }
@@ -571,7 +561,12 @@ function WarningIcon() {
 function InfoIcon() {
   return (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+      />
     </svg>
   );
 }
@@ -579,7 +574,12 @@ function InfoIcon() {
 function CheckCircleIcon() {
   return (
     <svg className="w-12 h-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+      />
     </svg>
   );
 }
@@ -587,7 +587,12 @@ function CheckCircleIcon() {
 function DatabaseIcon() {
   return (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"
+      />
     </svg>
   );
 }
@@ -595,7 +600,12 @@ function DatabaseIcon() {
 function CalendarIcon() {
   return (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+      />
     </svg>
   );
 }
@@ -603,7 +613,12 @@ function CalendarIcon() {
 function ChartIcon() {
   return (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+      />
     </svg>
   );
 }

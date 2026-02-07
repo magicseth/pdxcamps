@@ -75,11 +75,14 @@ export function EditEventModal({ isOpen, onClose, event }: EditEventModalProps) 
   }, [event]);
 
   // ESC key to close modal
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Escape' && !isSubmitting && !showDeleteConfirm) {
-      onClose();
-    }
-  }, [onClose, isSubmitting, showDeleteConfirm]);
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isSubmitting && !showDeleteConfirm) {
+        onClose();
+      }
+    },
+    [onClose, isSubmitting, showDeleteConfirm],
+  );
 
   useEffect(() => {
     if (isOpen) {
@@ -142,19 +145,18 @@ export function EditEventModal({ isOpen, onClose, event }: EditEventModalProps) 
   };
 
   const toggleChild = (childId: Id<'children'>) => {
-    setSelectedChildIds((prev) =>
-      prev.includes(childId)
-        ? prev.filter((id) => id !== childId)
-        : [...prev, childId]
-    );
+    setSelectedChildIds((prev) => (prev.includes(childId) ? prev.filter((id) => id !== childId) : [...prev, childId]));
   };
 
   // Handle click outside modal
-  const handleBackdropClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget && !isSubmitting && !showDeleteConfirm) {
-      onClose();
-    }
-  }, [onClose, isSubmitting, showDeleteConfirm]);
+  const handleBackdropClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (e.target === e.currentTarget && !isSubmitting && !showDeleteConfirm) {
+        onClose();
+      }
+    },
+    [onClose, isSubmitting, showDeleteConfirm],
+  );
 
   if (!isOpen) return null;
 
@@ -188,9 +190,7 @@ export function EditEventModal({ isOpen, onClose, event }: EditEventModalProps) 
           <div className="p-6">
             <div className="text-center mb-6">
               <div className="text-4xl mb-3">🗑️</div>
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-                Delete this event?
-              </h3>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">Delete this event?</h3>
               <p className="text-sm text-slate-600 dark:text-slate-400">
                 &quot;{event.title}&quot; will be removed from your planner.
               </p>
@@ -218,14 +218,20 @@ export function EditEventModal({ isOpen, onClose, event }: EditEventModalProps) 
           /* Form */
           <form onSubmit={handleSubmit} className="p-4 space-y-4">
             {error && (
-              <div role="alert" className="p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm">
+              <div
+                role="alert"
+                className="p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm"
+              >
                 {error}
               </div>
             )}
 
             {/* Title */}
             <div>
-              <label htmlFor="edit-event-title" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              <label
+                htmlFor="edit-event-title"
+                className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+              >
                 Title *
               </label>
               <input
@@ -242,9 +248,7 @@ export function EditEventModal({ isOpen, onClose, event }: EditEventModalProps) 
 
             {/* Event Type */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Event Type
-              </label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Event Type</label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {EVENT_TYPES.map((type) => (
                   <button
@@ -267,7 +271,10 @@ export function EditEventModal({ isOpen, onClose, event }: EditEventModalProps) 
             {/* Date Range */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="edit-event-start-date" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label
+                  htmlFor="edit-event-start-date"
+                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+                >
                   Start Date *
                 </label>
                 <input
@@ -288,7 +295,10 @@ export function EditEventModal({ isOpen, onClose, event }: EditEventModalProps) 
                 />
               </div>
               <div>
-                <label htmlFor="edit-event-end-date" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label
+                  htmlFor="edit-event-end-date"
+                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+                >
                   End Date *
                 </label>
                 <input
@@ -306,9 +316,7 @@ export function EditEventModal({ isOpen, onClose, event }: EditEventModalProps) 
 
             {/* Children Selection */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Children *
-              </label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Children *</label>
               {children === undefined ? (
                 <div className="text-sm text-slate-500">Loading...</div>
               ) : (
@@ -329,9 +337,7 @@ export function EditEventModal({ isOpen, onClose, event }: EditEventModalProps) 
                         {child.firstName[0]}
                       </span>
                       {child.firstName}
-                      {selectedChildIds.includes(child._id) && (
-                        <span className="text-primary">✓</span>
-                      )}
+                      {selectedChildIds.includes(child._id) && <span className="text-primary">✓</span>}
                     </button>
                   ))}
                 </div>
@@ -340,7 +346,10 @@ export function EditEventModal({ isOpen, onClose, event }: EditEventModalProps) 
 
             {/* Location (optional) */}
             <div>
-              <label htmlFor="edit-event-location" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              <label
+                htmlFor="edit-event-location"
+                className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+              >
                 Location (optional)
               </label>
               <input
@@ -355,9 +364,7 @@ export function EditEventModal({ isOpen, onClose, event }: EditEventModalProps) 
 
             {/* Color */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Color
-              </label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Color</label>
               <div className="flex gap-2">
                 {COLORS.map((c) => (
                   <button
@@ -365,9 +372,7 @@ export function EditEventModal({ isOpen, onClose, event }: EditEventModalProps) 
                     type="button"
                     onClick={() => setColor(c.value)}
                     className={`w-8 h-8 rounded-full ${c.class} ${
-                      color === c.value
-                        ? 'ring-2 ring-offset-2 ring-slate-400 dark:ring-offset-slate-800'
-                        : ''
+                      color === c.value ? 'ring-2 ring-offset-2 ring-slate-400 dark:ring-offset-slate-800' : ''
                     }`}
                     title={c.label}
                     aria-label={`Select ${c.label.toLowerCase()} color`}
@@ -380,7 +385,10 @@ export function EditEventModal({ isOpen, onClose, event }: EditEventModalProps) 
             {/* Notes (optional) */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label htmlFor="edit-event-notes" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                <label
+                  htmlFor="edit-event-notes"
+                  className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+                >
                   Notes (optional)
                 </label>
                 <span className={`text-xs ${notes.length > 450 ? 'text-orange-500' : 'text-slate-400'}`}>
@@ -429,4 +437,3 @@ export function EditEventModal({ isOpen, onClose, event }: EditEventModalProps) 
     </div>
   );
 }
-

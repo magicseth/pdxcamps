@@ -29,7 +29,12 @@ export function BottomNav({ citySlug }: BottomNavProps) {
     >
       <div className="max-w-4xl mx-auto flex items-center justify-around">
         <NavLink href="/" active={isActive('/')} icon={<CalendarIcon className="w-5 h-5" />} label="Planner" />
-        <NavLink href={`/discover/${effectiveCitySlug}`} active={isActive('/discover')} icon={<SearchIcon />} label="Discover" />
+        <NavLink
+          href={`/discover/${effectiveCitySlug}`}
+          active={isActive('/discover')}
+          icon={<SearchIcon />}
+          label="Discover"
+        />
         <NavLink href="/calendar" active={isActive('/calendar')} icon={<ClipboardListIcon />} label="My Camps" />
         <NavLink href="/friends" active={isActive('/friends')} icon={<FriendsIcon />} label="Friends" />
       </div>
@@ -37,7 +42,17 @@ export function BottomNav({ citySlug }: BottomNavProps) {
   );
 }
 
-function NavLink({ href, active, icon, label }: { href: string; active: boolean; icon: React.ReactNode; label: string }) {
+function NavLink({
+  href,
+  active,
+  icon,
+  label,
+}: {
+  href: string;
+  active: boolean;
+  icon: React.ReactNode;
+  label: string;
+}) {
   return (
     <Link
       href={href}
@@ -49,11 +64,13 @@ function NavLink({ href, active, icon, label }: { href: string; active: boolean;
       }`}
     >
       {active && (
-        <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-primary dark:bg-primary-light rounded-full" aria-hidden="true" />
+        <span
+          className="absolute -top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-primary dark:bg-primary-light rounded-full"
+          aria-hidden="true"
+        />
       )}
       {icon}
       <span className="text-xs font-medium">{label}</span>
     </Link>
   );
 }
-

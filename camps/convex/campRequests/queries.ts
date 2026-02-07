@@ -1,6 +1,6 @@
-import { query, internalQuery } from "../_generated/server";
-import { v } from "convex/values";
-import { getFamily } from "../lib/auth";
+import { query, internalQuery } from '../_generated/server';
+import { v } from 'convex/values';
+import { getFamily } from '../lib/auth';
 
 /**
  * Get all camp requests for the current family
@@ -14,9 +14,9 @@ export const listMyRequests = query({
     }
 
     return await ctx.db
-      .query("campRequests")
-      .withIndex("by_family", (q) => q.eq("familyId", family._id))
-      .order("desc")
+      .query('campRequests')
+      .withIndex('by_family', (q) => q.eq('familyId', family._id))
+      .order('desc')
       .collect();
   },
 });
@@ -26,7 +26,7 @@ export const listMyRequests = query({
  */
 export const getRequest = internalQuery({
   args: {
-    requestId: v.id("campRequests"),
+    requestId: v.id('campRequests'),
   },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.requestId);
@@ -43,15 +43,17 @@ export const findSourceByDomain = internalQuery({
   },
   handler: async (ctx, args) => {
     // Get all sources and filter by domain in URL
-    const sources = await ctx.db.query("scrapeSources").collect();
-    return sources.find((s) => {
-      try {
-        const sourceDomain = new URL(s.url).hostname.replace(/^www\./, "");
-        return sourceDomain === args.domain;
-      } catch {
-        return false;
-      }
-    }) || null;
+    const sources = await ctx.db.query('scrapeSources').collect();
+    return (
+      sources.find((s) => {
+        try {
+          const sourceDomain = new URL(s.url).hostname.replace(/^www\./, '');
+          return sourceDomain === args.domain;
+        } catch {
+          return false;
+        }
+      }) || null
+    );
   },
 });
 
@@ -62,9 +64,9 @@ export const listPendingRequests = query({
   args: {},
   handler: async (ctx) => {
     return await ctx.db
-      .query("campRequests")
-      .withIndex("by_status", (q) => q.eq("status", "pending"))
-      .order("desc")
+      .query('campRequests')
+      .withIndex('by_status', (q) => q.eq('status', 'pending'))
+      .order('desc')
       .take(50);
   },
 });
@@ -78,8 +80,8 @@ export const listAllRequests = query({
   },
   handler: async (ctx, args) => {
     const requests = await ctx.db
-      .query("campRequests")
-      .order("desc")
+      .query('campRequests')
+      .order('desc')
       .take(args.limit || 100);
 
     // Enrich with family info
@@ -93,7 +95,7 @@ export const listAllRequests = query({
           familyName: family?.displayName,
           cityName: city?.name,
         };
-      })
+      }),
     );
   },
 });

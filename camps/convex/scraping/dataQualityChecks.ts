@@ -8,9 +8,9 @@
  * - Sources with no recent successful scrapes
  */
 
-import { internalQuery, internalMutation } from "../_generated/server";
-import { Id, Doc } from "../_generated/dataModel";
-import { v } from "convex/values";
+import { internalQuery, internalMutation } from '../_generated/server';
+import { Id, Doc } from '../_generated/dataModel';
+import { v } from 'convex/values';
 
 // Thresholds for alerts
 const ZERO_PRICE_THRESHOLD = 0.5; // Alert if >50% sessions have $0 price
@@ -20,24 +20,19 @@ const ZERO_PRICE_THRESHOLD = 0.5; // Alert if >50% sessions have $0 price
  */
 export const getActiveSourcesForCheck = internalQuery({
   args: {},
-  handler: async (ctx): Promise<
+  handler: async (
+    ctx,
+  ): Promise<
     Array<
       Pick<
-        Doc<"scrapeSources">,
-        | "_id"
-        | "name"
-        | "url"
-        | "scraperCode"
-        | "scraperModule"
-        | "scraperHealth"
-        | "dataQualityScore"
-        | "qualityTier"
+        Doc<'scrapeSources'>,
+        '_id' | 'name' | 'url' | 'scraperCode' | 'scraperModule' | 'scraperHealth' | 'dataQualityScore' | 'qualityTier'
       >
     >
   > => {
     const sources = await ctx.db
-      .query("scrapeSources")
-      .withIndex("by_is_active", (q) => q.eq("isActive", true))
+      .query('scrapeSources')
+      .withIndex('by_is_active', (q) => q.eq('isActive', true))
       .collect();
 
     return sources.map((s) => ({
@@ -63,10 +58,10 @@ export const findSourcesWithHighZeroPriceRatio = internalQuery({
   },
   handler: async (
     ctx,
-    args
+    args,
   ): Promise<{
     results: Array<{
-      sourceId: Id<"scrapeSources">;
+      sourceId: Id<'scrapeSources'>;
       sourceName: string;
       zeroPriceCount: number;
       totalCount: number;
@@ -79,7 +74,7 @@ export const findSourcesWithHighZeroPriceRatio = internalQuery({
     const cursorIndex = args.cursor ?? 0;
 
     const results: Array<{
-      sourceId: Id<"scrapeSources">;
+      sourceId: Id<'scrapeSources'>;
       sourceName: string;
       zeroPriceCount: number;
       totalCount: number;
@@ -88,8 +83,8 @@ export const findSourcesWithHighZeroPriceRatio = internalQuery({
 
     // Get active sources in batches
     const sources = await ctx.db
-      .query("scrapeSources")
-      .withIndex("by_is_active", (q) => q.eq("isActive", true))
+      .query('scrapeSources')
+      .withIndex('by_is_active', (q) => q.eq('isActive', true))
       .collect();
 
     const batch = sources.slice(cursorIndex, cursorIndex + batchSize);
@@ -99,8 +94,8 @@ export const findSourcesWithHighZeroPriceRatio = internalQuery({
       let totalCount = 0;
       let zeroPriceCount = 0;
       for await (const session of ctx.db
-        .query("sessions")
-        .withIndex("by_source", (q) => q.eq("sourceId", source._id))) {
+        .query('sessions')
+        .withIndex('by_source', (q) => q.eq('sourceId', source._id))) {
         totalCount++;
         if (session.price === 0) zeroPriceCount++;
       }
@@ -132,9 +127,11 @@ export const findSourcesWithHighZeroPriceRatio = internalQuery({
  */
 export const findBrokenUrlSources = internalQuery({
   args: {},
-  handler: async (ctx): Promise<
+  handler: async (
+    ctx,
+  ): Promise<
     Array<{
-      sourceId: Id<"scrapeSources">;
+      sourceId: Id<'scrapeSources'>;
       sourceName: string;
       brokenUrl: string;
       orgWebsite?: string;
@@ -142,13 +139,13 @@ export const findBrokenUrlSources = internalQuery({
   > => {
     // Find sources that were auto-disabled due to 404s
     const sources = await ctx.db
-      .query("scrapeSources")
-      .withIndex("by_is_active", (q) => q.eq("isActive", false))
-      .filter((q) => q.eq(q.field("closedBy"), "system"))
+      .query('scrapeSources')
+      .withIndex('by_is_active', (q) => q.eq('isActive', false))
+      .filter((q) => q.eq(q.field('closedBy'), 'system'))
       .collect();
 
     const results: Array<{
-      sourceId: Id<"scrapeSources">;
+      sourceId: Id<'scrapeSources'>;
       sourceName: string;
       brokenUrl: string;
       orgWebsite?: string;
@@ -156,7 +153,7 @@ export const findBrokenUrlSources = internalQuery({
 
     for (const source of sources) {
       // Check if it was closed due to 404
-      if (source.closureReason?.includes("404")) {
+      if (source.closureReason?.includes('404')) {
         let orgWebsite: string | undefined;
         if (source.organizationId) {
           const org = await ctx.db.get(source.organizationId);
@@ -182,27 +179,22 @@ export const findBrokenUrlSources = internalQuery({
  */
 export const createAlertIfNotExists = internalMutation({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
     alertType: v.union(
-      v.literal("scraper_disabled"),
-      v.literal("scraper_degraded"),
-      v.literal("high_change_volume"),
-      v.literal("scraper_needs_regeneration"),
-      v.literal("new_sources_pending")
+      v.literal('scraper_disabled'),
+      v.literal('scraper_degraded'),
+      v.literal('high_change_volume'),
+      v.literal('scraper_needs_regeneration'),
+      v.literal('new_sources_pending'),
     ),
-    severity: v.union(
-      v.literal("info"),
-      v.literal("warning"),
-      v.literal("error"),
-      v.literal("critical")
-    ),
+    severity: v.union(v.literal('info'), v.literal('warning'), v.literal('error'), v.literal('critical')),
     message: v.string(),
   },
   handler: async (ctx, args): Promise<boolean> => {
     // Check for existing unacknowledged alert of this type for this source
     const existingAlerts = await ctx.db
-      .query("scraperAlerts")
-      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .query('scraperAlerts')
+      .withIndex('by_source', (q) => q.eq('sourceId', args.sourceId))
       .collect();
 
     const hasDuplicate = existingAlerts.some(
@@ -210,14 +202,14 @@ export const createAlertIfNotExists = internalMutation({
         alert.alertType === args.alertType &&
         alert.acknowledgedAt === undefined &&
         // Consider alerts created in the last 24 hours as duplicates
-        alert.createdAt > Date.now() - 24 * 60 * 60 * 1000
+        alert.createdAt > Date.now() - 24 * 60 * 60 * 1000,
     );
 
     if (hasDuplicate) {
       return false;
     }
 
-    await ctx.db.insert("scraperAlerts", {
+    await ctx.db.insert('scraperAlerts', {
       sourceId: args.sourceId,
       alertType: args.alertType,
       message: args.message,

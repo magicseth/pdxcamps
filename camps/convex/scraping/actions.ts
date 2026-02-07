@@ -1,9 +1,9 @@
-"use node";
+'use node';
 
-import { action, internalAction } from "../_generated/server";
-import { api, internal } from "../_generated/api";
-import { v } from "convex/values";
-import { Id } from "../_generated/dataModel";
+import { action, internalAction } from '../_generated/server';
+import { api, internal } from '../_generated/api';
+import { v } from 'convex/values';
+import { Id } from '../_generated/dataModel';
 
 // TODO: Add Stagehand integration
 // import { Stagehand } from "convex-stagehand";
@@ -39,7 +39,7 @@ interface ScrapeResult {
   error?: string;
   pagesScraped: number;
   rawData: string;
-  jobId?: Id<"scrapeJobs">;
+  jobId?: Id<'scrapeJobs'>;
 }
 
 /**
@@ -48,7 +48,7 @@ interface ScrapeResult {
  */
 export const executeScrape = action({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
     triggeredBy: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<ScrapeResult> => {
@@ -58,11 +58,11 @@ export const executeScrape = action({
     });
 
     if (!source) {
-      throw new Error("Scrape source not found");
+      throw new Error('Scrape source not found');
     }
 
     if (!source.isActive) {
-      throw new Error("Scrape source is not active");
+      throw new Error('Scrape source is not active');
     }
 
     // 2. Create a job record
@@ -78,7 +78,7 @@ export const executeScrape = action({
 
     const config = source.scraperConfig;
     if (!config) {
-      throw new Error("Scrape source has no scraper configuration");
+      throw new Error('Scrape source has no scraper configuration');
     }
 
     let allSessions: ExtractedSession[] = [];
@@ -124,8 +124,7 @@ export const executeScrape = action({
         jobId,
       };
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
       // Mark job as failed
       await ctx.runMutation(api.scraping.jobs.failScrapeJob, {
@@ -174,7 +173,7 @@ async function scrapeUrl(
       type: string;
       selector?: string;
     };
-  }
+  },
 ): Promise<{
   sessions: ExtractedSession[];
   pagesScraped: number;
@@ -201,9 +200,7 @@ async function scrapeUrl(
 
     console.log(`[Scraper] Would use Stagehand to scrape: ${url}`);
     console.log(`[Scraper] Wait for selector: ${config.waitForSelector}`);
-    console.log(
-      `[Scraper] Container selector: ${config.sessionExtraction.containerSelector}`
-    );
+    console.log(`[Scraper] Container selector: ${config.sessionExtraction.containerSelector}`);
 
     // Simulated response for development
     return {
@@ -212,7 +209,7 @@ async function scrapeUrl(
       rawData: {
         url,
         scrapedAt: new Date().toISOString(),
-        method: "stagehand_stub",
+        method: 'stagehand_stub',
         html: null,
       },
     };
@@ -221,17 +218,13 @@ async function scrapeUrl(
     try {
       const response = await fetch(url, {
         headers: {
-          "User-Agent":
-            "Mozilla/5.0 (compatible; PDXCampsBot/1.0; +https://pdxcamps.com/bot)",
-          Accept:
-            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          'User-Agent': 'Mozilla/5.0 (compatible; PDXCampsBot/1.0; +https://pdxcamps.com/bot)',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         },
       });
 
       if (!response.ok) {
-        throw new Error(
-          `HTTP error: ${response.status} ${response.statusText}`
-        );
+        throw new Error(`HTTP error: ${response.status} ${response.statusText}`);
       }
 
       const html = await response.text();
@@ -245,7 +238,7 @@ async function scrapeUrl(
         rawData: {
           url,
           scrapedAt: new Date().toISOString(),
-          method: "fetch",
+          method: 'fetch',
           htmlLength: html.length,
           htmlPreview: html.substring(0, 10000),
         },
@@ -273,7 +266,7 @@ function extractSessionsFromHtml(
       status?: { selector: string; soldOutIndicators: string[] };
       registrationUrl?: { selector: string };
     };
-  }
+  },
 ): ExtractedSession[] {
   // TODO: Implement actual HTML parsing with cheerio
   // import * as cheerio from 'cheerio';
@@ -285,7 +278,7 @@ function extractSessionsFromHtml(
   //   ...
   // })).get();
 
-  console.log("[Scraper] Would extract sessions using selectors");
+  console.log('[Scraper] Would extract sessions using selectors');
   return [];
 }
 
@@ -295,7 +288,7 @@ function extractSessionsFromHtml(
  */
 export const processScrapedData = action({
   args: {
-    jobId: v.id("scrapeJobs"),
+    jobId: v.id('scrapeJobs'),
   },
   handler: async (ctx, args) => {
     // 1. Get the job and raw data
@@ -304,16 +297,16 @@ export const processScrapedData = action({
     });
 
     if (!job) {
-      throw new Error("Scrape job not found");
+      throw new Error('Scrape job not found');
     }
 
     if (!job.rawData || job.rawData.length === 0) {
-      throw new Error("No raw data found for job");
+      throw new Error('No raw data found for job');
     }
 
     const source = job.source;
     if (!source) {
-      throw new Error("Source not found for job");
+      throw new Error('Source not found for job');
     }
 
     let sessionsCreated = 0;
@@ -348,11 +341,7 @@ export const processScrapedData = action({
               }
 
               // 4. Check if session already exists
-              const existingSession = await findExistingSession(
-                ctx,
-                source._id,
-                normalizedSession
-              );
+              const existingSession = await findExistingSession(ctx, source._id, normalizedSession);
 
               if (existingSession) {
                 // 5. Detect and record changes
@@ -376,7 +365,7 @@ export const processScrapedData = action({
                 await ctx.runMutation(api.scraping.data.recordChange, {
                   jobId: args.jobId,
                   sessionId: undefined,
-                  changeType: "session_added",
+                  changeType: 'session_added',
                   previousValue: undefined,
                   newValue: JSON.stringify({
                     name: normalizedSession.name,
@@ -387,28 +376,20 @@ export const processScrapedData = action({
               }
 
               // Mark raw data as processed
-              await ctx.runMutation(
-                internal.scraping.internal.markRawDataProcessed,
-                {
-                  rawDataId: rawDataRecord._id,
-                  resultingSessionId: existingSession?._id,
-                  processingError: undefined,
-                }
-              );
+              await ctx.runMutation(internal.scraping.internal.markRawDataProcessed, {
+                rawDataId: rawDataRecord._id,
+                resultingSessionId: existingSession?._id,
+                processingError: undefined,
+              });
             } catch (sessionError) {
               const errorMsg =
-                sessionError instanceof Error
-                  ? sessionError.message
-                  : "Unknown error processing session";
+                sessionError instanceof Error ? sessionError.message : 'Unknown error processing session';
               errors.push(errorMsg);
             }
           }
         }
       } catch (parseError) {
-        const errorMsg =
-          parseError instanceof Error
-            ? parseError.message
-            : "Failed to parse raw data";
+        const errorMsg = parseError instanceof Error ? parseError.message : 'Failed to parse raw data';
         errors.push(errorMsg);
 
         await ctx.runMutation(internal.scraping.internal.markRawDataProcessed, {
@@ -431,9 +412,9 @@ export const processScrapedData = action({
     if (sessionsCreated + sessionsUpdated > 20) {
       await ctx.runMutation(api.scraping.mutations.createAlert, {
         sourceId: source._id,
-        alertType: "high_change_volume",
+        alertType: 'high_change_volume',
         message: `High change volume: ${sessionsCreated} created, ${sessionsUpdated} updated from "${source.name}"`,
-        severity: "info",
+        severity: 'info',
       });
     }
 
@@ -452,7 +433,7 @@ export const processScrapedData = action({
  */
 function normalizeSessionData(
   _sessionData: ExtractedSession,
-  _source: { _id: Id<"scrapeSources">; organizationId?: Id<"organizations"> }
+  _source: { _id: Id<'scrapeSources'>; organizationId?: Id<'organizations'> },
 ): {
   name: string;
   startDate: string;
@@ -463,7 +444,7 @@ function normalizeSessionData(
   externalRegistrationUrl?: string;
 } | null {
   // TODO: Implement actual normalization logic
-  console.log("[Processor] Would normalize session data");
+  console.log('[Processor] Would normalize session data');
   return null;
 }
 
@@ -472,15 +453,15 @@ function normalizeSessionData(
  */
 async function findExistingSession(
   _ctx: unknown,
-  _sourceId: Id<"scrapeSources">,
+  _sourceId: Id<'scrapeSources'>,
   _normalizedSession: {
     name: string;
     startDate: string;
     endDate: string;
-  }
-): Promise<{ _id: Id<"sessions">; price: number; status: string } | null> {
+  },
+): Promise<{ _id: Id<'sessions'>; price: number; status: string } | null> {
   // TODO: Implement session matching logic
-  console.log("[Processor] Would find existing session");
+  console.log('[Processor] Would find existing session');
   return null;
 }
 
@@ -489,21 +470,21 @@ async function findExistingSession(
  */
 function detectChanges(
   existing: { price: number; status: string },
-  normalized: { price?: number; status?: string }
+  normalized: { price?: number; status?: string },
 ): Array<{
-  type: "status_changed" | "price_changed" | "dates_changed";
+  type: 'status_changed' | 'price_changed' | 'dates_changed';
   previousValue: string;
   newValue: string;
 }> {
   const changes: Array<{
-    type: "status_changed" | "price_changed" | "dates_changed";
+    type: 'status_changed' | 'price_changed' | 'dates_changed';
     previousValue: string;
     newValue: string;
   }> = [];
 
   if (normalized.price !== undefined && existing.price !== normalized.price) {
     changes.push({
-      type: "price_changed",
+      type: 'price_changed',
       previousValue: existing.price.toString(),
       newValue: normalized.price.toString(),
     });
@@ -511,7 +492,7 @@ function detectChanges(
 
   if (normalized.status !== undefined && existing.status !== normalized.status) {
     changes.push({
-      type: "status_changed",
+      type: 'status_changed',
       previousValue: existing.status,
       newValue: normalized.status,
     });
@@ -525,7 +506,7 @@ function detectChanges(
  */
 export const internalExecuteScrape = internalAction({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
     triggeredBy: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<ScrapeResult> => {
@@ -537,9 +518,9 @@ export const internalExecuteScrape = internalAction({
       return {
         success: false,
         sessions: [],
-        error: "Scrape source not found",
+        error: 'Scrape source not found',
         pagesScraped: 0,
-        rawData: "{}",
+        rawData: '{}',
       };
     }
 
@@ -547,9 +528,9 @@ export const internalExecuteScrape = internalAction({
       return {
         success: false,
         sessions: [],
-        error: "Scrape source is not active",
+        error: 'Scrape source is not active',
         pagesScraped: 0,
-        rawData: "{}",
+        rawData: '{}',
       };
     }
 
@@ -565,9 +546,9 @@ export const internalExecuteScrape = internalAction({
       return {
         success: false,
         sessions: [],
-        error: "Scrape source has no scraper configuration",
+        error: 'Scrape source has no scraper configuration',
         pagesScraped: 0,
-        rawData: "{}",
+        rawData: '{}',
       };
     }
 
@@ -607,7 +588,7 @@ export const internalExecuteScrape = internalAction({
         jobId,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
       await ctx.runMutation(api.scraping.jobs.failScrapeJob, { jobId, errorMessage });
       await ctx.runMutation(internal.scraping.internal.scheduleNextScrape, {
@@ -638,39 +619,32 @@ export const runScheduledScrapes = internalAction({
   handler: async (ctx) => {
     // 10E: Auto-trigger scraper regeneration for sources that need it
     try {
-      const sourcesNeedingRegen = await ctx.runQuery(
-        internal.scraping.internal.getSourcesNeedingRegeneration,
-        {}
-      );
+      const sourcesNeedingRegen = await ctx.runQuery(internal.scraping.internal.getSourcesNeedingRegeneration, {});
 
       for (const source of sourcesNeedingRegen) {
         try {
-          await ctx.runMutation(
-            internal.scraping.internal.createRegenerationRequest,
-            {
-              sourceId: source._id,
-              sourceName: source.name,
-              sourceUrl: source.url,
-              cityId: source.cityId,
-            }
-          );
+          await ctx.runMutation(internal.scraping.internal.createRegenerationRequest, {
+            sourceId: source._id,
+            sourceName: source.name,
+            sourceUrl: source.url,
+            cityId: source.cityId,
+          });
           console.log(`[Scheduler] Created regeneration request for "${source.name}"`);
         } catch (error) {
           // Ignore errors (e.g., if request already exists)
-          console.log(`[Scheduler] Skipped regeneration for "${source.name}": ${error instanceof Error ? error.message : String(error)}`);
+          console.log(
+            `[Scheduler] Skipped regeneration for "${source.name}": ${error instanceof Error ? error.message : String(error)}`,
+          );
         }
       }
     } catch (error) {
-      console.error("[Scheduler] Error checking regeneration needs:", error);
+      console.error('[Scheduler] Error checking regeneration needs:', error);
     }
 
-    const dueForScrape = await ctx.runQuery(
-      api.scraping.queries.getSourcesDueForScrape,
-      {}
-    );
+    const dueForScrape = await ctx.runQuery(api.scraping.queries.getSourcesDueForScrape, {});
 
     const results: Array<{
-      sourceId: Id<"scrapeSources">;
+      sourceId: Id<'scrapeSources'>;
       sourceName: string;
       success: boolean;
       error?: string;
@@ -678,13 +652,10 @@ export const runScheduledScrapes = internalAction({
 
     for (const source of dueForScrape) {
       try {
-        const scrapeResult = await ctx.runAction(
-          internal.scraping.actions.internalExecuteScrape,
-          {
-            sourceId: source._id,
-            triggeredBy: "scheduler",
-          }
-        );
+        const scrapeResult = await ctx.runAction(internal.scraping.actions.internalExecuteScrape, {
+          sourceId: source._id,
+          triggeredBy: 'scheduler',
+        });
 
         results.push({
           sourceId: source._id,
@@ -697,7 +668,7 @@ export const runScheduledScrapes = internalAction({
           sourceId: source._id,
           sourceName: source.name,
           success: false,
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     }

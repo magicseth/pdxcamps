@@ -1,34 +1,25 @@
-import { mutation } from "../_generated/server";
-import { v } from "convex/values";
-import { validateScraperCode, getBuiltInScraperForUrl } from "./scraperCodeValidation";
+import { mutation } from '../_generated/server';
+import { v } from 'convex/values';
+import { validateScraperCode, getBuiltInScraperForUrl } from './scraperCodeValidation';
 
 // Validators for scraper config matching schema.ts
 const scraperConfigValidator = v.object({
   version: v.number(),
   generatedAt: v.number(),
-  generatedBy: v.union(v.literal("claude"), v.literal("manual")),
+  generatedBy: v.union(v.literal('claude'), v.literal('manual')),
 
   entryPoints: v.array(
     v.object({
       url: v.string(),
-      type: v.union(
-        v.literal("session_list"),
-        v.literal("calendar"),
-        v.literal("program_page")
-      ),
-    })
+      type: v.union(v.literal('session_list'), v.literal('calendar'), v.literal('program_page')),
+    }),
   ),
 
   pagination: v.optional(
     v.object({
-      type: v.union(
-        v.literal("next_button"),
-        v.literal("load_more"),
-        v.literal("page_numbers"),
-        v.literal("none")
-      ),
+      type: v.union(v.literal('next_button'), v.literal('load_more'), v.literal('page_numbers'), v.literal('none')),
       selector: v.optional(v.string()),
-    })
+    }),
   ),
 
   sessionExtraction: v.object({
@@ -37,14 +28,12 @@ const scraperConfigValidator = v.object({
       name: v.object({ selector: v.string() }),
       dates: v.object({ selector: v.string(), format: v.string() }),
       price: v.optional(v.object({ selector: v.string() })),
-      ageRange: v.optional(
-        v.object({ selector: v.string(), pattern: v.string() })
-      ),
+      ageRange: v.optional(v.object({ selector: v.string(), pattern: v.string() })),
       status: v.optional(
         v.object({
           selector: v.string(),
           soldOutIndicators: v.array(v.string()),
-        })
+        }),
       ),
       registrationUrl: v.optional(v.object({ selector: v.string() })),
     }),
@@ -59,24 +48,22 @@ const scraperConfigValidator = v.object({
  */
 export const updateScraperConfig = mutation({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
     scraperConfig: scraperConfigValidator,
     changeReason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const source = await ctx.db.get(args.sourceId);
     if (!source) {
-      throw new Error("Scrape source not found");
+      throw new Error('Scrape source not found');
     }
 
     const now = Date.now();
 
     // Deactivate previous version
     const previousVersions = await ctx.db
-      .query("scraperVersions")
-      .withIndex("by_source_and_active", (q) =>
-        q.eq("scrapeSourceId", args.sourceId).eq("isActive", true)
-      )
+      .query('scraperVersions')
+      .withIndex('by_source_and_active', (q) => q.eq('scrapeSourceId', args.sourceId).eq('isActive', true))
       .collect();
 
     for (const version of previousVersions) {
@@ -84,13 +71,13 @@ export const updateScraperConfig = mutation({
     }
 
     // Create new version history entry
-    await ctx.db.insert("scraperVersions", {
+    await ctx.db.insert('scraperVersions', {
       scrapeSourceId: args.sourceId,
       version: args.scraperConfig.version,
       config: JSON.stringify(args.scraperConfig),
       createdAt: now,
       createdBy: args.scraperConfig.generatedBy,
-      changeReason: args.changeReason ?? "Configuration update",
+      changeReason: args.changeReason ?? 'Configuration update',
       isActive: true,
     });
 
@@ -115,14 +102,14 @@ export const updateScraperConfig = mutation({
  */
 export const updateScraperCode = mutation({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
     code: v.string(),
     skipValidation: v.optional(v.boolean()), // Escape hatch for manual fixes
   },
   handler: async (ctx, args) => {
     const source = await ctx.db.get(args.sourceId);
     if (!source) {
-      throw new Error("Scrape source not found");
+      throw new Error('Scrape source not found');
     }
 
     // Validate syntax unless explicitly skipped
@@ -143,13 +130,13 @@ export const updateScraperCode = mutation({
  */
 export const updateScraperModule = mutation({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
     module: v.string(),
   },
   handler: async (ctx, args) => {
     const source = await ctx.db.get(args.sourceId);
     if (!source) {
-      throw new Error("Scrape source not found");
+      throw new Error('Scrape source not found');
     }
 
     await ctx.db.patch(args.sourceId, {
@@ -168,23 +155,23 @@ export const updateScraperModule = mutation({
  */
 export const autoAssignBuiltInScraper = mutation({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
   },
   handler: async (ctx, args) => {
     const source = await ctx.db.get(args.sourceId);
     if (!source) {
-      throw new Error("Source not found");
+      throw new Error('Source not found');
     }
 
     // Already has a scraper module assigned
     if (source.scraperModule) {
-      return { assigned: false, reason: "Already has scraperModule" };
+      return { assigned: false, reason: 'Already has scraperModule' };
     }
 
     // Check if URL matches a built-in scraper
     const builtInScraper = getBuiltInScraperForUrl(source.url);
     if (!builtInScraper) {
-      return { assigned: false, reason: "No matching built-in scraper for domain" };
+      return { assigned: false, reason: 'No matching built-in scraper for domain' };
     }
 
     // Assign the built-in scraper
@@ -207,8 +194,8 @@ export const batchAutoAssignBuiltInScrapers = mutation({
   handler: async (ctx) => {
     // Get all active sources without a scraper module
     const sources = await ctx.db
-      .query("scrapeSources")
-      .withIndex("by_is_active", (q) => q.eq("isActive", true))
+      .query('scrapeSources')
+      .withIndex('by_is_active', (q) => q.eq('isActive', true))
       .collect();
 
     let assignedCount = 0;

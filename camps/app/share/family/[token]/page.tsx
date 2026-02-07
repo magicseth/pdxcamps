@@ -3,7 +3,7 @@
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import Link from 'next/link';
-import { use } from 'react';
+import { use, useEffect } from 'react';
 import { useAuth } from '@workos-inc/authkit-nextjs/components';
 import { useMarket } from '@/hooks/useMarket';
 
@@ -13,6 +13,19 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
   const isLoggedIn = !!user;
   const plan = useQuery(api.share.queries.getFamilySharedPlan, { shareToken: token });
   const market = useMarket();
+
+  // Set referral cookie when viewing shared plan (for attribution)
+  useEffect(() => {
+    if (plan?.referralCode) {
+      fetch('/api/referral', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: plan.referralCode }),
+      }).catch(() => {
+        // Silently fail - referral attribution is not critical
+      });
+    }
+  }, [plan?.referralCode]);
 
   if (plan === undefined) {
     return (
@@ -31,9 +44,7 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
         <div className="text-center max-w-md">
           <div className="text-6xl mb-4">🔒</div>
           <h1 className="text-2xl font-bold text-slate-900 mb-2">Plan Not Found</h1>
-          <p className="text-slate-600 mb-6">
-            This plan link may have expired or been removed.
-          </p>
+          <p className="text-slate-600 mb-6">This plan link may have expired or been removed.</p>
           <Link
             href="/"
             className="inline-block px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700"
@@ -45,18 +56,21 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
     );
   }
 
-  const childNames = plan.children.map(c => c.childName).join(' & ');
+  const childNames = plan.children.map((c) => c.childName).join(' & ');
 
   // Collect all unique sessions for the "sign up your kids" section
-  const allCamps = new Map<string, {
-    campName: string;
-    organizationName: string;
-    organizationLogoUrl: string | null;
-    campSlug: string;
-    citySlug: string;
-    startDate: string;
-    endDate: string;
-  }>();
+  const allCamps = new Map<
+    string,
+    {
+      campName: string;
+      organizationName: string;
+      organizationLogoUrl: string | null;
+      campSlug: string;
+      citySlug: string;
+      startDate: string;
+      endDate: string;
+    }
+  >();
   for (const child of plan.children) {
     for (const week of child.weeks) {
       for (const camp of week.camps) {
@@ -117,9 +131,7 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
           <h1 className="text-2xl font-bold mb-2">
             {childNames}'s Summer {plan.year}
           </h1>
-          <p className="text-white/80 mb-4">
-            Shared by the {plan.familyName} family
-          </p>
+          <p className="text-white/80 mb-4">Shared by the {plan.familyName} family</p>
 
           {/* Family Stats */}
           <div className="grid grid-cols-3 gap-4">
@@ -144,14 +156,11 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
             <div className="flex items-start gap-4">
               <div className="text-3xl">👯</div>
               <div className="flex-1">
-                <h2 className="text-lg font-bold text-slate-900 mb-1">
-                  Want your kids at the same camps?
-                </h2>
+                <h2 className="text-lg font-bold text-slate-900 mb-1">Want your kids at the same camps?</h2>
                 <p className="text-slate-600 text-sm mb-4">
                   {isLoggedIn
                     ? `Browse the camps below and add them to your plan to coordinate with the ${plan.familyName}s!`
-                    : `Sign up free to add these camps to your plan and coordinate with the ${plan.familyName}s!`
-                  }
+                    : `Sign up free to add these camps to your plan and coordinate with the ${plan.familyName}s!`}
                 </p>
                 {!isLoggedIn && (
                   <Link
@@ -185,13 +194,15 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
         {/* Each Child's Schedule */}
         {plan.children.map((child) => {
           // Group consecutive unscheduled weeks
-          type WeekGroup = {
-            type: 'scheduled';
-            week: typeof child.weeks[0];
-          } | {
-            type: 'unscheduled';
-            weeks: typeof child.weeks;
-          };
+          type WeekGroup =
+            | {
+                type: 'scheduled';
+                week: (typeof child.weeks)[0];
+              }
+            | {
+                type: 'unscheduled';
+                weeks: typeof child.weeks;
+              };
 
           const groupedWeeks: WeekGroup[] = [];
           let currentUnscheduledGroup: typeof child.weeks = [];
@@ -215,148 +226,143 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
           }
 
           return (
-          <div key={child.childId} className="mb-8">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-bold text-slate-900">
-                {child.childName}'s Schedule
-              </h2>
-              <div className="text-sm text-slate-500">
-                {child.stats.coveredWeeks} of {child.stats.totalWeeks} weeks covered
+            <div key={child.childId} className="mb-8">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-bold text-slate-900">{child.childName}'s Schedule</h2>
+                <div className="text-sm text-slate-500">
+                  {child.stats.coveredWeeks} of {child.stats.totalWeeks} weeks covered
+                </div>
               </div>
-            </div>
 
-            {/* Week-by-week with camp details */}
-            <div className="space-y-3">
-              {groupedWeeks.map((group, groupIndex) => {
-                if (group.type === 'unscheduled') {
-                  const firstWeek = group.weeks[0];
-                  const lastWeek = group.weeks[group.weeks.length - 1];
-                  const weekLabel = group.weeks.length === 1
-                    ? firstWeek.label
-                    : `${firstWeek.label} - ${lastWeek.label}`;
-                  const monthLabel = firstWeek.monthName === lastWeek.monthName
-                    ? firstWeek.monthName
-                    : `${firstWeek.monthName} - ${lastWeek.monthName}`;
+              {/* Week-by-week with camp details */}
+              <div className="space-y-3">
+                {groupedWeeks.map((group, groupIndex) => {
+                  if (group.type === 'unscheduled') {
+                    const firstWeek = group.weeks[0];
+                    const lastWeek = group.weeks[group.weeks.length - 1];
+                    const weekLabel =
+                      group.weeks.length === 1 ? firstWeek.label : `${firstWeek.label} - ${lastWeek.label}`;
+                    const monthLabel =
+                      firstWeek.monthName === lastWeek.monthName
+                        ? firstWeek.monthName
+                        : `${firstWeek.monthName} - ${lastWeek.monthName}`;
 
+                    return (
+                      <div
+                        key={`unscheduled-${groupIndex}`}
+                        className="bg-white rounded-xl border border-slate-200 p-4"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="font-medium text-slate-900">{weekLabel}</span>
+                            <span className="text-sm text-slate-500 ml-2">{monthLabel}</span>
+                          </div>
+                          <span className="text-slate-400 text-sm">
+                            {group.weeks.length === 1 ? 'Open' : `${group.weeks.length} open weeks`}
+                          </span>
+                        </div>
+                        <div className="text-slate-400 text-sm italic mt-2">No camps planned yet</div>
+                      </div>
+                    );
+                  }
+
+                  const week = group.week;
                   return (
                     <div
-                      key={`unscheduled-${groupIndex}`}
-                      className="bg-white rounded-xl border border-slate-200 p-4"
+                      key={week.weekNumber}
+                      className={`bg-white rounded-xl border p-4 ${
+                        week.status === 'full'
+                          ? 'border-green-200 bg-green-50/30'
+                          : week.status === 'partial'
+                            ? 'border-yellow-200 bg-yellow-50/30'
+                            : 'border-slate-200'
+                      }`}
                     >
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between mb-2">
                         <div>
-                          <span className="font-medium text-slate-900">{weekLabel}</span>
-                          <span className="text-sm text-slate-500 ml-2">{monthLabel}</span>
+                          <span className="font-medium text-slate-900">{week.label}</span>
+                          <span className="text-sm text-slate-500 ml-2">{week.monthName}</span>
                         </div>
-                        <span className="text-slate-400 text-sm">
-                          {group.weeks.length === 1 ? 'Open' : `${group.weeks.length} open weeks`}
-                        </span>
+                        {week.status === 'full' ? (
+                          <span className="text-green-600 font-medium text-sm">✓ Covered</span>
+                        ) : week.status === 'partial' ? (
+                          <span className="text-yellow-600 font-medium text-sm">{week.coveredDays}/5 days</span>
+                        ) : (
+                          <span className="text-slate-400 text-sm">Open</span>
+                        )}
                       </div>
-                      <div className="text-slate-400 text-sm italic mt-2">
-                        No camps planned yet
-                      </div>
+
+                      {/* Camps */}
+                      {week.camps.length > 0 ? (
+                        <div className="space-y-2">
+                          {week.camps.map((camp, i) => {
+                            const formatDate = (dateStr: string) => {
+                              const d = new Date(dateStr + 'T12:00:00');
+                              return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                            };
+                            return (
+                              <div key={i} className="relative">
+                                <div
+                                  className={`flex items-center justify-between gap-3 bg-white rounded-lg p-2 border border-slate-100 ${!isLoggedIn ? 'blur-sm select-none' : ''}`}
+                                >
+                                  <div className="flex items-center gap-3">
+                                    {camp.organizationLogoUrl ? (
+                                      <img
+                                        src={camp.organizationLogoUrl}
+                                        alt={camp.organizationName}
+                                        className="w-10 h-10 rounded-lg object-cover"
+                                      />
+                                    ) : (
+                                      <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">
+                                        {camp.organizationName[0]}
+                                      </div>
+                                    )}
+                                    <div>
+                                      <div className="font-medium text-slate-900 text-sm">{camp.campName}</div>
+                                      <div className="text-xs text-slate-500">
+                                        {camp.organizationName} · {formatDate(camp.startDate)} -{' '}
+                                        {formatDate(camp.endDate)}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  {isLoggedIn && (
+                                    <Link
+                                      href={`/discover/${camp.citySlug}?camp=${camp.campSlug}&from=${camp.startDate}&to=${camp.endDate}`}
+                                      className="flex-shrink-0 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                                    >
+                                      Join Session
+                                    </Link>
+                                  )}
+                                </div>
+                                {!isLoggedIn && (
+                                  <Link
+                                    href="/sign-in"
+                                    className="absolute inset-0 flex items-center justify-center text-sm font-medium text-blue-600 hover:text-blue-700"
+                                  >
+                                    Sign in to see camp
+                                  </Link>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : week.hasEvent ? (
+                        <div className="flex items-center gap-3 text-slate-500 text-sm">
+                          <span>📅</span> Family event
+                        </div>
+                      ) : null}
                     </div>
                   );
-                }
-
-                const week = group.week;
-                return (
-                <div
-                  key={week.weekNumber}
-                  className={`bg-white rounded-xl border p-4 ${
-                    week.status === 'full'
-                      ? 'border-green-200 bg-green-50/30'
-                      : week.status === 'partial'
-                      ? 'border-yellow-200 bg-yellow-50/30'
-                      : 'border-slate-200'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <span className="font-medium text-slate-900">{week.label}</span>
-                      <span className="text-sm text-slate-500 ml-2">{week.monthName}</span>
-                    </div>
-                    {week.status === 'full' ? (
-                      <span className="text-green-600 font-medium text-sm">✓ Covered</span>
-                    ) : week.status === 'partial' ? (
-                      <span className="text-yellow-600 font-medium text-sm">
-                        {week.coveredDays}/5 days
-                      </span>
-                    ) : (
-                      <span className="text-slate-400 text-sm">Open</span>
-                    )}
-                  </div>
-
-                  {/* Camps */}
-                  {week.camps.length > 0 ? (
-                    <div className="space-y-2">
-                      {week.camps.map((camp, i) => {
-                        const formatDate = (dateStr: string) => {
-                          const d = new Date(dateStr + 'T12:00:00');
-                          return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                        };
-                        return (
-                          <div key={i} className="relative">
-                            <div className={`flex items-center justify-between gap-3 bg-white rounded-lg p-2 border border-slate-100 ${!isLoggedIn ? 'blur-sm select-none' : ''}`}>
-                              <div className="flex items-center gap-3">
-                                {camp.organizationLogoUrl ? (
-                                  <img
-                                    src={camp.organizationLogoUrl}
-                                    alt={camp.organizationName}
-                                    className="w-10 h-10 rounded-lg object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">
-                                    {camp.organizationName[0]}
-                                  </div>
-                                )}
-                                <div>
-                                  <div className="font-medium text-slate-900 text-sm">{camp.campName}</div>
-                                  <div className="text-xs text-slate-500">
-                                    {camp.organizationName} · {formatDate(camp.startDate)} - {formatDate(camp.endDate)}
-                                  </div>
-                                </div>
-                              </div>
-                              {isLoggedIn && (
-                                <Link
-                                  href={`/discover/${camp.citySlug}?camp=${camp.campSlug}&from=${camp.startDate}&to=${camp.endDate}`}
-                                  className="flex-shrink-0 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors"
-                                >
-                                  Join Session
-                                </Link>
-                              )}
-                            </div>
-                            {!isLoggedIn && (
-                              <Link
-                                href="/sign-in"
-                                className="absolute inset-0 flex items-center justify-center text-sm font-medium text-blue-600 hover:text-blue-700"
-                              >
-                                Sign in to see camp
-                              </Link>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : week.hasEvent ? (
-                    <div className="flex items-center gap-3 text-slate-500 text-sm">
-                      <span>📅</span> Family event
-                    </div>
-                  ) : null}
-                </div>
-                );
-              })}
+                })}
+              </div>
             </div>
-          </div>
           );
         })}
 
         {/* All Sessions Summary */}
         {allCamps.size > 0 && isLoggedIn && (
           <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-6">
-            <h3 className="font-bold text-slate-900 mb-4">
-              All Sessions ({allCamps.size})
-            </h3>
+            <h3 className="font-bold text-slate-900 mb-4">All Sessions ({allCamps.size})</h3>
             <div className="space-y-3">
               {Array.from(allCamps.values()).map((camp, i) => (
                 <div key={i} className="flex items-center justify-between gap-3 p-3 bg-slate-50 rounded-lg">
@@ -394,11 +400,10 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
         {/* Big CTA Section */}
         {isLoggedIn ? (
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-8 text-center">
-            <h2 className="text-2xl font-bold text-slate-900 mb-2">
-              Ready to coordinate?
-            </h2>
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">Ready to coordinate?</h2>
             <p className="text-slate-600 mb-6 max-w-md mx-auto">
-              Click on any camp above to view details and add it to your plan. Coordinate your summer with the {plan.familyName}s!
+              Click on any camp above to view details and add it to your plan. Coordinate your summer with the{' '}
+              {plan.familyName}s!
             </p>
             <Link
               href="/"
@@ -409,11 +414,10 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
           </div>
         ) : (
           <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-8 text-center">
-            <h2 className="text-2xl font-bold text-slate-900 mb-2">
-              Plan your summer together!
-            </h2>
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">Plan your summer together!</h2>
             <p className="text-slate-600 mb-6 max-w-md mx-auto">
-              Create your free account to add these camps to your plan, track your coverage, and coordinate with the {plan.familyName}s.
+              Create your free account to add these camps to your plan, track your coverage, and coordinate with the{' '}
+              {plan.familyName}s.
             </p>
             <Link
               href="/sign-up"
@@ -421,9 +425,7 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
             >
               Sign Up Free
             </Link>
-            <p className="text-sm text-slate-500 mt-3">
-              No credit card required
-            </p>
+            <p className="text-sm text-slate-500 mt-3">No credit card required</p>
           </div>
         )}
       </main>
@@ -431,10 +433,16 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
       {/* Footer */}
       <footer className="bg-white border-t border-slate-200 py-8 mt-12">
         <div className="max-w-3xl mx-auto px-4 text-center text-slate-500 text-sm">
-          <p className="mb-2">© {new Date().getFullYear()} {market.tagline}. Made in {market.madeIn}.</p>
+          <p className="mb-2">
+            © {new Date().getFullYear()} {market.tagline}. Made in {market.madeIn}.
+          </p>
           <div className="flex justify-center gap-4">
-            <Link href="/terms" className="hover:text-slate-700">Terms</Link>
-            <Link href="/privacy" className="hover:text-slate-700">Privacy</Link>
+            <Link href="/terms" className="hover:text-slate-700">
+              Terms
+            </Link>
+            <Link href="/privacy" className="hover:text-slate-700">
+              Privacy
+            </Link>
           </div>
         </div>
       </footer>

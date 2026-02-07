@@ -13,7 +13,10 @@ export default function DataQualityPage() {
   return (
     <>
       <header className="sticky top-0 z-10 bg-background p-4 border-b-2 border-slate-200 dark:border-slate-800 flex flex-row justify-between items-center">
-        <Link href="/admin" className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+        <Link
+          href="/admin"
+          className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
           Admin Dashboard
         </Link>
         <h1 className="text-lg font-semibold">Data Quality</h1>
@@ -26,13 +29,8 @@ export default function DataQualityPage() {
         </Authenticated>
         <Unauthenticated>
           <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-            <p className="text-slate-600 dark:text-slate-400">
-              Please sign in to access the admin dashboard.
-            </p>
-            <a
-              href="/sign-in"
-              className="bg-foreground text-background px-6 py-2 rounded-md"
-            >
+            <p className="text-slate-600 dark:text-slate-400">Please sign in to access the admin dashboard.</p>
+            <a href="/sign-in" className="bg-foreground text-background px-6 py-2 rounded-md">
               Sign in
             </a>
           </div>
@@ -92,9 +90,7 @@ function DataQualityContent() {
     return (
       <div className="max-w-2xl mx-auto text-center py-16">
         <h2 className="text-xl font-semibold mb-2 text-red-600">Access Denied</h2>
-        <p className="text-slate-600 dark:text-slate-400">
-          You don't have permission to access the admin dashboard.
-        </p>
+        <p className="text-slate-600 dark:text-slate-400">You don't have permission to access the admin dashboard.</p>
         <Link href="/" className="inline-block mt-4 text-primary hover:underline">
           Return to Home
         </Link>
@@ -112,12 +108,8 @@ function DataQualityContent() {
     <div className="max-w-6xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-          Data Quality
-        </h2>
-        <p className="text-slate-500 mt-1">
-          Review pending sessions, fix locations, and monitor coverage
-        </p>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Data Quality</h2>
+        <p className="text-slate-500 mt-1">Review pending sessions, fix locations, and monitor coverage</p>
       </div>
 
       {/* Tabs */}
@@ -136,7 +128,9 @@ function DataQualityContent() {
 // ============================================
 
 function PendingSessionsTab() {
-  const [statusFilter, setStatusFilter] = useState<'pending_review' | 'manually_fixed' | 'imported' | 'discarded' | undefined>('pending_review');
+  const [statusFilter, setStatusFilter] = useState<
+    'pending_review' | 'manually_fixed' | 'imported' | 'discarded' | undefined
+  >('pending_review');
 
   const pendingSessions = useQuery(api.scraping.queries.getPendingSessions, {
     status: statusFilter,
@@ -148,16 +142,19 @@ function PendingSessionsTab() {
   }
 
   // Group by source
-  const bySource = pendingSessions.reduce((acc, session) => {
-    const key = session.sourceName;
-    if (!acc[key]) {
-      acc[key] = [];
-    }
-    acc[key].push(session);
-    return acc;
-  }, {} as Record<string, typeof pendingSessions>);
+  const bySource = pendingSessions.reduce(
+    (acc, session) => {
+      const key = session.sourceName;
+      if (!acc[key]) {
+        acc[key] = [];
+      }
+      acc[key].push(session);
+      return acc;
+    },
+    {} as Record<string, typeof pendingSessions>,
+  );
 
-  const handleDiscard = async (id: Id<"pendingSessions">) => {
+  const handleDiscard = async (id: Id<'pendingSessions'>) => {
     await updateStatus({ pendingSessionId: id, status: 'discarded' });
   };
 
@@ -168,7 +165,9 @@ function PendingSessionsTab() {
         <label className="text-sm text-slate-500">Filter:</label>
         <select
           value={statusFilter ?? 'all'}
-          onChange={(e) => setStatusFilter(e.target.value === 'all' ? undefined : e.target.value as typeof statusFilter)}
+          onChange={(e) =>
+            setStatusFilter(e.target.value === 'all' ? undefined : (e.target.value as typeof statusFilter))
+          }
           className="px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-sm"
         >
           <option value="pending_review">Pending Review</option>
@@ -185,9 +184,11 @@ function PendingSessionsTab() {
         <StatCard label="Sources" value={Object.keys(bySource).length} />
         <StatCard
           label="Avg Completeness"
-          value={pendingSessions.length > 0
-            ? Math.round(pendingSessions.reduce((sum, s) => sum + s.completenessScore, 0) / pendingSessions.length)
-            : 0}
+          value={
+            pendingSessions.length > 0
+              ? Math.round(pendingSessions.reduce((sum, s) => sum + s.completenessScore, 0) / pendingSessions.length)
+              : 0
+          }
           subtext="%"
         />
       </div>
@@ -199,22 +200,19 @@ function PendingSessionsTab() {
         </div>
       ) : (
         Object.entries(bySource).map(([sourceName, sessions]) => (
-          <div key={sourceName} className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div
+            key={sourceName}
+            className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden"
+          >
             <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-slate-900 dark:text-white">
-                  {sourceName}
-                </h3>
+                <h3 className="font-semibold text-slate-900 dark:text-white">{sourceName}</h3>
                 <span className="text-sm text-slate-500">{sessions.length} sessions</span>
               </div>
             </div>
             <div className="divide-y divide-slate-200 dark:divide-slate-700">
               {sessions.map((session) => (
-                <PendingSessionRow
-                  key={session._id}
-                  session={session}
-                  onDiscard={() => handleDiscard(session._id)}
-                />
+                <PendingSessionRow key={session._id} session={session} onDiscard={() => handleDiscard(session._id)} />
               ))}
             </div>
           </div>
@@ -225,7 +223,7 @@ function PendingSessionsTab() {
 }
 
 interface PendingSession {
-  _id: Id<"pendingSessions">;
+  _id: Id<'pendingSessions'>;
   sourceName: string;
   sourceUrl?: string;
   partialData: {
@@ -259,9 +257,7 @@ function PendingSessionRow({ session, onDiscard }: { session: PendingSession; on
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <span className="font-medium text-slate-900 dark:text-white">
-              {partialData.name ?? 'Unknown Session'}
-            </span>
+            <span className="font-medium text-slate-900 dark:text-white">{partialData.name ?? 'Unknown Session'}</span>
             <CompleteBadge score={completenessScore} />
             <StatusBadge status={session.status} />
           </div>
@@ -291,11 +287,9 @@ function PendingSessionRow({ session, onDiscard }: { session: PendingSession; on
 
           {validationErrors.length > 0 && (
             <div className="mt-2">
-              <button
-                onClick={() => setExpanded(!expanded)}
-                className="text-xs text-red-600 hover:underline"
-              >
-                {validationErrors.length} validation error{validationErrors.length > 1 ? 's' : ''} {expanded ? '(hide)' : '(show)'}
+              <button onClick={() => setExpanded(!expanded)} className="text-xs text-red-600 hover:underline">
+                {validationErrors.length} validation error{validationErrors.length > 1 ? 's' : ''}{' '}
+                {expanded ? '(hide)' : '(show)'}
               </button>
               {expanded && (
                 <ul className="mt-1 space-y-1">
@@ -472,9 +466,21 @@ function LocationsTab() {
       {/* Summary Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label="Total Locations" value={summary.total} />
-        <StatCard label="Needing Fixes" value={summary.needingFixes} variant={summary.needingFixes > 0 ? 'error' : 'default'} />
-        <StatCard label="Missing Street" value={summary.withPlaceholderStreet} variant={summary.withPlaceholderStreet > 0 ? 'warning' : 'default'} />
-        <StatCard label="Default Coords" value={summary.withDefaultCoords} variant={summary.withDefaultCoords > 0 ? 'warning' : 'default'} />
+        <StatCard
+          label="Needing Fixes"
+          value={summary.needingFixes}
+          variant={summary.needingFixes > 0 ? 'error' : 'default'}
+        />
+        <StatCard
+          label="Missing Street"
+          value={summary.withPlaceholderStreet}
+          variant={summary.withPlaceholderStreet > 0 ? 'warning' : 'default'}
+        />
+        <StatCard
+          label="Default Coords"
+          value={summary.withDefaultCoords}
+          variant={summary.withDefaultCoords > 0 ? 'warning' : 'default'}
+        />
       </div>
 
       {/* Bulk Actions */}
@@ -488,15 +494,12 @@ function LocationsTab() {
           >
             {bulkGeocoding ? 'Geocoding...' : 'Geocode Next 10 Locations'}
           </button>
-          <span className="text-sm text-slate-500">
-            Uses OpenCage API (2,500 free/day)
-          </span>
+          <span className="text-sm text-slate-500">Uses OpenCage API (2,500 free/day)</span>
         </div>
         {bulkResult && (
           <div className="mt-4 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
             <div className="text-sm">
-              <span className="font-medium">Results:</span>{' '}
-              {bulkResult.succeeded} succeeded, {bulkResult.failed} failed
+              <span className="font-medium">Results:</span> {bulkResult.succeeded} succeeded, {bulkResult.failed} failed
             </div>
           </div>
         )}
@@ -505,15 +508,11 @@ function LocationsTab() {
       {/* Locations List */}
       <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
-          <h3 className="font-semibold text-slate-900 dark:text-white">
-            Locations Needing Fixes ({locations.length})
-          </h3>
+          <h3 className="font-semibold text-slate-900 dark:text-white">Locations Needing Fixes ({locations.length})</h3>
         </div>
 
         {locations.length === 0 ? (
-          <div className="p-8 text-center text-slate-500">
-            All locations have valid addresses and coordinates!
-          </div>
+          <div className="p-8 text-center text-slate-500">All locations have valid addresses and coordinates!</div>
         ) : (
           <div className="divide-y divide-slate-200 dark:divide-slate-700">
             {locations.slice(0, 20).map((location) => (
@@ -538,9 +537,7 @@ function LocationsTab() {
               </div>
             ))}
             {locations.length > 20 && (
-              <div className="p-4 text-center text-slate-500 text-sm">
-                Showing 20 of {locations.length} locations
-              </div>
+              <div className="p-4 text-center text-slate-500 text-sm">Showing 20 of {locations.length} locations</div>
             )}
           </div>
         )}
@@ -590,10 +587,17 @@ function LocationEditForm({
         <button onClick={onSave} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700">
           Save
         </button>
-        <button onClick={onCancel} className="px-4 py-2 bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-white text-sm rounded-lg">
+        <button
+          onClick={onCancel}
+          className="px-4 py-2 bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-white text-sm rounded-lg"
+        >
           Cancel
         </button>
-        <button onClick={onGeocode} disabled={geocoding} className="px-4 py-2 bg-accent text-white text-sm rounded-lg disabled:opacity-50">
+        <button
+          onClick={onGeocode}
+          disabled={geocoding}
+          className="px-4 py-2 bg-accent text-white text-sm rounded-lg disabled:opacity-50"
+        >
           {geocoding ? '...' : 'Geocode'}
         </button>
       </div>
@@ -686,23 +690,13 @@ function CoverageStatsTab() {
           label="With Data"
           value={coverageStats.sourcesWithData}
           subtext={`${coverageStats.dataSuccessRate}% success`}
-          variant={coverageStats.dataSuccessRate >= 80 ? 'success' : coverageStats.dataSuccessRate >= 50 ? 'warning' : 'error'}
+          variant={
+            coverageStats.dataSuccessRate >= 80 ? 'success' : coverageStats.dataSuccessRate >= 50 ? 'warning' : 'error'
+          }
         />
-        <StatCard
-          label="High Quality"
-          value={coverageStats.qualityBreakdown.high}
-          variant="success"
-        />
-        <StatCard
-          label="Medium Quality"
-          value={coverageStats.qualityBreakdown.medium}
-          variant="warning"
-        />
-        <StatCard
-          label="Low Quality"
-          value={coverageStats.qualityBreakdown.low}
-          variant="error"
-        />
+        <StatCard label="High Quality" value={coverageStats.qualityBreakdown.high} variant="success" />
+        <StatCard label="Medium Quality" value={coverageStats.qualityBreakdown.medium} variant="warning" />
+        <StatCard label="Low Quality" value={coverageStats.qualityBreakdown.low} variant="error" />
       </div>
 
       <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
@@ -712,8 +706,8 @@ function CoverageStatsTab() {
           {coverageStats.dataSuccessRate >= 80
             ? ' Data coverage is healthy.'
             : coverageStats.dataSuccessRate >= 50
-            ? ' Some sources need attention.'
-            : ' Many sources need fixing.'}
+              ? ' Some sources need attention.'
+              : ' Many sources need fixing.'}
         </p>
         <div className="mt-4">
           <Link href="/admin/sources?tab=failing" className="text-primary hover:underline text-sm">

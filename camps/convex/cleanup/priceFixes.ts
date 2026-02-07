@@ -1,6 +1,6 @@
-import { mutation } from "../_generated/server";
-import { v } from "convex/values";
-import { Id } from "../_generated/dataModel";
+import { mutation } from '../_generated/server';
+import { v } from 'convex/values';
+import { Id } from '../_generated/dataModel';
 
 /**
  * Helper to check if a string is a valid URL
@@ -9,7 +9,7 @@ function isValidUrl(str: string | undefined | null): boolean {
   if (!str) return false;
   try {
     const url = new URL(str);
-    return url.protocol === "http:" || url.protocol === "https:";
+    return url.protocol === 'http:' || url.protocol === 'https:';
   } catch {
     return false;
   }
@@ -24,9 +24,9 @@ export const fixBadUrls = mutation({
   },
   handler: async (ctx, args) => {
     const dryRun = args.dryRun ?? true;
-    const camps = await ctx.db.query("camps").collect();
-    const sessions = await ctx.db.query("sessions").collect();
-    const sources = await ctx.db.query("scrapeSources").collect();
+    const camps = await ctx.db.query('camps').collect();
+    const sessions = await ctx.db.query('sessions').collect();
+    const sources = await ctx.db.query('scrapeSources').collect();
 
     // Build source lookup
     const sourceById = new Map<string, { url: string; name: string }>();
@@ -57,10 +57,10 @@ export const fixBadUrls = mutation({
       }
 
       // Also check imageUrls for bad values
-      if (camp.imageUrls && camp.imageUrls.some((url: string) => !isValidUrl(url) && !url.startsWith("kg7"))) {
-        const badUrls = camp.imageUrls.filter((url: string) => !isValidUrl(url) && !url.startsWith("kg7"));
+      if (camp.imageUrls && camp.imageUrls.some((url: string) => !isValidUrl(url) && !url.startsWith('kg7'))) {
+        const badUrls = camp.imageUrls.filter((url: string) => !isValidUrl(url) && !url.startsWith('kg7'));
         if (!dryRun && badUrls.length > 0) {
-          const validUrls = camp.imageUrls.filter((url: string) => isValidUrl(url) || url.startsWith("kg7"));
+          const validUrls = camp.imageUrls.filter((url: string) => isValidUrl(url) || url.startsWith('kg7'));
           await ctx.db.patch(camp._id, {
             imageUrls: validUrls,
           });
@@ -71,11 +71,11 @@ export const fixBadUrls = mutation({
     // Fix sessions with bad registration URLs
     for (const session of sessions) {
       if (session.externalRegistrationUrl && !isValidUrl(session.externalRegistrationUrl)) {
-        const camp = camps.find(c => c._id === session.campId);
+        const camp = camps.find((c) => c._id === session.campId);
         const source = session.sourceId ? sourceById.get(session.sourceId as string) : undefined;
 
         badSessions.push({
-          campName: camp?.name || "Unknown",
+          campName: camp?.name || 'Unknown',
           badUrl: session.externalRegistrationUrl,
           source: source?.name,
         });
@@ -113,13 +113,11 @@ export const fixOmsiUrls = mutation({
     const dryRun = args.dryRun ?? true;
 
     // OMSI Science Camps organization ID
-    const OMSI_ORG_ID = "kh75v4zw4w3v6hc2m8y9jjze5h80dc22" as Id<"organizations">;
+    const OMSI_ORG_ID = 'kh75v4zw4w3v6hc2m8y9jjze5h80dc22' as Id<'organizations'>;
 
     const sessions = await ctx.db
-      .query("sessions")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", OMSI_ORG_ID)
-      )
+      .query('sessions')
+      .withIndex('by_organization_and_status', (q) => q.eq('organizationId', OMSI_ORG_ID))
       .collect();
 
     const updates: Array<{
@@ -133,8 +131,8 @@ export const fixOmsiUrls = mutation({
       if (!url) continue;
 
       // Check if URL uses the old ?product= format
-      if (url.includes("?product=")) {
-        const productName = url.split("?product=")[1];
+      if (url.includes('?product=')) {
+        const productName = url.split('?product=')[1];
         const newUrl = `https://secure.omsi.edu/camps-and-classes/${productName}`;
 
         updates.push({
@@ -165,7 +163,7 @@ export const fixOmsiUrls = mutation({
  */
 export const fixOrgPrices = mutation({
   args: {
-    organizationId: v.id("organizations"),
+    organizationId: v.id('organizations'),
     defaultPriceInCents: v.number(),
     dryRun: v.optional(v.boolean()),
   },
@@ -173,10 +171,8 @@ export const fixOrgPrices = mutation({
     const dryRun = args.dryRun ?? true;
 
     const sessions = await ctx.db
-      .query("sessions")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", args.organizationId)
-      )
+      .query('sessions')
+      .withIndex('by_organization_and_status', (q) => q.eq('organizationId', args.organizationId))
       .collect();
 
     const zeroPriceSessions = sessions.filter((s) => !s.price || s.price === 0);
@@ -216,7 +212,7 @@ export const fixOrgPrices = mutation({
  */
 export const fixBasketballCampPrices = mutation({
   args: {
-    organizationId: v.id("organizations"),
+    organizationId: v.id('organizations'),
     dryRun: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -224,10 +220,8 @@ export const fixBasketballCampPrices = mutation({
 
     // Get all sessions with $0 price for this org
     const sessions = await ctx.db
-      .query("sessions")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", args.organizationId)
-      )
+      .query('sessions')
+      .withIndex('by_organization_and_status', (q) => q.eq('organizationId', args.organizationId))
       .collect();
 
     const zeroPriceSessions = sessions.filter((s) => !s.price || s.price === 0);
@@ -247,7 +241,7 @@ export const fixBasketballCampPrices = mutation({
       const nameLower = campName.toLowerCase();
 
       // Check for overnight camps
-      if (nameLower.includes("overnight") || nameLower.includes("residential")) {
+      if (nameLower.includes('overnight') || nameLower.includes('residential')) {
         return BASKETBALL_PRICING.overnight;
       }
 
@@ -308,30 +302,24 @@ export const fixTrackersPrices = mutation({
     const dryRun = args.dryRun ?? true;
 
     // Trackers Earth Portland organization ID
-    const TRACKERS_ORG_ID = "kh7f4thw13306rys338we33kqd80dkrm" as Id<"organizations">;
+    const TRACKERS_ORG_ID = 'kh7f4thw13306rys338we33kqd80dkrm' as Id<'organizations'>;
 
     // Get all Trackers sessions with $0 price
     const sessions = await ctx.db
-      .query("sessions")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", TRACKERS_ORG_ID)
-      )
+      .query('sessions')
+      .withIndex('by_organization_and_status', (q) => q.eq('organizationId', TRACKERS_ORG_ID))
       .collect();
 
     const zeroPriceSessions = sessions.filter((s) => !s.price || s.price === 0);
 
     // Get camps for these sessions to help determine pricing
     const campIds = [...new Set(zeroPriceSessions.map((s) => s.campId))];
-    const camps = await Promise.all(
-      campIds.map((id) => ctx.db.get(id))
-    );
+    const camps = await Promise.all(campIds.map((id) => ctx.db.get(id)));
     const campMap = new Map(camps.filter(Boolean).map((c) => [c!._id, c!]));
 
     // Get locations
     const locationIds = [...new Set(zeroPriceSessions.map((s) => s.locationId).filter(Boolean))];
-    const locations = await Promise.all(
-      locationIds.map((id) => ctx.db.get(id as Id<"locations">))
-    );
+    const locations = await Promise.all(locationIds.map((id) => ctx.db.get(id as Id<'locations'>)));
     const locationMap = new Map(locations.filter(Boolean).map((l) => [l!._id, l!]));
 
     // Pricing logic matching the Trackers scraper
@@ -347,21 +335,21 @@ export const fixTrackersPrices = mutation({
     function determinePricing(
       campName: string,
       locationName: string,
-      ageReqs?: { minGrade?: number; maxGrade?: number }
+      ageReqs?: { minGrade?: number; maxGrade?: number },
     ): number {
       const nameLower = campName.toLowerCase();
       const locationLower = locationName.toLowerCase();
 
       // Check for overnight camps
-      if (locationLower.includes("overnight") || nameLower.includes("overnight")) {
-        if (nameLower.includes("expedition") || nameLower.includes("extended")) {
+      if (locationLower.includes('overnight') || nameLower.includes('overnight')) {
+        if (nameLower.includes('expedition') || nameLower.includes('extended')) {
           return TRACKERS_PRICING.overnightExpedition;
         }
         return TRACKERS_PRICING.overnightStandard;
       }
 
       // Check for Leader in Training
-      if (nameLower.includes("leader") || nameLower.includes("lit") || nameLower.includes("leadership")) {
+      if (nameLower.includes('leader') || nameLower.includes('lit') || nameLower.includes('leadership')) {
         return TRACKERS_PRICING.lit;
       }
 
@@ -371,11 +359,7 @@ export const fixTrackersPrices = mutation({
       }
 
       // Check for transport camps
-      if (
-        locationLower.includes("sandy") ||
-        locationLower.includes("transport") ||
-        nameLower.includes("transport")
-      ) {
+      if (locationLower.includes('sandy') || locationLower.includes('transport') || nameLower.includes('transport')) {
         return TRACKERS_PRICING.transport;
       }
 
@@ -397,7 +381,7 @@ export const fixTrackersPrices = mutation({
 
       if (!camp) continue;
 
-      const locationName = location?.name || "";
+      const locationName = location?.name || '';
       const newPrice = determinePricing(camp.name, locationName, session.ageRequirements);
 
       updates.push({

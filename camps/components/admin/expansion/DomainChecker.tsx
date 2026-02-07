@@ -24,7 +24,11 @@ interface DomainCheckerProps {
 function generateMoreDomains(marketName: string, existing: string[]): string[] {
   const city = marketName.toLowerCase().replace(/\s+/g, '');
   const cityShort = city.slice(0, 3);
-  const cityAbbr = marketName.split(' ').map(w => w[0]).join('').toLowerCase();
+  const cityAbbr = marketName
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .toLowerCase();
 
   const patterns = [
     // Camp-focused
@@ -67,8 +71,8 @@ function generateMoreDomains(marketName: string, existing: string[]): string[] {
   ];
 
   // Filter out already suggested domains
-  const existingSet = new Set(existing.map(d => d.toLowerCase()));
-  return patterns.filter(d => !existingSet.has(d.toLowerCase()));
+  const existingSet = new Set(existing.map((d) => d.toLowerCase()));
+  return patterns.filter((d) => !existingSet.has(d.toLowerCase()));
 }
 
 export function DomainChecker({
@@ -94,9 +98,7 @@ export function DomainChecker({
     setLoading(true);
     setResults([]);
     try {
-      const domainsToCheck = customDomain
-        ? [...allDomains, customDomain]
-        : allDomains;
+      const domainsToCheck = customDomain ? [...allDomains, customDomain] : allDomains;
 
       // Check using Fastly Domain Research API - fast parallel checking
       const checkResults = await checkDomainsQuick({ domains: domainsToCheck });
@@ -115,9 +117,7 @@ export function DomainChecker({
       const priceResult = await getDomainPrice({ domain });
       if (priceResult.available && priceResult.price) {
         // Update the result with the price
-        setResults(prev => prev.map(r =>
-          r.domain === domain ? { ...r, price: priceResult.price } : r
-        ));
+        setResults((prev) => prev.map((r) => (r.domain === domain ? { ...r, price: priceResult.price } : r)));
         onSelect(domain, priceResult.price);
       } else {
         // Domain might have been taken - refresh availability
@@ -133,18 +133,18 @@ export function DomainChecker({
 
   const handleAddCustom = () => {
     if (customDomain && !allDomains.includes(customDomain)) {
-      setAllDomains(prev => [...prev, customDomain]);
+      setAllDomains((prev) => [...prev, customDomain]);
       handleCheck();
     }
   };
 
   const handleGenerateMore = () => {
     const moreDomains = generateMoreDomains(marketName, allDomains);
-    setAllDomains(prev => [...prev, ...moreDomains]);
+    setAllDomains((prev) => [...prev, ...moreDomains]);
     setShowMoreGenerated(true);
   };
 
-  const availableCount = results.filter(r => r.available && !r.error).length;
+  const availableCount = results.filter((r) => r.available && !r.error).length;
   const allTaken = results.length > 0 && availableCount === 0;
 
   return (
@@ -158,9 +158,7 @@ export function DomainChecker({
         >
           {loading ? 'Checking...' : 'Check Availability'}
         </button>
-        <span className="text-sm text-slate-500">
-          {allDomains.length} domains to check
-        </span>
+        <span className="text-sm text-slate-500">{allDomains.length} domains to check</span>
       </div>
 
       {/* Progress indicator */}
@@ -217,13 +215,9 @@ export function DomainChecker({
           <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
             <span className="text-sm">
               {availableCount > 0 ? (
-                <span className="text-green-600 dark:text-green-400 font-medium">
-                  {availableCount} available
-                </span>
+                <span className="text-green-600 dark:text-green-400 font-medium">{availableCount} available</span>
               ) : (
-                <span className="text-red-600 dark:text-red-400 font-medium">
-                  All domains taken
-                </span>
+                <span className="text-red-600 dark:text-red-400 font-medium">All domains taken</span>
               )}
               <span className="text-slate-500"> of {results.length} checked</span>
             </span>
@@ -240,9 +234,7 @@ export function DomainChecker({
             <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
               {results.map((result) => (
                 <tr key={result.domain} className={selectedDomain === result.domain ? 'bg-primary/5' : ''}>
-                  <td className="px-4 py-2 font-mono text-slate-900 dark:text-white">
-                    {result.domain}
-                  </td>
+                  <td className="px-4 py-2 font-mono text-slate-900 dark:text-white">{result.domain}</td>
                   <td className="px-4 py-2">
                     {result.error ? (
                       <span className="text-red-600 dark:text-red-400">{result.error}</span>
@@ -253,7 +245,7 @@ export function DomainChecker({
                     )}
                   </td>
                   <td className="px-4 py-2 text-slate-600 dark:text-slate-400">
-                    {result.price ? `$${result.price}` : (result.available ? '~$10' : '-')}
+                    {result.price ? `$${result.price}` : result.available ? '~$10' : '-'}
                   </td>
                   <td className="px-4 py-2">
                     {result.available && !result.error && (
@@ -298,10 +290,7 @@ export function DomainChecker({
             ))}
           </ul>
           {!showMoreGenerated && (
-            <button
-              onClick={handleGenerateMore}
-              className="mt-2 text-sm text-primary hover:text-primary-dark"
-            >
+            <button onClick={handleGenerateMore} className="mt-2 text-sm text-primary hover:text-primary-dark">
               + Generate more domain ideas
             </button>
           )}

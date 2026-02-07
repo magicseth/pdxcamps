@@ -5,17 +5,17 @@
   --foreground: #171717;
 
   /* PDX Camps brand palette (from logo) */
-  --pdx-sky: #8BA4B4;
-  --pdx-sky-light: #A8BDC9;
-  --pdx-sky-dark: #6E8A9C;
-  --pdx-sun: #E5A33B;
-  --pdx-sun-light: #F0B960;
-  --pdx-sun-dark: #C78A2A;
+  --pdx-sky: #8ba4b4;
+  --pdx-sky-light: #a8bdc9;
+  --pdx-sky-dark: #6e8a9c;
+  --pdx-sun: #e5a33b;
+  --pdx-sun-light: #f0b960;
+  --pdx-sun-dark: #c78a2a;
   --pdx-mountain: #344658;
-  --pdx-mountain-light: #4A6070;
-  --pdx-mountain-dark: #232F3A;
-  --pdx-snow: #FFFFFF;
-  --pdx-text: #6B8494;
+  --pdx-mountain-light: #4a6070;
+  --pdx-mountain-dark: #232f3a;
+  --pdx-snow: #ffffff;
+  --pdx-text: #6b8494;
 
   /* Semantic theme colors - defaults to PDX palette */
   --theme-primary: var(--pdx-mountain);
@@ -103,7 +103,7 @@ body {
 /* Faster touch responses on mobile */
 button,
 a,
-[role="button"] {
+[role='button'] {
   touch-action: manipulation;
 }
 

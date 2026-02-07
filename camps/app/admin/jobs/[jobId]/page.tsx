@@ -12,7 +12,10 @@ export default function JobDetailPage() {
   return (
     <>
       <header className="sticky top-0 z-10 bg-background p-4 border-b-2 border-slate-200 dark:border-slate-800 flex flex-row justify-between items-center">
-        <Link href="/admin" className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+        <Link
+          href="/admin"
+          className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
           Admin Dashboard
         </Link>
         <h1 className="text-lg font-semibold">Job Detail</h1>
@@ -23,13 +26,8 @@ export default function JobDetailPage() {
         </Authenticated>
         <Unauthenticated>
           <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-            <p className="text-slate-600 dark:text-slate-400">
-              Please sign in to access the admin dashboard.
-            </p>
-            <a
-              href="/sign-in"
-              className="bg-foreground text-background px-6 py-2 rounded-md"
-            >
+            <p className="text-slate-600 dark:text-slate-400">Please sign in to access the admin dashboard.</p>
+            <a href="/sign-in" className="bg-foreground text-background px-6 py-2 rounded-md">
               Sign in
             </a>
           </div>
@@ -46,7 +44,7 @@ function JobDetailContent() {
 
   const isAdmin = useQuery(api.admin.queries.isAdmin);
   const jobData = useQuery(api.scraping.queries.getJobSessions, {
-    jobId: jobId as Id<"scrapeJobs">,
+    jobId: jobId as Id<'scrapeJobs'>,
   });
 
   if (isAdmin === undefined || jobData === undefined) {
@@ -65,9 +63,7 @@ function JobDetailContent() {
     return (
       <div className="max-w-2xl mx-auto text-center py-16">
         <h2 className="text-xl font-semibold mb-2 text-red-600">Access Denied</h2>
-        <p className="text-slate-600 dark:text-slate-400">
-          You don't have permission to access the admin dashboard.
-        </p>
+        <p className="text-slate-600 dark:text-slate-400">You don't have permission to access the admin dashboard.</p>
         <Link
           href="/"
           className="inline-block mt-4 text-primary hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
@@ -82,9 +78,7 @@ function JobDetailContent() {
     return (
       <div className="max-w-2xl mx-auto text-center py-16">
         <h2 className="text-xl font-semibold mb-2 text-red-600">Job Not Found</h2>
-        <p className="text-slate-600 dark:text-slate-400">
-          The job you're looking for doesn't exist.
-        </p>
+        <p className="text-slate-600 dark:text-slate-400">The job you're looking for doesn't exist.</p>
         <Link
           href="/admin"
           className="inline-block mt-4 text-primary hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
@@ -105,7 +99,9 @@ function JobDetailContent() {
     <div className="max-w-6xl mx-auto space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-slate-500">
-        <Link href="/admin" className="hover:underline">Dashboard</Link>
+        <Link href="/admin" className="hover:underline">
+          Dashboard
+        </Link>
         <span>/</span>
         <span>Job {jobId.slice(-6)}</span>
       </div>
@@ -114,9 +110,7 @@ function JobDetailContent() {
       <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-              {source?.name ?? 'Unknown Source'}
-            </h1>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{source?.name ?? 'Unknown Source'}</h1>
             {source?.url && (
               <a
                 href={source.url}
@@ -166,9 +160,7 @@ function JobDetailContent() {
           <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
             <p className="text-sm text-slate-500">Organization</p>
             <p className="font-medium">{organization.name}</p>
-            {organization.description && (
-              <p className="text-sm text-slate-600 mt-1">{organization.description}</p>
-            )}
+            {organization.description && <p className="text-sm text-slate-600 mt-1">{organization.description}</p>}
           </div>
         )}
 
@@ -195,12 +187,24 @@ function JobDetailContent() {
             <table className="w-full text-sm">
               <thead className="bg-slate-50 dark:bg-slate-900">
                 <tr>
-                  <th scope="col" className="text-left px-4 py-3 font-semibold">Name</th>
-                  <th scope="col" className="text-left px-4 py-3 font-semibold">Dates</th>
-                  <th scope="col" className="text-left px-4 py-3 font-semibold">Times</th>
-                  <th scope="col" className="text-left px-4 py-3 font-semibold">Price</th>
-                  <th scope="col" className="text-left px-4 py-3 font-semibold">Ages</th>
-                  <th scope="col" className="text-left px-4 py-3 font-semibold">Status</th>
+                  <th scope="col" className="text-left px-4 py-3 font-semibold">
+                    Name
+                  </th>
+                  <th scope="col" className="text-left px-4 py-3 font-semibold">
+                    Dates
+                  </th>
+                  <th scope="col" className="text-left px-4 py-3 font-semibold">
+                    Times
+                  </th>
+                  <th scope="col" className="text-left px-4 py-3 font-semibold">
+                    Price
+                  </th>
+                  <th scope="col" className="text-left px-4 py-3 font-semibold">
+                    Ages
+                  </th>
+                  <th scope="col" className="text-left px-4 py-3 font-semibold">
+                    Status
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
@@ -216,9 +220,7 @@ function JobDetailContent() {
       {/* No sessions */}
       {(!parsed || sessions.length === 0) && (
         <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-8 text-center">
-          <p className="text-slate-500">
-            {error ? `Error parsing data: ${error}` : 'No sessions found in this job.'}
-          </p>
+          <p className="text-slate-500">{error ? `Error parsing data: ${error}` : 'No sessions found in this job.'}</p>
         </div>
       )}
 
@@ -332,7 +334,7 @@ function SessionRow({ session }: { session: SessionWithValidation }) {
       return `Ages ${session.minAge ?? '?'}-${session.maxAge ?? '?'}`;
     }
     if (session.minGrade !== undefined || session.maxGrade !== undefined) {
-      const formatGrade = (g: number) => g === 0 ? 'K' : g === -1 ? 'Pre-K' : `${g}`;
+      const formatGrade = (g: number) => (g === 0 ? 'K' : g === -1 ? 'Pre-K' : `${g}`);
       return `Grades ${formatGrade(session.minGrade ?? 0)}-${formatGrade(session.maxGrade ?? 12)}`;
     }
     if (session.ageGradeRaw) {
@@ -346,9 +348,7 @@ function SessionRow({ session }: { session: SessionWithValidation }) {
       <td className="px-4 py-3">
         <div className="space-y-1">
           <p className="font-medium text-slate-900 dark:text-white">{session.name}</p>
-          {session.location && (
-            <p className="text-xs text-slate-500">{session.location}</p>
-          )}
+          {session.location && <p className="text-xs text-slate-500">{session.location}</p>}
           {!session.location && validation.missingFields.includes('location') && (
             <p className="text-xs text-red-500">No location</p>
           )}
@@ -362,9 +362,7 @@ function SessionRow({ session }: { session: SessionWithValidation }) {
         <div className="space-y-1">
           <CompleteBadge score={validation.completenessScore} />
           {validation.missingFields.length > 0 && (
-            <p className="text-xs text-slate-500">
-              Missing: {validation.missingFields.join(', ')}
-            </p>
+            <p className="text-xs text-slate-500">Missing: {validation.missingFields.join(', ')}</p>
           )}
         </div>
       </td>

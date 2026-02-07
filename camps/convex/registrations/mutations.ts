@@ -1,9 +1,9 @@
-import { mutation, internalMutation } from "../_generated/server";
-import { internal } from "../_generated/api";
-import { v } from "convex/values";
-import { requireFamily } from "../lib/auth";
-import { updateSessionCapacityStatus } from "../lib/helpers";
-import { enforceSavedCampLimit } from "../lib/paywall";
+import { mutation, internalMutation } from '../_generated/server';
+import { internal } from '../_generated/api';
+import { v } from 'convex/values';
+import { requireFamily } from '../lib/auth';
+import { updateSessionCapacityStatus } from '../lib/helpers';
+import { enforceSavedCampLimit } from '../lib/paywall';
 
 /**
  * Internal mutation to update session capacity counts.
@@ -11,14 +11,14 @@ import { enforceSavedCampLimit } from "../lib/paywall";
  */
 export const updateSessionCounts = internalMutation({
   args: {
-    sessionId: v.id("sessions"),
+    sessionId: v.id('sessions'),
     enrolledDelta: v.number(),
     waitlistDelta: v.number(),
   },
   handler: async (ctx, args) => {
     const session = await ctx.db.get(args.sessionId);
     if (!session) {
-      throw new Error("Session not found");
+      throw new Error('Session not found');
     }
 
     const newEnrolledCount = Math.max(0, session.enrolledCount + args.enrolledDelta);
@@ -30,9 +30,7 @@ export const updateSessionCounts = internalMutation({
     });
 
     // Auto-update status based on capacity
-    await updateSessionCapacityStatus(
-      ctx.db, args.sessionId, newEnrolledCount, session.capacity, session.status
-    );
+    await updateSessionCapacityStatus(ctx.db, args.sessionId, newEnrolledCount, session.capacity, session.status);
 
     // Refresh planner availability aggregate if this changed availability
     const wasSoldOut = session.enrolledCount >= session.capacity;
@@ -55,8 +53,8 @@ export const updateSessionCounts = internalMutation({
  */
 export const markInterested = mutation({
   args: {
-    childId: v.id("children"),
-    sessionId: v.id("sessions"),
+    childId: v.id('children'),
+    sessionId: v.id('sessions'),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -65,41 +63,39 @@ export const markInterested = mutation({
     // Verify child belongs to family
     const child = await ctx.db.get(args.childId);
     if (!child) {
-      throw new Error("Child not found");
+      throw new Error('Child not found');
     }
     if (child.familyId !== family._id) {
-      throw new Error("Child does not belong to this family");
+      throw new Error('Child does not belong to this family');
     }
 
     // Verify session exists
     const session = await ctx.db.get(args.sessionId);
     if (!session) {
-      throw new Error("Session not found");
+      throw new Error('Session not found');
     }
 
     // Check if registration already exists for this child/session
     const existingRegistration = await ctx.db
-      .query("registrations")
-      .withIndex("by_child_and_session", (q) =>
-        q.eq("childId", args.childId).eq("sessionId", args.sessionId)
-      )
+      .query('registrations')
+      .withIndex('by_child_and_session', (q) => q.eq('childId', args.childId).eq('sessionId', args.sessionId))
       .unique();
 
     if (existingRegistration) {
-      throw new Error("Registration already exists for this child and session");
+      throw new Error('Registration already exists for this child and session');
     }
 
     // === PAYWALL CHECK ===
     // Free users can only save a limited number of camps (registrations + custom camps).
     // Premium users get unlimited. See convex/lib/paywall.ts for details.
-    await enforceSavedCampLimit(ctx, family._id, "save_camp");
+    await enforceSavedCampLimit(ctx, family._id, 'save_camp');
     // === END PAYWALL CHECK ===
 
-    const registrationId = await ctx.db.insert("registrations", {
+    const registrationId = await ctx.db.insert('registrations', {
       familyId: family._id,
       childId: args.childId,
       sessionId: args.sessionId,
-      status: "interested",
+      status: 'interested',
       notes: args.notes,
     });
 
@@ -120,8 +116,8 @@ export const markInterested = mutation({
  */
 export const register = mutation({
   args: {
-    childId: v.id("children"),
-    sessionId: v.id("sessions"),
+    childId: v.id('children'),
+    sessionId: v.id('sessions'),
     externalConfirmationCode: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -130,27 +126,25 @@ export const register = mutation({
     // Verify child belongs to family
     const child = await ctx.db.get(args.childId);
     if (!child) {
-      throw new Error("Child not found");
+      throw new Error('Child not found');
     }
     if (child.familyId !== family._id) {
-      throw new Error("Child does not belong to this family");
+      throw new Error('Child does not belong to this family');
     }
 
     // Verify session exists and is active
     const session = await ctx.db.get(args.sessionId);
     if (!session) {
-      throw new Error("Session not found");
+      throw new Error('Session not found');
     }
-    if (session.status !== "active" && session.status !== "sold_out") {
-      throw new Error("Session is not available for registration");
+    if (session.status !== 'active' && session.status !== 'sold_out') {
+      throw new Error('Session is not available for registration');
     }
 
     // Check if registration already exists
     const existingRegistration = await ctx.db
-      .query("registrations")
-      .withIndex("by_child_and_session", (q) =>
-        q.eq("childId", args.childId).eq("sessionId", args.sessionId)
-      )
+      .query('registrations')
+      .withIndex('by_child_and_session', (q) => q.eq('childId', args.childId).eq('sessionId', args.sessionId))
       .unique();
 
     // Determine if there's capacity
@@ -158,17 +152,17 @@ export const register = mutation({
 
     if (existingRegistration) {
       // Handle existing registration
-      if (existingRegistration.status === "registered") {
-        throw new Error("Child is already registered for this session");
+      if (existingRegistration.status === 'registered') {
+        throw new Error('Child is already registered for this session');
       }
-      if (existingRegistration.status === "waitlisted") {
-        throw new Error("Child is already on the waitlist for this session");
+      if (existingRegistration.status === 'waitlisted') {
+        throw new Error('Child is already on the waitlist for this session');
       }
-      if (existingRegistration.status === "cancelled") {
+      if (existingRegistration.status === 'cancelled') {
         // Re-register a cancelled registration
         if (hasCapacity) {
           await ctx.db.patch(existingRegistration._id, {
-            status: "registered",
+            status: 'registered',
             registeredAt: Date.now(),
             externalConfirmationCode: args.externalConfirmationCode,
           });
@@ -180,7 +174,11 @@ export const register = mutation({
 
           // Check if session should be marked sold out
           await updateSessionCapacityStatus(
-            ctx.db, args.sessionId, session.enrolledCount + 1, session.capacity, session.status
+            ctx.db,
+            args.sessionId,
+            session.enrolledCount + 1,
+            session.capacity,
+            session.status,
           );
 
           return existingRegistration._id;
@@ -188,7 +186,7 @@ export const register = mutation({
           // Add to waitlist
           const waitlistPosition = session.waitlistCount + 1;
           await ctx.db.patch(existingRegistration._id, {
-            status: "waitlisted",
+            status: 'waitlisted',
             waitlistPosition,
             externalConfirmationCode: args.externalConfirmationCode,
           });
@@ -199,14 +197,14 @@ export const register = mutation({
 
           return existingRegistration._id;
         } else {
-          throw new Error("Session is full and waitlist is not available");
+          throw new Error('Session is full and waitlist is not available');
         }
       }
 
       // Upgrade from "interested" to "registered" or "waitlisted"
       if (hasCapacity) {
         await ctx.db.patch(existingRegistration._id, {
-          status: "registered",
+          status: 'registered',
           registeredAt: Date.now(),
           externalConfirmationCode: args.externalConfirmationCode,
         });
@@ -216,14 +214,18 @@ export const register = mutation({
         });
 
         await updateSessionCapacityStatus(
-          ctx.db, args.sessionId, session.enrolledCount + 1, session.capacity, session.status
+          ctx.db,
+          args.sessionId,
+          session.enrolledCount + 1,
+          session.capacity,
+          session.status,
         );
 
         return existingRegistration._id;
       } else if (session.waitlistEnabled) {
         const waitlistPosition = session.waitlistCount + 1;
         await ctx.db.patch(existingRegistration._id, {
-          status: "waitlisted",
+          status: 'waitlisted',
           waitlistPosition,
           externalConfirmationCode: args.externalConfirmationCode,
         });
@@ -234,17 +236,17 @@ export const register = mutation({
 
         return existingRegistration._id;
       } else {
-        throw new Error("Session is full and waitlist is not available");
+        throw new Error('Session is full and waitlist is not available');
       }
     }
 
     // Create new registration
     if (hasCapacity) {
-      const registrationId = await ctx.db.insert("registrations", {
+      const registrationId = await ctx.db.insert('registrations', {
         familyId: family._id,
         childId: args.childId,
         sessionId: args.sessionId,
-        status: "registered",
+        status: 'registered',
         registeredAt: Date.now(),
         externalConfirmationCode: args.externalConfirmationCode,
       });
@@ -254,17 +256,21 @@ export const register = mutation({
       });
 
       await updateSessionCapacityStatus(
-        ctx.db, args.sessionId, session.enrolledCount + 1, session.capacity, session.status
+        ctx.db,
+        args.sessionId,
+        session.enrolledCount + 1,
+        session.capacity,
+        session.status,
       );
 
       return registrationId;
     } else if (session.waitlistEnabled) {
       const waitlistPosition = session.waitlistCount + 1;
-      const registrationId = await ctx.db.insert("registrations", {
+      const registrationId = await ctx.db.insert('registrations', {
         familyId: family._id,
         childId: args.childId,
         sessionId: args.sessionId,
-        status: "waitlisted",
+        status: 'waitlisted',
         waitlistPosition,
         externalConfirmationCode: args.externalConfirmationCode,
       });
@@ -275,7 +281,7 @@ export const register = mutation({
 
       return registrationId;
     } else {
-      throw new Error("Session is full and waitlist is not available");
+      throw new Error('Session is full and waitlist is not available');
     }
   },
 });
@@ -286,37 +292,37 @@ export const register = mutation({
  */
 export const cancelRegistration = mutation({
   args: {
-    registrationId: v.id("registrations"),
+    registrationId: v.id('registrations'),
   },
   handler: async (ctx, args) => {
     const family = await requireFamily(ctx);
 
     const registration = await ctx.db.get(args.registrationId);
     if (!registration) {
-      throw new Error("Registration not found");
+      throw new Error('Registration not found');
     }
 
     // Verify registration belongs to family
     if (registration.familyId !== family._id) {
-      throw new Error("Registration does not belong to this family");
+      throw new Error('Registration does not belong to this family');
     }
 
-    if (registration.status === "cancelled") {
-      throw new Error("Registration is already cancelled");
+    if (registration.status === 'cancelled') {
+      throw new Error('Registration is already cancelled');
     }
 
     const previousStatus = registration.status;
 
     // Update registration status
     await ctx.db.patch(args.registrationId, {
-      status: "cancelled",
+      status: 'cancelled',
       waitlistPosition: undefined,
     });
 
     // Update session counts
     const session = await ctx.db.get(registration.sessionId);
     if (session) {
-      if (previousStatus === "registered") {
+      if (previousStatus === 'registered') {
         const newEnrolledCount = Math.max(0, session.enrolledCount - 1);
         await ctx.db.patch(registration.sessionId, {
           enrolledCount: newEnrolledCount,
@@ -324,18 +330,22 @@ export const cancelRegistration = mutation({
 
         // If session was sold out and now has capacity, mark as active
         await updateSessionCapacityStatus(
-          ctx.db, registration.sessionId, newEnrolledCount, session.capacity, session.status
+          ctx.db,
+          registration.sessionId,
+          newEnrolledCount,
+          session.capacity,
+          session.status,
         );
-      } else if (previousStatus === "waitlisted") {
+      } else if (previousStatus === 'waitlisted') {
         await ctx.db.patch(registration.sessionId, {
           waitlistCount: Math.max(0, session.waitlistCount - 1),
         });
 
         // Reorder waitlist positions for remaining waitlisted registrations
         const waitlistedRegistrations = await ctx.db
-          .query("registrations")
-          .withIndex("by_session_and_status", (q) =>
-            q.eq("sessionId", registration.sessionId).eq("status", "waitlisted")
+          .query('registrations')
+          .withIndex('by_session_and_status', (q) =>
+            q.eq('sessionId', registration.sessionId).eq('status', 'waitlisted'),
           )
           .collect();
 
@@ -361,7 +371,7 @@ export const cancelRegistration = mutation({
  */
 export const updateRegistrationNotes = mutation({
   args: {
-    registrationId: v.id("registrations"),
+    registrationId: v.id('registrations'),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -369,12 +379,12 @@ export const updateRegistrationNotes = mutation({
 
     const registration = await ctx.db.get(args.registrationId);
     if (!registration) {
-      throw new Error("Registration not found");
+      throw new Error('Registration not found');
     }
 
     // Verify registration belongs to family
     if (registration.familyId !== family._id) {
-      throw new Error("Registration does not belong to this family");
+      throw new Error('Registration does not belong to this family');
     }
 
     await ctx.db.patch(args.registrationId, {
@@ -396,8 +406,8 @@ export const updateRegistrationNotes = mutation({
  */
 export const joinWaitlist = mutation({
   args: {
-    childId: v.id("children"),
-    sessionId: v.id("sessions"),
+    childId: v.id('children'),
+    sessionId: v.id('sessions'),
   },
   handler: async (ctx, args) => {
     const family = await requireFamily(ctx);
@@ -405,55 +415,47 @@ export const joinWaitlist = mutation({
     // Verify child belongs to family
     const child = await ctx.db.get(args.childId);
     if (!child) {
-      throw new Error("Child not found");
+      throw new Error('Child not found');
     }
     if (child.familyId !== family._id) {
-      throw new Error("Child does not belong to this family");
+      throw new Error('Child does not belong to this family');
     }
 
     // Verify session exists
     const session = await ctx.db.get(args.sessionId);
     if (!session) {
-      throw new Error("Session not found");
+      throw new Error('Session not found');
     }
 
     // Check if waitlist is enabled
     if (!session.waitlistEnabled) {
-      throw new Error("Waitlist is not enabled for this session");
+      throw new Error('Waitlist is not enabled for this session');
     }
 
     // Check waitlist capacity if specified
-    if (
-      session.waitlistCapacity !== undefined &&
-      session.waitlistCount >= session.waitlistCapacity
-    ) {
-      throw new Error("Waitlist is full");
+    if (session.waitlistCapacity !== undefined && session.waitlistCount >= session.waitlistCapacity) {
+      throw new Error('Waitlist is full');
     }
 
     // Check for existing registration
     const existingRegistration = await ctx.db
-      .query("registrations")
-      .withIndex("by_child_and_session", (q) =>
-        q.eq("childId", args.childId).eq("sessionId", args.sessionId)
-      )
+      .query('registrations')
+      .withIndex('by_child_and_session', (q) => q.eq('childId', args.childId).eq('sessionId', args.sessionId))
       .unique();
 
     const waitlistPosition = session.waitlistCount + 1;
 
     if (existingRegistration) {
-      if (existingRegistration.status === "registered") {
-        throw new Error("Child is already registered for this session");
+      if (existingRegistration.status === 'registered') {
+        throw new Error('Child is already registered for this session');
       }
-      if (existingRegistration.status === "waitlisted") {
-        throw new Error("Child is already on the waitlist for this session");
+      if (existingRegistration.status === 'waitlisted') {
+        throw new Error('Child is already on the waitlist for this session');
       }
-      if (
-        existingRegistration.status === "cancelled" ||
-        existingRegistration.status === "interested"
-      ) {
+      if (existingRegistration.status === 'cancelled' || existingRegistration.status === 'interested') {
         // Upgrade to waitlisted
         await ctx.db.patch(existingRegistration._id, {
-          status: "waitlisted",
+          status: 'waitlisted',
           waitlistPosition,
         });
 
@@ -466,11 +468,11 @@ export const joinWaitlist = mutation({
     }
 
     // Create new waitlist registration
-    const registrationId = await ctx.db.insert("registrations", {
+    const registrationId = await ctx.db.insert('registrations', {
       familyId: family._id,
       childId: args.childId,
       sessionId: args.sessionId,
-      status: "waitlisted",
+      status: 'waitlisted',
       waitlistPosition,
     });
 

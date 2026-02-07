@@ -16,16 +16,9 @@ export default function SourcesManagementPage() {
     return (
       <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex items-center justify-center">
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-8 max-w-md text-center">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
-            Admin Access Required
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400 mb-6">
-            Please sign in to access the admin dashboard.
-          </p>
-          <a
-            href="/sign-in"
-            className="inline-block bg-primary text-white px-6 py-2 rounded-md hover:bg-primary-dark"
-          >
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Admin Access Required</h1>
+          <p className="text-slate-600 dark:text-slate-400 mb-6">Please sign in to access the admin dashboard.</p>
+          <a href="/sign-in" className="inline-block bg-primary text-white px-6 py-2 rounded-md hover:bg-primary-dark">
             Sign In
           </a>
         </div>
@@ -176,12 +169,13 @@ function SourcesManagementContent() {
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <Link href="/admin" className="text-sm text-primary hover:text-primary-dark mb-1 block rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+              <Link
+                href="/admin"
+                className="text-sm text-primary hover:text-primary-dark mb-1 block rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
                 &larr; Back to Admin
               </Link>
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-                Sources
-              </h1>
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Sources</h1>
               <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
                 Manage scraping configurations and monitor health
               </p>
@@ -205,25 +199,10 @@ function SourcesManagementContent() {
         {/* Stats Summary */}
         {filteredData?.counts && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <StatCard
-              label="Total Sources"
-              value={stats.all}
-            />
-            <StatCard
-              label="Active"
-              value={stats.active}
-              variant="success"
-            />
-            <StatCard
-              label="Failing"
-              value={stats.failing}
-              variant={stats.failing > 0 ? 'error' : 'default'}
-            />
-            <StatCard
-              label="No Data"
-              value={stats.nodata}
-              variant={stats.nodata > 0 ? 'warning' : 'default'}
-            />
+            <StatCard label="Total Sources" value={stats.all} />
+            <StatCard label="Active" value={stats.active} variant="success" />
+            <StatCard label="Failing" value={stats.failing} variant={stats.failing > 0 ? 'error' : 'default'} />
+            <StatCard label="No Data" value={stats.nodata} variant={stats.nodata > 0 ? 'warning' : 'default'} />
           </div>
         )}
 
@@ -232,7 +211,11 @@ function SourcesManagementContent() {
           <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm">
             <div role="status" aria-live="polite" className="p-6 animate-pulse motion-reduce:animate-none space-y-4">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4" aria-hidden="true">
+                <div
+                  key={i}
+                  className="border border-slate-200 dark:border-slate-700 rounded-lg p-4"
+                  aria-hidden="true"
+                >
                   <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-1/3 mb-2"></div>
                   <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-2/3 mb-3"></div>
                   <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
@@ -256,10 +239,10 @@ function SourcesManagementContent() {
               {activeTab === 'all'
                 ? 'Scrape sources will appear here when they are created.'
                 : activeTab === 'failing'
-                ? 'Great news! No sources are currently failing.'
-                : activeTab === 'nodata'
-                ? 'All active sources have produced data.'
-                : 'No sources match this filter.'}
+                  ? 'Great news! No sources are currently failing.'
+                  : activeTab === 'nodata'
+                    ? 'All active sources have produced data.'
+                    : 'No sources match this filter.'}
             </p>
           </div>
         )}
@@ -269,171 +252,181 @@ function SourcesManagementContent() {
           <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
-              <thead className="bg-slate-50 dark:bg-slate-900">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Source
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Health
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Last Scraped
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Success Rate
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                {filteredSources.map((source) => {
-                  const health = getHealthIndicator(source.scraperHealth);
-                  return (
-                    <tr key={source._id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          {/* Organization Logo */}
-                          {source.organizationLogoUrl ? (
-                            <img
-                              src={source.organizationLogoUrl}
-                              alt={source.organizationName || source.name}
-                              className="w-10 h-10 rounded-lg object-contain bg-white border border-slate-200 dark:border-slate-600 flex-shrink-0"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
-                              <span className="text-xs font-medium text-slate-400">
-                                {(source.organizationName || source.name).slice(0, 2).toUpperCase()}
-                              </span>
-                            </div>
-                          )}
-                          <div className="min-w-0">
-                            <p className="font-medium text-slate-900 dark:text-white">
-                              {source.name}
-                            </p>
-                            {source.organizationName && source.organizationName !== source.name && (
-                              <p className="text-xs text-slate-500">{source.organizationName}</p>
-                            )}
-                            <a
-                              href={source.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-sm text-primary hover:text-primary-dark line-clamp-1"
-                            >
-                              {source.url}
-                            </a>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`w-2.5 h-2.5 rounded-full ${
-                              health.color === 'green'
-                                ? 'bg-green-500'
-                                : health.color === 'yellow'
-                                ? 'bg-yellow-500'
-                                : health.color === 'orange'
-                                ? 'bg-orange-500'
-                                : health.color === 'red'
-                                ? 'bg-red-500'
-                                : 'bg-slate-400'
-                            }`}
-                          />
-                          <span className="text-sm text-slate-700 dark:text-slate-300">
-                            {health.label}
-                          </span>
-                        </div>
-                        {source.scraperHealth.lastError && (
-                          <p className="text-xs text-red-600 dark:text-red-400 mt-1 line-clamp-1">
-                            {source.scraperHealth.lastError}
-                          </p>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
-                        {source.lastScrapedAt
-                          ? formatTimestamp(source.lastScrapedAt)
-                          : 'Never'}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-24 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full ${
-                                source.scraperHealth.successRate >= 0.9
-                                  ? 'bg-green-500'
-                                  : source.scraperHealth.successRate >= 0.7
-                                  ? 'bg-yellow-500'
-                                  : source.scraperHealth.successRate >= 0.5
-                                  ? 'bg-orange-500'
-                                  : 'bg-red-500'
-                              }`}
-                              style={{
-                                width: `${Math.round(source.scraperHealth.successRate * 100)}%`,
-                              }}
-                            />
-                          </div>
-                          <span className="text-sm text-slate-600 dark:text-slate-400">
-                            {Math.round(source.scraperHealth.successRate * 100)}%
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                          {source.scraperHealth.totalRuns} runs
-                        </p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <button
-                          onClick={() => handleToggleActive(source._id, source.isActive)}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                            source.isActive
-                              ? 'bg-green-500'
-                              : 'bg-slate-300 dark:bg-slate-600'
-                          }`}
-                        >
-                          <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                              source.isActive ? 'translate-x-6' : 'translate-x-1'
-                            }`}
-                          />
-                        </button>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => handleTriggerScrape(source._id)}
-                            disabled={triggeringSource === source._id || !source.isActive}
-                            className={`px-3 py-1.5 text-sm font-medium rounded-md ${
-                              triggeringSource === source._id || !source.isActive
-                                ? 'bg-slate-100 text-slate-400 dark:bg-slate-700 dark:text-slate-500 cursor-not-allowed'
-                                : 'bg-primary text-white hover:bg-primary-dark'
-                            }`}
-                          >
-                            {triggeringSource === source._id ? (
-                              <span className="flex items-center gap-1">
-                                <SpinnerIcon />
-                                Running...
-                              </span>
+                <thead className="bg-slate-50 dark:bg-slate-900">
+                  <tr>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider"
+                    >
+                      Source
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider"
+                    >
+                      Health
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider"
+                    >
+                      Last Scraped
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider"
+                    >
+                      Success Rate
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider"
+                    >
+                      Status
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider"
+                    >
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                  {filteredSources.map((source) => {
+                    const health = getHealthIndicator(source.scraperHealth);
+                    return (
+                      <tr key={source._id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            {/* Organization Logo */}
+                            {source.organizationLogoUrl ? (
+                              <img
+                                src={source.organizationLogoUrl}
+                                alt={source.organizationName || source.name}
+                                className="w-10 h-10 rounded-lg object-contain bg-white border border-slate-200 dark:border-slate-600 flex-shrink-0"
+                              />
                             ) : (
-                              'Trigger Scrape'
+                              <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
+                                <span className="text-xs font-medium text-slate-400">
+                                  {(source.organizationName || source.name).slice(0, 2).toUpperCase()}
+                                </span>
+                              </div>
                             )}
-                          </button>
-                          <Link
-                            href={`/admin/sources/${source._id}`}
-                            className="px-3 py-1.5 text-sm font-medium border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700"
+                            <div className="min-w-0">
+                              <p className="font-medium text-slate-900 dark:text-white">{source.name}</p>
+                              {source.organizationName && source.organizationName !== source.name && (
+                                <p className="text-xs text-slate-500">{source.organizationName}</p>
+                              )}
+                              <a
+                                href={source.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-primary hover:text-primary-dark line-clamp-1"
+                              >
+                                {source.url}
+                              </a>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`w-2.5 h-2.5 rounded-full ${
+                                health.color === 'green'
+                                  ? 'bg-green-500'
+                                  : health.color === 'yellow'
+                                    ? 'bg-yellow-500'
+                                    : health.color === 'orange'
+                                      ? 'bg-orange-500'
+                                      : health.color === 'red'
+                                        ? 'bg-red-500'
+                                        : 'bg-slate-400'
+                              }`}
+                            />
+                            <span className="text-sm text-slate-700 dark:text-slate-300">{health.label}</span>
+                          </div>
+                          {source.scraperHealth.lastError && (
+                            <p className="text-xs text-red-600 dark:text-red-400 mt-1 line-clamp-1">
+                              {source.scraperHealth.lastError}
+                            </p>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
+                          {source.lastScrapedAt ? formatTimestamp(source.lastScrapedAt) : 'Never'}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-24 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full ${
+                                  source.scraperHealth.successRate >= 0.9
+                                    ? 'bg-green-500'
+                                    : source.scraperHealth.successRate >= 0.7
+                                      ? 'bg-yellow-500'
+                                      : source.scraperHealth.successRate >= 0.5
+                                        ? 'bg-orange-500'
+                                        : 'bg-red-500'
+                                }`}
+                                style={{
+                                  width: `${Math.round(source.scraperHealth.successRate * 100)}%`,
+                                }}
+                              />
+                            </div>
+                            <span className="text-sm text-slate-600 dark:text-slate-400">
+                              {Math.round(source.scraperHealth.successRate * 100)}%
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            {source.scraperHealth.totalRuns} runs
+                          </p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <button
+                            onClick={() => handleToggleActive(source._id, source.isActive)}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                              source.isActive ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-600'
+                            }`}
                           >
-                            Details
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
+                            <span
+                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                source.isActive ? 'translate-x-6' : 'translate-x-1'
+                              }`}
+                            />
+                          </button>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => handleTriggerScrape(source._id)}
+                              disabled={triggeringSource === source._id || !source.isActive}
+                              className={`px-3 py-1.5 text-sm font-medium rounded-md ${
+                                triggeringSource === source._id || !source.isActive
+                                  ? 'bg-slate-100 text-slate-400 dark:bg-slate-700 dark:text-slate-500 cursor-not-allowed'
+                                  : 'bg-primary text-white hover:bg-primary-dark'
+                              }`}
+                            >
+                              {triggeringSource === source._id ? (
+                                <span className="flex items-center gap-1">
+                                  <SpinnerIcon />
+                                  Running...
+                                </span>
+                              ) : (
+                                'Trigger Scrape'
+                              )}
+                            </button>
+                            <Link
+                              href={`/admin/sources/${source._id}`}
+                              className="px-3 py-1.5 text-sm font-medium border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700"
+                            >
+                              Details
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
               </table>
             </div>
             {/* Pagination info */}
@@ -482,14 +475,7 @@ function EmptyIcon() {
 function SpinnerIcon() {
   return (
     <svg className="animate-spin motion-reduce:animate-none h-4 w-4" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-      <circle
-        className="opacity-25"
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        strokeWidth="4"
-      />
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
       <path
         className="opacity-75"
         fill="currentColor"

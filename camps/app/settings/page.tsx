@@ -8,7 +8,16 @@ import { Id } from '../../convex/_generated/dataModel';
 import { Authenticated, Unauthenticated } from 'convex/react';
 import { BottomNav } from '../../components/shared/BottomNav';
 import { CHILD_COLOR_OPTIONS as CHILD_COLORS } from '../../lib/constants';
-import { BackIcon, PlusIcon, CloseIcon, LocationIcon, CheckIcon, CrownIcon, UserIcon } from '../../components/shared/icons';
+import {
+  BackIcon,
+  PlusIcon,
+  CloseIcon,
+  LocationIcon,
+  CheckIcon,
+  CrownIcon,
+  UserIcon,
+} from '../../components/shared/icons';
+import { ReferralSection } from '../../components/settings/ReferralSection';
 
 export default function SettingsPage() {
   return (
@@ -41,13 +50,8 @@ export default function SettingsPage() {
         </Authenticated>
         <Unauthenticated>
           <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-            <p className="text-slate-600 dark:text-slate-400">
-              Please sign in to view settings.
-            </p>
-            <a
-              href="/sign-in"
-              className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark"
-            >
+            <p className="text-slate-600 dark:text-slate-400">Please sign in to view settings.</p>
+            <a href="/sign-in" className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark">
               Sign in
             </a>
           </div>
@@ -90,11 +94,12 @@ function SettingsContent() {
       {/* Subscription */}
       <SubscriptionSection />
 
+      {/* Referrals */}
+      <ReferralSection />
+
       {/* Account Actions */}
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-          Account
-        </h2>
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Account</h2>
         <div className="space-y-3">
           <Link
             href="/sign-out"
@@ -122,9 +127,7 @@ function FamilyProfileSection({
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [displayName, setDisplayName] = useState(family?.displayName ?? '');
-  const [primaryCityId, setPrimaryCityId] = useState<Id<'cities'> | ''>(
-    family?.primaryCityId ?? ''
-  );
+  const [primaryCityId, setPrimaryCityId] = useState<Id<'cities'> | ''>(family?.primaryCityId ?? '');
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -167,7 +170,10 @@ function FamilyProfileSection({
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
         <p className="text-slate-600 dark:text-slate-400">
           No family profile found.{' '}
-          <Link href="/onboarding" className="text-primary hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+          <Link
+            href="/onboarding"
+            className="text-primary hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
             Complete setup
           </Link>
         </p>
@@ -178,9 +184,7 @@ function FamilyProfileSection({
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-          Family Profile
-        </h2>
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Family Profile</h2>
         {!isEditing && (
           <button
             type="button"
@@ -193,7 +197,10 @@ function FamilyProfileSection({
       </div>
 
       {error && (
-        <div role="alert" className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm">
+        <div
+          role="alert"
+          className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm"
+        >
           {error}
         </div>
       )}
@@ -201,7 +208,10 @@ function FamilyProfileSection({
       {isEditing ? (
         <div className="space-y-4">
           <div>
-            <label htmlFor="settings-display-name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label
+              htmlFor="settings-display-name"
+              className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+            >
               Display Name
             </label>
             <input
@@ -214,7 +224,10 @@ function FamilyProfileSection({
           </div>
 
           <div>
-            <label htmlFor="settings-email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label
+              htmlFor="settings-email"
+              className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+            >
               Email
             </label>
             <input
@@ -231,7 +244,10 @@ function FamilyProfileSection({
           </div>
 
           <div>
-            <label htmlFor="settings-primary-city" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label
+              htmlFor="settings-primary-city"
+              className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+            >
               Primary City
             </label>
             <select
@@ -270,26 +286,17 @@ function FamilyProfileSection({
       ) : (
         <div className="space-y-3">
           <div>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Display Name
-            </p>
-            <p className="font-medium text-slate-900 dark:text-white">
-              {family.displayName}
-            </p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Display Name</p>
+            <p className="font-medium text-slate-900 dark:text-white">{family.displayName}</p>
           </div>
           <div>
             <p className="text-sm text-slate-500 dark:text-slate-400">Email</p>
-            <p className="font-medium text-slate-900 dark:text-white">
-              {family.email}
-            </p>
+            <p className="font-medium text-slate-900 dark:text-white">{family.email}</p>
           </div>
           <div>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Primary City
-            </p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Primary City</p>
             <p className="font-medium text-slate-900 dark:text-white">
-              {cities.find((c) => c._id === family.primaryCityId)?.name ??
-                'Unknown'}
+              {cities.find((c) => c._id === family.primaryCityId)?.name ?? 'Unknown'}
             </p>
           </div>
         </div>
@@ -551,12 +558,8 @@ function HomeAddressSection({
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-            Home Address
-          </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Used to filter camps by distance
-          </p>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Home Address</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Used to filter camps by distance</p>
         </div>
         {!isEditing && (
           <button
@@ -570,7 +573,10 @@ function HomeAddressSection({
       </div>
 
       {error && (
-        <div role="alert" className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm">
+        <div
+          role="alert"
+          className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm"
+        >
           {error}
         </div>
       )}
@@ -598,7 +604,10 @@ function HomeAddressSection({
           </div>
 
           <div>
-            <label htmlFor="home-address-street" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label
+              htmlFor="home-address-street"
+              className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+            >
               Street Address
             </label>
             <input
@@ -614,7 +623,10 @@ function HomeAddressSection({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="home-address-city" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              <label
+                htmlFor="home-address-city"
+                className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+              >
                 City
               </label>
               <input
@@ -628,7 +640,10 @@ function HomeAddressSection({
               />
             </div>
             <div>
-              <label htmlFor="home-address-state" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              <label
+                htmlFor="home-address-state"
+                className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+              >
                 State
               </label>
               <select
@@ -650,7 +665,10 @@ function HomeAddressSection({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="home-address-zip" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              <label
+                htmlFor="home-address-zip"
+                className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+              >
                 ZIP Code
               </label>
               <input
@@ -681,7 +699,9 @@ function HomeAddressSection({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
                   <CheckIcon />
-                  <span>Coordinates: {latitude?.toFixed(5)}, {longitude?.toFixed(5)}</span>
+                  <span>
+                    Coordinates: {latitude?.toFixed(5)}, {longitude?.toFixed(5)}
+                  </span>
                 </div>
                 <button
                   type="button"
@@ -698,7 +718,10 @@ function HomeAddressSection({
           {(showManualCoords || (!hasCoords && isEditing)) && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="home-address-lat" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label
+                  htmlFor="home-address-lat"
+                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+                >
                   Latitude
                 </label>
                 <input
@@ -712,7 +735,10 @@ function HomeAddressSection({
                 />
               </div>
               <div>
-                <label htmlFor="home-address-lng" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label
+                  htmlFor="home-address-lng"
+                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+                >
                   Longitude
                 </label>
                 <input
@@ -759,9 +785,7 @@ function HomeAddressSection({
         </div>
       ) : family.homeAddress ? (
         <div className="space-y-2">
-          <p className="text-slate-900 dark:text-white">
-            {family.homeAddress.street}
-          </p>
+          <p className="text-slate-900 dark:text-white">{family.homeAddress.street}</p>
           <p className="text-slate-900 dark:text-white">
             {family.homeAddress.city}, {family.homeAddress.state} {family.homeAddress.zip}
           </p>
@@ -833,12 +857,13 @@ function SubscriptionSection() {
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
-      <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-        Subscription
-      </h2>
+      <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Subscription</h2>
 
       {error && (
-        <div role="alert" className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm">
+        <div
+          role="alert"
+          className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm"
+        >
           {error}
         </div>
       )}
@@ -946,10 +971,7 @@ function SubscriptionSection() {
       )}
 
       {showCancelModal && (
-        <CancelSubscriptionModal
-          onClose={() => setShowCancelModal(false)}
-          onManageBilling={handleManageSubscription}
-        />
+        <CancelSubscriptionModal onClose={() => setShowCancelModal(false)} onManageBilling={handleManageSubscription} />
       )}
     </div>
   );
@@ -995,7 +1017,9 @@ function CancelSubscriptionModal({
         <div className="bg-gradient-to-br from-primary/10 to-surface/10 dark:from-primary-dark/20 dark:to-indigo-900/20 border border-primary/30 dark:border-primary-dark rounded-lg p-4 mb-6">
           <div className="flex items-center justify-between mb-2">
             <span className="font-semibold text-primary-dark dark:text-white/80">Lite Plan</span>
-            <span className="text-2xl font-bold text-primary dark:text-primary-light">$3<span className="text-sm font-normal">/mo</span></span>
+            <span className="text-2xl font-bold text-primary dark:text-primary-light">
+              $3<span className="text-sm font-normal">/mo</span>
+            </span>
           </div>
           <p className="text-sm text-primary-dark dark:text-white/60">
             Keep all your premium features at a reduced price. Same great planning tools, friendlier on the wallet.
@@ -1048,17 +1072,13 @@ function ChildrenSection({
     summerEndDate?: string;
   }[];
 }) {
-  const [editingChildId, setEditingChildId] = useState<Id<'children'> | null>(
-    null
-  );
+  const [editingChildId, setEditingChildId] = useState<Id<'children'> | null>(null);
   const [showAddChild, setShowAddChild] = useState(false);
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-          Children
-        </h2>
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Children</h2>
         <button
           type="button"
           onClick={() => setShowAddChild(true)}
@@ -1090,25 +1110,15 @@ function ChildrenSection({
         <div className="space-y-4">
           {children.map((child) =>
             editingChildId === child._id ? (
-              <EditChildForm
-                key={child._id}
-                child={child}
-                onClose={() => setEditingChildId(null)}
-              />
+              <EditChildForm key={child._id} child={child} onClose={() => setEditingChildId(null)} />
             ) : (
-              <ChildCard
-                key={child._id}
-                child={child}
-                onEdit={() => setEditingChildId(child._id)}
-              />
-            )
+              <ChildCard key={child._id} child={child} onEdit={() => setEditingChildId(child._id)} />
+            ),
           )}
         </div>
       )}
 
-      {showAddChild && (
-        <AddChildModal onClose={() => setShowAddChild(false)} />
-      )}
+      {showAddChild && <AddChildModal onClose={() => setShowAddChild(false)} />}
     </div>
   );
 }
@@ -1152,11 +1162,7 @@ function ChildCard({
           </p>
         </div>
       </div>
-      <button
-        type="button"
-        onClick={onEdit}
-        className="text-sm text-primary hover:text-primary-dark"
-      >
+      <button type="button" onClick={onEdit} className="text-sm text-primary hover:text-primary-dark">
         Edit
       </button>
     </div>
@@ -1183,9 +1189,7 @@ function EditChildForm({
   const [firstName, setFirstName] = useState(child.firstName);
   const [lastName, setLastName] = useState(child.lastName ?? '');
   const [birthdate, setBirthdate] = useState(child.birthdate);
-  const [currentGrade, setCurrentGrade] = useState<number | undefined>(
-    child.currentGrade
-  );
+  const [currentGrade, setCurrentGrade] = useState<number | undefined>(child.currentGrade);
   const [color, setColor] = useState(child.color || '#3B82F6');
   const [summerStartDate, setSummerStartDate] = useState(child.summerStartDate ?? '');
   const [summerEndDate, setSummerEndDate] = useState(child.summerEndDate ?? '');
@@ -1247,8 +1251,7 @@ function EditChildForm({
     return (
       <div className="p-4 border border-red-200 dark:border-red-800 rounded-lg bg-red-50 dark:bg-red-900/20">
         <p className="text-sm text-slate-700 dark:text-slate-300 mb-4">
-          Are you sure you want to remove {child.firstName}? This will also
-          remove their registrations.
+          Are you sure you want to remove {child.firstName}? This will also remove their registrations.
         </p>
         <div className="flex gap-3">
           <button
@@ -1298,7 +1301,9 @@ function EditChildForm({
           />
         </div>
         <div>
-          <label htmlFor={`edit-child-lastName-${child._id}`} className="block text-xs text-slate-500 mb-1">Last Name</label>
+          <label htmlFor={`edit-child-lastName-${child._id}`} className="block text-xs text-slate-500 mb-1">
+            Last Name
+          </label>
           <input
             type="text"
             id={`edit-child-lastName-${child._id}`}
@@ -1329,13 +1334,13 @@ function EditChildForm({
           />
         </div>
         <div>
-          <label htmlFor={`edit-child-grade-${child._id}`} className="block text-xs text-slate-500 mb-1">Grade</label>
+          <label htmlFor={`edit-child-grade-${child._id}`} className="block text-xs text-slate-500 mb-1">
+            Grade
+          </label>
           <select
             id={`edit-child-grade-${child._id}`}
             value={currentGrade ?? ''}
-            onChange={(e) =>
-              setCurrentGrade(e.target.value ? parseInt(e.target.value) : undefined)
-            }
+            onChange={(e) => setCurrentGrade(e.target.value ? parseInt(e.target.value) : undefined)}
             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
           >
             <option value="">Not set</option>
@@ -1371,9 +1376,7 @@ function EditChildForm({
 
       {/* Summer Date Range */}
       <div className="border-t border-slate-200 dark:border-slate-700 pt-3 mt-3">
-        <label className="block text-xs text-slate-500 mb-2">
-          Summer Schedule (optional)
-        </label>
+        <label className="block text-xs text-slate-500 mb-2">Summer Schedule (optional)</label>
         <p className="text-xs text-slate-400 dark:text-slate-500 mb-2">
           When does {child.firstName}&apos;s summer start and end? Leave blank to use default (June 1 - Aug 31).
         </p>
@@ -1446,11 +1449,14 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
   const addChild = useMutation(api.children.mutations.addChild);
 
   // ESC key to close modal
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Escape' && !isSaving) {
-      onClose();
-    }
-  }, [onClose, isSaving]);
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isSaving) {
+        onClose();
+      }
+    },
+    [onClose, isSaving],
+  );
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
@@ -1458,11 +1464,14 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
   }, [handleKeyDown]);
 
   // Handle backdrop click
-  const handleBackdropClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget && !isSaving) {
-      onClose();
-    }
-  }, [onClose, isSaving]);
+  const handleBackdropClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (e.target === e.currentTarget && !isSaving) {
+        onClose();
+      }
+    },
+    [onClose, isSaving],
+  );
 
   const handleSave = async () => {
     if (!firstName.trim()) {
@@ -1518,7 +1527,10 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
         </div>
 
         {error && (
-          <div role="alert" className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm">
+          <div
+            role="alert"
+            className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm"
+          >
             {error}
           </div>
         )}
@@ -1583,11 +1595,7 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
               <select
                 id="add-child-grade"
                 value={currentGrade ?? ''}
-                onChange={(e) =>
-                  setCurrentGrade(
-                    e.target.value ? parseInt(e.target.value) : undefined
-                  )
-                }
+                onChange={(e) => setCurrentGrade(e.target.value ? parseInt(e.target.value) : undefined)}
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
               >
                 <option value="">Not set</option>
@@ -1678,4 +1686,3 @@ function getGradeLabel(grade: number): string {
   const found = GRADES.find((g) => g.value === grade);
   return found?.label ?? `Grade ${grade}`;
 }
-

@@ -1,6 +1,6 @@
-import { query } from "../_generated/server";
-import { v } from "convex/values";
-import { getFamily, requireFamily } from "../lib/auth";
+import { query } from '../_generated/server';
+import { v } from 'convex/values';
+import { getFamily, requireFamily } from '../lib/auth';
 
 /**
  * List all children for the current family.
@@ -15,10 +15,8 @@ export const listChildren = query({
     }
 
     const children = await ctx.db
-      .query("children")
-      .withIndex("by_family_and_active", (q) =>
-        q.eq("familyId", family._id).eq("isActive", true)
-      )
+      .query('children')
+      .withIndex('by_family_and_active', (q) => q.eq('familyId', family._id).eq('isActive', true))
       .collect();
 
     return children;
@@ -31,7 +29,7 @@ export const listChildren = query({
  */
 export const getChild = query({
   args: {
-    childId: v.id("children"),
+    childId: v.id('children'),
   },
   handler: async (ctx, args) => {
     const family = await getFamily(ctx);

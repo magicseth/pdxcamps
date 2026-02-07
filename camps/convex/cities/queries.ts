@@ -1,5 +1,5 @@
-import { query, internalQuery } from "../_generated/server";
-import { v } from "convex/values";
+import { query, internalQuery } from '../_generated/server';
+import { v } from 'convex/values';
 
 /**
  * List all active cities
@@ -8,8 +8,8 @@ export const listActiveCities = query({
   args: {},
   handler: async (ctx) => {
     return await ctx.db
-      .query("cities")
-      .withIndex("by_is_active", (q) => q.eq("isActive", true))
+      .query('cities')
+      .withIndex('by_is_active', (q) => q.eq('isActive', true))
       .collect();
   },
 });
@@ -23,8 +23,8 @@ export const getCityBySlug = query({
   },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("cities")
-      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .query('cities')
+      .withIndex('by_slug', (q) => q.eq('slug', args.slug))
       .unique();
   },
 });
@@ -34,7 +34,7 @@ export const getCityBySlug = query({
  */
 export const getCityById = query({
   args: {
-    cityId: v.id("cities"),
+    cityId: v.id('cities'),
   },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.cityId);
@@ -47,7 +47,7 @@ export const getCityById = query({
 export const listAllCities = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query("cities").collect();
+    return await ctx.db.query('cities').collect();
   },
 });
 
@@ -56,12 +56,12 @@ export const listAllCities = query({
  */
 export const listNeighborhoods = query({
   args: {
-    cityId: v.id("cities"),
+    cityId: v.id('cities'),
   },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("neighborhoods")
-      .withIndex("by_city", (q) => q.eq("cityId", args.cityId))
+      .query('neighborhoods')
+      .withIndex('by_city', (q) => q.eq('cityId', args.cityId))
       .collect();
   },
 });
@@ -77,8 +77,8 @@ export const getCityByDomain = query({
   handler: async (ctx, args) => {
     // Try exact match first
     const city = await ctx.db
-      .query("cities")
-      .withIndex("by_domain", (q) => q.eq("domain", args.domain))
+      .query('cities')
+      .withIndex('by_domain', (q) => q.eq('domain', args.domain))
       .first();
 
     if (city) return city;
@@ -87,8 +87,8 @@ export const getCityByDomain = query({
     const domainWithoutWww = args.domain.replace(/^www\./, '');
     if (domainWithoutWww !== args.domain) {
       return await ctx.db
-        .query("cities")
-        .withIndex("by_domain", (q) => q.eq("domain", domainWithoutWww))
+        .query('cities')
+        .withIndex('by_domain', (q) => q.eq('domain', domainWithoutWww))
         .first();
     }
 
@@ -107,8 +107,8 @@ export const getCityBySlugInternal = internalQuery({
   },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("cities")
-      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .query('cities')
+      .withIndex('by_slug', (q) => q.eq('slug', args.slug))
       .unique();
   },
 });
@@ -123,8 +123,8 @@ export const getCityByDomainInternal = internalQuery({
   handler: async (ctx, args) => {
     // Try exact match first
     const city = await ctx.db
-      .query("cities")
-      .withIndex("by_domain", (q) => q.eq("domain", args.domain))
+      .query('cities')
+      .withIndex('by_domain', (q) => q.eq('domain', args.domain))
       .first();
 
     if (city) return city;
@@ -133,8 +133,8 @@ export const getCityByDomainInternal = internalQuery({
     const domainWithoutWww = args.domain.replace(/^www\./, '');
     if (domainWithoutWww !== args.domain) {
       return await ctx.db
-        .query("cities")
-        .withIndex("by_domain", (q) => q.eq("domain", domainWithoutWww))
+        .query('cities')
+        .withIndex('by_domain', (q) => q.eq('domain', domainWithoutWww))
         .first();
     }
 

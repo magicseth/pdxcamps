@@ -137,19 +137,14 @@ export function RegistrationChecklist({ isOpen, onClose, children }: Registratio
   return (
     <>
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 transition-opacity"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 transition-opacity" onClick={onClose} />
 
       {/* Drawer */}
       <div className="fixed inset-y-0 right-0 w-full max-w-md bg-white dark:bg-slate-800 shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
           <div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-              Registration Checklist
-            </h2>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Registration Checklist</h2>
             <p className="text-sm text-slate-500 dark:text-slate-400">
               {totalPending} camp{totalPending === 1 ? '' : 's'} need{totalPending === 1 ? 's' : ''} your action
             </p>
@@ -169,16 +164,18 @@ export function RegistrationChecklist({ isOpen, onClose, children }: Registratio
           {groupedCamps.length === 0 ? (
             <div className="text-center py-12">
               <div className="w-16 h-16 mx-auto mb-4 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg
+                  className="w-8 h-8 text-green-600 dark:text-green-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">
-                All done!
-              </h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                You've registered for all your saved camps
-              </p>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">All done!</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">You've registered for all your saved camps</p>
             </div>
           ) : (
             <div className="space-y-6">
@@ -192,12 +189,8 @@ export function RegistrationChecklist({ isOpen, onClose, children }: Registratio
                     >
                       {group.childName[0]}
                     </span>
-                    <span className="font-medium text-slate-900 dark:text-white">
-                      {group.childName}
-                    </span>
-                    <span className="text-xs text-slate-400 dark:text-slate-500">
-                      ({group.camps.length})
-                    </span>
+                    <span className="font-medium text-slate-900 dark:text-white">{group.childName}</span>
+                    <span className="text-xs text-slate-400 dark:text-slate-500">({group.camps.length})</span>
                   </div>
 
                   {/* Camp cards */}
@@ -213,9 +206,7 @@ export function RegistrationChecklist({ isOpen, onClose, children }: Registratio
 
                           {/* Camp info */}
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-slate-900 dark:text-white truncate">
-                              {camp.campName}
-                            </h4>
+                            <h4 className="font-medium text-slate-900 dark:text-white truncate">{camp.campName}</h4>
                             <div className="flex items-center gap-2 mt-1 text-sm text-slate-500 dark:text-slate-400">
                               {camp.organizationName && (
                                 <>
@@ -244,7 +235,12 @@ export function RegistrationChecklist({ isOpen, onClose, children }: Registratio
                             >
                               Register
                               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                />
                               </svg>
                             </a>
                           )}
@@ -252,7 +248,13 @@ export function RegistrationChecklist({ isOpen, onClose, children }: Registratio
                             onClick={() => handleMarkDone(camp)}
                             className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
                           >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={2.5}
+                            >
                               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                             </svg>
                             Mark Done
@@ -272,16 +274,17 @@ export function RegistrationChecklist({ isOpen, onClose, children }: Registratio
       {recentlyRegistered && (
         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[60] animate-in slide-in-from-bottom-4 duration-300">
           <div className="flex items-center gap-3 px-4 py-3 bg-slate-900 text-white rounded-xl shadow-lg">
-            <svg className="w-5 h-5 text-green-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg
+              className="w-5 h-5 text-green-400 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
-            <span className="text-sm font-medium">
-              {recentlyRegistered.campName} marked as registered
-            </span>
-            <button
-              onClick={handleUndo}
-              className="text-sm font-medium text-amber-400 hover:text-amber-300 ml-2"
-            >
+            <span className="text-sm font-medium">{recentlyRegistered.campName} marked as registered</span>
+            <button onClick={handleUndo} className="text-sm font-medium text-amber-400 hover:text-amber-300 ml-2">
               Undo
             </button>
           </div>

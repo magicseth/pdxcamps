@@ -58,15 +58,11 @@ describe('determineSessionStatus', () => {
   });
 
   it('returns "active" for 100% complete with valid price', () => {
-    expect(
-      determineSessionStatus({ completenessScore: 100, priceInCents: 5000 })
-    ).toBe('active');
+    expect(determineSessionStatus({ completenessScore: 100, priceInCents: 5000 })).toBe('active');
   });
 
   it('returns "draft" for $0 price without "free" in priceRaw', () => {
-    expect(
-      determineSessionStatus({ completenessScore: 100, priceInCents: 0, priceRaw: '$0' })
-    ).toBe('draft');
+    expect(determineSessionStatus({ completenessScore: 100, priceInCents: 0, priceRaw: '$0' })).toBe('draft');
   });
 
   it('returns "active" for $0 price with "free" in priceRaw', () => {
@@ -75,14 +71,12 @@ describe('determineSessionStatus', () => {
         completenessScore: 100,
         priceInCents: 0,
         priceRaw: 'Free camp',
-      })
+      }),
     ).toBe('active');
   });
 
   it('returns "pending_review" for low completeness even with valid price', () => {
-    expect(
-      determineSessionStatus({ completenessScore: 30, priceInCents: 5000 })
-    ).toBe('pending_review');
+    expect(determineSessionStatus({ completenessScore: 30, priceInCents: 5000 })).toBe('pending_review');
   });
 });
 

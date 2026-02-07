@@ -1,14 +1,22 @@
-import { mutation, internalMutation } from "../_generated/server";
-import { internal } from "../_generated/api";
-import { v } from "convex/values";
+import { mutation, internalMutation } from '../_generated/server';
+import { internal } from '../_generated/api';
+import { v } from 'convex/values';
 
 // ============================================
 // CATEGORY CLASSIFICATION
 // ============================================
 
 const VALID_CATEGORIES = [
-  "Sports", "Arts", "STEM", "Nature", "Music",
-  "Academic", "Drama", "Adventure", "Cooking", "Dance",
+  'Sports',
+  'Arts',
+  'STEM',
+  'Nature',
+  'Music',
+  'Academic',
+  'Drama',
+  'Adventure',
+  'Cooking',
+  'Dance',
 ] as const;
 
 /**
@@ -19,9 +27,9 @@ export const applyCampCategories = internalMutation({
   args: {
     updates: v.array(
       v.object({
-        campId: v.id("camps"),
+        campId: v.id('camps'),
         categories: v.array(v.string()),
-      })
+      }),
     ),
   },
   handler: async (ctx, args) => {
@@ -41,8 +49,8 @@ export const applyCampCategories = internalMutation({
 
       // Update denormalized campCategories on sessions
       const sessions = await ctx.db
-        .query("sessions")
-        .withIndex("by_camp", (q) => q.eq("campId", update.campId))
+        .query('sessions')
+        .withIndex('by_camp', (q) => q.eq('campId', update.campId))
         .collect();
 
       for (const session of sessions) {
@@ -57,11 +65,10 @@ export const applyCampCategories = internalMutation({
     // Trigger aggregate recompute for affected cities
     const currentYear = new Date().getFullYear();
     for (const cityId of cityIdsToRecompute) {
-      await ctx.scheduler.runAfter(
-        0,
-        internal.planner.aggregates.recomputeForCity,
-        { cityId: cityId as any, year: currentYear }
-      );
+      await ctx.scheduler.runAfter(0, internal.planner.aggregates.recomputeForCity, {
+        cityId: cityId as any,
+        year: currentYear,
+      });
     }
 
     if (skippedMissing > 0) {
@@ -76,23 +83,23 @@ export const applyCampCategories = internalMutation({
  */
 export const getUncategorizedCamps = internalMutation({
   args: {
-    cityId: v.optional(v.id("cities")),
+    cityId: v.optional(v.id('cities')),
     limit: v.optional(v.number()),
     offset: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const limit = args.limit ?? 50;
     const offset = args.offset ?? 0;
-    const camps = await ctx.db.query("camps").collect();
-    const orgs = await ctx.db.query("organizations").collect();
+    const camps = await ctx.db.query('camps').collect();
+    const orgs = await ctx.db.query('organizations').collect();
     const orgMap = new Map(orgs.map((o) => [o._id, o.name]));
 
     // Optionally filter by city
     let campIdsInCity: Set<string> | null = null;
     if (args.cityId) {
       const sessions = await ctx.db
-        .query("sessions")
-        .withIndex("by_city_and_status", (q) => q.eq("cityId", args.cityId!))
+        .query('sessions')
+        .withIndex('by_city_and_status', (q) => q.eq('cityId', args.cityId!))
         .collect();
       campIdsInCity = new Set(sessions.map((s) => s.campId));
     }
@@ -102,7 +109,7 @@ export const getUncategorizedCamps = internalMutation({
       if (campIdsInCity && !campIdsInCity.has(camp._id)) return false;
       return (
         camp.categories.length === 0 ||
-        (camp.categories.length === 1 && camp.categories[0] === "General") ||
+        (camp.categories.length === 1 && camp.categories[0] === 'General') ||
         !VALID_CATEGORIES.some((vc) => camp.categories.includes(vc))
       );
     });
@@ -115,7 +122,7 @@ export const getUncategorizedCamps = internalMutation({
       batch: batch.map((camp) => ({
         campId: camp._id,
         name: camp.name,
-        orgName: orgMap.get(camp.organizationId) || "Unknown",
+        orgName: orgMap.get(camp.organizationId) || 'Unknown',
         description: camp.description.slice(0, 500),
         currentCategories: camp.categories,
       })),
@@ -129,7 +136,7 @@ export const getUncategorizedCamps = internalMutation({
 export const findBadSessions = mutation({
   args: {},
   handler: async (ctx) => {
-    const sessions = await ctx.db.query("sessions").collect();
+    const sessions = await ctx.db.query('sessions').collect();
 
     const badSessions: Array<{
       id: string;
@@ -141,10 +148,10 @@ export const findBadSessions = mutation({
       const issues: string[] = [];
 
       // Check for placeholder dates
-      if (session.startDate?.includes("UNKNOWN") || session.startDate?.includes("<")) {
+      if (session.startDate?.includes('UNKNOWN') || session.startDate?.includes('<')) {
         issues.push(`Bad startDate: ${session.startDate}`);
       }
-      if (session.endDate?.includes("UNKNOWN") || session.endDate?.includes("<")) {
+      if (session.endDate?.includes('UNKNOWN') || session.endDate?.includes('<')) {
         issues.push(`Bad endDate: ${session.endDate}`);
       }
 
@@ -157,16 +164,16 @@ export const findBadSessions = mutation({
       }
 
       // Check for dates in the past (before 2025)
-      if (session.startDate && session.startDate < "2025-01-01") {
+      if (session.startDate && session.startDate < '2025-01-01') {
         issues.push(`Past date: ${session.startDate}`);
       }
 
       // Check for missing required times
       if (session.dropOffTime?.hour === undefined) {
-        issues.push("Missing dropOffTime");
+        issues.push('Missing dropOffTime');
       }
       if (session.pickUpTime?.hour === undefined) {
-        issues.push("Missing pickUpTime");
+        issues.push('Missing pickUpTime');
       }
 
       if (issues.length > 0) {
@@ -195,7 +202,7 @@ export const deleteBadSessions = mutation({
   },
   handler: async (ctx, args) => {
     const dryRun = args.dryRun ?? true;
-    const sessions = await ctx.db.query("sessions").collect();
+    const sessions = await ctx.db.query('sessions').collect();
 
     let deleted = 0;
     const deletedIds: string[] = [];
@@ -205,10 +212,10 @@ export const deleteBadSessions = mutation({
 
       // Delete sessions with placeholder dates
       if (
-        session.startDate?.includes("UNKNOWN") ||
-        session.startDate?.includes("<") ||
-        session.endDate?.includes("UNKNOWN") ||
-        session.endDate?.includes("<")
+        session.startDate?.includes('UNKNOWN') ||
+        session.startDate?.includes('<') ||
+        session.endDate?.includes('UNKNOWN') ||
+        session.endDate?.includes('<')
       ) {
         shouldDelete = true;
       }
@@ -248,8 +255,8 @@ export const deleteOldSessions = mutation({
   },
   handler: async (ctx, args) => {
     const dryRun = args.dryRun ?? true;
-    const cutoff = args.cutoffDate ?? "2025-01-01";
-    const sessions = await ctx.db.query("sessions").collect();
+    const cutoff = args.cutoffDate ?? '2025-01-01';
+    const sessions = await ctx.db.query('sessions').collect();
 
     let deleted = 0;
     const deletedIds: string[] = [];
@@ -278,12 +285,12 @@ export const deleteOldSessions = mutation({
  */
 export const traceSessionSource = mutation({
   args: {
-    sessionId: v.id("sessions"),
+    sessionId: v.id('sessions'),
   },
   handler: async (ctx, args) => {
     const session = await ctx.db.get(args.sessionId);
     if (!session) {
-      return { error: "Session not found" };
+      return { error: 'Session not found' };
     }
 
     const camp = session.campId ? await ctx.db.get(session.campId) : null;
@@ -294,9 +301,9 @@ export const traceSessionSource = mutation({
     // Find recent jobs for this source
     const recentJobs = source
       ? await ctx.db
-          .query("scrapeJobs")
-          .withIndex("by_source", (q) => q.eq("sourceId", source._id))
-          .order("desc")
+          .query('scrapeJobs')
+          .withIndex('by_source', (q) => q.eq('sourceId', source._id))
+          .order('desc')
           .take(5)
       : [];
 
@@ -304,8 +311,8 @@ export const traceSessionSource = mutation({
     const rawDataSamples: Array<{ jobId: string; preview: string }> = [];
     for (const job of recentJobs) {
       const rawData = await ctx.db
-        .query("scrapeRawData")
-        .withIndex("by_job", (q) => q.eq("jobId", job._id))
+        .query('scrapeRawData')
+        .withIndex('by_job', (q) => q.eq('jobId', job._id))
         .first();
       if (rawData) {
         rawDataSamples.push({
@@ -324,29 +331,37 @@ export const traceSessionSource = mutation({
         status: session.status,
         createdAt: session._creationTime,
       },
-      camp: camp ? {
-        id: camp._id,
-        name: camp.name,
-        website: camp.website,
-        imageUrls: camp.imageUrls,
-      } : null,
-      location: location ? {
-        id: location._id,
-        name: location.name,
-        address: location.address,
-      } : null,
-      source: source ? {
-        id: source._id,
-        name: source.name,
-        url: source.url,
-        scraperModule: source.scraperModule,
-      } : null,
-      organization: organization ? {
-        id: organization._id,
-        name: organization.name,
-        website: organization.website,
-      } : null,
-      recentJobs: recentJobs.map(j => ({
+      camp: camp
+        ? {
+            id: camp._id,
+            name: camp.name,
+            website: camp.website,
+            imageUrls: camp.imageUrls,
+          }
+        : null,
+      location: location
+        ? {
+            id: location._id,
+            name: location.name,
+            address: location.address,
+          }
+        : null,
+      source: source
+        ? {
+            id: source._id,
+            name: source.name,
+            url: source.url,
+            scraperModule: source.scraperModule,
+          }
+        : null,
+      organization: organization
+        ? {
+            id: organization._id,
+            name: organization.name,
+            website: organization.website,
+          }
+        : null,
+      recentJobs: recentJobs.map((j) => ({
         id: j._id,
         status: j.status,
         sessionsFound: j.sessionsFound,
@@ -366,7 +381,7 @@ export const traceSessionSource = mutation({
  */
 export const findDuplicateSessions = mutation({
   args: {
-    cityId: v.optional(v.id("cities")),
+    cityId: v.optional(v.id('cities')),
   },
   handler: async (ctx, args) => {
     // Get sessions, optionally filtered by city
@@ -374,11 +389,11 @@ export const findDuplicateSessions = mutation({
     const cityId = args.cityId;
     if (cityId) {
       sessions = await ctx.db
-        .query("sessions")
-        .withIndex("by_city_and_status", (q) => q.eq("cityId", cityId))
+        .query('sessions')
+        .withIndex('by_city_and_status', (q) => q.eq('cityId', cityId))
         .collect();
     } else {
-      sessions = await ctx.db.query("sessions").collect();
+      sessions = await ctx.db.query('sessions').collect();
     }
 
     // Group by deduplication key: campId + locationId + startDate + endDate
@@ -414,7 +429,7 @@ export const findDuplicateSessions = mutation({
           count: sessionList.length,
           sessions: sessionList.map((s) => ({
             id: s._id,
-            campName: s.campName || "Unknown",
+            campName: s.campName || 'Unknown',
             startDate: s.startDate,
             endDate: s.endDate,
             price: s.price,
@@ -455,14 +470,14 @@ function scoreSession(session: {
   let score = 0;
 
   // Prefer active sessions
-  if (session.status === "active") score += 100;
-  else if (session.status === "draft") score += 50;
+  if (session.status === 'active') score += 100;
+  else if (session.status === 'draft') score += 50;
 
   // Prefer sessions with prices
   if (session.price > 0) score += 50;
 
   // Prefer higher completeness
-  score += (session.completenessScore || 0);
+  score += session.completenessScore || 0;
 
   // Prefer more recently scraped
   if (session.lastScrapedAt) {
@@ -486,7 +501,7 @@ function scoreSession(session: {
 export const mergeDuplicateSessions = mutation({
   args: {
     dryRun: v.optional(v.boolean()),
-    cityId: v.optional(v.id("cities")),
+    cityId: v.optional(v.id('cities')),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
@@ -498,11 +513,11 @@ export const mergeDuplicateSessions = mutation({
     const cityId = args.cityId;
     if (cityId) {
       sessions = await ctx.db
-        .query("sessions")
-        .withIndex("by_city_and_status", (q) => q.eq("cityId", cityId))
+        .query('sessions')
+        .withIndex('by_city_and_status', (q) => q.eq('cityId', cityId))
         .collect();
     } else {
-      sessions = await ctx.db.query("sessions").collect();
+      sessions = await ctx.db.query('sessions').collect();
     }
 
     // Group by deduplication key
@@ -540,17 +555,15 @@ export const mergeDuplicateSessions = mutation({
       // Reassign registrations from deleted sessions to kept session
       for (const deleteSession of toDelete) {
         const registrations = await ctx.db
-          .query("registrations")
-          .withIndex("by_session", (q) => q.eq("sessionId", deleteSession._id))
+          .query('registrations')
+          .withIndex('by_session', (q) => q.eq('sessionId', deleteSession._id))
           .collect();
 
         for (const reg of registrations) {
           // Check if this child already has a registration for the kept session
           const existingReg = await ctx.db
-            .query("registrations")
-            .withIndex("by_child_and_session", (q) =>
-              q.eq("childId", reg.childId).eq("sessionId", keep._id)
-            )
+            .query('registrations')
+            .withIndex('by_child_and_session', (q) => q.eq('childId', reg.childId).eq('sessionId', keep._id))
             .unique();
 
           if (!dryRun) {
@@ -575,7 +588,7 @@ export const mergeDuplicateSessions = mutation({
       mergeResults.push({
         keptId: keep._id,
         deletedIds: toDelete.map((s) => s._id),
-        campName: keep.campName || "Unknown",
+        campName: keep.campName || 'Unknown',
       });
       mergedCount++;
     }
@@ -599,7 +612,7 @@ export const autoDeduplicateSessions = internalMutation({
   args: {},
   handler: async (ctx) => {
     // Get all sessions
-    const sessions = await ctx.db.query("sessions").collect();
+    const sessions = await ctx.db.query('sessions').collect();
 
     // Group by deduplication key
     const byKey = new Map<string, typeof sessions>();
@@ -632,16 +645,14 @@ export const autoDeduplicateSessions = internalMutation({
       // Reassign registrations from deleted sessions to kept session
       for (const deleteSession of toDelete) {
         const registrations = await ctx.db
-          .query("registrations")
-          .withIndex("by_session", (q) => q.eq("sessionId", deleteSession._id))
+          .query('registrations')
+          .withIndex('by_session', (q) => q.eq('sessionId', deleteSession._id))
           .collect();
 
         for (const reg of registrations) {
           const existingReg = await ctx.db
-            .query("registrations")
-            .withIndex("by_child_and_session", (q) =>
-              q.eq("childId", reg.childId).eq("sessionId", keep._id)
-            )
+            .query('registrations')
+            .withIndex('by_child_and_session', (q) => q.eq('childId', reg.childId).eq('sessionId', keep._id))
             .unique();
 
           if (existingReg) {
@@ -662,7 +673,9 @@ export const autoDeduplicateSessions = internalMutation({
 
     // Log results (these appear in Convex dashboard logs)
     if (deletedCount > 0) {
-      console.log(`[Auto-Dedup] Merged ${mergedCount} groups, deleted ${deletedCount} sessions, reassigned ${registrationsReassigned} registrations`);
+      console.log(
+        `[Auto-Dedup] Merged ${mergedCount} groups, deleted ${deletedCount} sessions, reassigned ${registrationsReassigned} registrations`,
+      );
     }
 
     return {

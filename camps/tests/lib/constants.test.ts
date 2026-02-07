@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  CATEGORIES,
-  GRADE_LABELS,
-  DEFAULT_CHILD_COLORS,
-  CHILD_COLOR_OPTIONS,
-} from '@/lib/constants';
+import { CATEGORIES, GRADE_LABELS, DEFAULT_CHILD_COLORS, CHILD_COLOR_OPTIONS } from '@/lib/constants';
 
 describe('CATEGORIES', () => {
   it('is a non-empty array', () => {

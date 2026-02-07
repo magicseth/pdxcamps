@@ -18,12 +18,12 @@ We need to charge enough per customer that we're profitable on day one, then rei
 
 Parents are stressed. Camps are filling up. They'll pay for:
 
-| Pain Point | Willingness to Pay |
-|------------|-------------------|
-| "I don't have time to research" | HIGH |
-| "I'm afraid I'll miss registration" | HIGH |
-| "I don't know what's good" | MEDIUM |
-| "I can't compare prices easily" | LOW |
+| Pain Point                          | Willingness to Pay |
+| ----------------------------------- | ------------------ |
+| "I don't have time to research"     | HIGH               |
+| "I'm afraid I'll miss registration" | HIGH               |
+| "I don't know what's good"          | MEDIUM             |
+| "I can't compare prices easily"     | LOW                |
 
 **Key insight:** The tool saves time, but some parents will pay MORE for someone to just do it for them.
 
@@ -32,12 +32,14 @@ Parents are stressed. Camps are filling up. They'll pay for:
 ## REVENUE MODEL: THREE TIERS
 
 ### Tier 1: Free Tool (Lead Generation)
+
 - Browse all camps
 - Basic search/filter
 - View up to 2 weeks in planner
 - **Purpose:** Get users in, show value, upsell
 
 ### Tier 2: Summer Pass - $39
+
 - Unlimited planner access
 - All children
 - Registration deadline alerts
@@ -46,6 +48,7 @@ Parents are stressed. Camps are filling up. They'll pay for:
 - **Target:** Self-service parents who want the tool
 
 ### Tier 3: Camp Concierge - $149
+
 - Everything in Summer Pass
 - **30-minute planning call** with a real person
 - We build your summer plan for you
@@ -64,6 +67,7 @@ Parents are stressed. Camps are filling up. They'll pay for:
 5. **Testimonials** - "PDX Camps planned my whole summer in one call"
 
 **Math:**
+
 - 10 concierge customers × $149 = $1,490
 - Minus ~5 hours of your time
 - Net: $1,400+ to reinvest in growth
@@ -73,6 +77,7 @@ Parents are stressed. Camps are filling up. They'll pay for:
 ## WEEK 1: VALIDATE AND SELL
 
 ### TASK: Add pricing page to site TODAY
+
 **Deliverable:** Simple pricing page with three tiers
 
 ```
@@ -90,19 +95,25 @@ Basic search       + Unlimited         + 30-min planning call
 ```
 
 ### TASK: Add paywall to planner
+
 **Implementation:**
+
 - Let users see 2 weeks free
 - When they try to add week 3+: "Upgrade to Summer Pass to plan your full summer"
 - Show value before asking for money
 
 ### TASK: Set up Stripe checkout
+
 **Products to create:**
+
 - Summer Pass: $39 one-time
 - Camp Concierge: $149 one-time
 - Use Stripe Checkout for fast implementation
 
 ### TASK: Create Calendly for concierge calls
+
 **Setup:**
+
 - 30-minute slots
 - Link Stripe payment to Calendly (pay first, then book)
 - Or: Calendly with Stripe integration
@@ -112,6 +123,7 @@ Basic search       + Unlimited         + 30-min planning call
 ## WEEK 1: FREE MARKETING (NO ADS)
 
 ### TASK: Facebook group launch post
+
 **This is your "launch" - make it count**
 
 Post to Portland Moms (19K members) and other groups:
@@ -140,12 +152,14 @@ pdxcamps.com"
 ```
 
 **Why this works:**
+
 - Introduces free tool (value first)
 - Mentions paid options naturally
 - Asks for feedback (engagement)
 - Personal story (authentic)
 
 ### TASK: Post the deadline spreadsheet
+
 **Same as before, but with soft pitch:**
 
 ```
@@ -159,12 +173,15 @@ $39 if you want the full planner. Happy to answer questions!"
 ```
 
 ### TASK: Direct outreach to stressed parents
+
 **When you see posts like:**
+
 - "Help! I haven't planned camps yet!"
 - "What camps still have space??"
 - "I'm so overwhelmed with summer planning"
 
 **Response:**
+
 ```
 "I feel you! I built pdxcamps.com exactly for this—shows what's still
 available across all Portland camps. Free to browse.
@@ -175,9 +192,11 @@ saved them hours. DM me if interested!"
 ```
 
 ### TASK: Reach out to 10 friends/acquaintances with kids
+
 **Personal outreach converts better than ads**
 
 Text/email:
+
 ```
 "Hey! Quick favor—I built a summer camp planning tool for Portland
 parents and I'm looking for early feedback.
@@ -195,6 +214,7 @@ First few are discounted while I'm testing it out."
 ## WEEK 1: CONCIERGE SALES PUSH
 
 ### TASK: Create "Camp Concierge" landing page
+
 **Dedicated page that sells the service:**
 
 ```
@@ -236,10 +256,12 @@ have 10 spots this month.
 ```
 
 ### TASK: Offer "founding member" discount
+
 **First 10 concierge customers: $99 (normally $149)**
 **Creates urgency, gets testimonials**
 
 ### TASK: Post concierge offer directly
+
 **In FB groups when relevant:**
 
 ```
@@ -256,16 +278,19 @@ still available. DM me if interested!"
 ## WEEK 2: DOUBLE DOWN ON WHAT WORKS
 
 ### IF Concierge is selling:
+
 - Raise price to $149, then $199
 - Add more slots
 - Ask every customer for referrals and testimonials
 - Use testimonials in marketing
 
 ### IF Summer Pass is selling:
+
 - Create urgency: "Price goes up March 1"
 - Add more free-to-paid triggers in the product
 
 ### IF neither is selling:
+
 - Survey users: "What would you pay for?"
 - Test lower price points ($19 pass, $79 concierge)
 - Test different positioning/copy
@@ -274,12 +299,12 @@ still available. DM me if interested!"
 
 ## $500 BUDGET ALLOCATION
 
-| Item | Cost | Purpose |
-|------|------|---------|
-| Stripe fees | ~3% | Payment processing |
-| Calendly (free tier) | $0 | Booking |
-| One FB boost | $50 | Boost best-performing post |
-| Reserve | $450 | Only spend if ROI proven |
+| Item                 | Cost | Purpose                    |
+| -------------------- | ---- | -------------------------- |
+| Stripe fees          | ~3%  | Payment processing         |
+| Calendly (free tier) | $0   | Booking                    |
+| One FB boost         | $50  | Boost best-performing post |
+| Reserve              | $450 | Only spend if ROI proven   |
 
 **Rule:** Don't spend on ads until you've made $500 in revenue.
 
@@ -288,16 +313,19 @@ still available. DM me if interested!"
 ## REVENUE TARGETS
 
 **Week 1:**
+
 - 3 Concierge sales × $99 = $297
 - 5 Summer Pass sales × $39 = $195
 - **Total: $492**
 
 **Week 2:**
+
 - 5 Concierge sales × $149 = $745
 - 10 Summer Pass sales × $39 = $390
 - **Total: $1,135**
 
 **End of February:**
+
 - 15 Concierge × $149 avg = $2,235
 - 30 Summer Pass × $39 = $1,170
 - **Total: $3,405**
@@ -325,17 +353,20 @@ March: Real ad budget funded by customers
 ## WHAT TO BUILD (MINIMAL)
 
 ### Day 1 (hours):
+
 - [ ] Pricing page
 - [ ] Stripe checkout for both products
 - [ ] Basic paywall on planner (week 3+ requires upgrade)
 - [ ] Calendly setup for concierge
 
 ### Day 2-3:
+
 - [ ] Concierge landing page
 - [ ] Email receipt/welcome for purchasers
 - [ ] "Upgrade" prompts in product
 
 ### Skip for now:
+
 - Fancy features
 - Complex integrations
 - Perfect design
@@ -349,6 +380,7 @@ March: Real ad budget funded by customers
 For the calls you sell:
 
 **Before call (5 min prep):**
+
 - Look at their kids' ages
 - Note any camps they've already viewed/saved
 
@@ -382,6 +414,7 @@ For the calls you sell:
    - "I'll send a follow-up email with everything"
 
 **After call:**
+
 - Email summary with plan link
 - Registration deadlines listed
 - Ask for testimonial/referral
@@ -391,23 +424,27 @@ For the calls you sell:
 ## AGENT EXECUTION PRIORITY
 
 **Track A: Product (Day 1-2)**
+
 - Implement paywall
 - Add Stripe checkout
 - Create pricing page
 - Set up Calendly
 
 **Track B: Sales (Day 1 onward)**
+
 - Post to FB groups
 - DM stressed parents
 - Personal outreach to network
 - Follow up on leads
 
 **Track C: Fulfill (As sales come in)**
+
 - Do concierge calls
 - Collect testimonials
 - Ask for referrals
 
 **Track D: Iterate (Week 2+)**
+
 - Review what's selling
 - Adjust pricing
 - Improve conversion
@@ -416,13 +453,13 @@ For the calls you sell:
 
 ## SUCCESS METRICS
 
-| Metric | Week 1 | Week 2 | End of Feb |
-|--------|--------|--------|------------|
-| Revenue | $500 | $1,000 | $3,000 |
-| Concierge sales | 3 | 5 | 15 |
-| Pass sales | 5 | 10 | 30 |
-| FB group posts | 5 | 10 | 20 |
-| Testimonials | 1 | 3 | 8 |
+| Metric          | Week 1 | Week 2 | End of Feb |
+| --------------- | ------ | ------ | ---------- |
+| Revenue         | $500   | $1,000 | $3,000     |
+| Concierge sales | 3      | 5      | 15         |
+| Pass sales      | 5      | 10     | 30         |
+| FB group posts  | 5      | 10     | 20         |
+| Testimonials    | 1      | 3      | 8          |
 
 ---
 

@@ -80,10 +80,7 @@ export function WeekRow({ data, isFirstOfMonth = false }: WeekRowProps) {
       }`}
     >
       {/* Week info */}
-      <div
-        className="w-20 flex-shrink-0"
-        title={`${week.startDate} to ${week.endDate}`}
-      >
+      <div className="w-20 flex-shrink-0" title={`${week.startDate} to ${week.endDate}`}>
         <div className="text-sm font-medium text-slate-900 dark:text-white flex items-center gap-1">
           Week {week.weekNumber}
           {isCurrentWeek && (
@@ -143,7 +140,13 @@ export function WeekRow({ data, isFirstOfMonth = false }: WeekRowProps) {
           className="flex-shrink-0 p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           aria-label={`View week ${week.weekNumber} details`}
         >
-          <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <svg
+            className="w-5 h-5 text-slate-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </Link>
@@ -162,9 +165,7 @@ function findSharedEvent(childCoverage: ChildCoverage[]): { title: string } | nu
   const sharedEventId = firstChildEvents[0]?.eventId;
   if (!sharedEventId) return null;
 
-  const allHaveSameEvent = childCoverage.every((child) =>
-    child.events.some((e) => e.eventId === sharedEventId)
-  );
+  const allHaveSameEvent = childCoverage.every((child) => child.events.some((e) => e.eventId === sharedEventId));
 
   if (allHaveSameEvent) {
     return { title: firstChildEvents[0].title };
@@ -180,9 +181,7 @@ interface MonthHeaderProps {
 export function MonthHeader({ monthName }: MonthHeaderProps) {
   return (
     <div className="px-4 py-2 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-      <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wide">
-        {monthName}
-      </h3>
+      <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wide">{monthName}</h3>
     </div>
   );
 }

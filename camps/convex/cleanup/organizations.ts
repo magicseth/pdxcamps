@@ -1,6 +1,6 @@
-import { mutation } from "../_generated/server";
-import { v } from "convex/values";
-import { Doc } from "../_generated/dataModel";
+import { mutation } from '../_generated/server';
+import { v } from 'convex/values';
+import { Doc } from '../_generated/dataModel';
 
 /**
  * Find duplicate organizations (same name, different IDs)
@@ -8,10 +8,10 @@ import { Doc } from "../_generated/dataModel";
 export const findDuplicateOrganizations = mutation({
   args: {},
   handler: async (ctx) => {
-    const orgs = await ctx.db.query("organizations").collect();
+    const orgs = await ctx.db.query('organizations').collect();
 
     // Group by name
-    const byName = new Map<string, Doc<"organizations">[]>();
+    const byName = new Map<string, Doc<'organizations'>[]>();
     for (const org of orgs) {
       const existing = byName.get(org.name) || [];
       existing.push(org);
@@ -36,10 +36,8 @@ export const findDuplicateOrganizations = mutation({
         const orgsWithCounts = await Promise.all(
           orgList.map(async (org) => {
             const sessions = await ctx.db
-              .query("sessions")
-              .withIndex("by_organization_and_status", (q) =>
-                q.eq("organizationId", org._id)
-              )
+              .query('sessions')
+              .withIndex('by_organization_and_status', (q) => q.eq('organizationId', org._id))
               .collect();
             return {
               id: org._id,
@@ -47,7 +45,7 @@ export const findDuplicateOrganizations = mutation({
               hasLogo: !!org.logoStorageId,
               sessionCount: sessions.length,
             };
-          })
+          }),
         );
 
         duplicates.push({
@@ -75,10 +73,10 @@ export const mergeDuplicateOrganizations = mutation({
   },
   handler: async (ctx, args) => {
     const dryRun = args.dryRun ?? true;
-    const orgs = await ctx.db.query("organizations").collect();
+    const orgs = await ctx.db.query('organizations').collect();
 
     // Group by name
-    const byName = new Map<string, Doc<"organizations">[]>();
+    const byName = new Map<string, Doc<'organizations'>[]>();
     for (const org of orgs) {
       const existing = byName.get(org.name) || [];
       existing.push(org);
@@ -99,23 +97,21 @@ export const mergeDuplicateOrganizations = mutation({
         const orgsWithCounts = await Promise.all(
           orgList.map(async (org) => {
             const sessions = await ctx.db
-              .query("sessions")
-              .withIndex("by_organization_and_status", (q) =>
-                q.eq("organizationId", org._id)
-              )
+              .query('sessions')
+              .withIndex('by_organization_and_status', (q) => q.eq('organizationId', org._id))
               .collect();
             const camps = await ctx.db
-              .query("camps")
-              .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
+              .query('camps')
+              .withIndex('by_organization', (q) => q.eq('organizationId', org._id))
               .collect();
             return {
               org,
               sessionCount: sessions.length,
               campCount: camps.length,
               hasLogo: !!org.logoStorageId,
-              hasWebsite: !!org.website && org.website !== "<UNKNOWN>",
+              hasWebsite: !!org.website && org.website !== '<UNKNOWN>',
             };
-          })
+          }),
         );
 
         // Sort to determine which to keep (prefer: most sessions, has logo, has website)
@@ -135,10 +131,8 @@ export const mergeDuplicateOrganizations = mutation({
         for (const { org: deleteOrg } of deleteOrgs) {
           // Reassign sessions
           const sessions = await ctx.db
-            .query("sessions")
-            .withIndex("by_organization_and_status", (q) =>
-              q.eq("organizationId", deleteOrg._id)
-            )
+            .query('sessions')
+            .withIndex('by_organization_and_status', (q) => q.eq('organizationId', deleteOrg._id))
             .collect();
 
           for (const session of sessions) {
@@ -150,8 +144,8 @@ export const mergeDuplicateOrganizations = mutation({
 
           // Reassign camps
           const camps = await ctx.db
-            .query("camps")
-            .withIndex("by_organization", (q) => q.eq("organizationId", deleteOrg._id))
+            .query('camps')
+            .withIndex('by_organization', (q) => q.eq('organizationId', deleteOrg._id))
             .collect();
 
           for (const camp of camps) {
@@ -163,8 +157,8 @@ export const mergeDuplicateOrganizations = mutation({
 
           // Reassign locations
           const locations = await ctx.db
-            .query("locations")
-            .withIndex("by_organization", (q) => q.eq("organizationId", deleteOrg._id))
+            .query('locations')
+            .withIndex('by_organization', (q) => q.eq('organizationId', deleteOrg._id))
             .collect();
 
           for (const location of locations) {
@@ -175,8 +169,8 @@ export const mergeDuplicateOrganizations = mutation({
 
           // Update scrape sources
           const sources = await ctx.db
-            .query("scrapeSources")
-            .withIndex("by_organization", (q) => q.eq("organizationId", deleteOrg._id))
+            .query('scrapeSources')
+            .withIndex('by_organization', (q) => q.eq('organizationId', deleteOrg._id))
             .collect();
 
           for (const source of sources) {
@@ -189,7 +183,7 @@ export const mergeDuplicateOrganizations = mutation({
           if (!keepOrg.hasLogo && deleteOrg.logoStorageId && !dryRun) {
             await ctx.db.patch(keepOrg.org._id, { logoStorageId: deleteOrg.logoStorageId });
           }
-          if (!keepOrg.hasWebsite && deleteOrg.website && deleteOrg.website !== "<UNKNOWN>" && !dryRun) {
+          if (!keepOrg.hasWebsite && deleteOrg.website && deleteOrg.website !== '<UNKNOWN>' && !dryRun) {
             await ctx.db.patch(keepOrg.org._id, { website: deleteOrg.website });
           }
 
@@ -223,9 +217,9 @@ export const mergeDuplicateOrganizations = mutation({
  */
 export const reassignOrganization = mutation({
   args: {
-    fromOrgId: v.id("organizations"),
-    toOrgId: v.id("organizations"),
-    sourceId: v.optional(v.id("scrapeSources")), // Only reassign items from this source
+    fromOrgId: v.id('organizations'),
+    toOrgId: v.id('organizations'),
+    sourceId: v.optional(v.id('scrapeSources')), // Only reassign items from this source
     dryRun: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -234,8 +228,8 @@ export const reassignOrganization = mutation({
     // Verify both orgs exist
     const fromOrg = await ctx.db.get(args.fromOrgId);
     const toOrg = await ctx.db.get(args.toOrgId);
-    if (!fromOrg) throw new Error("Source organization not found");
-    if (!toOrg) throw new Error("Target organization not found");
+    if (!fromOrg) throw new Error('Source organization not found');
+    if (!toOrg) throw new Error('Target organization not found');
 
     const result = {
       dryRun,
@@ -248,8 +242,8 @@ export const reassignOrganization = mutation({
 
     // Find sessions to reassign
     const sessions = await ctx.db
-      .query("sessions")
-      .withIndex("by_organization_and_status", (q) => q.eq("organizationId", args.fromOrgId))
+      .query('sessions')
+      .withIndex('by_organization_and_status', (q) => q.eq('organizationId', args.fromOrgId))
       .collect();
 
     for (const session of sessions) {
@@ -264,16 +258,16 @@ export const reassignOrganization = mutation({
 
     // Find camps to reassign
     const camps = await ctx.db
-      .query("camps")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.fromOrgId))
+      .query('camps')
+      .withIndex('by_organization', (q) => q.eq('organizationId', args.fromOrgId))
       .collect();
 
     for (const camp of camps) {
       // If sourceId filter is set, check if camp's sessions are from that source
       if (args.sourceId) {
         const campSessions = await ctx.db
-          .query("sessions")
-          .withIndex("by_camp", (q) => q.eq("campId", camp._id))
+          .query('sessions')
+          .withIndex('by_camp', (q) => q.eq('campId', camp._id))
           .first();
         if (!campSessions || campSessions.sourceId !== args.sourceId) continue;
       }
@@ -286,8 +280,8 @@ export const reassignOrganization = mutation({
 
     // Find locations to reassign
     const locations = await ctx.db
-      .query("locations")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.fromOrgId))
+      .query('locations')
+      .withIndex('by_organization', (q) => q.eq('organizationId', args.fromOrgId))
       .collect();
 
     for (const location of locations) {
@@ -317,11 +311,11 @@ export const cleanupOrphans = mutation({
     };
 
     // Get all org IDs
-    const orgs = await ctx.db.query("organizations").collect();
+    const orgs = await ctx.db.query('organizations').collect();
     const orgIds = new Set(orgs.map((o) => o._id));
 
     // Find orphaned sessions
-    const sessions = await ctx.db.query("sessions").collect();
+    const sessions = await ctx.db.query('sessions').collect();
     for (const session of sessions) {
       if (!orgIds.has(session.organizationId)) {
         if (!dryRun) {
@@ -332,7 +326,7 @@ export const cleanupOrphans = mutation({
     }
 
     // Find orphaned camps
-    const camps = await ctx.db.query("camps").collect();
+    const camps = await ctx.db.query('camps').collect();
     for (const camp of camps) {
       if (!orgIds.has(camp.organizationId)) {
         if (!dryRun) {
@@ -343,7 +337,7 @@ export const cleanupOrphans = mutation({
     }
 
     // Find orphaned locations
-    const locations = await ctx.db.query("locations").collect();
+    const locations = await ctx.db.query('locations').collect();
     for (const location of locations) {
       if (location.organizationId && !orgIds.has(location.organizationId)) {
         if (!dryRun) {

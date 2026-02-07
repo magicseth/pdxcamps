@@ -10,9 +10,9 @@
  * 3. For each URL: scrape → extract links → create orgs → create sources
  */
 
-import { mutation, query, internalMutation } from "../_generated/server";
-import { v } from "convex/values";
-import { Id } from "../_generated/dataModel";
+import { mutation, query, internalMutation } from '../_generated/server';
+import { v } from 'convex/values';
+import { Id } from '../_generated/dataModel';
 
 // ============================================
 // MUTATIONS - Queue Management
@@ -31,31 +31,31 @@ export const queueDirectoryUrls = mutation({
   handler: async (ctx, args) => {
     // Get city
     const city = await ctx.db
-      .query("cities")
-      .withIndex("by_slug", (q) => q.eq("slug", args.citySlug))
+      .query('cities')
+      .withIndex('by_slug', (q) => q.eq('slug', args.citySlug))
       .first();
 
     if (!city) {
       throw new Error(`City not found: ${args.citySlug}`);
     }
 
-    const queuedIds: Id<"directoryQueue">[] = [];
+    const queuedIds: Id<'directoryQueue'>[] = [];
 
     for (const url of args.urls) {
       // Skip if already in queue
       const existing = await ctx.db
-        .query("directoryQueue")
-        .withIndex("by_url", (q) => q.eq("url", url))
+        .query('directoryQueue')
+        .withIndex('by_url', (q) => q.eq('url', url))
         .first();
 
       if (existing) {
         continue;
       }
 
-      const id = await ctx.db.insert("directoryQueue", {
+      const id = await ctx.db.insert('directoryQueue', {
         cityId: city._id,
         url,
-        status: "pending",
+        status: 'pending',
         linkPattern: args.linkPattern,
         baseUrlFilter: args.baseUrlFilter,
       });
@@ -73,8 +73,8 @@ export const getPendingDirectories = query({
   args: { limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("directoryQueue")
-      .withIndex("by_status", (q) => q.eq("status", "pending"))
+      .query('directoryQueue')
+      .withIndex('by_status', (q) => q.eq('status', 'pending'))
       .take(args.limit ?? 5);
   },
 });
@@ -85,23 +85,23 @@ export const getPendingDirectories = query({
 export const getQueueStatus = query({
   args: { citySlug: v.optional(v.string()) },
   handler: async (ctx, args) => {
-    let items = await ctx.db.query("directoryQueue").collect();
+    let items = await ctx.db.query('directoryQueue').collect();
 
     if (args.citySlug) {
       const citySlug = args.citySlug;
       const city = await ctx.db
-        .query("cities")
-        .withIndex("by_slug", (q) => q.eq("slug", citySlug))
+        .query('cities')
+        .withIndex('by_slug', (q) => q.eq('slug', citySlug))
         .first();
       if (city) {
         items = items.filter((i) => i.cityId === city._id);
       }
     }
 
-    const pending = items.filter((i) => i.status === "pending").length;
-    const processing = items.filter((i) => i.status === "processing").length;
-    const completed = items.filter((i) => i.status === "completed").length;
-    const failed = items.filter((i) => i.status === "failed").length;
+    const pending = items.filter((i) => i.status === 'pending').length;
+    const processing = items.filter((i) => i.status === 'processing').length;
+    const completed = items.filter((i) => i.status === 'completed').length;
+    const failed = items.filter((i) => i.status === 'failed').length;
 
     return { total: items.length, pending, processing, completed, failed, items };
   },
@@ -110,13 +110,8 @@ export const getQueueStatus = query({
 // Internal mutation to update queue item status
 export const updateQueueItem = internalMutation({
   args: {
-    id: v.id("directoryQueue"),
-    status: v.union(
-      v.literal("pending"),
-      v.literal("processing"),
-      v.literal("completed"),
-      v.literal("failed")
-    ),
+    id: v.id('directoryQueue'),
+    status: v.union(v.literal('pending'), v.literal('processing'), v.literal('completed'), v.literal('failed')),
     error: v.optional(v.string()),
     linksFound: v.optional(v.number()),
     orgsCreated: v.optional(v.number()),
@@ -134,15 +129,15 @@ export const updateQueueItem = internalMutation({
 // Public mutation for local daemon to claim and update queue items
 export const claimQueueItem = mutation({
   args: {
-    id: v.id("directoryQueue"),
+    id: v.id('directoryQueue'),
   },
   handler: async (ctx, args) => {
     const item = await ctx.db.get(args.id);
-    if (!item || item.status !== "pending") {
+    if (!item || item.status !== 'pending') {
       return null;
     }
     await ctx.db.patch(args.id, {
-      status: "processing",
+      status: 'processing',
     });
     return item;
   },
@@ -150,7 +145,7 @@ export const claimQueueItem = mutation({
 
 export const completeQueueItem = mutation({
   args: {
-    id: v.id("directoryQueue"),
+    id: v.id('directoryQueue'),
     success: v.boolean(),
     error: v.optional(v.string()),
     linksFound: v.optional(v.number()),
@@ -159,12 +154,12 @@ export const completeQueueItem = mutation({
   handler: async (ctx, args) => {
     const item = await ctx.db.get(args.id);
     if (!item) {
-      throw new Error("Queue item not found");
+      throw new Error('Queue item not found');
     }
 
     if (!args.success) {
       await ctx.db.patch(args.id, {
-        status: "failed",
+        status: 'failed',
         error: args.error,
         processedAt: Date.now(),
       });
@@ -174,7 +169,7 @@ export const completeQueueItem = mutation({
     // Get city
     const city = await ctx.db.get(item.cityId);
     if (!city) {
-      throw new Error("City not found");
+      throw new Error('City not found');
     }
 
     let created = 0;
@@ -185,19 +180,19 @@ export const completeQueueItem = mutation({
       for (const url of args.extractedUrls) {
         try {
           const parsed = new URL(url);
-          const domain = parsed.hostname.replace(/^www\./, "");
+          const domain = parsed.hostname.replace(/^www\./, '');
           const name = domain
-            .replace(/\.(com|org|edu|net|gov|co|io)$/i, "")
+            .replace(/\.(com|org|edu|net|gov|co|io)$/i, '')
             .split(/[.-]/)
             .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(" ");
+            .join(' ');
 
           // Check if org already exists
-          const existingOrgs = await ctx.db.query("organizations").collect();
+          const existingOrgs = await ctx.db.query('organizations').collect();
           const existingOrg = existingOrgs.find((o) => {
             if (!o.website) return false;
             try {
-              const orgDomain = new URL(o.website).hostname.replace(/^www\./, "");
+              const orgDomain = new URL(o.website).hostname.replace(/^www\./, '');
               return orgDomain === domain;
             } catch {
               return false;
@@ -210,9 +205,9 @@ export const completeQueueItem = mutation({
           }
 
           // Create organization
-          const orgId = await ctx.db.insert("organizations", {
+          const orgId = await ctx.db.insert('organizations', {
             name,
-            slug: domain.replace(/\./g, "-"),
+            slug: domain.replace(/\./g, '-'),
             website: url,
             cityIds: [item.cityId],
             isActive: true,
@@ -220,7 +215,7 @@ export const completeQueueItem = mutation({
           });
 
           // Create scrape source
-          const sourceId = await ctx.db.insert("scrapeSources", {
+          const sourceId = await ctx.db.insert('scrapeSources', {
             organizationId: orgId,
             cityId: item.cityId,
             name,
@@ -236,15 +231,15 @@ export const completeQueueItem = mutation({
           });
 
           // Queue scraper development request
-          await ctx.db.insert("scraperDevelopmentRequests", {
+          await ctx.db.insert('scraperDevelopmentRequests', {
             sourceName: name,
             sourceUrl: url,
             sourceId: sourceId,
             cityId: item.cityId,
             requestedAt: Date.now(),
-            requestedBy: "directory-daemon",
+            requestedBy: 'directory-daemon',
             notes: `Auto-discovered from directory: ${item.url}`,
-            status: "pending",
+            status: 'pending',
           });
 
           created++;
@@ -255,7 +250,7 @@ export const completeQueueItem = mutation({
     }
 
     await ctx.db.patch(args.id, {
-      status: "completed",
+      status: 'completed',
       linksFound: args.linksFound,
       orgsCreated: created,
       orgsExisted: existed,
@@ -276,13 +271,13 @@ export const resetFailedItems = mutation({
   args: {},
   handler: async (ctx) => {
     const failed = await ctx.db
-      .query("directoryQueue")
-      .withIndex("by_status", (q) => q.eq("status", "failed"))
+      .query('directoryQueue')
+      .withIndex('by_status', (q) => q.eq('status', 'failed'))
       .collect();
 
     for (const item of failed) {
       await ctx.db.patch(item._id, {
-        status: "pending",
+        status: 'pending',
         error: undefined,
         processedAt: undefined,
       });
@@ -304,8 +299,8 @@ export const seedCampUrls = mutation({
   handler: async (ctx, args) => {
     // Get city
     const city = await ctx.db
-      .query("cities")
-      .withIndex("by_slug", (q) => q.eq("slug", args.citySlug))
+      .query('cities')
+      .withIndex('by_slug', (q) => q.eq('slug', args.citySlug))
       .first();
 
     if (!city) {
@@ -320,19 +315,19 @@ export const seedCampUrls = mutation({
       try {
         // Parse domain and generate name
         const parsed = new URL(url);
-        const domain = parsed.hostname.replace(/^www\./, "");
+        const domain = parsed.hostname.replace(/^www\./, '');
         const name = domain
-          .replace(/\.(com|org|edu|net|gov|co|io)$/i, "")
+          .replace(/\.(com|org|edu|net|gov|co|io)$/i, '')
           .split(/[.-]/)
           .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(" ");
+          .join(' ');
 
         // Check if org already exists by domain
-        const existingOrgs = await ctx.db.query("organizations").collect();
+        const existingOrgs = await ctx.db.query('organizations').collect();
         const existingOrg = existingOrgs.find((o) => {
           if (!o.website) return false;
           try {
-            const orgDomain = new URL(o.website).hostname.replace(/^www\./, "");
+            const orgDomain = new URL(o.website).hostname.replace(/^www\./, '');
             return orgDomain === domain;
           } catch {
             return false;
@@ -341,14 +336,14 @@ export const seedCampUrls = mutation({
 
         if (existingOrg) {
           existed++;
-          results.push({ url, name, status: "existed" });
+          results.push({ url, name, status: 'existed' });
           continue;
         }
 
         // Create organization
-        const orgId = await ctx.db.insert("organizations", {
+        const orgId = await ctx.db.insert('organizations', {
           name,
-          slug: domain.replace(/\./g, "-"),
+          slug: domain.replace(/\./g, '-'),
           website: url,
           cityIds: [city._id],
           isActive: true,
@@ -356,7 +351,7 @@ export const seedCampUrls = mutation({
         });
 
         // Create scrape source
-        await ctx.db.insert("scrapeSources", {
+        await ctx.db.insert('scrapeSources', {
           organizationId: orgId,
           cityId: city._id,
           name,
@@ -372,12 +367,12 @@ export const seedCampUrls = mutation({
         });
 
         created++;
-        results.push({ url, name, status: "created" });
+        results.push({ url, name, status: 'created' });
       } catch (err) {
         results.push({
           url,
-          name: "Error",
-          status: err instanceof Error ? err.message : "Unknown error"
+          name: 'Error',
+          status: err instanceof Error ? err.message : 'Unknown error',
         });
       }
     }

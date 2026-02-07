@@ -8,7 +8,21 @@ import { Id } from '../../convex/_generated/dataModel';
 import { OrgLogo } from '../shared/OrgLogo';
 import { UpgradeModal } from '../shared/UpgradeModal';
 import { SaveSessionModal } from './SaveSessionModal';
-import { CalendarIcon, ClockIcon, DollarIcon, UsersIcon, LocationIcon, MapPinIcon, HeartIcon, CloseIcon, ExternalLinkIcon, InfoIcon, SparklesIcon, SpinnerIcon, PencilIcon } from '../shared/icons';
+import {
+  CalendarIcon,
+  ClockIcon,
+  DollarIcon,
+  UsersIcon,
+  LocationIcon,
+  MapPinIcon,
+  HeartIcon,
+  CloseIcon,
+  ExternalLinkIcon,
+  InfoIcon,
+  SparklesIcon,
+  SpinnerIcon,
+  PencilIcon,
+} from '../shared/icons';
 
 export interface SessionCardSession {
   _id: Id<'sessions'>;
@@ -169,7 +183,7 @@ export function SessionCard({
   // Calculate session duration and return half-day/full-day label
   const getDayTypeLabel = (
     dropOff: { hour: number; minute: number },
-    pickUp: { hour: number; minute: number }
+    pickUp: { hour: number; minute: number },
   ): { label: string; isHalfDay: boolean } => {
     const dropOffMinutes = dropOff.hour * 60 + dropOff.minute;
     const pickUpMinutes = pickUp.hour * 60 + pickUp.minute;
@@ -285,13 +299,25 @@ export function SessionCard({
 
     if (daysUntilStart < 0) return null; // Already started
     if (daysUntilStart === 0) {
-      return { label: 'Starts today!', className: 'bg-surface/30 text-purple-800 dark:bg-purple-900 dark:text-purple-200', urgent: true };
+      return {
+        label: 'Starts today!',
+        className: 'bg-surface/30 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+        urgent: true,
+      };
     }
     if (daysUntilStart <= 3) {
-      return { label: `Starts in ${daysUntilStart} day${daysUntilStart === 1 ? '' : 's'}`, className: 'bg-surface/30 text-purple-800 dark:bg-purple-900 dark:text-purple-200', urgent: true };
+      return {
+        label: `Starts in ${daysUntilStart} day${daysUntilStart === 1 ? '' : 's'}`,
+        className: 'bg-surface/30 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+        urgent: true,
+      };
     }
     if (daysUntilStart <= 14) {
-      return { label: 'Starting soon', className: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200', urgent: false };
+      return {
+        label: 'Starting soon',
+        className: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200',
+        urgent: false,
+      };
     }
     return null;
   };
@@ -344,11 +370,11 @@ export function SessionCard({
 
   return (
     <>
-      <div className={`bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden transition-all duration-200 ${
-        isSoldOut
-          ? 'opacity-60 grayscale-[30%]'
-          : 'hover:shadow-lg hover:-translate-y-0.5'
-      } ${getUrgencyClass()}`}>
+      <div
+        className={`bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden transition-all duration-200 ${
+          isSoldOut ? 'opacity-60 grayscale-[30%]' : 'hover:shadow-lg hover:-translate-y-0.5'
+        } ${getUrgencyClass()}`}
+      >
         {/* Camp Image or Category Placeholder */}
         <div className="relative h-48 overflow-hidden group">
           {campImageUrl ? (
@@ -548,175 +574,175 @@ export function SessionCard({
               </div>
             )}
             {camp?.description && (
-              <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mt-2">
-                {camp.description}
-              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mt-2">{camp.description}</p>
             )}
           </div>
 
-        {/* Spots Left Indicator */}
-        {!isSoldOut && hasAvailabilityData && (
-          <div className="mb-4 flex items-center gap-2">
-            <span
-              className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${
-                spotsLeft <= 3
-                  ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                  : spotsLeft <= 5
-                  ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                  : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-              }`}
-            >
-              <span className={`w-1.5 h-1.5 rounded-full ${
-                spotsLeft <= 3 ? 'bg-red-500' : spotsLeft <= 5 ? 'bg-yellow-500' : 'bg-green-500'
-              }`} />
-              {spotsLeft} spot{spotsLeft === 1 ? '' : 's'} left
-            </span>
-          </div>
-        )}
-
-        <div className="space-y-2 mb-4">
-          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-            <CalendarIcon />
-            <span>
-              {formatDateRange(session.startDate, session.endDate)}
-              <span className="text-slate-500 dark:text-slate-500 ml-1">
-                ({formatDuration(getCampDays(session.startDate, session.endDate))})
+          {/* Spots Left Indicator */}
+          {!isSoldOut && hasAvailabilityData && (
+            <div className="mb-4 flex items-center gap-2">
+              <span
+                className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${
+                  spotsLeft <= 3
+                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                    : spotsLeft <= 5
+                      ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                      : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                }`}
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    spotsLeft <= 3 ? 'bg-red-500' : spotsLeft <= 5 ? 'bg-yellow-500' : 'bg-green-500'
+                  }`}
+                />
+                {spotsLeft} spot{spotsLeft === 1 ? '' : 's'} left
               </span>
-              {(() => {
-                const weekLabel = getSummerWeeks(session.startDate, session.endDate);
-                if (!weekLabel) return null;
-                return (
-                  <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-                    {weekLabel}
-                  </span>
-                );
-              })()}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-            <ClockIcon />
-            <span>
-              {session.isOvernight ? (
-                <>
-                  <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
-                    Overnight
-                  </span>
-                </>
-              ) : (
-                <>
-                  {formatTime(session.dropOffTime)} - {formatTime(session.pickUpTime)}
-                  {(() => {
-                    const dayType = getDayTypeLabel(session.dropOffTime, session.pickUpTime);
-                    return (
-                      <span
-                        className={`ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
-                          dayType.isHalfDay
-                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                            : 'bg-primary/20 text-primary-dark dark:bg-primary-dark/30 dark:text-primary-light'
-                        }`}
-                      >
-                        {dayType.label}
-                      </span>
-                    );
-                  })()}
-                  {session.extendedCareAvailable && (
-                    <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                      +Extended care
-                    </span>
-                  )}
-                </>
-              )}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-            <DollarIcon />
-            <span>
-              {formatPrice(session.price, session.currency)}
-              {(() => {
-                const days = getCampDays(session.startDate, session.endDate);
-                if (days > 1) {
-                  const perDay = Math.round(session.price / days);
-                  return (
-                    <span className="text-slate-500 dark:text-slate-500 ml-1">
-                      ({formatPrice(perDay, session.currency)}/day)
-                    </span>
-                  );
-                }
-                return null;
-              })()}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-            <UsersIcon />
-            <span>{formatAgeRange(session.ageRequirements)}</span>
-          </div>
-          {location && (
-            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-              <LocationIcon />
-              <span className="line-clamp-1 flex-1">
-                {location.name}
-                {location.address?.city && ` - ${location.address.city}`}
-              </span>
-              {distanceFromHome !== undefined && (
-                <span className="flex-shrink-0 text-primary dark:text-primary-light font-medium">
-                  {distanceFromHome} mi
-                </span>
-              )}
-              {location.address && (
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                    `${location.address.street}, ${location.address.city}, ${location.address.state} ${location.address.zip}`
-                  )}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-shrink-0 text-primary dark:text-primary-light hover:text-primary-dark dark:hover:text-white/60"
-                  title="View on map"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <MapPinIcon />
-                </a>
-              )}
             </div>
           )}
-        </div>
 
-        <div className="flex items-center gap-2">
-          {session.externalRegistrationUrl ? (
-            <>
-              <a
-                href={session.externalRegistrationUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 px-4 py-2 bg-green-600 text-white text-center text-sm font-medium rounded-md hover:bg-green-700 flex items-center justify-center gap-1"
-              >
-                Register
-                <ExternalLinkIcon className="w-3.5 h-3.5" />
-              </a>
+          <div className="space-y-2 mb-4">
+            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+              <CalendarIcon />
+              <span>
+                {formatDateRange(session.startDate, session.endDate)}
+                <span className="text-slate-500 dark:text-slate-500 ml-1">
+                  ({formatDuration(getCampDays(session.startDate, session.endDate))})
+                </span>
+                {(() => {
+                  const weekLabel = getSummerWeeks(session.startDate, session.endDate);
+                  if (!weekLabel) return null;
+                  return (
+                    <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                      {weekLabel}
+                    </span>
+                  );
+                })()}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+              <ClockIcon />
+              <span>
+                {session.isOvernight ? (
+                  <>
+                    <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
+                      Overnight
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    {formatTime(session.dropOffTime)} - {formatTime(session.pickUpTime)}
+                    {(() => {
+                      const dayType = getDayTypeLabel(session.dropOffTime, session.pickUpTime);
+                      return (
+                        <span
+                          className={`ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
+                            dayType.isHalfDay
+                              ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                              : 'bg-primary/20 text-primary-dark dark:bg-primary-dark/30 dark:text-primary-light'
+                          }`}
+                        >
+                          {dayType.label}
+                        </span>
+                      );
+                    })()}
+                    {session.extendedCareAvailable && (
+                      <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                        +Extended care
+                      </span>
+                    )}
+                  </>
+                )}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+              <DollarIcon />
+              <span>
+                {formatPrice(session.price, session.currency)}
+                {(() => {
+                  const days = getCampDays(session.startDate, session.endDate);
+                  if (days > 1) {
+                    const perDay = Math.round(session.price / days);
+                    return (
+                      <span className="text-slate-500 dark:text-slate-500 ml-1">
+                        ({formatPrice(perDay, session.currency)}/day)
+                      </span>
+                    );
+                  }
+                  return null;
+                })()}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+              <UsersIcon />
+              <span>{formatAgeRange(session.ageRequirements)}</span>
+            </div>
+            {location && (
+              <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                <LocationIcon />
+                <span className="line-clamp-1 flex-1">
+                  {location.name}
+                  {location.address?.city && ` - ${location.address.city}`}
+                </span>
+                {distanceFromHome !== undefined && (
+                  <span className="flex-shrink-0 text-primary dark:text-primary-light font-medium">
+                    {distanceFromHome} mi
+                  </span>
+                )}
+                {location.address && (
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                      `${location.address.street}, ${location.address.city}, ${location.address.state} ${location.address.zip}`,
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-shrink-0 text-primary dark:text-primary-light hover:text-primary-dark dark:hover:text-white/60"
+                    title="View on map"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MapPinIcon />
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            {session.externalRegistrationUrl ? (
+              <>
+                <a
+                  href={session.externalRegistrationUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 px-4 py-2 bg-green-600 text-white text-center text-sm font-medium rounded-md hover:bg-green-700 flex items-center justify-center gap-1"
+                >
+                  Register
+                  <ExternalLinkIcon className="w-3.5 h-3.5" />
+                </a>
+                <Link
+                  href={`/session/${session._id}`}
+                  className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-md hover:bg-slate-50 dark:hover:bg-slate-700"
+                  title="View details"
+                >
+                  <InfoIcon />
+                </Link>
+              </>
+            ) : (
               <Link
                 href={`/session/${session._id}`}
-                className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-md hover:bg-slate-50 dark:hover:bg-slate-700"
-                title="View details"
+                className="flex-1 px-4 py-2 bg-primary text-white text-center text-sm font-medium rounded-md hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               >
-                <InfoIcon />
+                View Details
               </Link>
-            </>
-          ) : (
-            <Link
-              href={`/session/${session._id}`}
-              className="flex-1 px-4 py-2 bg-primary text-white text-center text-sm font-medium rounded-md hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            )}
+            <button
+              onClick={() => setShowSaveModal(true)}
+              className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              title="Save for later"
+              aria-label="Save for later"
             >
-              View Details
-            </Link>
-          )}
-          <button
-            onClick={() => setShowSaveModal(true)}
-            className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-            title="Save for later"
-            aria-label="Save for later"
-          >
-            <HeartIcon />
-          </button>
-        </div>
+              <HeartIcon />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -733,10 +759,7 @@ export function SessionCard({
       )}
 
       {/* Upgrade Modal */}
-      <UpgradeModal
-        isOpen={showUpgradeModal}
-        onClose={() => setShowUpgradeModal(false)}
-      />
+      <UpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
 
       {/* Style Editor Modal */}
       {showStyleEditor && camp && (
@@ -776,7 +799,7 @@ function StyleEditorModal({
     'Vibrant watercolor with wet-on-wet technique. Dramatic low angle looking up. Golden hour sunlight streaming through. Frozen mid-action, peak moment captured.',
     'Polished digital painting like Pixar concept art. Wide cinematic shot with rule of thirds. Bright overcast day, soft even lighting. Genuine laughter and joy visible.',
     'Rich oil painting with visible impasto brushstrokes. Over-the-shoulder perspective, intimate. Dappled light filtering through trees. Curious discovery moment.',
-    'Studio Ghibli inspired animation style. Bird\'s eye view showing the whole activity. Magic hour glow, long shadows. Playful chaos and movement.',
+    "Studio Ghibli inspired animation style. Bird's eye view showing the whole activity. Magic hour glow, long shadows. Playful chaos and movement.",
     'Editorial illustration style for New York Times. Dynamic diagonal composition. Dramatic rim lighting from behind. Intense concentration and focus.',
     'Nostalgic Norman Rockwell style illustration. Symmetrical framing with central focus. Warm indoor lighting with soft shadows. Collaborative teamwork moment.',
     'Crisp digital art, trending on artstation. Dutch angle adding energy. High key bright and airy. Triumphant achievement expression.',
@@ -796,13 +819,8 @@ function StyleEditorModal({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-lg w-full p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-            Edit Image Style: {campName}
-          </h3>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-          >
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Edit Image Style: {campName}</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
             <CloseIcon />
           </button>
         </div>
@@ -824,9 +842,7 @@ function StyleEditorModal({
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Preset Styles
-          </label>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Preset Styles</label>
           <div className="flex flex-wrap gap-2">
             {presetStyles.map((preset, i) => (
               <button
@@ -867,4 +883,3 @@ function StyleEditorModal({
     </div>
   );
 }
-

@@ -34,14 +34,18 @@ export function useDiscoverFilters(citySlug: string, searchParams: URLSearchPara
   const [childAge, setChildAge] = useState<number | undefined>(() => getInitialState().childAge);
   const [childGrade, setChildGrade] = useState<number | undefined>(() => getInitialState().childGrade);
   const [selectedChildId, setSelectedChildId] = useState<Id<'children'> | null>(
-    () => (searchParams.get('childId') as Id<'children'>) || null
+    () => (searchParams.get('childId') as Id<'children'>) || null,
   );
   const [showFilters, setShowFilters] = useState(true);
   const [showAddChildModal, setShowAddChildModal] = useState(false);
   const [showRequestCampModal, setShowRequestCampModal] = useState(false);
-  const [selectedOrganizations, setSelectedOrganizations] = useState<string[]>(() => getInitialState().selectedOrganizations);
+  const [selectedOrganizations, setSelectedOrganizations] = useState<string[]>(
+    () => getInitialState().selectedOrganizations,
+  );
   const [selectedLocations, setSelectedLocations] = useState<string[]>(() => getInitialState().selectedLocations);
-  const [maxDistanceMiles, setMaxDistanceMiles] = useState<number | undefined>(() => getInitialState().maxDistanceMiles);
+  const [maxDistanceMiles, setMaxDistanceMiles] = useState<number | undefined>(
+    () => getInitialState().maxDistanceMiles,
+  );
   const [sortBy, setSortBy] = useState<'date' | 'price-low' | 'price-high' | 'spots' | 'distance'>('date');
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
@@ -59,7 +63,18 @@ export function useDiscoverFilters(citySlug: string, searchParams: URLSearchPara
     if (window.innerWidth < 768 && resultsRef.current) {
       resultsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-  }, [startDateAfter, startDateBefore, selectedCategories, maxPrice, hideSoldOut, extendedCareOnly, childAge, childGrade, selectedOrganizations, selectedLocations]);
+  }, [
+    startDateAfter,
+    startDateBefore,
+    selectedCategories,
+    maxPrice,
+    hideSoldOut,
+    extendedCareOnly,
+    childAge,
+    childGrade,
+    selectedOrganizations,
+    selectedLocations,
+  ]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -75,7 +90,7 @@ export function useDiscoverFilters(citySlug: string, searchParams: URLSearchPara
       }
       if (e.key === 'm' || e.key === 'M') {
         e.preventDefault();
-        setViewMode((prev) => prev === 'list' ? 'map' : 'list');
+        setViewMode((prev) => (prev === 'list' ? 'map' : 'list'));
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -104,11 +119,25 @@ export function useDiscoverFilters(citySlug: string, searchParams: URLSearchPara
     if (window.location.search !== newUrl) {
       router.replace(`/discover/${citySlug}${newUrl}`, { scroll: false });
     }
-  }, [startDateAfter, startDateBefore, selectedCategories, maxPrice, hideSoldOut, extendedCareOnly, childAge, childGrade, selectedOrganizations, selectedLocations, maxDistanceMiles, citySlug, router]);
+  }, [
+    startDateAfter,
+    startDateBefore,
+    selectedCategories,
+    maxPrice,
+    hideSoldOut,
+    extendedCareOnly,
+    childAge,
+    childGrade,
+    selectedOrganizations,
+    selectedLocations,
+    maxDistanceMiles,
+    citySlug,
+    router,
+  ]);
 
   const handleCategoryToggle = (category: string) => {
     setSelectedCategories((prev) =>
-      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]
+      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category],
     );
   };
 
@@ -166,7 +195,7 @@ export function useDiscoverFilters(citySlug: string, searchParams: URLSearchPara
 
   const handleLocationToggle = (locationId: string) => {
     setSelectedLocations((prev) =>
-      prev.includes(locationId) ? prev.filter((id) => id !== locationId) : [...prev, locationId]
+      prev.includes(locationId) ? prev.filter((id) => id !== locationId) : [...prev, locationId],
     );
   };
 

@@ -21,7 +21,7 @@ export function useMarket(): Market {
   // Query city by domain from database
   const city = useQuery(
     api.cities.queries.getCityByDomain,
-    hostname ? { domain: hostname.replace(/^www\./, '') } : 'skip'
+    hostname ? { domain: hostname.replace(/^www\./, '') } : 'skip',
   );
 
   return useMemo(() => {

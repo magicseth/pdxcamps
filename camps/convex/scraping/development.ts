@@ -5,10 +5,10 @@
  * and tracks Claude Code sessions working on them.
  */
 
-import { mutation, query, internalMutation } from "../_generated/server";
-import { v } from "convex/values";
-import { internal } from "../_generated/api";
-import { workflow } from "./scrapeWorkflow";
+import { mutation, query, internalMutation } from '../_generated/server';
+import { v } from 'convex/values';
+import { internal } from '../_generated/api';
+import { workflow } from './scrapeWorkflow';
 
 /**
  * Request scraper development for a new site
@@ -17,29 +17,24 @@ export const requestScraperDevelopment = mutation({
   args: {
     sourceName: v.string(),
     sourceUrl: v.string(),
-    cityId: v.id("cities"), // Required: market this request is for
-    sourceId: v.optional(v.id("scrapeSources")),
+    cityId: v.id('cities'), // Required: market this request is for
+    sourceId: v.optional(v.id('scrapeSources')),
     notes: v.optional(v.string()),
     requestedBy: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     // Check for existing pending request for same URL
     const existing = await ctx.db
-      .query("scraperDevelopmentRequests")
-      .withIndex("by_source_url", (q) => q.eq("sourceUrl", args.sourceUrl))
-      .filter((q) =>
-        q.or(
-          q.eq(q.field("status"), "pending"),
-          q.eq(q.field("status"), "in_progress")
-        )
-      )
+      .query('scraperDevelopmentRequests')
+      .withIndex('by_source_url', (q) => q.eq('sourceUrl', args.sourceUrl))
+      .filter((q) => q.or(q.eq(q.field('status'), 'pending'), q.eq(q.field('status'), 'in_progress')))
       .first();
 
     if (existing) {
-      throw new Error("A scraper development request already exists for this URL");
+      throw new Error('A scraper development request already exists for this URL');
     }
 
-    return ctx.db.insert("scraperDevelopmentRequests", {
+    return ctx.db.insert('scraperDevelopmentRequests', {
       sourceName: args.sourceName,
       sourceUrl: args.sourceUrl,
       cityId: args.cityId,
@@ -47,7 +42,7 @@ export const requestScraperDevelopment = mutation({
       notes: args.notes,
       requestedBy: args.requestedBy,
       requestedAt: Date.now(),
-      status: "pending",
+      status: 'pending',
       scraperVersion: 0,
     });
   },
@@ -60,8 +55,8 @@ export const getPendingRequests = query({
   args: {},
   handler: async (ctx) => {
     return ctx.db
-      .query("scraperDevelopmentRequests")
-      .withIndex("by_status", (q) => q.eq("status", "pending"))
+      .query('scraperDevelopmentRequests')
+      .withIndex('by_status', (q) => q.eq('status', 'pending'))
       .collect();
   },
 });
@@ -73,21 +68,21 @@ export const listRequests = query({
   args: {
     status: v.optional(
       v.union(
-        v.literal("pending"),
-        v.literal("in_progress"),
-        v.literal("testing"),
-        v.literal("needs_feedback"),
-        v.literal("completed"),
-        v.literal("failed")
-      )
+        v.literal('pending'),
+        v.literal('in_progress'),
+        v.literal('testing'),
+        v.literal('needs_feedback'),
+        v.literal('completed'),
+        v.literal('failed'),
+      ),
     ),
     limit: v.optional(v.number()),
-    sortOrder: v.optional(v.union(v.literal("asc"), v.literal("desc"))),
-    cityId: v.optional(v.id("cities")), // Filter by city/market
+    sortOrder: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    cityId: v.optional(v.id('cities')), // Filter by city/market
   },
   handler: async (ctx, args) => {
     const limit = args.limit ?? 100;
-    const order = args.sortOrder ?? "asc"; // Default to oldest first
+    const order = args.sortOrder ?? 'asc'; // Default to oldest first
 
     let requests;
 
@@ -95,26 +90,23 @@ export const listRequests = query({
     if (args.cityId) {
       // Filter by city using the index
       requests = await ctx.db
-        .query("scraperDevelopmentRequests")
-        .withIndex("by_city", (q) => q.eq("cityId", args.cityId!))
+        .query('scraperDevelopmentRequests')
+        .withIndex('by_city', (q) => q.eq('cityId', args.cityId!))
         .order(order)
         .take(limit * 2);
 
       // Post-filter by status if needed
       if (args.status) {
-        requests = requests.filter(r => r.status === args.status);
+        requests = requests.filter((r) => r.status === args.status);
       }
     } else if (args.status) {
       requests = await ctx.db
-        .query("scraperDevelopmentRequests")
-        .withIndex("by_status", (q) => q.eq("status", args.status!))
+        .query('scraperDevelopmentRequests')
+        .withIndex('by_status', (q) => q.eq('status', args.status!))
         .order(order)
         .take(limit);
     } else {
-      requests = await ctx.db
-        .query("scraperDevelopmentRequests")
-        .order(order)
-        .take(limit);
+      requests = await ctx.db.query('scraperDevelopmentRequests').order(order).take(limit);
     }
 
     // Enrich with city name (now just a simple lookup since cityId is directly on the request)
@@ -126,7 +118,7 @@ export const listRequests = query({
           cityName: city?.name,
           citySlug: city?.slug,
         };
-      })
+      }),
     );
 
     return enrichedRequests.slice(0, limit);
@@ -138,7 +130,7 @@ export const listRequests = query({
  */
 export const getRequest = query({
   args: {
-    requestId: v.id("scraperDevelopmentRequests"),
+    requestId: v.id('scraperDevelopmentRequests'),
   },
   handler: async (ctx, args) => {
     return ctx.db.get(args.requestId);
@@ -150,21 +142,21 @@ export const getRequest = query({
  */
 export const claimRequest = mutation({
   args: {
-    requestId: v.id("scraperDevelopmentRequests"),
+    requestId: v.id('scraperDevelopmentRequests'),
     claudeSessionId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const request = await ctx.db.get(args.requestId);
     if (!request) {
-      throw new Error("Request not found");
+      throw new Error('Request not found');
     }
 
-    if (request.status !== "pending") {
+    if (request.status !== 'pending') {
       throw new Error(`Request is not pending (status: ${request.status})`);
     }
 
     await ctx.db.patch(args.requestId, {
-      status: "in_progress",
+      status: 'in_progress',
       claudeSessionId: args.claudeSessionId,
       claudeSessionStartedAt: Date.now(),
     });
@@ -181,7 +173,7 @@ export const claimRequest = mutation({
 export const getNextAndClaim = mutation({
   args: {
     workerId: v.string(),
-    cityId: v.optional(v.id("cities")),
+    cityId: v.optional(v.id('cities')),
   },
   handler: async (ctx, args) => {
     let pending;
@@ -189,15 +181,15 @@ export const getNextAndClaim = mutation({
     if (args.cityId) {
       // Filter by city - use city index then filter by status
       pending = await ctx.db
-        .query("scraperDevelopmentRequests")
-        .withIndex("by_city", (q) => q.eq("cityId", args.cityId!))
-        .filter((q) => q.eq(q.field("status"), "pending"))
+        .query('scraperDevelopmentRequests')
+        .withIndex('by_city', (q) => q.eq('cityId', args.cityId!))
+        .filter((q) => q.eq(q.field('status'), 'pending'))
         .first();
     } else {
       // Get any pending request
       pending = await ctx.db
-        .query("scraperDevelopmentRequests")
-        .withIndex("by_status", (q) => q.eq("status", "pending"))
+        .query('scraperDevelopmentRequests')
+        .withIndex('by_status', (q) => q.eq('status', 'pending'))
         .first();
     }
 
@@ -207,7 +199,7 @@ export const getNextAndClaim = mutation({
 
     // Claim it atomically
     await ctx.db.patch(pending._id, {
-      status: "in_progress",
+      status: 'in_progress',
       claudeSessionId: args.workerId,
       claudeSessionStartedAt: Date.now(),
     });
@@ -221,19 +213,19 @@ export const getNextAndClaim = mutation({
  */
 export const updateScraperCode = mutation({
   args: {
-    requestId: v.id("scraperDevelopmentRequests"),
+    requestId: v.id('scraperDevelopmentRequests'),
     scraperCode: v.string(),
   },
   handler: async (ctx, args) => {
     const request = await ctx.db.get(args.requestId);
     if (!request) {
-      throw new Error("Request not found");
+      throw new Error('Request not found');
     }
 
     await ctx.db.patch(args.requestId, {
       generatedScraperCode: args.scraperCode,
       scraperVersion: (request.scraperVersion || 0) + 1,
-      status: "testing",
+      status: 'testing',
     });
 
     return args.requestId;
@@ -246,7 +238,7 @@ export const updateScraperCode = mutation({
  */
 export const recordTestResults = mutation({
   args: {
-    requestId: v.id("scraperDevelopmentRequests"),
+    requestId: v.id('scraperDevelopmentRequests'),
     sessionsFound: v.number(),
     sampleData: v.optional(v.string()),
     error: v.optional(v.string()),
@@ -254,7 +246,7 @@ export const recordTestResults = mutation({
   handler: async (ctx, args) => {
     const request = await ctx.db.get(args.requestId);
     if (!request) {
-      throw new Error("Request not found");
+      throw new Error('Request not found');
     }
 
     const maxRetries = request.maxTestRetries ?? 3;
@@ -267,7 +259,7 @@ export const recordTestResults = mutation({
         const feedbackHistory = request.feedbackHistory || [];
         feedbackHistory.push({
           feedbackAt: Date.now(),
-          feedbackBy: "auto-test",
+          feedbackBy: 'auto-test',
           feedback: `Test failed with error: ${args.error}\n\nPlease fix the scraper to handle this error.`,
           scraperVersionBefore: request.scraperVersion || 0,
         });
@@ -279,7 +271,7 @@ export const recordTestResults = mutation({
           lastTestError: args.error,
           testRetryCount: currentRetries + 1,
           feedbackHistory,
-          status: "pending", // Go back to pending for Claude to retry
+          status: 'pending', // Go back to pending for Claude to retry
         });
       } else {
         // Max retries reached, mark as failed
@@ -288,7 +280,7 @@ export const recordTestResults = mutation({
           lastTestSessionsFound: args.sessionsFound,
           lastTestSampleData: args.sampleData,
           lastTestError: args.error,
-          status: "failed",
+          status: 'failed',
         });
       }
     } else if (args.sessionsFound === 0) {
@@ -312,14 +304,14 @@ export const recordTestResults = mutation({
           lastTestSessionsFound: 0,
           lastTestSampleData: args.sampleData,
           lastTestError: undefined,
-          status: "completed",
+          status: 'completed',
         });
       } else if (currentRetries < maxRetries) {
         // Test passed but found no sessions - treat as failure
         const feedbackHistory = request.feedbackHistory || [];
         feedbackHistory.push({
           feedbackAt: Date.now(),
-          feedbackBy: "auto-test",
+          feedbackBy: 'auto-test',
           feedback: `Test ran successfully but found 0 sessions. The page likely has camp data - please improve the extraction logic to find the sessions.`,
           scraperVersionBefore: request.scraperVersion || 0,
         });
@@ -330,14 +322,14 @@ export const recordTestResults = mutation({
           lastTestSampleData: args.sampleData,
           testRetryCount: currentRetries + 1,
           feedbackHistory,
-          status: "pending",
+          status: 'pending',
         });
       } else {
         await ctx.db.patch(args.requestId, {
           lastTestRun: Date.now(),
           lastTestSessionsFound: 0,
           lastTestSampleData: args.sampleData,
-          status: "failed",
+          status: 'failed',
         });
       }
     } else {
@@ -347,7 +339,7 @@ export const recordTestResults = mutation({
         lastTestSessionsFound: args.sessionsFound,
         lastTestSampleData: args.sampleData,
         lastTestError: undefined,
-        status: "completed",
+        status: 'completed',
         completedAt: Date.now(),
         finalScraperCode: request.generatedScraperCode,
       });
@@ -359,8 +351,8 @@ export const recordTestResults = mutation({
         // If no sourceId, try to find existing source by URL
         if (!sourceId) {
           const existingSource = await ctx.db
-            .query("scrapeSources")
-            .withIndex("by_url", (q) => q.eq("url", request.sourceUrl))
+            .query('scrapeSources')
+            .withIndex('by_url', (q) => q.eq('url', request.sourceUrl))
             .first();
 
           if (existingSource) {
@@ -373,17 +365,17 @@ export const recordTestResults = mutation({
         // If still no source, create one
         if (!sourceId) {
           // Find or create organization based on domain
-          const domain = new URL(request.sourceUrl).hostname.replace(/^www\./, "");
-          const slug = domain.replace(/\./g, "-");
+          const domain = new URL(request.sourceUrl).hostname.replace(/^www\./, '');
+          const slug = domain.replace(/\./g, '-');
 
           let organization = await ctx.db
-            .query("organizations")
-            .withIndex("by_slug", (q) => q.eq("slug", slug))
+            .query('organizations')
+            .withIndex('by_slug', (q) => q.eq('slug', slug))
             .first();
 
           if (!organization) {
             // Create a new organization
-            const orgId = await ctx.db.insert("organizations", {
+            const orgId = await ctx.db.insert('organizations', {
               name: request.sourceName,
               slug,
               website: `https://${domain}`,
@@ -400,7 +392,7 @@ export const recordTestResults = mutation({
           }
 
           // Create the source
-          sourceId = await ctx.db.insert("scrapeSources", {
+          sourceId = await ctx.db.insert('scrapeSources', {
             name: request.sourceName,
             url: request.sourceUrl,
             organizationId: organization!._id,
@@ -427,10 +419,10 @@ export const recordTestResults = mutation({
         }
 
         // Create a scrape job to run the newly approved scraper
-        await ctx.db.insert("scrapeJobs", {
+        await ctx.db.insert('scrapeJobs', {
           sourceId: sourceId,
-          status: "pending",
-          triggeredBy: "auto-approval",
+          status: 'pending',
+          triggeredBy: 'auto-approval',
           startedAt: Date.now(),
         });
       }
@@ -445,14 +437,14 @@ export const recordTestResults = mutation({
  */
 export const submitFeedback = mutation({
   args: {
-    requestId: v.id("scraperDevelopmentRequests"),
+    requestId: v.id('scraperDevelopmentRequests'),
     feedback: v.string(),
     feedbackBy: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const request = await ctx.db.get(args.requestId);
     if (!request) {
-      throw new Error("Request not found");
+      throw new Error('Request not found');
     }
 
     const feedbackHistory = request.feedbackHistory || [];
@@ -465,7 +457,7 @@ export const submitFeedback = mutation({
 
     await ctx.db.patch(args.requestId, {
       feedbackHistory,
-      status: "pending", // Go back to pending for Claude Code to pick up
+      status: 'pending', // Go back to pending for Claude Code to pick up
     });
 
     return args.requestId;
@@ -477,20 +469,20 @@ export const submitFeedback = mutation({
  */
 export const approveScraperCode = mutation({
   args: {
-    requestId: v.id("scraperDevelopmentRequests"),
+    requestId: v.id('scraperDevelopmentRequests'),
   },
   handler: async (ctx, args) => {
     const request = await ctx.db.get(args.requestId);
     if (!request) {
-      throw new Error("Request not found");
+      throw new Error('Request not found');
     }
 
     if (!request.generatedScraperCode) {
-      throw new Error("No scraper code to approve");
+      throw new Error('No scraper code to approve');
     }
 
     await ctx.db.patch(args.requestId, {
-      status: "completed",
+      status: 'completed',
       completedAt: Date.now(),
       finalScraperCode: request.generatedScraperCode,
     });
@@ -502,22 +494,18 @@ export const approveScraperCode = mutation({
       });
 
       // Create a scrape job to run the newly approved scraper
-      const jobId = await ctx.db.insert("scrapeJobs", {
+      const jobId = await ctx.db.insert('scrapeJobs', {
         sourceId: request.sourceId,
-        status: "pending",
-        triggeredBy: "scraper-approval",
+        status: 'pending',
+        triggeredBy: 'scraper-approval',
         retryCount: 0,
       });
 
       // Start the scraping workflow
-      const workflowId = await workflow.start(
-        ctx,
-        internal.scraping.scrapeWorkflow.scrapeSourceWorkflow,
-        {
-          jobId,
-          sourceId: request.sourceId,
-        }
-      );
+      const workflowId = await workflow.start(ctx, internal.scraping.scrapeWorkflow.scrapeSourceWorkflow, {
+        jobId,
+        sourceId: request.sourceId,
+      });
 
       await ctx.db.patch(jobId, {
         workflowId: workflowId as string,
@@ -535,18 +523,16 @@ export const approveScraperCode = mutation({
 export const bulkApproveNeedsFeedback = mutation({
   args: {
     limit: v.optional(v.number()),
-    cityId: v.optional(v.id("cities")),
+    cityId: v.optional(v.id('cities')),
   },
   handler: async (ctx, args) => {
     const requests = await ctx.db
-      .query("scraperDevelopmentRequests")
-      .withIndex("by_status", (q) => q.eq("status", "needs_feedback"))
+      .query('scraperDevelopmentRequests')
+      .withIndex('by_status', (q) => q.eq('status', 'needs_feedback'))
       .collect();
     const limit = args.limit || 100;
 
-    const filtered = args.cityId
-      ? requests.filter((r) => r.cityId === args.cityId)
-      : requests;
+    const filtered = args.cityId ? requests.filter((r) => r.cityId === args.cityId) : requests;
 
     const toProcess = filtered.slice(0, limit);
     let approved = 0;
@@ -557,7 +543,7 @@ export const bulkApproveNeedsFeedback = mutation({
 
       // Mark as completed
       await ctx.db.patch(request._id, {
-        status: "completed",
+        status: 'completed',
         completedAt: Date.now(),
         finalScraperCode: request.generatedScraperCode,
       });
@@ -570,10 +556,10 @@ export const bulkApproveNeedsFeedback = mutation({
           isActive: true,
         });
 
-        await ctx.db.insert("scrapeJobs", {
+        await ctx.db.insert('scrapeJobs', {
           sourceId: request.sourceId,
-          status: "pending",
-          triggeredBy: "bulk-approval",
+          status: 'pending',
+          triggeredBy: 'bulk-approval',
           startedAt: Date.now(),
         });
         deployed++;
@@ -594,17 +580,15 @@ export const bulkApproveNeedsFeedback = mutation({
  */
 export const activateSourcesWithScrapers = mutation({
   args: {
-    cityId: v.optional(v.id("cities")),
+    cityId: v.optional(v.id('cities')),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const sources = await ctx.db.query("scrapeSources").collect();
+    const sources = await ctx.db.query('scrapeSources').collect();
     const limit = args.limit || 100;
 
     // Filter to sources with scraper code that are inactive
-    let toActivate = sources.filter(
-      (s) => (s.scraperCode || s.scraperModule) && !s.isActive
-    );
+    let toActivate = sources.filter((s) => (s.scraperCode || s.scraperModule) && !s.isActive);
 
     if (args.cityId) {
       toActivate = toActivate.filter((s) => s.cityId === args.cityId);
@@ -622,19 +606,17 @@ export const activateSourcesWithScrapers = mutation({
       activated++;
 
       // Create a scrape job
-      await ctx.db.insert("scrapeJobs", {
+      await ctx.db.insert('scrapeJobs', {
         sourceId: source._id,
-        status: "pending",
-        triggeredBy: "bulk-activation",
+        status: 'pending',
+        triggeredBy: 'bulk-activation',
         startedAt: Date.now(),
       });
       jobsCreated++;
     }
 
     return {
-      totalInactiveWithScrapers: sources.filter(
-        (s) => (s.scraperCode || s.scraperModule) && !s.isActive
-      ).length,
+      totalInactiveWithScrapers: sources.filter((s) => (s.scraperCode || s.scraperModule) && !s.isActive).length,
       activated,
       jobsCreated,
     };
@@ -647,21 +629,17 @@ export const activateSourcesWithScrapers = mutation({
  */
 export const deployCompletedScrapers = mutation({
   args: {
-    cityId: v.optional(v.id("cities")),
+    cityId: v.optional(v.id('cities')),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const limit = args.limit || 50;
 
     // Find requests with scraper code
-    let requests = await ctx.db
-      .query("scraperDevelopmentRequests")
-      .collect();
+    let requests = await ctx.db.query('scraperDevelopmentRequests').collect();
 
     // Filter to those with scraper code (either generated or final)
-    requests = requests.filter(
-      (r) => r.generatedScraperCode || r.finalScraperCode
-    );
+    requests = requests.filter((r) => r.generatedScraperCode || r.finalScraperCode);
 
     if (args.cityId) {
       requests = requests.filter((r) => r.cityId === args.cityId);
@@ -687,8 +665,8 @@ export const deployCompletedScrapers = mutation({
       if (!source) {
         // Try to find source by URL
         source = await ctx.db
-          .query("scrapeSources")
-          .withIndex("by_url", (q) => q.eq("url", request.sourceUrl))
+          .query('scrapeSources')
+          .withIndex('by_url', (q) => q.eq('url', request.sourceUrl))
           .first();
       }
 
@@ -711,10 +689,10 @@ export const deployCompletedScrapers = mutation({
         }
 
         // Create scrape job
-        await ctx.db.insert("scrapeJobs", {
+        await ctx.db.insert('scrapeJobs', {
           sourceId: source._id,
-          status: "pending",
-          triggeredBy: "retroactive-deployment",
+          status: 'pending',
+          triggeredBy: 'retroactive-deployment',
           startedAt: Date.now(),
         });
 
@@ -723,16 +701,16 @@ export const deployCompletedScrapers = mutation({
         results.push(`Deployed to existing source: ${source.name}`);
       } else {
         // Need to create source - find or create organization first
-        const domain = new URL(request.sourceUrl).hostname.replace(/^www\./, "");
-        const slug = domain.replace(/\./g, "-");
+        const domain = new URL(request.sourceUrl).hostname.replace(/^www\./, '');
+        const slug = domain.replace(/\./g, '-');
 
         let organization = await ctx.db
-          .query("organizations")
-          .withIndex("by_slug", (q) => q.eq("slug", slug))
+          .query('organizations')
+          .withIndex('by_slug', (q) => q.eq('slug', slug))
           .first();
 
         if (!organization) {
-          const orgId = await ctx.db.insert("organizations", {
+          const orgId = await ctx.db.insert('organizations', {
             name: request.sourceName,
             slug,
             website: `https://${domain}`,
@@ -748,7 +726,7 @@ export const deployCompletedScrapers = mutation({
         }
 
         // Create source
-        const sourceId = await ctx.db.insert("scrapeSources", {
+        const sourceId = await ctx.db.insert('scrapeSources', {
           name: request.sourceName,
           url: request.sourceUrl,
           organizationId: organization!._id,
@@ -768,10 +746,10 @@ export const deployCompletedScrapers = mutation({
         await ctx.db.patch(request._id, { sourceId });
 
         // Create scrape job
-        await ctx.db.insert("scrapeJobs", {
+        await ctx.db.insert('scrapeJobs', {
           sourceId,
-          status: "pending",
-          triggeredBy: "retroactive-deployment",
+          status: 'pending',
+          triggeredBy: 'retroactive-deployment',
           startedAt: Date.now(),
         });
 
@@ -797,7 +775,7 @@ export const deployCompletedScrapers = mutation({
  */
 export const syncScrapersToSources = mutation({
   args: {
-    cityId: v.id("cities"),
+    cityId: v.id('cities'),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
@@ -805,20 +783,18 @@ export const syncScrapersToSources = mutation({
 
     // Get all sources for this city
     const sources = await ctx.db
-      .query("scrapeSources")
-      .withIndex("by_city", (q) => q.eq("cityId", args.cityId))
+      .query('scrapeSources')
+      .withIndex('by_city', (q) => q.eq('cityId', args.cityId))
       .collect();
 
     // Get all development requests for this city that have scraper code
     const requests = await ctx.db
-      .query("scraperDevelopmentRequests")
-      .withIndex("by_city", (q) => q.eq("cityId", args.cityId))
+      .query('scraperDevelopmentRequests')
+      .withIndex('by_city', (q) => q.eq('cityId', args.cityId))
       .collect();
 
     const requestsByUrl = new Map(
-      requests
-        .filter((r) => r.generatedScraperCode || r.finalScraperCode)
-        .map((r) => [r.sourceUrl, r])
+      requests.filter((r) => r.generatedScraperCode || r.finalScraperCode).map((r) => [r.sourceUrl, r]),
     );
 
     let synced = 0;
@@ -854,10 +830,10 @@ export const syncScrapersToSources = mutation({
       }
 
       // Create scrape job
-      await ctx.db.insert("scrapeJobs", {
+      await ctx.db.insert('scrapeJobs', {
         sourceId: source._id,
-        status: "pending",
-        triggeredBy: "scraper-sync",
+        status: 'pending',
+        triggeredBy: 'scraper-sync',
         startedAt: Date.now(),
       });
 
@@ -882,7 +858,7 @@ export const syncScrapersToSources = mutation({
  */
 export const fixAndDeployBrokenRequests = mutation({
   args: {
-    cityId: v.id("cities"),
+    cityId: v.id('cities'),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
@@ -890,13 +866,11 @@ export const fixAndDeployBrokenRequests = mutation({
 
     // Get requests with scraper code for this city
     const requests = await ctx.db
-      .query("scraperDevelopmentRequests")
-      .withIndex("by_city", (q) => q.eq("cityId", args.cityId))
+      .query('scraperDevelopmentRequests')
+      .withIndex('by_city', (q) => q.eq('cityId', args.cityId))
       .collect();
 
-    const withCode = requests.filter(
-      (r) => r.generatedScraperCode || r.finalScraperCode
-    );
+    const withCode = requests.filter((r) => r.generatedScraperCode || r.finalScraperCode);
 
     let fixed = 0;
     let deployed = 0;
@@ -919,24 +893,24 @@ export const fixAndDeployBrokenRequests = mutation({
 
         // Try to find source by URL
         source = await ctx.db
-          .query("scrapeSources")
-          .withIndex("by_url", (q) => q.eq("url", request.sourceUrl))
+          .query('scrapeSources')
+          .withIndex('by_url', (q) => q.eq('url', request.sourceUrl))
           .first();
       }
 
       // If still no source, create one
       if (!source) {
-        const domain = new URL(request.sourceUrl).hostname.replace(/^www\./, "");
-        const slug = domain.replace(/\./g, "-");
+        const domain = new URL(request.sourceUrl).hostname.replace(/^www\./, '');
+        const slug = domain.replace(/\./g, '-');
 
         // Find or create organization
         let org = await ctx.db
-          .query("organizations")
-          .withIndex("by_slug", (q) => q.eq("slug", slug))
+          .query('organizations')
+          .withIndex('by_slug', (q) => q.eq('slug', slug))
           .first();
 
         if (!org) {
-          const orgId = await ctx.db.insert("organizations", {
+          const orgId = await ctx.db.insert('organizations', {
             name: request.sourceName,
             slug,
             website: `https://${domain}`,
@@ -948,7 +922,7 @@ export const fixAndDeployBrokenRequests = mutation({
         }
 
         // Create source with scraper code
-        const sourceId = await ctx.db.insert("scrapeSources", {
+        const sourceId = await ctx.db.insert('scrapeSources', {
           name: request.sourceName,
           url: request.sourceUrl,
           organizationId: org!._id,
@@ -985,10 +959,10 @@ export const fixAndDeployBrokenRequests = mutation({
       }
 
       // Create scrape job
-      await ctx.db.insert("scrapeJobs", {
+      await ctx.db.insert('scrapeJobs', {
         sourceId: source!._id,
-        status: "pending",
-        triggeredBy: "fix-and-deploy",
+        status: 'pending',
+        triggeredBy: 'fix-and-deploy',
         startedAt: Date.now(),
       });
       jobsCreated++;
@@ -1009,18 +983,18 @@ export const fixAndDeployBrokenRequests = mutation({
  */
 export const markFailed = mutation({
   args: {
-    requestId: v.id("scraperDevelopmentRequests"),
+    requestId: v.id('scraperDevelopmentRequests'),
     reason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const request = await ctx.db.get(args.requestId);
     if (!request) {
-      throw new Error("Request not found");
+      throw new Error('Request not found');
     }
 
     await ctx.db.patch(args.requestId, {
-      status: "failed",
-      lastTestError: args.reason || "Marked as failed",
+      status: 'failed',
+      lastTestError: args.reason || 'Marked as failed',
     });
 
     return args.requestId;
@@ -1033,7 +1007,7 @@ export const markFailed = mutation({
  */
 export const markDirectoryProcessed = mutation({
   args: {
-    requestId: v.id("scraperDevelopmentRequests"),
+    requestId: v.id('scraperDevelopmentRequests'),
     notes: v.string(),
     linksFound: v.number(),
     requestsCreated: v.number(),
@@ -1041,11 +1015,11 @@ export const markDirectoryProcessed = mutation({
   handler: async (ctx, args) => {
     const request = await ctx.db.get(args.requestId);
     if (!request) {
-      throw new Error("Request not found");
+      throw new Error('Request not found');
     }
 
     await ctx.db.patch(args.requestId, {
-      status: "completed",
+      status: 'completed',
       completedAt: Date.now(),
       notes: args.notes,
       // Store metadata about the directory processing
@@ -1061,16 +1035,16 @@ export const markDirectoryProcessed = mutation({
  */
 export const resetToPending = mutation({
   args: {
-    requestId: v.id("scraperDevelopmentRequests"),
+    requestId: v.id('scraperDevelopmentRequests'),
   },
   handler: async (ctx, args) => {
     const request = await ctx.db.get(args.requestId);
     if (!request) {
-      throw new Error("Request not found");
+      throw new Error('Request not found');
     }
 
     await ctx.db.patch(args.requestId, {
-      status: "pending",
+      status: 'pending',
       claudeSessionId: undefined,
       claudeSessionStartedAt: undefined,
     });
@@ -1084,18 +1058,18 @@ export const resetToPending = mutation({
  */
 export const forceRestart = mutation({
   args: {
-    requestId: v.id("scraperDevelopmentRequests"),
+    requestId: v.id('scraperDevelopmentRequests'),
     clearCode: v.optional(v.boolean()), // Also clear generated code
     clearFeedback: v.optional(v.boolean()), // Also clear feedback history
   },
   handler: async (ctx, args) => {
     const request = await ctx.db.get(args.requestId);
     if (!request) {
-      throw new Error("Request not found");
+      throw new Error('Request not found');
     }
 
     const updates: Record<string, unknown> = {
-      status: "pending",
+      status: 'pending',
       claudeSessionId: undefined,
       claudeSessionStartedAt: undefined,
       testRetryCount: 0,
@@ -1126,7 +1100,7 @@ export const forceRestart = mutation({
  */
 export const saveExploration = mutation({
   args: {
-    requestId: v.id("scraperDevelopmentRequests"),
+    requestId: v.id('scraperDevelopmentRequests'),
     exploration: v.object({
       siteType: v.optional(v.string()),
       hasMultipleLocations: v.optional(v.boolean()),
@@ -1136,8 +1110,8 @@ export const saveExploration = mutation({
             name: v.string(),
             url: v.optional(v.string()),
             siteId: v.optional(v.string()),
-          })
-        )
+          }),
+        ),
       ),
       hasCategories: v.optional(v.boolean()),
       categories: v.optional(
@@ -1145,8 +1119,8 @@ export const saveExploration = mutation({
           v.object({
             name: v.string(),
             id: v.optional(v.string()),
-          })
-        )
+          }),
+        ),
       ),
       registrationSystem: v.optional(v.string()),
       urlPatterns: v.optional(v.array(v.string())),
@@ -1163,8 +1137,8 @@ export const saveExploration = mutation({
             structureHint: v.optional(v.string()),
             urlPattern: v.optional(v.string()),
             sampleData: v.optional(v.string()),
-          })
-        )
+          }),
+        ),
       ),
       apiSearchTerm: v.optional(v.string()),
     }),
@@ -1172,7 +1146,7 @@ export const saveExploration = mutation({
   handler: async (ctx, args) => {
     const request = await ctx.db.get(args.requestId);
     if (!request) {
-      throw new Error("Request not found");
+      throw new Error('Request not found');
     }
 
     await ctx.db.patch(args.requestId, {
@@ -1192,7 +1166,7 @@ export const saveExploration = mutation({
  */
 export const createDevRequestsForOrphanedSources = mutation({
   args: {
-    cityId: v.id("cities"),
+    cityId: v.id('cities'),
     dryRun: v.optional(v.boolean()),
     limit: v.optional(v.number()),
   },
@@ -1202,45 +1176,37 @@ export const createDevRequestsForOrphanedSources = mutation({
 
     // Get all sources for this city
     const sources = await ctx.db
-      .query("scrapeSources")
-      .withIndex("by_city", (q) => q.eq("cityId", args.cityId))
+      .query('scrapeSources')
+      .withIndex('by_city', (q) => q.eq('cityId', args.cityId))
       .collect();
 
     // Filter to sources without scrapers (include inactive - they need scrapers before activation)
-    const orphanedSources = sources.filter(
-      (s) => !s.scraperModule && !s.scraperCode
-    );
+    const orphanedSources = sources.filter((s) => !s.scraperModule && !s.scraperCode);
 
     // Get existing dev requests to avoid duplicates
     const existingRequests = await ctx.db
-      .query("scraperDevelopmentRequests")
-      .withIndex("by_city", (q) => q.eq("cityId", args.cityId))
+      .query('scraperDevelopmentRequests')
+      .withIndex('by_city', (q) => q.eq('cityId', args.cityId))
       .collect();
 
-    const existingSourceIds = new Set(
-      existingRequests
-        .filter((r) => r.sourceId)
-        .map((r) => r.sourceId)
-    );
+    const existingSourceIds = new Set(existingRequests.filter((r) => r.sourceId).map((r) => r.sourceId));
     const existingUrls = new Set(existingRequests.map((r) => r.sourceUrl));
 
     // Find sources that need dev requests
-    const needsDevRequest = orphanedSources.filter(
-      (s) => !existingSourceIds.has(s._id) && !existingUrls.has(s.url)
-    );
+    const needsDevRequest = orphanedSources.filter((s) => !existingSourceIds.has(s._id) && !existingUrls.has(s.url));
 
     const created: Array<{ name: string; url: string }> = [];
 
     for (const source of needsDevRequest.slice(0, limit)) {
       if (!dryRun) {
-        await ctx.db.insert("scraperDevelopmentRequests", {
+        await ctx.db.insert('scraperDevelopmentRequests', {
           sourceName: source.name,
           sourceUrl: source.url,
           cityId: args.cityId,
           sourceId: source._id,
-          requestedBy: "auto-orphan-fill",
+          requestedBy: 'auto-orphan-fill',
           requestedAt: Date.now(),
-          status: "pending",
+          status: 'pending',
           scraperVersion: 0,
         });
       }
@@ -1265,27 +1231,27 @@ export const createDevRequestsForOrphanedSources = mutation({
  */
 export const submitScraperFeedbackFromSource = mutation({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
     feedback: v.string(),
     requestRescan: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const source = await ctx.db.get(args.sourceId);
     if (!source) {
-      throw new Error("Source not found");
+      throw new Error('Source not found');
     }
 
     // Check for existing development request for this source
     const existing = await ctx.db
-      .query("scraperDevelopmentRequests")
-      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .query('scraperDevelopmentRequests')
+      .withIndex('by_source', (q) => q.eq('sourceId', args.sourceId))
       .filter((q) =>
         q.or(
-          q.eq(q.field("status"), "pending"),
-          q.eq(q.field("status"), "in_progress"),
-          q.eq(q.field("status"), "testing"),
-          q.eq(q.field("status"), "needs_feedback")
-        )
+          q.eq(q.field('status'), 'pending'),
+          q.eq(q.field('status'), 'in_progress'),
+          q.eq(q.field('status'), 'testing'),
+          q.eq(q.field('status'), 'needs_feedback'),
+        ),
       )
       .first();
 
@@ -1294,14 +1260,14 @@ export const submitScraperFeedbackFromSource = mutation({
       const feedbackHistory = existing.feedbackHistory || [];
       feedbackHistory.push({
         feedbackAt: Date.now(),
-        feedbackBy: "control-center",
+        feedbackBy: 'control-center',
         feedback: args.feedback,
         scraperVersionBefore: existing.scraperVersion || 0,
       });
 
       await ctx.db.patch(existing._id, {
         feedbackHistory,
-        status: "pending", // Reset to pending so daemon picks it up
+        status: 'pending', // Reset to pending so daemon picks it up
       });
 
       // Optionally flag source for rescan
@@ -1317,20 +1283,20 @@ export const submitScraperFeedbackFromSource = mutation({
     }
 
     // Create new development request
-    const requestId = await ctx.db.insert("scraperDevelopmentRequests", {
+    const requestId = await ctx.db.insert('scraperDevelopmentRequests', {
       sourceName: source.name,
       sourceUrl: source.url,
       cityId: source.cityId,
       sourceId: args.sourceId,
       notes: args.feedback,
-      requestedBy: "control-center",
+      requestedBy: 'control-center',
       requestedAt: Date.now(),
-      status: "pending",
+      status: 'pending',
       scraperVersion: 0,
       feedbackHistory: [
         {
           feedbackAt: Date.now(),
-          feedbackBy: "control-center",
+          feedbackBy: 'control-center',
           feedback: args.feedback,
           scraperVersionBefore: 0,
         },

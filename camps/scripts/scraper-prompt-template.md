@@ -1,6 +1,7 @@
 # Scraper Development Task
 
 **IMPORTANT: TIME LIMIT**
+
 1. Run `date` now to check the current time
 2. You have 9 minutes maximum to complete this task
 3. If you reach minute 9 without success, STOP and write whatever partial scraper you have to the output file
@@ -10,12 +11,15 @@ You are developing a web scraper for: **{{SOURCE_NAME}}**
 URL: {{SOURCE_URL}}
 
 ## Your Goal
+
 Write a Stagehand-compatible scraper that extracts summer camp session data from this website.
 
 ## Required Output
+
 Write the scraper code to this file: `{{OUTPUT_FILE}}`
 
 The scraper should export a function that:
+
 1. Takes a Stagehand page instance
 2. Extracts all camp sessions with these fields:
    - name (string, required)
@@ -26,12 +30,13 @@ The scraper should export a function that:
    - pickUpHour/pickUpMinute (24-hour format)
    - location (address or location name)
    - minAge/maxAge or minGrade/maxGrade
-   - priceInCents (price * 100)
+   - priceInCents (price \* 100)
    - registrationUrl
    - isAvailable (boolean, only if explicitly shown on page - do NOT default to true)
 3. Returns an array of session objects
 
 ## Steps
+
 1. First, use WebFetch to explore the target URL and understand the page structure
 2. **CRITICAL: Discover the site's navigation structure** (see below)
 3. Identify where camp information is displayed
@@ -83,9 +88,9 @@ The scraper should export a function that:
 
 ```typescript
 const LOCATIONS = [
-  { name: "Downtown Center", siteId: 15 },
-  { name: "East Side Center", siteId: 23 },
-  { name: "West Park Center", siteId: 44 },
+  { name: 'Downtown Center', siteId: 15 },
+  { name: 'East Side Center', siteId: 23 },
+  { name: 'West Park Center', siteId: 44 },
   // ... discover ALL locations from the main page
 ];
 
@@ -111,14 +116,18 @@ export async function scrape(page: Page): Promise<ExtractedSession[]> {
 - Registration system has URL parameters you're not varying
 
 {{#NOTES}}
+
 ## Additional Notes from Requester
+
 {{NOTES}}
 {{/NOTES}}
 
 {{SITE_GUIDANCE}}
 
 {{#FEEDBACK}}
+
 ## Previous Version Feedback
+
 The previous scraper (version {{FEEDBACK_VERSION}}) received this feedback:
 
 {{FEEDBACK_TEXT}}
@@ -127,19 +136,27 @@ Please improve the scraper based on this feedback.
 {{/FEEDBACK}}
 
 {{#PREVIOUS_CODE}}
+
 ## Previous Scraper Code
+
 Here's the previous version of the scraper to improve upon:
 
 ```typescript
-{{PREVIOUS_CODE}}
+{
+  {
+    PREVIOUS_CODE;
+  }
+}
 ```
+
 {{/PREVIOUS_CODE}}
 
 ## Scraper Template
+
 Use this structure for your scraper:
 
 ```typescript
-import { Page } from "@anthropic-ai/stagehand";
+import { Page } from '@anthropic-ai/stagehand';
 
 export interface ExtractedSession {
   name: string;
@@ -161,9 +178,9 @@ export interface ExtractedSession {
   priceInCents?: number;
   priceRaw?: string;
   registrationUrl?: string;
-  isAvailable?: boolean;  // Only set if explicitly shown (e.g., "Sold Out", "Spots Available") - leave undefined otherwise
-  isFlexible?: boolean;  // True for drop-in camps with generated weekly sessions
-  flexibleDateRange?: string;  // Original date range like "June 15 - August 21"
+  isAvailable?: boolean; // Only set if explicitly shown (e.g., "Sold Out", "Spots Available") - leave undefined otherwise
+  isFlexible?: boolean; // True for drop-in camps with generated weekly sessions
+  flexibleDateRange?: string; // Original date range like "June 15 - August 21"
   imageUrls?: string[];
 }
 
@@ -191,12 +208,13 @@ Some camps (like Steve & Kate's) are **flexible drop-in camps** that run all sum
    - ... continue through August
 
 3. **Use a helper function** like this in your scraper:
+
 ```typescript
 function generateWeeklySessions(
   baseName: string,
-  summerStart: string,  // "2025-06-16"
-  summerEnd: string,    // "2025-08-22"
-  baseSession: Partial<ExtractedSession>
+  summerStart: string, // "2025-06-16"
+  summerEnd: string, // "2025-08-22"
+  baseSession: Partial<ExtractedSession>,
 ): ExtractedSession[] {
   const sessions: ExtractedSession[] = [];
   let current = new Date(summerStart);
@@ -215,7 +233,7 @@ function generateWeeklySessions(
         name: `${baseName} - Week ${weekNum}`,
         startDate: monday.toISOString().split('T')[0],
         endDate: friday.toISOString().split('T')[0],
-        isFlexible: true,  // Mark as drop-in/flexible
+        isFlexible: true, // Mark as drop-in/flexible
       } as ExtractedSession);
     }
 
@@ -233,6 +251,7 @@ function generateWeeklySessions(
 5. **Set `isFlexible: true`** on generated sessions so we know they're drop-in style.
 
 ## Important
+
 - **CHECK THE TIME** - you must finish within 9 minutes
 - Handle pagination if the site has multiple pages
 - Extract ALL sessions, not just the first few
@@ -252,11 +271,13 @@ npx tsx scripts/test-scraper.ts {{OUTPUT_FILE}} "{{SOURCE_URL}}"
 ```
 
 This will:
+
 1. Run your scraper against the actual website
 2. Show you how many sessions were found
 3. Show sample session data or error messages
 
 **If the test fails:**
+
 1. Read the error message carefully
 2. Fix the scraper code based on the actual error
 3. Save the updated code to `{{OUTPUT_FILE}}`
@@ -264,6 +285,7 @@ This will:
 5. Repeat until the test passes or you run out of time
 
 **Common test failures and fixes:**
+
 - `0 sessions found` → Your selectors aren't matching anything. Use page.evaluate() to debug what's on the page.
 - `page.extract is not a function` → Use `stagehand.extract()` not `page.extract()` - stagehand and z (zod) are available in scope.
 - `Timeout` → The page is slow to load. Add longer waits or use 'networkidle'.
@@ -271,6 +293,7 @@ This will:
 - API rate limits (429) → Add delays between requests with `await page.waitForTimeout(2000)`.
 
 ## Time Management
+
 1. Minutes 0-2: Explore the page structure with WebFetch
 2. Minutes 2-5: Write the initial scraper code
 3. Minutes 5-8: **TEST the scraper and fix errors** (this is the most important step!)

@@ -1,6 +1,6 @@
-import { action, internalAction } from "../_generated/server";
-import { internal } from "../_generated/api";
-import { v } from "convex/values";
+import { action, internalAction } from '../_generated/server';
+import { internal } from '../_generated/api';
+import { v } from 'convex/values';
 
 /**
  * Helper to extract domain from URL
@@ -8,7 +8,7 @@ import { v } from "convex/values";
 function extractDomain(url: string): string {
   try {
     const urlObj = new URL(url);
-    return urlObj.hostname.replace(/^www\./, "");
+    return urlObj.hostname.replace(/^www\./, '');
   } catch {
     const match = url.match(/^(?:https?:\/\/)?(?:www\.)?([^\/]+)/i);
     return match ? match[1] : url;
@@ -30,10 +30,13 @@ interface SearchResult {
  */
 export const executeDiscoverySearch = action({
   args: {
-    cityId: v.id("cities"),
+    cityId: v.id('cities'),
     query: v.string(),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     success: boolean;
     resultsCount: number;
     newSourcesFound: number;
@@ -89,16 +92,13 @@ export const executeDiscoverySearch = action({
       seenDomains.add(domain);
 
       // Try to create the discovered source (will be deduplicated by URL in the mutation)
-      const createResult = await ctx.runMutation(
-        internal.discovery.mutations.internalCreateDiscoveredSource,
-        {
-          cityId: args.cityId,
-          url: result.url,
-          title: result.title,
-          snippet: result.snippet,
-          discoveryQuery: args.query,
-        }
-      );
+      const createResult = await ctx.runMutation(internal.discovery.mutations.internalCreateDiscoveredSource, {
+        cityId: args.cityId,
+        url: result.url,
+        title: result.title,
+        snippet: result.snippet,
+        discoveryQuery: args.query,
+      });
 
       if (createResult.created) {
         newSourcesFound++;
@@ -128,9 +128,12 @@ export const executeDiscoverySearch = action({
  */
 export const analyzeDiscoveredUrl = action({
   args: {
-    sourceId: v.id("discoveredSources"),
+    sourceId: v.id('discoveredSources'),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     success: boolean;
     analysis?: {
       isLikelyCampSite: boolean;
@@ -138,12 +141,7 @@ export const analyzeDiscoveredUrl = action({
       detectedCampNames: string[];
       hasScheduleInfo: boolean;
       hasPricingInfo: boolean;
-      pageType:
-        | "camp_provider_main"
-        | "camp_program_list"
-        | "aggregator"
-        | "directory"
-        | "unknown";
+      pageType: 'camp_provider_main' | 'camp_program_list' | 'aggregator' | 'directory' | 'unknown';
       suggestedScraperApproach: string;
     };
     error?: string;
@@ -177,7 +175,7 @@ export const analyzeDiscoveredUrl = action({
     // // (would use cheerio or similar in production)
     // const textContent = extractTextFromHtml(html);
 
-    const textContent = ""; // Stubbed - would be extracted from page
+    const textContent = ''; // Stubbed - would be extracted from page
     // ========================================
 
     // ========================================
@@ -231,29 +229,26 @@ export const analyzeDiscoveredUrl = action({
       detectedCampNames: [] as string[],
       hasScheduleInfo: false,
       hasPricingInfo: false,
-      pageType: "unknown" as const,
+      pageType: 'unknown' as const,
       suggestedScraperApproach:
-        "Analysis not performed - stub implementation. In production, would analyze page structure and recommend CSS selectors for scraping.",
+        'Analysis not performed - stub implementation. In production, would analyze page structure and recommend CSS selectors for scraping.',
     };
 
     // Skip update if this is just a stub with no real analysis
-    if (textContent === "") {
+    if (textContent === '') {
       return {
         success: false,
         error:
-          "Stub implementation - no actual analysis performed. Configure SERPAPI_KEY and ANTHROPIC_API_KEY environment variables for production use.",
+          'Stub implementation - no actual analysis performed. Configure SERPAPI_KEY and ANTHROPIC_API_KEY environment variables for production use.',
       };
     }
     // ========================================
 
     // Update the source with the analysis results
-    await ctx.runMutation(
-      internal.discovery.mutations.internalUpdateAiAnalysis,
-      {
-        sourceId: args.sourceId,
-        aiAnalysis: analysis,
-      }
-    );
+    await ctx.runMutation(internal.discovery.mutations.internalUpdateAiAnalysis, {
+      sourceId: args.sourceId,
+      aiAnalysis: analysis,
+    });
 
     return {
       success: true,
@@ -268,9 +263,12 @@ export const analyzeDiscoveredUrl = action({
  */
 export const internalAnalyzeDiscoveredUrl = internalAction({
   args: {
-    sourceId: v.id("discoveredSources"),
+    sourceId: v.id('discoveredSources'),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     success: boolean;
     analysis?: {
       isLikelyCampSite: boolean;
@@ -278,12 +276,7 @@ export const internalAnalyzeDiscoveredUrl = internalAction({
       detectedCampNames: string[];
       hasScheduleInfo: boolean;
       hasPricingInfo: boolean;
-      pageType:
-        | "camp_provider_main"
-        | "camp_program_list"
-        | "aggregator"
-        | "directory"
-        | "unknown";
+      pageType: 'camp_provider_main' | 'camp_program_list' | 'aggregator' | 'directory' | 'unknown';
       suggestedScraperApproach: string;
     };
     error?: string;
@@ -291,7 +284,7 @@ export const internalAnalyzeDiscoveredUrl = internalAction({
     // Same implementation as the public action
     // In production, this would fetch the URL and analyze with Claude
 
-    const textContent = ""; // Stubbed
+    const textContent = ''; // Stubbed
 
     const analysis = {
       isLikelyCampSite: false,
@@ -299,25 +292,21 @@ export const internalAnalyzeDiscoveredUrl = internalAction({
       detectedCampNames: [] as string[],
       hasScheduleInfo: false,
       hasPricingInfo: false,
-      pageType: "unknown" as const,
-      suggestedScraperApproach:
-        "Analysis not performed - stub implementation.",
+      pageType: 'unknown' as const,
+      suggestedScraperApproach: 'Analysis not performed - stub implementation.',
     };
 
-    if (textContent === "") {
+    if (textContent === '') {
       return {
         success: false,
-        error: "Stub implementation - configure API keys for production use.",
+        error: 'Stub implementation - configure API keys for production use.',
       };
     }
 
-    await ctx.runMutation(
-      internal.discovery.mutations.internalUpdateAiAnalysis,
-      {
-        sourceId: args.sourceId,
-        aiAnalysis: analysis,
-      }
-    );
+    await ctx.runMutation(internal.discovery.mutations.internalUpdateAiAnalysis, {
+      sourceId: args.sourceId,
+      aiAnalysis: analysis,
+    });
 
     return { success: true, analysis };
   },
@@ -329,9 +318,12 @@ export const internalAnalyzeDiscoveredUrl = internalAction({
  */
 export const batchAnalyzeDiscoveredUrls = action({
   args: {
-    sourceIds: v.array(v.id("discoveredSources")),
+    sourceIds: v.array(v.id('discoveredSources')),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     success: boolean;
     processed: number;
     failed: number;
@@ -351,10 +343,7 @@ export const batchAnalyzeDiscoveredUrls = action({
 
     for (const sourceId of args.sourceIds) {
       try {
-        const result = await ctx.runAction(
-          internal.discovery.actions.internalAnalyzeDiscoveredUrl,
-          { sourceId }
-        );
+        const result = await ctx.runAction(internal.discovery.actions.internalAnalyzeDiscoveredUrl, { sourceId });
 
         if (result.success) {
           processed++;
@@ -368,7 +357,7 @@ export const batchAnalyzeDiscoveredUrls = action({
         results.push({
           sourceId,
           success: false,
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
 

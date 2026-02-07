@@ -59,13 +59,11 @@ function ControlCenterContent() {
 
   const [activeTab, setActiveTab] = useState<TabFilter>(initialTab);
   const [selectedSourceId, setSelectedSourceId] = useState<Id<'scrapeSources'> | null>(
-    initialSourceId as Id<'scrapeSources'> | null
+    initialSourceId as Id<'scrapeSources'> | null,
   );
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [triggeringSource, setTriggeringSource] = useState<Id<'scrapeSources'> | null>(null);
-  const [selectedCityId, setSelectedCityId] = useState<Id<'cities'> | null>(
-    initialCityId as Id<'cities'> | null
-  );
+  const [selectedCityId, setSelectedCityId] = useState<Id<'cities'> | null>(initialCityId as Id<'cities'> | null);
 
   // Image generation state
   const [isGeneratingImages, setIsGeneratingImages] = useState(false);
@@ -99,19 +97,19 @@ function ControlCenterContent() {
   // Query selected source detail
   const selectedSource = useQuery(
     api.scraping.queries.getScrapeSource,
-    selectedSourceId ? { sourceId: selectedSourceId } : 'skip'
+    selectedSourceId ? { sourceId: selectedSourceId } : 'skip',
   );
 
   // Query sessions for selected source
   const sourceSessions = useQuery(
     api.scraping.queries.getSessionsBySource,
-    selectedSourceId ? { sourceId: selectedSourceId, limit: 10 } : 'skip'
+    selectedSourceId ? { sourceId: selectedSourceId, limit: 10 } : 'skip',
   );
 
   // Query data quality issues
   const dataQualityIssues = useQuery(
     api.scraping.queries.getSourceDataQualityIssues,
-    selectedSourceId ? { sourceId: selectedSourceId } : 'skip'
+    selectedSourceId ? { sourceId: selectedSourceId } : 'skip',
   );
 
   // Query pending sessions count
@@ -238,14 +236,14 @@ function ControlCenterContent() {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const status = await getWorkflowStatus({ workflowId: result.workflowId as any });
           if (status.status === 'completed' && status.result) {
-            setImageGenStatus(prev => ({
+            setImageGenStatus((prev) => ({
               ...prev,
               status: 'completed',
               result: { completed: status.result!.completed, failed: status.result!.failed },
             }));
             setIsGeneratingImages(false);
           } else if (status.status === 'failed') {
-            setImageGenStatus(prev => ({ ...prev, status: 'failed' }));
+            setImageGenStatus((prev) => ({ ...prev, status: 'failed' }));
             setIsGeneratingImages(false);
           } else {
             // Still running, poll again
@@ -271,12 +269,10 @@ function ControlCenterContent() {
   const pendingReviewCount = pendingSessions?.length ?? 0;
 
   // Calculate total sessions across all sources
-  const totalSessions = filteredData?.sources?.reduce(
-    (sum, s) => sum + (s.sessionCount ?? 0), 0
-  ) ?? 0;
+  const totalSessions = filteredData?.sources?.reduce((sum, s) => sum + (s.sessionCount ?? 0), 0) ?? 0;
 
   // Filter sources by search
-  const filteredSources = (filteredData?.sources ?? []).filter(source => {
+  const filteredSources = (filteredData?.sources ?? []).filter((source) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -320,12 +316,13 @@ function ControlCenterContent() {
         <div className="max-w-full mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <Link href="/admin" className="text-sm text-primary hover:text-primary-dark mb-1 block rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+              <Link
+                href="/admin"
+                className="text-sm text-primary hover:text-primary-dark mb-1 block rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
                 &larr; Back to Admin
               </Link>
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-                Control Center
-              </h1>
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Control Center</h1>
             </div>
             <div className="flex items-center gap-4">
               {/* City Filter */}
@@ -379,13 +376,8 @@ function ControlCenterContent() {
                 {imageGenStatus && (
                   <div className="absolute top-full right-0 mt-2 w-64 p-3 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 z-20">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-slate-900 dark:text-white">
-                        Image Generation
-                      </span>
-                      <button
-                        onClick={() => setImageGenStatus(null)}
-                        className="text-slate-400 hover:text-slate-600"
-                      >
+                      <span className="text-sm font-medium text-slate-900 dark:text-white">Image Generation</span>
+                      <button onClick={() => setImageGenStatus(null)} className="text-slate-400 hover:text-slate-600">
                         <XIcon className="w-4 h-4" />
                       </button>
                     </div>
@@ -402,9 +394,7 @@ function ControlCenterContent() {
                             Completed: {imageGenStatus.result.completed} images
                           </p>
                           {imageGenStatus.result.failed > 0 && (
-                            <p className="text-red-600 dark:text-red-400">
-                              Failed: {imageGenStatus.result.failed}
-                            </p>
+                            <p className="text-red-600 dark:text-red-400">Failed: {imageGenStatus.result.failed}</p>
                           )}
                         </div>
                       )}
@@ -462,7 +452,11 @@ function ControlCenterContent() {
             </div>
             <div className="flex-1 overflow-y-auto">
               {filteredData === undefined ? (
-                <div role="status" aria-live="polite" className="p-4 space-y-3 animate-pulse motion-reduce:animate-none">
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className="p-4 space-y-3 animate-pulse motion-reduce:animate-none"
+                >
                   {[1, 2, 3, 4].map((i) => (
                     <div key={i} className="h-20 bg-slate-200 dark:bg-slate-700 rounded-lg" aria-hidden="true"></div>
                   ))}
@@ -508,9 +502,7 @@ function ControlCenterContent() {
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-slate-900 dark:text-white truncate">
-                            {source.name}
-                          </p>
+                          <p className="font-medium text-slate-900 dark:text-white truncate">{source.name}</p>
                           <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
                             {new URL(source.url).hostname}
                           </p>
@@ -518,18 +510,20 @@ function ControlCenterContent() {
                             <div className="flex items-center gap-1">
                               <span
                                 className={`w-2 h-2 rounded-full ${
-                                  health.color === 'green' ? 'bg-green-500' :
-                                  health.color === 'yellow' ? 'bg-yellow-500' :
-                                  health.color === 'orange' ? 'bg-orange-500' :
-                                  health.color === 'red' ? 'bg-red-500' :
-                                  'bg-slate-400'
+                                  health.color === 'green'
+                                    ? 'bg-green-500'
+                                    : health.color === 'yellow'
+                                      ? 'bg-yellow-500'
+                                      : health.color === 'orange'
+                                        ? 'bg-orange-500'
+                                        : health.color === 'red'
+                                          ? 'bg-red-500'
+                                          : 'bg-slate-400'
                                 }`}
                               />
                               <span className="text-xs text-slate-600 dark:text-slate-400">{health.label}</span>
                             </div>
-                            <span className="text-xs text-slate-500">
-                              {source.sessionCount ?? 0} sessions
-                            </span>
+                            <span className="text-xs text-slate-500">{source.sessionCount ?? 0} sessions</span>
                             <span className="text-xs text-slate-500">
                               {source.lastScrapedAt ? formatTimestamp(source.lastScrapedAt) : 'Never'}
                             </span>
@@ -549,11 +543,7 @@ function ControlCenterContent() {
                           }`}
                           title={!source.isActive ? 'Source is inactive' : 'Trigger scrape'}
                         >
-                          {triggeringSource === source._id ? (
-                            <SpinnerIcon />
-                          ) : (
-                            <RefreshIcon className="w-3 h-3" />
-                          )}
+                          {triggeringSource === source._id ? <SpinnerIcon /> : <RefreshIcon className="w-3 h-3" />}
                         </button>
                       </div>
                     </div>
@@ -638,8 +628,16 @@ interface SourceDetailPanelProps {
   dataQualityIssues: { type: string; count: number; sessionIds: string[] }[];
   onTriggerScrape: (sourceId: Id<'scrapeSources'>) => Promise<void>;
   onToggleActive: (sourceId: Id<'scrapeSources'>, currentActive: boolean) => Promise<void>;
-  onUpdateDetails: (args: { sourceId: Id<'scrapeSources'>; name?: string; url?: string }) => Promise<Id<'scrapeSources'>>;
-  onDelete: (args: { sourceId: Id<'scrapeSources'>; deleteJobs?: boolean; deleteSessions?: boolean }) => Promise<{ deleted: boolean }>;
+  onUpdateDetails: (args: {
+    sourceId: Id<'scrapeSources'>;
+    name?: string;
+    url?: string;
+  }) => Promise<Id<'scrapeSources'>>;
+  onDelete: (args: {
+    sourceId: Id<'scrapeSources'>;
+    deleteJobs?: boolean;
+    deleteSessions?: boolean;
+  }) => Promise<{ deleted: boolean }>;
   isTriggeringScrape: boolean;
 }
 
@@ -756,7 +754,13 @@ function SourceDetailPanel({
                 <button onClick={handleSaveName} className="text-primary hover:text-primary-dark">
                   <CheckIcon className="w-5 h-5" />
                 </button>
-                <button onClick={() => { setEditName(source.name); setIsEditingName(false); }} className="text-slate-400 hover:text-slate-600">
+                <button
+                  onClick={() => {
+                    setEditName(source.name);
+                    setIsEditingName(false);
+                  }}
+                  className="text-slate-400 hover:text-slate-600"
+                >
                   <XIcon className="w-5 h-5" />
                 </button>
               </div>
@@ -790,7 +794,13 @@ function SourceDetailPanel({
                 <button onClick={handleSaveUrl} className="text-primary hover:text-primary-dark">
                   <CheckIcon className="w-4 h-4" />
                 </button>
-                <button onClick={() => { setEditUrl(source.url); setIsEditingUrl(false); }} className="text-slate-400 hover:text-slate-600">
+                <button
+                  onClick={() => {
+                    setEditUrl(source.url);
+                    setIsEditingUrl(false);
+                  }}
+                  className="text-slate-400 hover:text-slate-600"
+                >
                   <XIcon className="w-4 h-4" />
                 </button>
               </div>
@@ -841,11 +851,15 @@ function SourceDetailPanel({
               <div className="flex items-center gap-2">
                 <span
                   className={`w-3 h-3 rounded-full ${
-                    health.color === 'green' ? 'bg-green-500' :
-                    health.color === 'yellow' ? 'bg-yellow-500' :
-                    health.color === 'orange' ? 'bg-orange-500' :
-                    health.color === 'red' ? 'bg-red-500' :
-                    'bg-slate-400'
+                    health.color === 'green'
+                      ? 'bg-green-500'
+                      : health.color === 'yellow'
+                        ? 'bg-yellow-500'
+                        : health.color === 'orange'
+                          ? 'bg-orange-500'
+                          : health.color === 'red'
+                            ? 'bg-red-500'
+                            : 'bg-slate-400'
                   }`}
                 />
                 <span className="font-medium text-slate-900 dark:text-white">{health.label}</span>
@@ -861,9 +875,7 @@ function SourceDetailPanel({
               <button
                 onClick={() => onToggleActive(source._id, source.isActive)}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  source.isActive
-                    ? 'bg-green-500'
-                    : 'bg-slate-300 dark:bg-slate-600'
+                  source.isActive ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-600'
                 }`}
               >
                 <span
@@ -893,9 +905,7 @@ function SourceDetailPanel({
             </div>
           </div>
           {source.scraperHealth.lastError && (
-            <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-              Last error: {source.scraperHealth.lastError}
-            </p>
+            <p className="mt-2 text-sm text-red-600 dark:text-red-400">Last error: {source.scraperHealth.lastError}</p>
           )}
         </div>
 
@@ -908,9 +918,7 @@ function SourceDetailPanel({
                   <ClosedIcon className="w-4 h-4" />
                   Source Marked as Closed
                 </h3>
-                <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
-                  {source.closureReason}
-                </p>
+                <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">{source.closureReason}</p>
                 {source.closedAt && (
                   <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
                     Closed {formatTimestamp(source.closedAt)} by {source.closedBy || 'unknown'}
@@ -930,13 +938,8 @@ function SourceDetailPanel({
         {/* Sessions Preview */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Sessions ({sessionCount})
-            </h3>
-            <Link
-              href={`/admin/sources/${source._id}`}
-              className="text-sm text-primary hover:text-primary-dark"
-            >
+            <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300">Sessions ({sessionCount})</h3>
+            <Link href={`/admin/sources/${source._id}`} className="text-sm text-primary hover:text-primary-dark">
               View all sessions &rarr;
             </Link>
           </div>
@@ -948,9 +951,7 @@ function SourceDetailPanel({
                 <SessionDetailCard key={session._id} session={session} />
               ))}
               {sessionCount > 10 && (
-                <p className="text-xs text-slate-500 text-center py-2">
-                  +{sessionCount - 10} more sessions
-                </p>
+                <p className="text-xs text-slate-500 text-center py-2">+{sessionCount - 10} more sessions</p>
               )}
             </div>
           )}
@@ -959,9 +960,7 @@ function SourceDetailPanel({
         {/* Data Quality Issues */}
         {dataQualityIssues && dataQualityIssues.length > 0 && (
           <div>
-            <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
-              Data Issues
-            </h3>
+            <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">Data Issues</h3>
             <div className="space-y-2">
               {dataQualityIssues.map((issue, i) => (
                 <div
@@ -979,9 +978,7 @@ function SourceDetailPanel({
 
         {/* Scraper Feedback */}
         <div>
-          <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
-            Scraper Feedback
-          </h3>
+          <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">Scraper Feedback</h3>
           <textarea
             value={feedbackText}
             onChange={(e) => setFeedbackText(e.target.value)}
@@ -1000,18 +997,14 @@ function SourceDetailPanel({
             >
               {isSubmittingFeedback ? 'Submitting...' : 'Submit Feedback'}
             </button>
-            <span className="text-xs text-slate-500">
-              Creates a development request for the scraper daemon
-            </span>
+            <span className="text-xs text-slate-500">Creates a development request for the scraper daemon</span>
           </div>
         </div>
 
         {/* Recent Jobs */}
         {source.recentJobs && source.recentJobs.length > 0 && (
           <div>
-            <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
-              Recent Jobs
-            </h3>
+            <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">Recent Jobs</h3>
             <div className="space-y-2">
               {source.recentJobs.map((job) => (
                 <div
@@ -1021,24 +1014,26 @@ function SourceDetailPanel({
                   <div className="flex items-center gap-3">
                     <span
                       className={`w-2 h-2 rounded-full ${
-                        job.status === 'completed' ? 'bg-green-500' :
-                        job.status === 'running' ? 'bg-primary animate-pulse' :
-                        job.status === 'pending' ? 'bg-yellow-500' :
-                        'bg-red-500'
+                        job.status === 'completed'
+                          ? 'bg-green-500'
+                          : job.status === 'running'
+                            ? 'bg-primary animate-pulse'
+                            : job.status === 'pending'
+                              ? 'bg-yellow-500'
+                              : 'bg-red-500'
                       }`}
                     />
-                    <span className="text-sm text-slate-700 dark:text-slate-300 capitalize">
-                      {job.status}
-                    </span>
+                    <span className="text-sm text-slate-700 dark:text-slate-300 capitalize">{job.status}</span>
                     {job.sessionsFound !== undefined && (
-                      <span className="text-xs text-slate-500">
-                        {job.sessionsFound} sessions
-                      </span>
+                      <span className="text-xs text-slate-500">{job.sessionsFound} sessions</span>
                     )}
                   </div>
                   <span className="text-xs text-slate-500">
-                    {job.completedAt ? formatTimestamp(job.completedAt) :
-                     job.startedAt ? formatTimestamp(job.startedAt) : 'Pending'}
+                    {job.completedAt
+                      ? formatTimestamp(job.completedAt)
+                      : job.startedAt
+                        ? formatTimestamp(job.startedAt)
+                        : 'Pending'}
                   </span>
                 </div>
               ))}
@@ -1051,12 +1046,10 @@ function SourceDetailPanel({
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-slate-800 rounded-lg p-6 max-w-md mx-4">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
-              Delete Source?
-            </h3>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Delete Source?</h3>
             <p className="text-slate-600 dark:text-slate-400 mb-4">
-              This will delete the source &quot;{source.name}&quot; and all associated scrape jobs.
-              Sessions will be preserved but unlinked from this source.
+              This will delete the source &quot;{source.name}&quot; and all associated scrape jobs. Sessions will be
+              preserved but unlinked from this source.
             </p>
             <div className="flex justify-end gap-2">
               <button
@@ -1114,34 +1107,39 @@ function SessionDetailCard({ session }: { session: SessionDetail }) {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
-      case 'draft': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
-      case 'sold_out': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
-      case 'cancelled': return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300';
-      case 'completed': return 'bg-primary/20 text-primary dark:bg-primary-dark/30 dark:text-white/60';
-      default: return 'bg-slate-100 text-slate-800';
+      case 'active':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+      case 'draft':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
+      case 'sold_out':
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+      case 'cancelled':
+        return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300';
+      case 'completed':
+        return 'bg-primary/20 text-primary dark:bg-primary-dark/30 dark:text-white/60';
+      default:
+        return 'bg-slate-100 text-slate-800';
     }
   };
 
   const ageRange = formatAgeRange(session.ageRequirements);
   const hasAge = ageRange !== null;
   const spotsLeft = session.capacity - session.enrolledCount;
-  const availability = session.capacity > 0
-    ? `${spotsLeft}/${session.capacity} spots`
-    : 'Unknown capacity';
+  const availability = session.capacity > 0 ? `${spotsLeft}/${session.capacity} spots` : 'Unknown capacity';
 
   return (
     <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700">
       {/* Header row: Name + Status + Price */}
       <div className="flex items-start justify-between mb-2">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
-            {session.campName}
-          </p>
+          <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{session.campName}</p>
           {session.campCategories && session.campCategories.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-1">
               {session.campCategories.slice(0, 3).map((cat, i) => (
-                <span key={i} className="px-1.5 py-0.5 text-xs bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded">
+                <span
+                  key={i}
+                  className="px-1.5 py-0.5 text-xs bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded"
+                >
                   {cat}
                 </span>
               ))}
@@ -1149,12 +1147,8 @@ function SessionDetailCard({ session }: { session: SessionDetail }) {
           )}
         </div>
         <div className="flex items-center gap-2 ml-2">
-          <span className={`px-1.5 py-0.5 text-xs rounded ${getStatusBadge(session.status)}`}>
-            {session.status}
-          </span>
-          <span className="text-sm font-bold text-slate-900 dark:text-white">
-            ${(session.price / 100).toFixed(0)}
-          </span>
+          <span className={`px-1.5 py-0.5 text-xs rounded ${getStatusBadge(session.status)}`}>{session.status}</span>
+          <span className="text-sm font-bold text-slate-900 dark:text-white">${(session.price / 100).toFixed(0)}</span>
         </div>
       </div>
 
@@ -1189,7 +1183,9 @@ function SessionDetailCard({ session }: { session: SessionDetail }) {
         {/* Availability */}
         <div className="flex items-center gap-1.5">
           <UsersIcon className="w-3.5 h-3.5 text-slate-400" />
-          <span className={`${spotsLeft <= 5 && spotsLeft > 0 ? 'text-orange-600 dark:text-orange-400' : spotsLeft === 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-600 dark:text-slate-400'}`}>
+          <span
+            className={`${spotsLeft <= 5 && spotsLeft > 0 ? 'text-orange-600 dark:text-orange-400' : spotsLeft === 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-600 dark:text-slate-400'}`}
+          >
             {availability}
             {session.waitlistCount > 0 && ` (${session.waitlistCount} waitlist)`}
           </span>
@@ -1233,26 +1229,30 @@ function SessionDetailCard({ session }: { session: SessionDetail }) {
               <div className="w-24 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full ${
-                    session.completenessScore >= 80 ? 'bg-green-500' :
-                    session.completenessScore >= 60 ? 'bg-yellow-500' :
-                    'bg-red-500'
+                    session.completenessScore >= 80
+                      ? 'bg-green-500'
+                      : session.completenessScore >= 60
+                        ? 'bg-yellow-500'
+                        : 'bg-red-500'
                   }`}
                   style={{ width: `${session.completenessScore}%` }}
                 />
               </div>
-              <span className={`font-medium ${
-                session.completenessScore >= 80 ? 'text-green-600 dark:text-green-400' :
-                session.completenessScore >= 60 ? 'text-yellow-600 dark:text-yellow-400' :
-                'text-red-600 dark:text-red-400'
-              }`}>
+              <span
+                className={`font-medium ${
+                  session.completenessScore >= 80
+                    ? 'text-green-600 dark:text-green-400'
+                    : session.completenessScore >= 60
+                      ? 'text-yellow-600 dark:text-yellow-400'
+                      : 'text-red-600 dark:text-red-400'
+                }`}
+              >
                 {session.completenessScore}%
               </span>
             </div>
           </div>
           {session.missingFields && session.missingFields.length > 0 && (
-            <p className="text-xs text-red-500 dark:text-red-400 mt-1">
-              Missing: {session.missingFields.join(', ')}
-            </p>
+            <p className="text-xs text-red-500 dark:text-red-400 mt-1">Missing: {session.missingFields.join(', ')}</p>
           )}
         </div>
       )}
@@ -1279,8 +1279,9 @@ interface DaemonTask {
 function DaemonTasksPanel({ tasks }: { tasks: DaemonTask[] }) {
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
 
-  const activeTasks = tasks.filter(t =>
-    t.status === 'pending' || t.status === 'in_progress' || t.status === 'testing' || t.status === 'needs_feedback'
+  const activeTasks = tasks.filter(
+    (t) =>
+      t.status === 'pending' || t.status === 'in_progress' || t.status === 'testing' || t.status === 'needs_feedback',
   );
 
   if (activeTasks.length === 0) {
@@ -1289,21 +1290,31 @@ function DaemonTasksPanel({ tasks }: { tasks: DaemonTask[] }) {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
-      case 'in_progress': return 'bg-primary/20 text-primary dark:bg-primary-dark/30 dark:text-white/60';
-      case 'testing': return 'bg-surface/30 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
-      case 'needs_feedback': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
-      default: return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
+      case 'in_progress':
+        return 'bg-primary/20 text-primary dark:bg-primary-dark/30 dark:text-white/60';
+      case 'testing':
+        return 'bg-surface/30 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
+      case 'needs_feedback':
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
+      default:
+        return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300';
     }
   };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'pending': return 'Pending';
-      case 'in_progress': return 'Working';
-      case 'testing': return 'Testing';
-      case 'needs_feedback': return 'Review';
-      default: return status;
+      case 'pending':
+        return 'Pending';
+      case 'in_progress':
+        return 'Working';
+      case 'testing':
+        return 'Testing';
+      case 'needs_feedback':
+        return 'Review';
+      default:
+        return status;
     }
   };
 
@@ -1324,10 +1335,7 @@ function DaemonTasksPanel({ tasks }: { tasks: DaemonTask[] }) {
           <CpuIcon className="w-4 h-4" />
           Daemon Tasks ({activeTasks.length})
         </h3>
-        <Link
-          href="/admin/development"
-          className="text-xs text-primary hover:text-primary-dark"
-        >
+        <Link href="/admin/development" className="text-xs text-primary hover:text-primary-dark">
           View all &rarr;
         </Link>
       </div>
@@ -1338,10 +1346,7 @@ function DaemonTasksPanel({ tasks }: { tasks: DaemonTask[] }) {
           const lastRan = task.lastTestRun || task.claudeSessionStartedAt;
 
           return (
-            <div
-              key={task._id}
-              className="bg-slate-50 dark:bg-slate-900/50 rounded-lg overflow-hidden"
-            >
+            <div key={task._id} className="bg-slate-50 dark:bg-slate-900/50 rounded-lg overflow-hidden">
               <div
                 className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/50"
                 onClick={() => setExpandedTask(isExpanded ? null : task._id)}
@@ -1349,9 +1354,7 @@ function DaemonTasksPanel({ tasks }: { tasks: DaemonTask[] }) {
                 <div className="flex items-center gap-3 min-w-0">
                   {task.status === 'in_progress' && <SpinnerIcon />}
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                      {task.sourceName}
-                    </p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{task.sourceName}</p>
                     <div className="flex items-center gap-2 text-xs text-slate-500">
                       {task.cityName && <span>{task.cityName}</span>}
                       {lastRan && <span>{formatTimestamp(lastRan)}</span>}
@@ -1372,7 +1375,9 @@ function DaemonTasksPanel({ tasks }: { tasks: DaemonTask[] }) {
                   <span className={`px-1.5 py-0.5 text-xs rounded ${getStatusColor(task.status)}`}>
                     {getStatusLabel(task.status)}
                   </span>
-                  <ChevronIcon className={`w-4 h-4 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                  <ChevronIcon
+                    className={`w-4 h-4 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                  />
                 </div>
               </div>
 
@@ -1380,7 +1385,12 @@ function DaemonTasksPanel({ tasks }: { tasks: DaemonTask[] }) {
                 <div className="px-3 py-2 border-t border-slate-200 dark:border-slate-700 text-xs space-y-2">
                   <div className="flex items-center gap-2">
                     <span className="text-slate-500">URL:</span>
-                    <a href={task.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary-dark truncate">
+                    <a
+                      href={task.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:text-primary-dark truncate"
+                    >
                       {task.sourceUrl}
                     </a>
                   </div>
@@ -1411,9 +1421,7 @@ function DaemonTasksPanel({ tasks }: { tasks: DaemonTask[] }) {
           );
         })}
         {activeTasks.length > 6 && (
-          <div className="text-center text-sm text-slate-500 py-1">
-            +{activeTasks.length - 6} more tasks
-          </div>
+          <div className="text-center text-sm text-slate-500 py-1">+{activeTasks.length - 6} more tasks</div>
         )}
       </div>
     </div>
@@ -1461,7 +1469,12 @@ function formatTimestamp(timestamp: number): string {
 function SearchIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+      />
     </svg>
   );
 }
@@ -1470,7 +1483,11 @@ function SpinnerIcon() {
   return (
     <svg className="animate-spin motion-reduce:animate-none h-4 w-4" fill="none" viewBox="0 0 24 24" aria-hidden="true">
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+      />
     </svg>
   );
 }
@@ -1478,7 +1495,12 @@ function SpinnerIcon() {
 function RefreshIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+      />
     </svg>
   );
 }
@@ -1486,7 +1508,12 @@ function RefreshIcon({ className }: { className?: string }) {
 function DatabaseIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.5}
+        d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"
+      />
     </svg>
   );
 }
@@ -1494,7 +1521,12 @@ function DatabaseIcon({ className }: { className?: string }) {
 function PencilIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+      />
     </svg>
   );
 }
@@ -1518,7 +1550,12 @@ function XIcon({ className }: { className?: string }) {
 function ExternalLinkIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+      />
     </svg>
   );
 }
@@ -1526,7 +1563,12 @@ function ExternalLinkIcon({ className }: { className?: string }) {
 function CpuIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M3 9h2m-2 6h2m14-6h2m-2 6h2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M9 3v2m6-2v2M9 19v2m6-2v2M3 9h2m-2 6h2m14-6h2m-2 6h2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
+      />
     </svg>
   );
 }
@@ -1542,7 +1584,12 @@ function ChevronIcon({ className }: { className?: string }) {
 function CalendarIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+      />
     </svg>
   );
 }
@@ -1550,7 +1597,12 @@ function CalendarIcon({ className }: { className?: string }) {
 function ClockIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+      />
     </svg>
   );
 }
@@ -1558,7 +1610,12 @@ function ClockIcon({ className }: { className?: string }) {
 function UserIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+      />
     </svg>
   );
 }
@@ -1566,7 +1623,12 @@ function UserIcon({ className }: { className?: string }) {
 function UsersIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+      />
     </svg>
   );
 }
@@ -1574,7 +1636,12 @@ function UsersIcon({ className }: { className?: string }) {
 function MapPinIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+      />
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
     </svg>
   );
@@ -1583,7 +1650,12 @@ function MapPinIcon({ className }: { className?: string }) {
 function LinkIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+      />
     </svg>
   );
 }
@@ -1591,7 +1663,12 @@ function LinkIcon({ className }: { className?: string }) {
 function ClosedIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+      />
     </svg>
   );
 }
@@ -1599,7 +1676,12 @@ function ClosedIcon({ className }: { className?: string }) {
 function ImageIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+      />
     </svg>
   );
 }

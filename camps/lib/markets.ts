@@ -84,9 +84,7 @@ export function getMarketFromHostname(hostname: string): Market {
   // Remove port if present
   const host = hostname.split(':')[0].toLowerCase();
 
-  const market = MARKETS.find(m =>
-    m.domains.some(domain => host === domain || host.endsWith('.' + domain))
-  );
+  const market = MARKETS.find((m) => m.domains.some((domain) => host === domain || host.endsWith('.' + domain)));
 
   return market || DEFAULT_MARKET;
 }
@@ -95,5 +93,5 @@ export function getMarketFromHostname(hostname: string): Market {
  * Get market by slug
  */
 export function getMarketBySlug(slug: string): Market | undefined {
-  return MARKETS.find(m => m.slug === slug);
+  return MARKETS.find((m) => m.slug === slug);
 }

@@ -1,4 +1,4 @@
-"use node";
+'use node';
 
 /**
  * Market Discovery Action
@@ -11,35 +11,35 @@
  * which requires a browser environment.
  */
 
-import { action } from "../_generated/server";
-import { api } from "../_generated/api";
-import { v } from "convex/values";
+import { action } from '../_generated/server';
+import { api } from '../_generated/api';
+import { v } from 'convex/values';
 
 // Known camp directory domains to prioritize for deep crawl
 const KNOWN_DIRECTORIES = [
-  "activityhero.com",
-  "sawyer.com",
-  "campsearch.com",
-  "mysummercamps.com",
-  "acacamps.org",
-  "campnavigator.com",
-  "kidscamps.com",
-  "summercampdirectories.com",
+  'activityhero.com',
+  'sawyer.com',
+  'campsearch.com',
+  'mysummercamps.com',
+  'acacamps.org',
+  'campnavigator.com',
+  'kidscamps.com',
+  'summercampdirectories.com',
 ];
 
 // URL patterns that indicate a camp-related page
 const CAMP_SIGNAL_KEYWORDS = [
-  "summer camp",
-  "day camp",
-  "kids camp",
-  "registration",
-  "enroll",
-  "sign up",
-  "ages",
-  "grades",
-  "children",
-  "youth",
-  "program",
+  'summer camp',
+  'day camp',
+  'kids camp',
+  'registration',
+  'enroll',
+  'sign up',
+  'ages',
+  'grades',
+  'children',
+  'youth',
+  'program',
 ];
 
 // URLs to skip (not camp organizations)
@@ -65,9 +65,9 @@ const SKIP_PATTERNS = [
  */
 function extractDomain(url: string): string {
   try {
-    return new URL(url).hostname.replace(/^www\./, "");
+    return new URL(url).hostname.replace(/^www\./, '');
   } catch {
-    return "";
+    return '';
   }
 }
 
@@ -90,7 +90,7 @@ function isKnownDirectory(domain: string): boolean {
  */
 function scoreCampUrl(url: string, title: string): number {
   let score = 0;
-  const combined = (url + " " + title).toLowerCase();
+  const combined = (url + ' ' + title).toLowerCase();
 
   for (const keyword of CAMP_SIGNAL_KEYWORDS) {
     if (combined.includes(keyword)) {
@@ -99,7 +99,7 @@ function scoreCampUrl(url: string, title: string): number {
   }
 
   // Prefer .org and .edu
-  if (url.includes(".org") || url.includes(".edu")) {
+  if (url.includes('.org') || url.includes('.edu')) {
     score += 5;
   }
 
@@ -120,9 +120,12 @@ function scoreCampUrl(url: string, title: string): number {
  */
 export const executeMarketDiscovery = action({
   args: {
-    taskId: v.id("marketDiscoveryTasks"),
+    taskId: v.id('marketDiscoveryTasks'),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     success: boolean;
     message: string;
     urlsFound?: number;
@@ -134,7 +137,7 @@ export const executeMarketDiscovery = action({
     });
 
     if (!task) {
-      return { success: false, message: "Task not found" };
+      return { success: false, message: 'Task not found' };
     }
 
     // This action serves as a fallback - the daemon should handle most discovery
@@ -143,7 +146,8 @@ export const executeMarketDiscovery = action({
     // For now, just return that the daemon should handle this
     return {
       success: false,
-      message: "Market discovery should be run from the local daemon with Stagehand. Use: npx tsx scripts/scraper-daemon.ts --discovery",
+      message:
+        'Market discovery should be run from the local daemon with Stagehand. Use: npx tsx scripts/scraper-daemon.ts --discovery',
     };
   },
 });
@@ -155,17 +159,20 @@ export const executeMarketDiscovery = action({
  */
 export const processDiscoveryResults = action({
   args: {
-    taskId: v.id("marketDiscoveryTasks"),
+    taskId: v.id('marketDiscoveryTasks'),
     discoveredUrls: v.array(
       v.object({
         url: v.string(),
         source: v.string(),
         title: v.optional(v.string()),
         domain: v.string(),
-      })
+      }),
     ),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     success: boolean;
     orgsCreated: number;
     orgsExisted: number;
@@ -182,7 +189,7 @@ export const processDiscoveryResults = action({
         continue;
       }
 
-      const score = scoreCampUrl(item.url, item.title || "");
+      const score = scoreCampUrl(item.url, item.title || '');
       const existing = byDomain.get(domain);
 
       if (!existing || score > existing.score) {
@@ -197,21 +204,18 @@ export const processDiscoveryResults = action({
 
     // Filter to only camp-related URLs (score > 0 or known directories)
     const filteredUrls = Array.from(byDomain.values()).filter(
-      (item) => item.score > 0 || isKnownDirectory(item.domain)
+      (item) => item.score > 0 || isKnownDirectory(item.domain),
     );
 
     // Create orgs and sources
-    const result = await ctx.runMutation(
-      api.scraping.marketDiscovery.createOrgsFromDiscoveredUrls,
-      {
-        taskId: args.taskId,
-        urls: filteredUrls.map(({ url, title, domain }) => ({
-          url,
-          title,
-          domain,
-        })),
-      }
-    );
+    const result = await ctx.runMutation(api.scraping.marketDiscovery.createOrgsFromDiscoveredUrls, {
+      taskId: args.taskId,
+      urls: filteredUrls.map(({ url, title, domain }) => ({
+        url,
+        title,
+        domain,
+      })),
+    });
 
     // Complete the task
     await ctx.runMutation(api.scraping.marketDiscovery.completeDiscoveryTask, {

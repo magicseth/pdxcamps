@@ -31,7 +31,10 @@ function getIconUrl(slug: string): string {
  * Get market from database (SSR) with fallback to static config
  */
 async function getMarketSSR(hostname: string): Promise<Market & { iconStorageId?: string }> {
-  const domain = hostname.split(':')[0].toLowerCase().replace(/^www\./, '');
+  const domain = hostname
+    .split(':')[0]
+    .toLowerCase()
+    .replace(/^www\./, '');
 
   try {
     const city = await fetchQuery(api.cities.queries.getCityByDomain, { domain });
@@ -80,9 +83,7 @@ export async function generateMetadata(): Promise<Metadata> {
         { url: iconUrl, sizes: '32x32', type: 'image/png' },
         { url: iconUrl, sizes: '192x192', type: 'image/png' },
       ],
-      apple: [
-        { url: iconUrl, sizes: '180x180', type: 'image/png' },
-      ],
+      apple: [{ url: iconUrl, sizes: '180x180', type: 'image/png' }],
     },
     openGraph: {
       title: market.tagline,

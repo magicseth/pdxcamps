@@ -8,10 +8,10 @@
  * - Registration reminders
  */
 
-import { action, internalAction, internalMutation, internalQuery, query } from "./_generated/server";
-import { components, internal } from "./_generated/api";
-import { Resend, vOnEmailEventArgs } from "@convex-dev/resend";
-import { v } from "convex/values";
+import { action, internalAction, internalMutation, internalQuery, query } from './_generated/server';
+import { components, internal } from './_generated/api';
+import { Resend, vOnEmailEventArgs } from '@convex-dev/resend';
+import { v } from 'convex/values';
 
 // Initialize Resend client
 // testMode: false allows sending to real email addresses (not just @resend.dev)
@@ -58,12 +58,12 @@ export const storeInboundEmail = internalMutation({
 
     // Try to match to an organization by email
     const matchedOrg = await ctx.db
-      .query("organizations")
-      .withIndex("by_email", (q) => q.eq("email", fromEmail))
+      .query('organizations')
+      .withIndex('by_email', (q) => q.eq('email', fromEmail))
       .first();
     const matchedOrganizationId = matchedOrg?._id;
 
-    const emailId = await ctx.db.insert("inboundEmails", {
+    const emailId = await ctx.db.insert('inboundEmails', {
       resendId: args.resendId,
       from: args.from,
       to: args.to,
@@ -72,7 +72,7 @@ export const storeInboundEmail = internalMutation({
       htmlBody: args.htmlBody,
       fromEmail,
       fromName,
-      status: "received",
+      status: 'received',
       matchedOrganizationId,
       receivedAt: Date.now(),
     });
@@ -84,8 +84,8 @@ export const storeInboundEmail = internalMutation({
 });
 
 // Default sender - should match verified domain in Resend
-const FROM_EMAIL = "hello@pdxcamps.com";
-const FROM_NAME = "PDX Camps";
+const FROM_EMAIL = 'hello@pdxcamps.com';
+const FROM_NAME = 'PDX Camps';
 
 /**
  * Test the organization outreach email by sending to current user
@@ -96,7 +96,7 @@ export const testOutreachEmail = action({
     // Get the current user's email
     const family = await ctx.runQuery(internal.email.getCurrentFamilyForEmail);
     if (!family) {
-      throw new Error("No family found for current user");
+      throw new Error('No family found for current user');
     }
 
     // Send test outreach email to the user
@@ -154,7 +154,7 @@ export const sendContactOutreach = action({
     contactName: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const greeting = args.contactName ? `Hi ${args.contactName}` : "Hello";
+    const greeting = args.contactName ? `Hi ${args.contactName}` : 'Hello';
 
     const result = await resend.sendEmail(ctx, {
       from: `${FROM_NAME} <${FROM_EMAIL}>`,
@@ -259,7 +259,7 @@ export const sendWelcomeEmail = internalAction({
   },
   handler: async (ctx, args) => {
     const brandName = args.brandName || FROM_NAME;
-    const domain = args.domain || "pdxcamps.com";
+    const domain = args.domain || 'pdxcamps.com';
     const fromEmail = args.fromEmail || FROM_EMAIL;
 
     const result = await resend.sendEmail(ctx, {
@@ -334,7 +334,7 @@ export const sendTipsEmail = internalAction({
   },
   handler: async (ctx, args) => {
     const brandName = args.brandName || FROM_NAME;
-    const domain = args.domain || "pdxcamps.com";
+    const domain = args.domain || 'pdxcamps.com';
     const fromEmail = args.fromEmail || FROM_EMAIL;
 
     const result = await resend.sendEmail(ctx, {
@@ -421,10 +421,10 @@ export const triggerWelcomeSequence = action({
     // Get the current user's family info
     const family = await ctx.runQuery(internal.email.getCurrentFamilyForEmail);
     if (!family) {
-      throw new Error("No family found for current user");
+      throw new Error('No family found for current user');
     }
 
-    const cityName = family.cityName || "your area";
+    const cityName = family.cityName || 'your area';
     const brandName = family.brandName;
     const domain = family.domain;
     const fromEmail = family.fromEmail;
@@ -497,7 +497,7 @@ export const sendRegistrationReminder = action({
   handler: async (ctx, args) => {
     const registerLink = args.registrationUrl
       ? `<p><a href="${args.registrationUrl}" style="display: inline-block; padding: 12px 24px; background-color: #E5A33B; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">Register Now</a></p>`
-      : "";
+      : '';
 
     const result = await resend.sendEmail(ctx, {
       from: `${FROM_NAME} <${FROM_EMAIL}>`,
@@ -538,8 +538,8 @@ export const listInboundEmails = query({
   },
   handler: async (ctx, args) => {
     const emails = await ctx.db
-      .query("inboundEmails")
-      .order("desc")
+      .query('inboundEmails')
+      .order('desc')
       .take(args.limit || 20);
 
     return emails;
@@ -557,8 +557,8 @@ export const getCurrentFamilyForEmail = internalQuery({
     if (!identity) return null;
 
     const family = await ctx.db
-      .query("families")
-      .withIndex("by_workos_user_id", (q) => q.eq("workosUserId", identity.subject))
+      .query('families')
+      .withIndex('by_workos_user_id', (q) => q.eq('workosUserId', identity.subject))
       .first();
 
     if (!family) return null;
@@ -571,9 +571,9 @@ export const getCurrentFamilyForEmail = internalQuery({
       displayName: family.displayName,
       cityName: city?.name || null,
       // Brand info with defaults
-      brandName: city?.brandName || "PDX Camps",
-      domain: city?.domain || "pdxcamps.com",
-      fromEmail: city?.fromEmail || "hello@pdxcamps.com",
+      brandName: city?.brandName || 'PDX Camps',
+      domain: city?.domain || 'pdxcamps.com',
+      fromEmail: city?.fromEmail || 'hello@pdxcamps.com',
     };
   },
 });
@@ -585,17 +585,11 @@ export const getCurrentFamilyForEmail = internalQuery({
 export const getMostRecentNonSethInbound = internalQuery({
   args: {},
   handler: async (ctx) => {
-    const emails = await ctx.db
-      .query("inboundEmails")
-      .order("desc")
-      .take(20);
+    const emails = await ctx.db.query('inboundEmails').order('desc').take(20);
 
     // Find the most recent one not from Seth and with a valid email
     const nonSethEmail = emails.find(
-      (e) =>
-        !e.fromEmail.includes("seth@magicseth.com") &&
-        e.fromEmail !== "unknown" &&
-        e.fromEmail.includes("@")
+      (e) => !e.fromEmail.includes('seth@magicseth.com') && e.fromEmail !== 'unknown' && e.fromEmail.includes('@'),
     );
 
     return nonSethEmail || null;
@@ -616,7 +610,7 @@ export const sendNewUserNotification = internalAction({
   handler: async (ctx, args) => {
     const result = await resend.sendEmail(ctx, {
       from: `${args.brandName} <hello@pdxcamps.com>`,
-      to: ["seth@magicseth.com"],
+      to: ['seth@magicseth.com'],
       subject: `New user signup: ${args.displayName} (${args.cityName})`,
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -641,12 +635,183 @@ export const sendNewUserNotification = internalAction({
             </tr>
             <tr>
               <td style="padding: 8px 0; font-weight: bold;">Time:</td>
-              <td style="padding: 8px 0;">${new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" })}</td>
+              <td style="padding: 8px 0;">${new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles' })}</td>
             </tr>
           </table>
         </div>
       `,
-      text: `New user signup!\n\nName: ${args.displayName}\nEmail: ${args.userEmail}\nCity: ${args.cityName}\nBrand: ${args.brandName}\nTime: ${new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" })}`,
+      text: `New user signup!\n\nName: ${args.displayName}\nEmail: ${args.userEmail}\nCity: ${args.cityName}\nBrand: ${args.brandName}\nTime: ${new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles' })}`,
+    });
+
+    return result;
+  },
+});
+
+/**
+ * Send notification when user earns a referral credit
+ * Sent immediately when a referred friend completes onboarding
+ */
+export const sendReferralCreditEarnedEmail = internalAction({
+  args: {
+    to: v.string(),
+    displayName: v.string(),
+    creditsEarned: v.number(),
+    maxCredits: v.number(),
+    brandName: v.optional(v.string()),
+    domain: v.optional(v.string()),
+    fromEmail: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const brandName = args.brandName || 'PDX Camps';
+    const domain = args.domain || 'pdxcamps.com';
+    const fromEmail = args.fromEmail || 'hello@pdxcamps.com';
+    const creditsRemaining = args.maxCredits - args.creditsEarned;
+
+    const progressMessage =
+      creditsRemaining > 0
+        ? `You've earned ${args.creditsEarned} of ${args.maxCredits} free months. Refer ${creditsRemaining} more friend${creditsRemaining !== 1 ? 's' : ''} to max out your rewards!`
+        : `You've earned all ${args.maxCredits} free months! Thanks for spreading the word.`;
+
+    const result = await resend.sendEmail(ctx, {
+      from: `${brandName} <${fromEmail}>`,
+      to: [args.to],
+      subject: `🎉 You earned a free month on ${brandName}!`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #ecfdf5, #d1fae5); border-radius: 12px; padding: 24px; margin-bottom: 24px; text-align: center;">
+            <p style="font-size: 48px; margin: 0 0 8px 0;">🎉</p>
+            <h1 style="color: #065f46; margin: 0 0 8px 0; font-size: 24px;">You earned a free month!</h1>
+            <p style="color: #047857; margin: 0;">A friend you referred just signed up for ${brandName}</p>
+          </div>
+
+          <p>Hi ${args.displayName},</p>
+
+          <p>Great news! Someone you referred just created their account on ${brandName}. As a thank you, we've added a free month credit to your account.</p>
+
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 24px 0;">
+            <p style="margin: 0; color: #475569;">${progressMessage}</p>
+          </div>
+
+          ${
+            creditsRemaining > 0
+              ? `
+          <p>Keep sharing your referral link to earn more free months:</p>
+          `
+              : `
+          <p>Even though you've maxed out your rewards, we'd love it if you kept sharing! Every family you refer is another family discovering amazing summer camps for their kids.</p>
+          `
+          }
+          <p style="text-align: center; margin: 24px 0;">
+            <a href="https://${domain}/settings" style="display: inline-block; padding: 14px 28px; background-color: #16a34a; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">${creditsRemaining > 0 ? 'Get Your Referral Link' : 'Keep Spreading the Camp Love'}</a>
+          </p>
+
+          <p>Thanks for helping other families discover ${brandName}!</p>
+
+          <p style="color: #666; font-size: 14px; margin-top: 32px; border-top: 1px solid #eee; padding-top: 16px;">
+            — The ${brandName} Team<br/>
+            <a href="https://${domain}" style="color: #E5A33B;">${domain}</a>
+          </p>
+        </div>
+      `,
+      text: `
+Hi ${args.displayName},
+
+Great news! Someone you referred just created their account on ${brandName}. As a thank you, we've added a free month credit to your account.
+
+${progressMessage}
+
+${creditsRemaining > 0 ? `Keep sharing your referral link to earn more free months: https://${domain}/settings` : `Even though you've maxed out your rewards, we'd love it if you kept sharing! Every family you refer is another family discovering amazing summer camps for their kids.\n\nKeep spreading the camp love: https://${domain}/settings`}
+
+Thanks for helping other families discover ${brandName}!
+
+— The ${brandName} Team
+https://${domain}
+      `,
+    });
+
+    return result;
+  },
+});
+
+/**
+ * Send referral program email (scheduled for day 3 after signup)
+ * Encourages users to invite friends for free months
+ */
+export const sendReferralEmail = internalAction({
+  args: {
+    to: v.string(),
+    displayName: v.string(),
+    referralCode: v.string(),
+    brandName: v.optional(v.string()),
+    domain: v.optional(v.string()),
+    fromEmail: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const brandName = args.brandName || 'PDX Camps';
+    const domain = args.domain || 'pdxcamps.com';
+    const fromEmail = args.fromEmail || 'hello@pdxcamps.com';
+    const referralUrl = `https://${domain}/r/${args.referralCode}`;
+
+    const result = await resend.sendEmail(ctx, {
+      from: `${brandName} <${fromEmail}>`,
+      to: [args.to],
+      subject: `Get free months on ${brandName} — invite friends!`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
+          <p>Hi ${args.displayName},</p>
+
+          <p>Quick question: do you know other parents planning summer camps for their kids?</p>
+
+          <p><strong>Share ${brandName} with them and you'll both win:</strong></p>
+
+          <div style="background: linear-gradient(135deg, #ecfdf5, #d1fae5); border: 2px solid #6ee7b7; border-radius: 12px; padding: 24px; margin: 24px 0; text-align: center;">
+            <p style="font-size: 18px; font-weight: bold; color: #065f46; margin: 0 0 8px 0;">
+              🎁 Get 1 free month for each friend who signs up
+            </p>
+            <p style="color: #047857; margin: 0;">
+              (Up to 3 free months total!)
+            </p>
+          </div>
+
+          <p><strong>Your personal referral link:</strong></p>
+
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 16px 0;">
+            <a href="${referralUrl}" style="color: #0369a1; word-break: break-all;">${referralUrl}</a>
+          </div>
+
+          <p>Just share this link with friends. When they sign up and start using ${brandName}, you'll automatically get credit for a free month.</p>
+
+          <p style="text-align: center; margin: 32px 0;">
+            <a href="${referralUrl}" style="display: inline-block; padding: 14px 28px; background-color: #16a34a; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">Copy & Share Your Link</a>
+          </p>
+
+          <p>Happy planning (and sharing)!</p>
+
+          <p style="color: #666; font-size: 14px; margin-top: 32px; border-top: 1px solid #eee; padding-top: 16px;">
+            — The ${brandName} Team<br/>
+            <a href="https://${domain}" style="color: #E5A33B;">${domain}</a>
+          </p>
+        </div>
+      `,
+      text: `
+Hi ${args.displayName},
+
+Quick question: do you know other parents planning summer camps for their kids?
+
+Share ${brandName} with them and you'll both win:
+
+🎁 Get 1 free month for each friend who signs up (up to 3 free months total!)
+
+Your personal referral link:
+${referralUrl}
+
+Just share this link with friends. When they sign up and start using ${brandName}, you'll automatically get credit for a free month.
+
+Happy planning (and sharing)!
+
+— The ${brandName} Team
+https://${domain}
+      `,
     });
 
     return result;

@@ -1,6 +1,6 @@
-import { query } from "../_generated/server";
-import { v } from "convex/values";
-import { Id } from "../_generated/dataModel";
+import { query } from '../_generated/server';
+import { v } from 'convex/values';
+import { Id } from '../_generated/dataModel';
 
 /**
  * List camps for admin interface with filtering
@@ -8,8 +8,8 @@ import { Id } from "../_generated/dataModel";
  */
 export const listCampsForAdmin = query({
   args: {
-    cityId: v.optional(v.id("cities")),
-    organizationId: v.optional(v.id("organizations")),
+    cityId: v.optional(v.id('cities')),
+    organizationId: v.optional(v.id('organizations')),
     hasImage: v.optional(v.boolean()),
     hasAvailability: v.optional(v.boolean()),
     search: v.optional(v.string()),
@@ -17,16 +17,16 @@ export const listCampsForAdmin = query({
   handler: async (ctx, args) => {
     // Batch fetch all data upfront to avoid N+1 queries
     const [allCamps, allOrganizations, allSessions] = await Promise.all([
-      ctx.db.query("camps").collect(),
-      ctx.db.query("organizations").collect(),
-      ctx.db.query("sessions").collect(),
+      ctx.db.query('camps').collect(),
+      ctx.db.query('organizations').collect(),
+      ctx.db.query('sessions').collect(),
     ]);
 
     // Build lookup maps
     const orgMap = new Map(allOrganizations.map((o) => [o._id, o]));
 
     // Group sessions by campId
-    const sessionsByCamp = new Map<Id<"camps">, typeof allSessions>();
+    const sessionsByCamp = new Map<Id<'camps'>, typeof allSessions>();
     for (const session of allSessions) {
       const existing = sessionsByCamp.get(session.campId) || [];
       existing.push(session);
@@ -34,12 +34,10 @@ export const listCampsForAdmin = query({
     }
 
     // Build set of org IDs in city if filtering by city
-    let orgIdsInCity: Set<Id<"organizations">> | undefined;
+    let orgIdsInCity: Set<Id<'organizations'>> | undefined;
     if (args.cityId) {
       orgIdsInCity = new Set(
-        allOrganizations
-          .filter((org) => org.cityIds.includes(args.cityId as Id<"cities">))
-          .map((org) => org._id)
+        allOrganizations.filter((org) => org.cityIds.includes(args.cityId as Id<'cities'>)).map((org) => org._id),
       );
     }
 
@@ -65,22 +63,19 @@ export const listCampsForAdmin = query({
 
     if (args.search) {
       const searchLower = args.search.toLowerCase();
-      camps = camps.filter((camp) =>
-        camp.name.toLowerCase().includes(searchLower) ||
-        camp.description.toLowerCase().includes(searchLower)
+      camps = camps.filter(
+        (camp) => camp.name.toLowerCase().includes(searchLower) || camp.description.toLowerCase().includes(searchLower),
       );
     }
 
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date().toISOString().split('T')[0];
 
     // Enrich camps without additional queries
     const enrichedCamps = camps.map((camp) => {
       const org = orgMap.get(camp.organizationId);
       const sessions = sessionsByCamp.get(camp._id) || [];
 
-      const activeSessions = sessions.filter(
-        (s) => s.status === "active" && s.startDate >= today
-      );
+      const activeSessions = sessions.filter((s) => s.status === 'active' && s.startDate >= today);
       const sessionsWithAvailability = sessions.filter((s) => s.capacity > 0);
       const hasAvailabilityData = sessionsWithAvailability.length > 0;
 
@@ -115,7 +110,7 @@ export const listCampsForAdmin = query({
     let filteredCamps = enrichedCamps;
     if (args.hasAvailability !== undefined) {
       filteredCamps = enrichedCamps.filter((c) =>
-        args.hasAvailability ? c.hasAvailabilityData : !c.hasAvailabilityData
+        args.hasAvailability ? c.hasAvailabilityData : !c.hasAvailabilityData,
       );
     }
 
@@ -143,7 +138,7 @@ export const listCampsForAdmin = query({
 export const analyzeImageData = query({
   args: {},
   handler: async (ctx) => {
-    const camps = await ctx.db.query("camps").collect();
+    const camps = await ctx.db.query('camps').collect();
 
     let withStorageIds = 0;
     let withUrls = 0;
@@ -179,14 +174,14 @@ export const analyzeImageData = query({
     }
 
     // Count by organization
-    const orgs = await ctx.db.query("organizations").collect();
+    const orgs = await ctx.db.query('organizations').collect();
     const orgMap = new Map(orgs.map((o) => [o._id, o.name]));
 
     const missingByOrg = new Map<string, number>();
     const totalByOrg = new Map<string, number>();
 
     for (const camp of camps) {
-      const orgName = orgMap.get(camp.organizationId) || "Unknown";
+      const orgName = orgMap.get(camp.organizationId) || 'Unknown';
       totalByOrg.set(orgName, (totalByOrg.get(orgName) || 0) + 1);
 
       const hasImage = (camp.imageStorageIds?.length ?? 0) > 0 || (camp.imageUrls?.length ?? 0) > 0;
@@ -230,7 +225,7 @@ export const analyzeImageData = query({
  */
 export const getCampWithSessions = query({
   args: {
-    campId: v.id("camps"),
+    campId: v.id('camps'),
   },
   handler: async (ctx, args) => {
     const camp = await ctx.db.get(args.campId);
@@ -248,14 +243,14 @@ export const getCampWithSessions = query({
     // Get org logo
     let orgLogoUrl: string | undefined;
     if (org?.logoStorageId) {
-      orgLogoUrl = await ctx.storage.getUrl(org.logoStorageId) ?? undefined;
+      orgLogoUrl = (await ctx.storage.getUrl(org.logoStorageId)) ?? undefined;
     }
     orgLogoUrl = orgLogoUrl || org?.logoUrl;
 
     // Get all sessions for this camp
     const sessions = await ctx.db
-      .query("sessions")
-      .withIndex("by_camp", (q) => q.eq("campId", args.campId))
+      .query('sessions')
+      .withIndex('by_camp', (q) => q.eq('campId', args.campId))
       .collect();
 
     // Enrich sessions with location data
@@ -284,7 +279,7 @@ export const getCampWithSessions = query({
           completenessScore: session.completenessScore,
           missingFields: session.missingFields,
         };
-      })
+      }),
     );
 
     // Sort sessions by start date
@@ -316,12 +311,12 @@ export const getCampWithSessions = query({
  */
 export const listCamps = query({
   args: {
-    organizationId: v.id("organizations"),
+    organizationId: v.id('organizations'),
   },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("camps")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .query('camps')
+      .withIndex('by_organization', (q) => q.eq('organizationId', args.organizationId))
       .collect();
   },
 });
@@ -331,7 +326,7 @@ export const listCamps = query({
  */
 export const getCamp = query({
   args: {
-    campId: v.id("camps"),
+    campId: v.id('camps'),
   },
   handler: async (ctx, args) => {
     const camp = await ctx.db.get(args.campId);
@@ -358,7 +353,7 @@ export const getCamp = query({
 export const listAllCamps = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query("camps").take(8000);
+    return await ctx.db.query('camps').take(8000);
   },
 });
 
@@ -371,13 +366,11 @@ export const listCampsNeedingImageDownload = query({
   },
   handler: async (ctx, args) => {
     const limit = args.limit ?? 100;
-    const camps = await ctx.db.query("camps").collect();
+    const camps = await ctx.db.query('camps').collect();
 
     const needingDownload = camps.filter(
       (camp) =>
-        camp.imageUrls &&
-        camp.imageUrls.length > 0 &&
-        (!camp.imageStorageIds || camp.imageStorageIds.length === 0)
+        camp.imageUrls && camp.imageUrls.length > 0 && (!camp.imageStorageIds || camp.imageStorageIds.length === 0),
     );
 
     return needingDownload.slice(0, limit).map((camp) => ({
@@ -397,12 +390,12 @@ export const listCampsNeedingImageGeneration = query({
   },
   handler: async (ctx, args) => {
     const limit = args.limit ?? 100;
-    const camps = await ctx.db.query("camps").collect();
+    const camps = await ctx.db.query('camps').collect();
 
     const needingGeneration = camps.filter(
       (camp) =>
         (!camp.imageUrls || camp.imageUrls.length === 0) &&
-        (!camp.imageStorageIds || camp.imageStorageIds.length === 0)
+        (!camp.imageStorageIds || camp.imageStorageIds.length === 0),
     );
 
     return {
@@ -428,8 +421,8 @@ export const getCampBySlug = query({
   },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("camps")
-      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .query('camps')
+      .withIndex('by_slug', (q) => q.eq('slug', args.slug))
       .unique();
   },
 });
@@ -451,8 +444,8 @@ export const getFeaturedCamps = query({
     let cityId: string | undefined;
     if (args.citySlug) {
       const city = await ctx.db
-        .query("cities")
-        .withIndex("by_slug", (q) => q.eq("slug", args.citySlug!))
+        .query('cities')
+        .withIndex('by_slug', (q) => q.eq('slug', args.citySlug!))
         .unique();
       cityId = city?._id;
     }
@@ -461,18 +454,16 @@ export const getFeaturedCamps = query({
     let orgIdsInCity: Set<string> | undefined;
     if (cityId) {
       const orgsInCity = await ctx.db
-        .query("organizations")
-        .withIndex("by_is_active", (q) => q.eq("isActive", true))
+        .query('organizations')
+        .withIndex('by_is_active', (q) => q.eq('isActive', true))
         .collect();
-      orgIdsInCity = new Set(
-        orgsInCity.filter((org) => org.cityIds.includes(cityId as any)).map((org) => org._id)
-      );
+      orgIdsInCity = new Set(orgsInCity.filter((org) => org.cityIds.includes(cityId as any)).map((org) => org._id));
     }
 
     // Get featured active camps
     let allFeaturedCamps = await ctx.db
-      .query("camps")
-      .withIndex("by_featured", (q) => q.eq("isFeatured", true).eq("isActive", true))
+      .query('camps')
+      .withIndex('by_featured', (q) => q.eq('isFeatured', true).eq('isActive', true))
       .collect();
 
     // Filter by city if specified
@@ -485,30 +476,30 @@ export const getFeaturedCamps = query({
     if (camps.length === 0) {
       // Get active camps with images
       const allCamps = await ctx.db
-        .query("camps")
-        .withIndex("by_is_active", (q) => q.eq("isActive", true))
+        .query('camps')
+        .withIndex('by_is_active', (q) => q.eq('isActive', true))
         .take(200);
 
       // Filter to camps in city with images
       let candidateCamps = allCamps.filter((camp) => {
-        const hasImage = (camp.imageStorageIds && camp.imageStorageIds.length > 0) ||
-                         (camp.imageUrls && camp.imageUrls.length > 0);
+        const hasImage =
+          (camp.imageStorageIds && camp.imageStorageIds.length > 0) || (camp.imageUrls && camp.imageUrls.length > 0);
         const inCity = !orgIdsInCity || orgIdsInCity.has(camp.organizationId);
         return hasImage && inCity;
       });
 
       // Get session counts for these camps to find popular ones
-      const today = new Date().toISOString().split("T")[0];
+      const today = new Date().toISOString().split('T')[0];
       const campsWithCounts = await Promise.all(
         candidateCamps.slice(0, 50).map(async (camp) => {
           const sessions = await ctx.db
-            .query("sessions")
-            .withIndex("by_camp", (q) => q.eq("campId", camp._id))
-            .filter((q) => q.gte(q.field("startDate"), today))
+            .query('sessions')
+            .withIndex('by_camp', (q) => q.eq('campId', camp._id))
+            .filter((q) => q.gte(q.field('startDate'), today))
             .take(20);
-          const activeCount = sessions.filter((s) => s.status === "active").length;
+          const activeCount = sessions.filter((s) => s.status === 'active').length;
           return { camp, sessionCount: activeCount };
-        })
+        }),
       );
 
       // Sort by session count and take top ones
@@ -536,11 +527,11 @@ export const getFeaturedCamps = query({
         }
 
         // Get upcoming sessions for this camp
-        const today = new Date().toISOString().split("T")[0];
+        const today = new Date().toISOString().split('T')[0];
         const sessions = await ctx.db
-          .query("sessions")
-          .withIndex("by_camp", (q) => q.eq("campId", camp._id))
-          .filter((q) => q.gte(q.field("startDate"), today))
+          .query('sessions')
+          .withIndex('by_camp', (q) => q.eq('campId', camp._id))
+          .filter((q) => q.gte(q.field('startDate'), today))
           .take(10);
 
         // Calculate price range from sessions
@@ -549,7 +540,7 @@ export const getFeaturedCamps = query({
         let sessionCount = 0;
 
         for (const session of sessions) {
-          if (session.status === "active") {
+          if (session.status === 'active') {
             sessionCount++;
             if (minPrice === undefined || session.price < minPrice) {
               minPrice = session.price;
@@ -570,13 +561,10 @@ export const getFeaturedCamps = query({
           organizationName: organization?.name,
           organizationSlug: organization?.slug,
           imageUrl: resolvedImageUrls[0] || camp.imageUrls?.[0],
-          priceRange:
-            minPrice !== undefined
-              ? { min: minPrice, max: maxPrice ?? minPrice }
-              : undefined,
+          priceRange: minPrice !== undefined ? { min: minPrice, max: maxPrice ?? minPrice } : undefined,
           upcomingSessionCount: sessionCount,
         };
-      })
+      }),
     );
 
     return enrichedCamps;
@@ -602,33 +590,31 @@ export const autocompleteCamps = query({
     const queryLower = args.query.toLowerCase();
 
     // Get city ID if citySlug provided
-    let cityId: Id<"cities"> | undefined;
+    let cityId: Id<'cities'> | undefined;
     if (args.citySlug) {
       const city = await ctx.db
-        .query("cities")
-        .withIndex("by_slug", (q) => q.eq("slug", args.citySlug!))
+        .query('cities')
+        .withIndex('by_slug', (q) => q.eq('slug', args.citySlug!))
         .unique();
       cityId = city?._id;
     }
 
     // Get organizations in this city
-    let orgIdsInCity: Set<Id<"organizations">> | undefined;
+    let orgIdsInCity: Set<Id<'organizations'>> | undefined;
     if (cityId) {
       const orgsInCity = await ctx.db
-        .query("organizations")
-        .withIndex("by_is_active", (q) => q.eq("isActive", true))
+        .query('organizations')
+        .withIndex('by_is_active', (q) => q.eq('isActive', true))
         .collect();
       orgIdsInCity = new Set(
-        orgsInCity
-          .filter((org) => org.cityIds.includes(cityId as Id<"cities">))
-          .map((org) => org._id)
+        orgsInCity.filter((org) => org.cityIds.includes(cityId as Id<'cities'>)).map((org) => org._id),
       );
     }
 
     // Get active camps
     const allCamps = await ctx.db
-      .query("camps")
-      .withIndex("by_is_active", (q) => q.eq("isActive", true))
+      .query('camps')
+      .withIndex('by_is_active', (q) => q.eq('isActive', true))
       .collect();
 
     // Filter by name match and city
@@ -651,7 +637,7 @@ export const autocompleteCamps = query({
           organizationName: org?.name,
           organizationSlug: org?.slug,
         };
-      })
+      }),
     );
 
     return results;
@@ -664,18 +650,16 @@ export const autocompleteCamps = query({
 export const searchCamps = query({
   args: {
     query: v.string(),
-    cityId: v.id("cities"),
+    cityId: v.id('cities'),
   },
   handler: async (ctx, args) => {
     // First, get organizations in this city
     const organizations = await ctx.db
-      .query("organizations")
-      .withIndex("by_is_active", (q) => q.eq("isActive", true))
+      .query('organizations')
+      .withIndex('by_is_active', (q) => q.eq('isActive', true))
       .collect();
 
-    const orgIdsInCity = organizations
-      .filter((org) => org.cityIds.includes(args.cityId))
-      .map((org) => org._id);
+    const orgIdsInCity = organizations.filter((org) => org.cityIds.includes(args.cityId)).map((org) => org._id);
 
     if (orgIdsInCity.length === 0) {
       return [];
@@ -683,10 +667,8 @@ export const searchCamps = query({
 
     // Search camps using the search index
     const searchResults = await ctx.db
-      .query("camps")
-      .withSearchIndex("search_camps", (q) =>
-        q.search("description", args.query).eq("isActive", true)
-      )
+      .query('camps')
+      .withSearchIndex('search_camps', (q) => q.search('description', args.query).eq('isActive', true))
       .collect();
 
     // Filter to only camps from organizations in the city

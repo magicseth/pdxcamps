@@ -1,18 +1,18 @@
-import { query } from "../_generated/server";
-import { v } from "convex/values";
+import { query } from '../_generated/server';
+import { v } from 'convex/values';
 
 /**
  * List active organizations in a city
  */
 export const listOrganizations = query({
   args: {
-    cityId: v.id("cities"),
+    cityId: v.id('cities'),
   },
   handler: async (ctx, args) => {
     // Get all active organizations
     const organizations = await ctx.db
-      .query("organizations")
-      .withIndex("by_is_active", (q) => q.eq("isActive", true))
+      .query('organizations')
+      .withIndex('by_is_active', (q) => q.eq('isActive', true))
       .collect();
 
     // Filter to organizations that operate in the specified city
@@ -29,7 +29,7 @@ export const listOrganizations = query({
           ...org,
           logoUrl: resolvedLogoUrl,
         };
-      })
+      }),
     );
   },
 });
@@ -40,13 +40,13 @@ export const listOrganizations = query({
  */
 export const listOrganizationsWithSessionCounts = query({
   args: {
-    cityId: v.id("cities"),
+    cityId: v.id('cities'),
   },
   handler: async (ctx, args) => {
     // Get all active organizations in this city
     const organizations = await ctx.db
-      .query("organizations")
-      .withIndex("by_is_active", (q) => q.eq("isActive", true))
+      .query('organizations')
+      .withIndex('by_is_active', (q) => q.eq('isActive', true))
       .collect();
 
     const cityOrgs = organizations.filter((org) => org.cityIds.includes(args.cityId));
@@ -55,10 +55,8 @@ export const listOrganizationsWithSessionCounts = query({
     return Promise.all(
       cityOrgs.map(async (org) => {
         const sessions = await ctx.db
-          .query("sessions")
-          .withIndex("by_organization_and_status", (q) =>
-            q.eq("organizationId", org._id).eq("status", "active")
-          )
+          .query('sessions')
+          .withIndex('by_organization_and_status', (q) => q.eq('organizationId', org._id).eq('status', 'active'))
           .collect();
 
         let resolvedLogoUrl: string | null = null;
@@ -73,7 +71,7 @@ export const listOrganizationsWithSessionCounts = query({
           logoUrl: resolvedLogoUrl,
           sessionCount: sessions.length,
         };
-      })
+      }),
     );
   },
 });
@@ -83,7 +81,7 @@ export const listOrganizationsWithSessionCounts = query({
  */
 export const getOrganization = query({
   args: {
-    organizationId: v.id("organizations"),
+    organizationId: v.id('organizations'),
   },
   handler: async (ctx, args) => {
     const org = await ctx.db.get(args.organizationId);
@@ -111,8 +109,8 @@ export const getOrganizationBySlug = query({
   },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("organizations")
-      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .query('organizations')
+      .withIndex('by_slug', (q) => q.eq('slug', args.slug))
       .unique();
   },
 });
@@ -123,7 +121,7 @@ export const getOrganizationBySlug = query({
 export const listAllOrganizations = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query("organizations").collect();
+    return await ctx.db.query('organizations').collect();
   },
 });
 
@@ -132,7 +130,7 @@ export const listAllOrganizations = query({
  */
 export const listOrganizationsPaginated = query({
   args: {
-    cityId: v.optional(v.id("cities")),
+    cityId: v.optional(v.id('cities')),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
@@ -142,12 +140,12 @@ export const listOrganizationsPaginated = query({
     if (args.cityId) {
       // Get all active orgs and filter by city
       const allOrgs = await ctx.db
-        .query("organizations")
-        .withIndex("by_is_active", (q) => q.eq("isActive", true))
+        .query('organizations')
+        .withIndex('by_is_active', (q) => q.eq('isActive', true))
         .collect();
       organizations = allOrgs.filter((org) => org.cityIds.includes(args.cityId!));
     } else {
-      organizations = await ctx.db.query("organizations").collect();
+      organizations = await ctx.db.query('organizations').collect();
     }
 
     // Calculate counts from same data
@@ -181,8 +179,8 @@ export const getOrganizationDetail = query({
   handler: async (ctx, args) => {
     // Get organization by slug
     const org = await ctx.db
-      .query("organizations")
-      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .query('organizations')
+      .withIndex('by_slug', (q) => q.eq('slug', args.slug))
       .unique();
 
     if (!org) return null;
@@ -195,20 +193,18 @@ export const getOrganizationDetail = query({
 
     // Get camps for this organization
     const camps = await ctx.db
-      .query("camps")
-      .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
+      .query('camps')
+      .withIndex('by_organization', (q) => q.eq('organizationId', org._id))
       .collect();
 
     // Get active camps only
     const activeCamps = camps.filter((c) => c.isActive);
 
     // Get upcoming sessions for these camps
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date().toISOString().split('T')[0];
     const sessions = await ctx.db
-      .query("sessions")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", org._id).eq("status", "active")
-      )
+      .query('sessions')
+      .withIndex('by_organization_and_status', (q) => q.eq('organizationId', org._id).eq('status', 'active'))
       .collect();
 
     // Filter to future sessions and sort by date
@@ -223,7 +219,7 @@ export const getOrganizationDetail = query({
       const camp = campMap.get(session.campId);
       return {
         ...session,
-        campName: camp?.name || "Unknown Camp",
+        campName: camp?.name || 'Unknown Camp',
         campSlug: camp?.slug,
         categories: camp?.categories || [],
       };
@@ -231,8 +227,8 @@ export const getOrganizationDetail = query({
 
     // Get locations for this org
     const locations = await ctx.db
-      .query("locations")
-      .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
+      .query('locations')
+      .withIndex('by_organization', (q) => q.eq('organizationId', org._id))
       .collect();
 
     return {
@@ -267,22 +263,20 @@ export const getOrganizationsWithLogos = query({
   handler: async (ctx, args) => {
     // Get city by slug
     const city = await ctx.db
-      .query("cities")
-      .withIndex("by_slug", (q) => q.eq("slug", args.citySlug))
+      .query('cities')
+      .withIndex('by_slug', (q) => q.eq('slug', args.citySlug))
       .unique();
 
     if (!city) return [];
 
     // Get all active organizations with logos
     const organizations = await ctx.db
-      .query("organizations")
-      .withIndex("by_is_active", (q) => q.eq("isActive", true))
+      .query('organizations')
+      .withIndex('by_is_active', (q) => q.eq('isActive', true))
       .collect();
 
     // Filter to orgs in this city with logos
-    const orgsWithLogos = organizations.filter(
-      (org) => org.cityIds.includes(city._id) && org.logoStorageId
-    );
+    const orgsWithLogos = organizations.filter((org) => org.cityIds.includes(city._id) && org.logoStorageId);
 
     // Resolve logo URLs and return
     const results = await Promise.all(
@@ -295,12 +289,10 @@ export const getOrganizationsWithLogos = query({
           logoUrl,
           website: org.website,
         };
-      })
+      }),
     );
 
     // Filter out any with null logo URLs and sort by name
-    return results
-      .filter((org) => org.logoUrl)
-      .sort((a, b) => a.name.localeCompare(b.name));
+    return results.filter((org) => org.logoUrl).sort((a, b) => a.name.localeCompare(b.name));
   },
 });

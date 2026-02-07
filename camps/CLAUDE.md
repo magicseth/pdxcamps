@@ -17,6 +17,7 @@ When asked to work through the night (e.g., "work until 7 AM"):
 ## Project Overview
 
 PDX Camps is a family summer camp planning tool that helps parents:
+
 - View week-by-week coverage for all children (June-August)
 - Track which weeks have camps vs gaps
 - Add family events (vacations, trips) that mark weeks as covered

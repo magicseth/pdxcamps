@@ -1,16 +1,16 @@
-import { query } from "../_generated/server";
-import { v } from "convex/values";
+import { query } from '../_generated/server';
+import { v } from 'convex/values';
 
 /**
  * Status values for discovered sources
  */
 const discoveredSourceStatusValidator = v.union(
-  v.literal("pending_analysis"),
-  v.literal("pending_review"),
-  v.literal("approved"),
-  v.literal("rejected"),
-  v.literal("scraper_generated"),
-  v.literal("duplicate")
+  v.literal('pending_analysis'),
+  v.literal('pending_review'),
+  v.literal('approved'),
+  v.literal('rejected'),
+  v.literal('scraper_generated'),
+  v.literal('duplicate'),
 );
 
 /**
@@ -19,42 +19,34 @@ const discoveredSourceStatusValidator = v.union(
  */
 export const getDiscoveryQueue = query({
   args: {
-    cityId: v.id("cities"),
+    cityId: v.id('cities'),
     status: v.optional(discoveredSourceStatusValidator),
   },
   handler: async (ctx, args) => {
     // If status is provided, filter by it
     if (args.status) {
       return await ctx.db
-        .query("discoveredSources")
-        .withIndex("by_city_and_status", (q) =>
-          q.eq("cityId", args.cityId).eq("status", args.status!)
-        )
-        .order("desc")
+        .query('discoveredSources')
+        .withIndex('by_city_and_status', (q) => q.eq('cityId', args.cityId).eq('status', args.status!))
+        .order('desc')
         .collect();
     }
 
     // Otherwise, return all pending sources (pending_analysis and pending_review)
     const pendingAnalysis = await ctx.db
-      .query("discoveredSources")
-      .withIndex("by_city_and_status", (q) =>
-        q.eq("cityId", args.cityId).eq("status", "pending_analysis")
-      )
-      .order("desc")
+      .query('discoveredSources')
+      .withIndex('by_city_and_status', (q) => q.eq('cityId', args.cityId).eq('status', 'pending_analysis'))
+      .order('desc')
       .collect();
 
     const pendingReview = await ctx.db
-      .query("discoveredSources")
-      .withIndex("by_city_and_status", (q) =>
-        q.eq("cityId", args.cityId).eq("status", "pending_review")
-      )
-      .order("desc")
+      .query('discoveredSources')
+      .withIndex('by_city_and_status', (q) => q.eq('cityId', args.cityId).eq('status', 'pending_review'))
+      .order('desc')
       .collect();
 
     // Combine and sort by discoveredAt descending
-    return [...pendingAnalysis, ...pendingReview].sort(
-      (a, b) => b.discoveredAt - a.discoveredAt
-    );
+    return [...pendingAnalysis, ...pendingReview].sort((a, b) => b.discoveredAt - a.discoveredAt);
   },
 });
 
@@ -63,7 +55,7 @@ export const getDiscoveryQueue = query({
  */
 export const getDiscoveredSource = query({
   args: {
-    sourceId: v.id("discoveredSources"),
+    sourceId: v.id('discoveredSources'),
   },
   handler: async (ctx, args) => {
     const source = await ctx.db.get(args.sourceId);
@@ -90,16 +82,16 @@ export const getDiscoveredSource = query({
  */
 export const listDiscoverySearches = query({
   args: {
-    cityId: v.id("cities"),
+    cityId: v.id('cities'),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const limit = args.limit ?? 50;
 
     return await ctx.db
-      .query("discoverySearches")
-      .withIndex("by_city", (q) => q.eq("cityId", args.cityId))
-      .order("desc")
+      .query('discoverySearches')
+      .withIndex('by_city', (q) => q.eq('cityId', args.cityId))
+      .order('desc')
       .take(limit);
   },
 });
@@ -110,41 +102,39 @@ export const listDiscoverySearches = query({
  */
 export const getDiscoveryStats = query({
   args: {
-    cityId: v.id("cities"),
+    cityId: v.id('cities'),
   },
   handler: async (ctx, args) => {
     // Get counts for each status
     const statuses = [
-      "pending_analysis",
-      "pending_review",
-      "approved",
-      "rejected",
-      "scraper_generated",
-      "duplicate",
+      'pending_analysis',
+      'pending_review',
+      'approved',
+      'rejected',
+      'scraper_generated',
+      'duplicate',
     ] as const;
 
     const counts: Record<string, number> = {};
 
     for (const status of statuses) {
       const sources = await ctx.db
-        .query("discoveredSources")
-        .withIndex("by_city_and_status", (q) =>
-          q.eq("cityId", args.cityId).eq("status", status)
-        )
+        .query('discoveredSources')
+        .withIndex('by_city_and_status', (q) => q.eq('cityId', args.cityId).eq('status', status))
         .collect();
       counts[status] = sources.length;
     }
 
     // Get recent search stats
     const recentSearches = await ctx.db
-      .query("discoverySearches")
-      .withIndex("by_city", (q) => q.eq("cityId", args.cityId))
-      .order("desc")
+      .query('discoverySearches')
+      .withIndex('by_city', (q) => q.eq('cityId', args.cityId))
+      .order('desc')
       .take(10);
 
     const totalSearches = await ctx.db
-      .query("discoverySearches")
-      .withIndex("by_city", (q) => q.eq("cityId", args.cityId))
+      .query('discoverySearches')
+      .withIndex('by_city', (q) => q.eq('cityId', args.cityId))
       .collect();
 
     return {

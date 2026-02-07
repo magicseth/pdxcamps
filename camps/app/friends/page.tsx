@@ -25,7 +25,10 @@ export default function FriendsPage() {
       <header className="sticky top-0 z-20 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+            <Link
+              href="/"
+              className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
               <BackIcon />
               <span className="text-sm font-medium hidden sm:inline">Planner</span>
             </Link>
@@ -71,8 +74,13 @@ function FriendRequests() {
 
   if (pendingRequests === undefined) {
     return (
-      <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" aria-labelledby="friend-requests-loading-heading">
-        <h2 id="friend-requests-loading-heading" className="text-lg font-semibold mb-4">Friend Requests</h2>
+      <section
+        className="bg-white dark:bg-gray-800 rounded-lg shadow p-6"
+        aria-labelledby="friend-requests-loading-heading"
+      >
+        <h2 id="friend-requests-loading-heading" className="text-lg font-semibold mb-4">
+          Friend Requests
+        </h2>
         <div role="status" aria-live="polite" className="animate-pulse motion-reduce:animate-none space-y-3">
           <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded-lg" aria-hidden="true"></div>
           <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded-lg" aria-hidden="true"></div>
@@ -89,7 +97,7 @@ function FriendRequests() {
     return null;
   }
 
-  const handleAccept = async (friendshipId: Id<"friendships">) => {
+  const handleAccept = async (friendshipId: Id<'friendships'>) => {
     setProcessingId(friendshipId);
     try {
       await acceptRequest({ friendshipId });
@@ -101,7 +109,7 @@ function FriendRequests() {
     }
   };
 
-  const handleDecline = async (friendshipId: Id<"friendships">) => {
+  const handleDecline = async (friendshipId: Id<'friendships'>) => {
     setProcessingId(friendshipId);
     try {
       await declineRequest({ friendshipId });
@@ -115,7 +123,9 @@ function FriendRequests() {
 
   return (
     <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" aria-labelledby="friend-requests-heading">
-      <h2 id="friend-requests-heading" className="text-lg font-semibold mb-4">Friend Requests</h2>
+      <h2 id="friend-requests-heading" className="text-lg font-semibold mb-4">
+        Friend Requests
+      </h2>
 
       {received.length > 0 && (
         <div className="mb-6">
@@ -130,9 +140,7 @@ function FriendRequests() {
               >
                 <div>
                   <p className="font-medium">{request.requester?.displayName || 'Unknown'}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {request.requester?.email}
-                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{request.requester?.email}</p>
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -160,9 +168,7 @@ function FriendRequests() {
 
       {sent.length > 0 && (
         <div>
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-            Sent Requests ({sent.length})
-          </h3>
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Sent Requests ({sent.length})</h3>
           <div className="space-y-3">
             {sent.map((request) => (
               <div
@@ -171,9 +177,7 @@ function FriendRequests() {
               >
                 <div>
                   <p className="font-medium">{request.addressee?.displayName || 'Unknown'}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {request.addressee?.email}
-                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{request.addressee?.email}</p>
                 </div>
                 <span className="px-2.5 py-1 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded-full text-xs font-medium">
                   Pending
@@ -195,18 +199,24 @@ function MyFriends() {
   const removeFriend = useMutation(api.social.mutations.removeFriend);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [sharingFriend, setSharingFriend] = useState<{
-    friendshipId: Id<"friendships">;
-    friendId: Id<"families">;
+    friendshipId: Id<'friendships'>;
+    friendId: Id<'families'>;
     displayName: string;
   } | null>(null);
 
   if (friends === undefined) {
     return (
       <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" aria-labelledby="my-friends-loading-heading">
-        <h2 id="my-friends-loading-heading" className="text-lg font-semibold mb-4">My Friends</h2>
+        <h2 id="my-friends-loading-heading" className="text-lg font-semibold mb-4">
+          My Friends
+        </h2>
         <div role="status" aria-live="polite" className="animate-pulse motion-reduce:animate-none space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="flex items-center gap-3 p-4 border border-gray-200 dark:border-gray-600 rounded-lg" aria-hidden="true">
+            <div
+              key={i}
+              className="flex items-center gap-3 p-4 border border-gray-200 dark:border-gray-600 rounded-lg"
+              aria-hidden="true"
+            >
               <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
               <div className="flex-1 space-y-2">
                 <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
@@ -220,8 +230,10 @@ function MyFriends() {
     );
   }
 
-  const handleRemove = async (friendshipId: Id<"friendships">, displayName: string) => {
-    if (!confirm(`Are you sure you want to remove ${displayName} as a friend? This will also revoke any calendar shares.`)) {
+  const handleRemove = async (friendshipId: Id<'friendships'>, displayName: string) => {
+    if (
+      !confirm(`Are you sure you want to remove ${displayName} as a friend? This will also revoke any calendar shares.`)
+    ) {
       return;
     }
     setRemovingId(friendshipId);
@@ -236,23 +248,22 @@ function MyFriends() {
   };
 
   // Build a map of friend family ID to whether they've shared their calendar with us
-  const sharedCalendarsByOwner = new Map(
-    (sharedCalendars || []).map((share) => [share.owner?._id, share])
-  );
+  const sharedCalendarsByOwner = new Map((sharedCalendars || []).map((share) => [share.owner?._id, share]));
 
   return (
     <>
       <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" aria-labelledby="my-friends-heading">
-        <h2 id="my-friends-heading" className="text-lg font-semibold mb-4">My Friends ({friends.length})</h2>
+        <h2 id="my-friends-heading" className="text-lg font-semibold mb-4">
+          My Friends ({friends.length})
+        </h2>
 
         {friends.length === 0 ? (
           <div className="text-center py-8 px-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
             <div className="text-4xl mb-3">🤝</div>
-            <p className="text-gray-600 dark:text-gray-400 mb-2 font-medium">
-              No friends yet
-            </p>
+            <p className="text-gray-600 dark:text-gray-400 mb-2 font-medium">No friends yet</p>
             <p className="text-gray-500 dark:text-gray-500 text-sm">
-              Connect with other families to share calendars and coordinate camp schedules. Use the form below to send a friend request.
+              Connect with other families to share calendars and coordinate camp schedules. Use the form below to send a
+              friend request.
             </p>
           </div>
         ) : (
@@ -291,11 +302,13 @@ function MyFriends() {
                     {friendship.friend && (
                       <button
                         type="button"
-                        onClick={() => setSharingFriend({
-                          friendshipId: friendship.friendshipId,
-                          friendId: friendship.friend!._id,
-                          displayName: friendship.friend!.displayName,
-                        })}
+                        onClick={() =>
+                          setSharingFriend({
+                            friendshipId: friendship.friendshipId,
+                            friendId: friendship.friend!._id,
+                            displayName: friendship.friend!.displayName,
+                          })
+                        }
                         className="px-3 py-1.5 bg-surface/30 dark:bg-purple-900 text-primary-dark dark:text-purple-300 rounded-md text-sm font-medium hover:bg-purple-200 dark:hover:bg-purple-800"
                       >
                         Share My Calendar
@@ -303,7 +316,9 @@ function MyFriends() {
                     )}
                     <button
                       type="button"
-                      onClick={() => handleRemove(friendship.friendshipId, friendship.friend?.displayName || 'this friend')}
+                      onClick={() =>
+                        handleRemove(friendship.friendshipId, friendship.friend?.displayName || 'this friend')
+                      }
                       disabled={removingId === friendship.friendshipId}
                       className="px-3 py-1.5 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-md text-sm font-medium hover:bg-red-200 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -336,7 +351,7 @@ function ShareCalendarModal({
   friendDisplayName,
   onClose,
 }: {
-  friendId: Id<"families">;
+  friendId: Id<'families'>;
   friendDisplayName: string;
   onClose: () => void;
 }) {
@@ -346,16 +361,19 @@ function ShareCalendarModal({
   const updateShare = useMutation(api.social.mutations.updateCalendarShare);
   const revokeShare = useMutation(api.social.mutations.revokeCalendarShare);
 
-  const [selectedChildren, setSelectedChildren] = useState<Id<"children">[]>([]);
-  const [permission, setPermission] = useState<"view_sessions" | "view_details">("view_sessions");
+  const [selectedChildren, setSelectedChildren] = useState<Id<'children'>[]>([]);
+  const [permission, setPermission] = useState<'view_sessions' | 'view_details'>('view_sessions');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // ESC key to close modal
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Escape' && !isSubmitting) {
-      onClose();
-    }
-  }, [onClose, isSubmitting]);
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isSubmitting) {
+        onClose();
+      }
+    },
+    [onClose, isSubmitting],
+  );
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
@@ -363,11 +381,14 @@ function ShareCalendarModal({
   }, [handleKeyDown]);
 
   // Backdrop click to close modal
-  const handleBackdropClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget && !isSubmitting) {
-      onClose();
-    }
-  }, [onClose, isSubmitting]);
+  const handleBackdropClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (e.target === e.currentTarget && !isSubmitting) {
+        onClose();
+      }
+    },
+    [onClose, isSubmitting],
+  );
 
   // Find existing share with this friend
   const existingShare = myShares?.find((share) => share.sharedWith?._id === friendId);
@@ -380,12 +401,8 @@ function ShareCalendarModal({
     }
   });
 
-  const toggleChild = (childId: Id<"children">) => {
-    setSelectedChildren((prev) =>
-      prev.includes(childId)
-        ? prev.filter((id) => id !== childId)
-        : [...prev, childId]
-    );
+  const toggleChild = (childId: Id<'children'>) => {
+    setSelectedChildren((prev) => (prev.includes(childId) ? prev.filter((id) => id !== childId) : [...prev, childId]));
   };
 
   const handleSubmit = async () => {
@@ -462,9 +479,7 @@ function ShareCalendarModal({
         {children === undefined ? (
           <p className="text-gray-500">Loading children...</p>
         ) : children.length === 0 ? (
-          <p className="text-gray-500">
-            You need to add children to your family before sharing calendars.
-          </p>
+          <p className="text-gray-500">You need to add children to your family before sharing calendars.</p>
         ) : (
           <>
             <div className="mb-4">
@@ -490,13 +505,16 @@ function ShareCalendarModal({
             </div>
 
             <div className="mb-6">
-              <label htmlFor="share-permission-level" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label
+                htmlFor="share-permission-level"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 Permission Level
               </label>
               <select
                 id="share-permission-level"
                 value={permission}
-                onChange={(e) => setPermission(e.target.value as "view_sessions" | "view_details")}
+                onChange={(e) => setPermission(e.target.value as 'view_sessions' | 'view_details')}
                 className="w-full p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
               >
                 <option value="view_sessions">View Sessions - Camp names and dates only</option>
@@ -568,7 +586,9 @@ function AddFriend() {
 
   return (
     <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" aria-labelledby="add-friend-heading">
-      <h2 id="add-friend-heading" className="text-lg font-semibold mb-4">Add Friend</h2>
+      <h2 id="add-friend-heading" className="text-lg font-semibold mb-4">
+        Add Friend
+      </h2>
       <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
         <div className="flex-1">
           <input
@@ -593,9 +613,7 @@ function AddFriend() {
       {message && (
         <p
           className={`mt-3 text-sm ${
-            message.type === 'success'
-              ? 'text-green-600 dark:text-green-400'
-              : 'text-red-600 dark:text-red-400'
+            message.type === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
           }`}
         >
           {message.text}
@@ -616,8 +634,13 @@ function CalendarSharingSettings() {
 
   if (myShares === undefined) {
     return (
-      <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" aria-labelledby="calendar-sharing-loading-heading">
-        <h2 id="calendar-sharing-loading-heading" className="text-lg font-semibold mb-4">Calendar Sharing Settings</h2>
+      <section
+        className="bg-white dark:bg-gray-800 rounded-lg shadow p-6"
+        aria-labelledby="calendar-sharing-loading-heading"
+      >
+        <h2 id="calendar-sharing-loading-heading" className="text-lg font-semibold mb-4">
+          Calendar Sharing Settings
+        </h2>
         <div role="status" aria-live="polite" className="animate-pulse motion-reduce:animate-none space-y-4">
           <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-64" aria-hidden="true"></div>
           <div className="h-24 bg-gray-200 dark:bg-gray-700 rounded-lg" aria-hidden="true"></div>
@@ -627,7 +650,7 @@ function CalendarSharingSettings() {
     );
   }
 
-  const handleRevoke = async (shareId: Id<"calendarShares">, displayName: string) => {
+  const handleRevoke = async (shareId: Id<'calendarShares'>, displayName: string) => {
     if (!confirm(`Stop sharing your calendar with ${displayName}?`)) return;
 
     setProcessingId(shareId);
@@ -641,7 +664,10 @@ function CalendarSharingSettings() {
     }
   };
 
-  const handlePermissionChange = async (shareId: Id<"calendarShares">, newPermission: "view_sessions" | "view_details") => {
+  const handlePermissionChange = async (
+    shareId: Id<'calendarShares'>,
+    newPermission: 'view_sessions' | 'view_details',
+  ) => {
     setProcessingId(shareId);
     try {
       await updateShare({ shareId, permission: newPermission });
@@ -656,7 +682,9 @@ function CalendarSharingSettings() {
 
   return (
     <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" aria-labelledby="calendar-sharing-heading">
-      <h2 id="calendar-sharing-heading" className="text-lg font-semibold mb-4">Calendar Sharing Settings</h2>
+      <h2 id="calendar-sharing-heading" className="text-lg font-semibold mb-4">
+        Calendar Sharing Settings
+      </h2>
       <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
         Manage who can see your family&apos;s camp calendar.
       </p>
@@ -664,9 +692,7 @@ function CalendarSharingSettings() {
       {myShares.length === 0 ? (
         <div className="text-center py-8 px-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
           <div className="text-4xl mb-3">📅</div>
-          <p className="text-gray-600 dark:text-gray-400 mb-2 font-medium">
-            No calendar shares yet
-          </p>
+          <p className="text-gray-600 dark:text-gray-400 mb-2 font-medium">No calendar shares yet</p>
           <p className="text-gray-500 dark:text-gray-500 text-sm">
             Click &quot;Share My Calendar&quot; next to a friend&apos;s name above to let them see your camp schedule.
           </p>
@@ -674,10 +700,7 @@ function CalendarSharingSettings() {
       ) : (
         <div className="space-y-4">
           {myShares.map((share) => (
-            <div
-              key={share.shareId}
-              className="border border-gray-200 dark:border-gray-600 rounded-lg p-4"
-            >
+            <div key={share.shareId} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <p className="font-medium">{share.sharedWith?.displayName || 'Unknown'}</p>
@@ -690,10 +713,7 @@ function CalendarSharingSettings() {
                     <select
                       value={share.permission}
                       onChange={(e) =>
-                        handlePermissionChange(
-                          share.shareId,
-                          e.target.value as "view_sessions" | "view_details"
-                        )
+                        handlePermissionChange(share.shareId, e.target.value as 'view_sessions' | 'view_details')
                       }
                       disabled={processingId === share.shareId}
                       aria-label="Change permission level"
@@ -739,4 +759,3 @@ function CalendarSharingSettings() {
     </section>
   );
 }
-

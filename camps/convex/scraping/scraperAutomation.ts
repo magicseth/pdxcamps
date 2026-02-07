@@ -8,9 +8,9 @@
  * 4. Track automation metrics
  */
 
-import { internalMutation, internalQuery } from "../_generated/server";
-import { v } from "convex/values";
-import { Id } from "../_generated/dataModel";
+import { internalMutation, internalQuery } from '../_generated/server';
+import { v } from 'convex/values';
+import { Id } from '../_generated/dataModel';
 
 /**
  * Find sources that need scraper development but don't have a pending request.
@@ -21,39 +21,48 @@ import { Id } from "../_generated/dataModel";
  */
 export const findSourcesNeedingScraperWork = internalQuery({
   args: {},
-  handler: async (ctx): Promise<
+  handler: async (
+    ctx,
+  ): Promise<
     Array<{
-      sourceId: Id<"scrapeSources">;
+      sourceId: Id<'scrapeSources'>;
       sourceName: string;
       sourceUrl: string;
-      reason: "needs_regeneration" | "no_scraper";
-      cityId: Id<"cities">;
+      reason: 'needs_regeneration' | 'no_scraper';
+      cityId: Id<'cities'>;
     }>
   > => {
     // Get all active sources
     const sources = await ctx.db
-      .query("scrapeSources")
-      .withIndex("by_is_active", (q) => q.eq("isActive", true))
+      .query('scrapeSources')
+      .withIndex('by_is_active', (q) => q.eq('isActive', true))
       .collect();
 
     // Get all pending/in_progress dev requests (use index for each status)
     const [pending, inProgress, testing] = await Promise.all([
-      ctx.db.query("scraperDevelopmentRequests").withIndex("by_status", (q) => q.eq("status", "pending")).collect(),
-      ctx.db.query("scraperDevelopmentRequests").withIndex("by_status", (q) => q.eq("status", "in_progress")).collect(),
-      ctx.db.query("scraperDevelopmentRequests").withIndex("by_status", (q) => q.eq("status", "testing")).collect(),
+      ctx.db
+        .query('scraperDevelopmentRequests')
+        .withIndex('by_status', (q) => q.eq('status', 'pending'))
+        .collect(),
+      ctx.db
+        .query('scraperDevelopmentRequests')
+        .withIndex('by_status', (q) => q.eq('status', 'in_progress'))
+        .collect(),
+      ctx.db
+        .query('scraperDevelopmentRequests')
+        .withIndex('by_status', (q) => q.eq('status', 'testing'))
+        .collect(),
     ]);
     const pendingRequests = [...pending, ...inProgress, ...testing];
 
-    const sourcesWithPendingRequest = new Set(
-      pendingRequests.map((r) => r.sourceId).filter(Boolean)
-    );
+    const sourcesWithPendingRequest = new Set(pendingRequests.map((r) => r.sourceId).filter(Boolean));
 
     const results: Array<{
-      sourceId: Id<"scrapeSources">;
+      sourceId: Id<'scrapeSources'>;
       sourceName: string;
       sourceUrl: string;
-      reason: "needs_regeneration" | "no_scraper";
-      cityId: Id<"cities">;
+      reason: 'needs_regeneration' | 'no_scraper';
+      cityId: Id<'cities'>;
     }> = [];
 
     for (const source of sources) {
@@ -68,7 +77,7 @@ export const findSourcesNeedingScraperWork = internalQuery({
           sourceId: source._id,
           sourceName: source.name,
           sourceUrl: source.url,
-          reason: "needs_regeneration",
+          reason: 'needs_regeneration',
           cityId: source.cityId,
         });
         continue;
@@ -80,7 +89,7 @@ export const findSourcesNeedingScraperWork = internalQuery({
           sourceId: source._id,
           sourceName: source.name,
           sourceUrl: source.url,
-          reason: "no_scraper",
+          reason: 'no_scraper',
           cityId: source.cityId,
         });
       }
@@ -100,7 +109,7 @@ export const autoQueueScraperDevelopment = internalMutation({
   },
   handler: async (
     ctx,
-    args
+    args,
   ): Promise<{
     queued: number;
     sources: Array<{ name: string; reason: string }>;
@@ -112,28 +121,35 @@ export const autoQueueScraperDevelopment = internalMutation({
 
     // Get all active sources
     const sources = await ctx.db
-      .query("scrapeSources")
-      .withIndex("by_is_active", (q) => q.eq("isActive", true))
+      .query('scrapeSources')
+      .withIndex('by_is_active', (q) => q.eq('isActive', true))
       .collect();
 
     // Get all pending/in_progress dev requests (use index for each status)
     const [pending, inProgress, testing] = await Promise.all([
-      ctx.db.query("scraperDevelopmentRequests").withIndex("by_status", (q) => q.eq("status", "pending")).collect(),
-      ctx.db.query("scraperDevelopmentRequests").withIndex("by_status", (q) => q.eq("status", "in_progress")).collect(),
-      ctx.db.query("scraperDevelopmentRequests").withIndex("by_status", (q) => q.eq("status", "testing")).collect(),
+      ctx.db
+        .query('scraperDevelopmentRequests')
+        .withIndex('by_status', (q) => q.eq('status', 'pending'))
+        .collect(),
+      ctx.db
+        .query('scraperDevelopmentRequests')
+        .withIndex('by_status', (q) => q.eq('status', 'in_progress'))
+        .collect(),
+      ctx.db
+        .query('scraperDevelopmentRequests')
+        .withIndex('by_status', (q) => q.eq('status', 'testing'))
+        .collect(),
     ]);
     const pendingRequests = [...pending, ...inProgress, ...testing];
 
-    const sourcesWithPendingRequest = new Set(
-      pendingRequests.map((r) => r.sourceId).filter(Boolean)
-    );
+    const sourcesWithPendingRequest = new Set(pendingRequests.map((r) => r.sourceId).filter(Boolean));
 
     const toQueue: Array<{
-      sourceId: Id<"scrapeSources">;
+      sourceId: Id<'scrapeSources'>;
       sourceName: string;
       sourceUrl: string;
-      reason: "needs_regeneration" | "no_scraper";
-      cityId: Id<"cities">;
+      reason: 'needs_regeneration' | 'no_scraper';
+      cityId: Id<'cities'>;
     }> = [];
 
     for (const source of sources) {
@@ -150,7 +166,7 @@ export const autoQueueScraperDevelopment = internalMutation({
           sourceId: source._id,
           sourceName: source.name,
           sourceUrl: source.url,
-          reason: "needs_regeneration",
+          reason: 'needs_regeneration',
           cityId: source.cityId,
         });
         continue;
@@ -162,7 +178,7 @@ export const autoQueueScraperDevelopment = internalMutation({
           sourceId: source._id,
           sourceName: source.name,
           sourceUrl: source.url,
-          reason: "no_scraper",
+          reason: 'no_scraper',
           cityId: source.cityId,
         });
       }
@@ -172,22 +188,22 @@ export const autoQueueScraperDevelopment = internalMutation({
     const queued: Array<{ name: string; reason: string }> = [];
 
     for (const item of toQueue) {
-      await ctx.db.insert("scraperDevelopmentRequests", {
+      await ctx.db.insert('scraperDevelopmentRequests', {
         sourceName: item.sourceName,
         sourceUrl: item.sourceUrl,
         sourceId: item.sourceId,
         cityId: item.cityId,
-        requestedBy: "system",
+        requestedBy: 'system',
         requestedAt: Date.now(),
         notes:
-          item.reason === "needs_regeneration"
-            ? "Auto-queued: Scraper needs regeneration due to repeated failures"
-            : "Auto-queued: Source has no scraper configured",
-        status: "pending",
+          item.reason === 'needs_regeneration'
+            ? 'Auto-queued: Scraper needs regeneration due to repeated failures'
+            : 'Auto-queued: Source has no scraper configured',
+        status: 'pending',
       });
 
       // Clear the needsRegeneration flag since we've queued it
-      if (item.reason === "needs_regeneration") {
+      if (item.reason === 'needs_regeneration') {
         const source = await ctx.db.get(item.sourceId);
         if (source) {
           await ctx.db.patch(item.sourceId, {
@@ -212,50 +228,30 @@ export const autoQueueScraperDevelopment = internalMutation({
 export const getAutomationMetrics = internalQuery({
   args: {},
   handler: async (ctx) => {
-    const sources = await ctx.db.query("scrapeSources").collect();
-    const devRequests = await ctx.db
-      .query("scraperDevelopmentRequests")
-      .collect();
+    const sources = await ctx.db.query('scrapeSources').collect();
+    const devRequests = await ctx.db.query('scraperDevelopmentRequests').collect();
 
     const activeSources = sources.filter((s) => s.isActive);
     const disabledSources = sources.filter((s) => !s.isActive);
-    const autoDisabled = disabledSources.filter(
-      (s) => s.closedBy === "system"
-    );
+    const autoDisabled = disabledSources.filter((s) => s.closedBy === 'system');
 
-    const sourcesWithScraper = activeSources.filter(
-      (s) => s.scraperCode || s.scraperModule
-    );
-    const sourcesWithoutScraper = activeSources.filter(
-      (s) => !s.scraperCode && !s.scraperModule
-    );
-    const sourcesNeedingRegeneration = activeSources.filter(
-      (s) => s.scraperHealth.needsRegeneration
-    );
+    const sourcesWithScraper = activeSources.filter((s) => s.scraperCode || s.scraperModule);
+    const sourcesWithoutScraper = activeSources.filter((s) => !s.scraperCode && !s.scraperModule);
+    const sourcesNeedingRegeneration = activeSources.filter((s) => s.scraperHealth.needsRegeneration);
 
-    const pendingRequests = devRequests.filter((r) => r.status === "pending");
-    const inProgressRequests = devRequests.filter(
-      (r) => r.status === "in_progress"
-    );
-    const completedRequests = devRequests.filter(
-      (r) => r.status === "completed"
-    );
-    const failedRequests = devRequests.filter((r) => r.status === "failed");
+    const pendingRequests = devRequests.filter((r) => r.status === 'pending');
+    const inProgressRequests = devRequests.filter((r) => r.status === 'in_progress');
+    const completedRequests = devRequests.filter((r) => r.status === 'completed');
+    const failedRequests = devRequests.filter((r) => r.status === 'failed');
 
     // Count sources by health status
     const healthyCount = activeSources.filter(
-      (s) =>
-        s.scraperHealth.consecutiveFailures === 0 &&
-        (s.scraperCode || s.scraperModule)
+      (s) => s.scraperHealth.consecutiveFailures === 0 && (s.scraperCode || s.scraperModule),
     ).length;
     const degradedCount = activeSources.filter(
-      (s) =>
-        s.scraperHealth.consecutiveFailures > 0 &&
-        s.scraperHealth.consecutiveFailures < 5
+      (s) => s.scraperHealth.consecutiveFailures > 0 && s.scraperHealth.consecutiveFailures < 5,
     ).length;
-    const failingCount = activeSources.filter(
-      (s) => s.scraperHealth.consecutiveFailures >= 5
-    ).length;
+    const failingCount = activeSources.filter((s) => s.scraperHealth.consecutiveFailures >= 5).length;
 
     return {
       sources: {
@@ -296,13 +292,15 @@ export const cleanupStaleDevRequests = internalMutation({
 
     // Query by status using index, then filter by age
     const [pendingStale, inProgressStale] = await Promise.all([
-      ctx.db.query("scraperDevelopmentRequests")
-        .withIndex("by_status", (q) => q.eq("status", "pending"))
-        .filter((q) => q.lt(q.field("requestedAt"), cutoff))
+      ctx.db
+        .query('scraperDevelopmentRequests')
+        .withIndex('by_status', (q) => q.eq('status', 'pending'))
+        .filter((q) => q.lt(q.field('requestedAt'), cutoff))
         .collect(),
-      ctx.db.query("scraperDevelopmentRequests")
-        .withIndex("by_status", (q) => q.eq("status", "in_progress"))
-        .filter((q) => q.lt(q.field("requestedAt"), cutoff))
+      ctx.db
+        .query('scraperDevelopmentRequests')
+        .withIndex('by_status', (q) => q.eq('status', 'in_progress'))
+        .filter((q) => q.lt(q.field('requestedAt'), cutoff))
         .collect(),
     ]);
     const staleRequests = [...pendingStale, ...inProgressStale];
@@ -310,7 +308,7 @@ export const cleanupStaleDevRequests = internalMutation({
     let cleaned = 0;
     for (const request of staleRequests) {
       await ctx.db.patch(request._id, {
-        status: "failed",
+        status: 'failed',
         lastTestError: `Auto-failed: Request was stale for ${maxAgeDays}+ days without completion`,
       });
       cleaned++;

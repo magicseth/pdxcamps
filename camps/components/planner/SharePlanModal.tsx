@@ -5,6 +5,7 @@ import { useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
 import { DEFAULT_CHILD_COLORS } from '../../lib/constants';
+import posthog from 'posthog-js';
 
 export function SharePlanModal({
   isOpen,
@@ -25,7 +26,7 @@ export function SharePlanModal({
   // Initialize with all children selected
   useEffect(() => {
     if (isOpen && children.length > 0 && selectedChildIds.size === 0) {
-      setSelectedChildIds(new Set(children.map(c => c._id)));
+      setSelectedChildIds(new Set(children.map((c) => c._id)));
     }
   }, [isOpen, children, selectedChildIds.size]);
 
@@ -54,6 +55,11 @@ export function SharePlanModal({
       const url = `${window.location.origin}/share/family/${token}`;
       setShareUrl(url);
 
+      // Track share link generation
+      posthog.capture('share_link_generated', {
+        children_count: childIds.length,
+      });
+
       // Auto-copy to clipboard and show toast
       await navigator.clipboard.writeText(url);
       setCopied(true);
@@ -63,13 +69,14 @@ export function SharePlanModal({
         setShowToast(false);
       }, 3000);
     } catch (error) {
+      posthog.captureException(error);
       console.error('Failed to generate share link:', error);
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const selectedChildren = children.filter(c => selectedChildIds.has(c._id));
+  const selectedChildren = children.filter((c) => selectedChildIds.has(c._id));
 
   const handleCopy = async () => {
     if (!shareUrl) return;
@@ -84,7 +91,7 @@ export function SharePlanModal({
 
   const handleShare = async () => {
     if (!shareUrl) return;
-    const names = selectedChildren.map(c => c.firstName).join(' & ');
+    const names = selectedChildren.map((c) => c.firstName).join(' & ');
 
     if (navigator.share) {
       try {
@@ -105,136 +112,132 @@ export function SharePlanModal({
 
   return (
     <>
-    <div
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Share Summer Schedule</h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"
-          >
-            <svg className="w-5 h-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Child Selection */}
-        {children.length > 1 && (
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Select kids to include
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {children.map((child, index) => {
-                const avatarColor = child.color || DEFAULT_CHILD_COLORS[index % DEFAULT_CHILD_COLORS.length];
-                const isSelected = selectedChildIds.has(child._id);
-                return (
-                  <button
-                    key={child._id}
-                    onClick={() => toggleChild(child._id)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all ${
-                      isSelected
-                        ? 'bg-accent text-white shadow-md'
-                        : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
-                    }`}
-                  >
-                    <span
-                      className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 transition-all ${
-                        isSelected ? 'ring-2 ring-white ring-offset-1 ring-offset-accent' : ''
-                      }`}
-                      style={{ backgroundColor: avatarColor }}
-                    >
-                      {child.firstName[0]}
-                    </span>
-                    {child.firstName}
-                    {isSelected && (
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-            <p className="text-xs text-slate-500 mt-2">
-              One link will show all selected kids' schedules
-            </p>
+      <div
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+        onClick={(e) => e.target === e.currentTarget && onClose()}
+      >
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Share Summer Schedule</h2>
+            <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+              <svg className="w-5 h-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
-        )}
 
-        {/* Share Link */}
-        {shareUrl ? (
-          <div className="space-y-4">
-            <div>
+          {/* Child Selection */}
+          {children.length > 1 && (
+            <div className="mb-6">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Share link for {selectedChildren.map(c => c.firstName).join(' & ')}
+                Select kids to include
               </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={shareUrl}
-                  readOnly
-                  className="flex-1 px-3 py-2 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white"
-                />
-                <button
-                  onClick={handleCopy}
-                  className="px-4 py-2 bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-white rounded-lg hover:bg-slate-300 dark:hover:bg-slate-500 font-medium"
-                >
-                  {copied ? '✓' : 'Copy'}
-                </button>
+              <div className="flex flex-wrap gap-2">
+                {children.map((child, index) => {
+                  const avatarColor = child.color || DEFAULT_CHILD_COLORS[index % DEFAULT_CHILD_COLORS.length];
+                  const isSelected = selectedChildIds.has(child._id);
+                  return (
+                    <button
+                      key={child._id}
+                      onClick={() => toggleChild(child._id)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all ${
+                        isSelected
+                          ? 'bg-accent text-white shadow-md'
+                          : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
+                      }`}
+                    >
+                      <span
+                        className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 transition-all ${
+                          isSelected ? 'ring-2 ring-white ring-offset-1 ring-offset-accent' : ''
+                        }`}
+                        style={{ backgroundColor: avatarColor }}
+                      >
+                        {child.firstName[0]}
+                      </span>
+                      {child.firstName}
+                      {isSelected && (
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path
+                            fillRule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
+              <p className="text-xs text-slate-500 mt-2">One link will show all selected kids' schedules</p>
             </div>
+          )}
 
-            <button
-              onClick={handleShare}
-              className="w-full py-4 bg-gradient-to-r from-accent to-accent-dark text-white font-bold text-lg rounded-xl hover:from-accent-dark hover:to-primary transition-all shadow-lg"
-            >
-              📤 Share with Friends & Family
-            </button>
+          {/* Share Link */}
+          {shareUrl ? (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Share link for {selectedChildren.map((c) => c.firstName).join(' & ')}
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={shareUrl}
+                    readOnly
+                    className="flex-1 px-3 py-2 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white"
+                  />
+                  <button
+                    onClick={handleCopy}
+                    className="px-4 py-2 bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-white rounded-lg hover:bg-slate-300 dark:hover:bg-slate-500 font-medium"
+                  >
+                    {copied ? '✓' : 'Copy'}
+                  </button>
+                </div>
+              </div>
 
-            <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
-              Friends will see a preview of your summer plans and can sign up to see details
-            </p>
-          </div>
-        ) : (
-          <div className="text-center py-4">
-            <p className="text-slate-600 dark:text-slate-400 mb-4">
-              {selectedChildren.length === 0
-                ? 'Select at least one child to share'
-                : `Create a shareable link for ${selectedChildren.map(c => c.firstName).join(' & ')}'s summer`
-              }
-            </p>
-            <button
-              onClick={handleGenerateLink}
-              disabled={isGenerating || selectedChildren.length === 0}
-              className="w-full py-4 bg-gradient-to-r from-accent to-accent-dark text-white font-bold text-lg rounded-xl hover:from-accent-dark hover:to-primary transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isGenerating ? 'Generating...' : '🔗 Generate Share Link'}
-            </button>
-          </div>
-        )}
+              <button
+                onClick={handleShare}
+                className="w-full py-4 bg-gradient-to-r from-accent to-accent-dark text-white font-bold text-lg rounded-xl hover:from-accent-dark hover:to-primary transition-all shadow-lg"
+              >
+                📤 Share with Friends & Family
+              </button>
+
+              <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
+                Friends will see a preview of your summer plans and can sign up to see details
+              </p>
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-slate-600 dark:text-slate-400 mb-4">
+                {selectedChildren.length === 0
+                  ? 'Select at least one child to share'
+                  : `Create a shareable link for ${selectedChildren.map((c) => c.firstName).join(' & ')}'s summer`}
+              </p>
+              <button
+                onClick={handleGenerateLink}
+                disabled={isGenerating || selectedChildren.length === 0}
+                className="w-full py-4 bg-gradient-to-r from-accent to-accent-dark text-white font-bold text-lg rounded-xl hover:from-accent-dark hover:to-primary transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isGenerating ? 'Generating...' : '🔗 Generate Share Link'}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
 
-    {/* Toast notification */}
-    <div
-      className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] transition-all duration-300 ${
-        showToast
-          ? 'opacity-100 translate-y-0'
-          : 'opacity-0 translate-y-4 pointer-events-none'
-      }`}
-    >
-      <div className="flex items-center gap-2 px-4 py-3 bg-slate-900 dark:bg-slate-700 text-white rounded-xl shadow-lg">
-        <svg className="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-        </svg>
-        <span className="font-medium">Link copied to clipboard!</span>
+      {/* Toast notification */}
+      <div
+        className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] transition-all duration-300 ${
+          showToast ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
+        }`}
+      >
+        <div className="flex items-center gap-2 px-4 py-3 bg-slate-900 dark:bg-slate-700 text-white rounded-xl shadow-lg">
+          <svg className="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          <span className="font-medium">Link copied to clipboard!</span>
+        </div>
       </div>
-    </div>
     </>
   );
 }

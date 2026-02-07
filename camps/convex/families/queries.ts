@@ -1,6 +1,6 @@
-import { query } from "../_generated/server";
-import { v } from "convex/values";
-import { getFamily } from "../lib/auth";
+import { query } from '../_generated/server';
+import { v } from 'convex/values';
+import { getFamily } from '../lib/auth';
 
 /**
  * Get the authenticated user's family.
@@ -19,7 +19,7 @@ export const getCurrentFamily = query({
  */
 export const getFamilyById = query({
   args: {
-    familyId: v.id("families"),
+    familyId: v.id('families'),
   },
   handler: async (ctx, args) => {
     const family = await ctx.db.get(args.familyId);

@@ -15,7 +15,10 @@ export default function MarketSeedingPage() {
           <Link href="/admin" className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
             <ArrowLeftIcon />
           </Link>
-          <Link href="/" className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+          <Link
+            href="/"
+            className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
             PDX Camps
           </Link>
         </div>
@@ -27,13 +30,8 @@ export default function MarketSeedingPage() {
         </Authenticated>
         <Unauthenticated>
           <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-            <p className="text-slate-600 dark:text-slate-400">
-              Please sign in to access market seeding.
-            </p>
-            <a
-              href="/sign-in"
-              className="bg-foreground text-background px-6 py-2 rounded-md"
-            >
+            <p className="text-slate-600 dark:text-slate-400">Please sign in to access market seeding.</p>
+            <a href="/sign-in" className="bg-foreground text-background px-6 py-2 rounded-md">
               Sign in
             </a>
           </div>
@@ -63,7 +61,7 @@ function MarketSeedingContent() {
   // Parse region name to pre-fill city fields
   useEffect(() => {
     if (regionName && createCity) {
-      const parts = regionName.split(',').map(p => p.trim());
+      const parts = regionName.split(',').map((p) => p.trim());
       if (parts.length >= 2) {
         setCityName(parts[0]);
         setCityState(parts[1]);
@@ -128,7 +126,7 @@ function MarketSeedingContent() {
     }
   };
 
-  const handleReset = async (taskId: Id<"marketDiscoveryTasks">) => {
+  const handleReset = async (taskId: Id<'marketDiscoveryTasks'>) => {
     try {
       await resetDiscoveryTask({ taskId });
     } catch (err) {
@@ -137,19 +135,17 @@ function MarketSeedingContent() {
   };
 
   // Group tasks by status
-  const activeTasks = discoveryTasks?.filter(t =>
-    t.status === 'pending' || t.status === 'searching' || t.status === 'discovering'
-  ) || [];
-  const completedTasks = discoveryTasks?.filter(t => t.status === 'completed') || [];
-  const failedTasks = discoveryTasks?.filter(t => t.status === 'failed') || [];
+  const activeTasks =
+    discoveryTasks?.filter((t) => t.status === 'pending' || t.status === 'searching' || t.status === 'discovering') ||
+    [];
+  const completedTasks = discoveryTasks?.filter((t) => t.status === 'completed') || [];
+  const failedTasks = discoveryTasks?.filter((t) => t.status === 'failed') || [];
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Add New Market Form */}
       <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-          Add New Market
-        </h2>
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Add New Market</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Region Name */}
@@ -260,12 +256,13 @@ function MarketSeedingContent() {
 
         <div className="mt-4 p-3 bg-slate-50 dark:bg-slate-900 rounded-md">
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            <strong>How it works:</strong> The local daemon will search Google for camp organizations
-            in this region, visit camp directories, extract URLs, and automatically create organizations,
-            scrape sources, and queue scraper development requests.
+            <strong>How it works:</strong> The local daemon will search Google for camp organizations in this region,
+            visit camp directories, extract URLs, and automatically create organizations, scrape sources, and queue
+            scraper development requests.
           </p>
           <p className="text-sm text-slate-500 mt-2">
-            Make sure the daemon is running: <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded">npx tsx scripts/scraper-daemon.ts</code>
+            Make sure the daemon is running:{' '}
+            <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded">npx tsx scripts/scraper-daemon.ts</code>
           </p>
         </div>
       </div>
@@ -324,7 +321,7 @@ function MarketSeedingContent() {
 
 interface TaskRowProps {
   task: {
-    _id: Id<"marketDiscoveryTasks">;
+    _id: Id<'marketDiscoveryTasks'>;
     regionName: string;
     cityName?: string;
     status: string;
@@ -339,7 +336,7 @@ interface TaskRowProps {
     createdAt: number;
     completedAt?: number;
   };
-  onReset: (taskId: Id<"marketDiscoveryTasks">) => void;
+  onReset: (taskId: Id<'marketDiscoveryTasks'>) => void;
   showReset?: boolean;
 }
 
@@ -376,9 +373,7 @@ function TaskRow({ task, onReset, showReset }: TaskRowProps) {
       <div className="flex items-start justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-3">
-            <h4 className="font-medium text-slate-900 dark:text-white">
-              {task.regionName}
-            </h4>
+            <h4 className="font-medium text-slate-900 dark:text-white">{task.regionName}</h4>
             <span className={`px-2 py-0.5 text-xs rounded-full ${statusColors[task.status]}`}>
               {statusIcons[task.status]} {task.status}
             </span>
@@ -387,14 +382,12 @@ function TaskRow({ task, onReset, showReset }: TaskRowProps) {
           {/* Progress Info */}
           <div className="mt-1 text-sm text-slate-500 flex items-center gap-3">
             {task.searchesCompleted !== undefined && (
-              <span>{task.searchesCompleted}/{task.searchQueries.length} searches</span>
+              <span>
+                {task.searchesCompleted}/{task.searchQueries.length} searches
+              </span>
             )}
-            {task.directoriesFound !== undefined && (
-              <span>{task.directoriesFound} directories</span>
-            )}
-            {task.urlsDiscovered !== undefined && (
-              <span>{task.urlsDiscovered} URLs found</span>
-            )}
+            {task.directoriesFound !== undefined && <span>{task.directoriesFound} directories</span>}
+            {task.urlsDiscovered !== undefined && <span>{task.urlsDiscovered} URLs found</span>}
           </div>
 
           {/* Results for completed */}
@@ -411,11 +404,7 @@ function TaskRow({ task, onReset, showReset }: TaskRowProps) {
           )}
 
           {/* Error for failed */}
-          {task.error && (
-            <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-              {task.error}
-            </p>
-          )}
+          {task.error && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{task.error}</p>}
 
           {/* Timestamps */}
           <p className="mt-1 text-xs text-slate-400">
@@ -427,10 +416,7 @@ function TaskRow({ task, onReset, showReset }: TaskRowProps) {
         {/* Actions */}
         <div className="ml-4 flex-shrink-0">
           {showReset && (
-            <button
-              onClick={() => onReset(task._id)}
-              className="text-sm text-primary hover:text-primary-dark"
-            >
+            <button onClick={() => onReset(task._id)} className="text-sm text-primary hover:text-primary-dark">
               Retry
             </button>
           )}
@@ -455,13 +441,8 @@ function AccessDenied() {
   return (
     <div className="max-w-2xl mx-auto text-center py-16">
       <h2 className="text-xl font-semibold mb-2 text-red-600">Access Denied</h2>
-      <p className="text-slate-600 dark:text-slate-400">
-        You don't have permission to access market seeding.
-      </p>
-      <Link
-        href="/"
-        className="inline-block mt-4 text-primary hover:underline"
-      >
+      <p className="text-slate-600 dark:text-slate-400">You don't have permission to access market seeding.</p>
+      <Link href="/" className="inline-block mt-4 text-primary hover:underline">
         Return to Home
       </Link>
     </div>

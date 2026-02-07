@@ -5,10 +5,6 @@ export const metadata: Metadata = {
   description: 'View and manage your registered summer camps',
 };
 
-export default function CalendarLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function CalendarLayout({ children }: { children: React.ReactNode }) {
   return children;
 }

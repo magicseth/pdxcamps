@@ -1,4 +1,4 @@
-"use node";
+'use node';
 
 /**
  * Populate Organization Logos
@@ -8,19 +8,19 @@
  * Clearbit/Google favicon APIs, then UI Avatars for placeholders.
  */
 
-import { action, internalAction } from "../_generated/server";
-import { internal, api } from "../_generated/api";
-import { v } from "convex/values";
-import { Id, Doc } from "../_generated/dataModel";
-import { ActionCtx } from "../_generated/server";
-import { Stagehand } from "@browserbasehq/stagehand";
-import { z } from "zod";
+import { action, internalAction } from '../_generated/server';
+import { internal, api } from '../_generated/api';
+import { v } from 'convex/values';
+import { Id, Doc } from '../_generated/dataModel';
+import { ActionCtx } from '../_generated/server';
+import { Stagehand } from '@browserbasehq/stagehand';
+import { z } from 'zod';
 
 /**
  * Check if a URL is valid
  */
 function isValidUrl(urlString: string): boolean {
-  if (!urlString || urlString.includes("<UNKNOWN>") || urlString === "UNKNOWN") {
+  if (!urlString || urlString.includes('<UNKNOWN>') || urlString === 'UNKNOWN') {
     return false;
   }
   try {
@@ -36,15 +36,15 @@ function isValidUrl(urlString: string): boolean {
  */
 async function downloadAndStoreImage(
   ctx: ActionCtx,
-  url: string
-): Promise<{ storageId: Id<"_storage"> | null; error?: string }> {
+  url: string,
+): Promise<{ storageId: Id<'_storage'> | null; error?: string }> {
   try {
     console.log(`[Logos] Downloading: ${url}`);
 
     const response = await fetch(url, {
       headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; PDXCampsBot/1.0)",
-        Accept: "image/*",
+        'User-Agent': 'Mozilla/5.0 (compatible; PDXCampsBot/1.0)',
+        'Accept': 'image/*',
       },
     });
 
@@ -52,8 +52,8 @@ async function downloadAndStoreImage(
       return { storageId: null, error: `HTTP ${response.status}` };
     }
 
-    const contentType = response.headers.get("content-type") || "image/png";
-    if (!contentType.startsWith("image/")) {
+    const contentType = response.headers.get('content-type') || 'image/png';
+    if (!contentType.startsWith('image/')) {
       return { storageId: null, error: `Not an image: ${contentType}` };
     }
 
@@ -63,7 +63,7 @@ async function downloadAndStoreImage(
     console.log(`[Logos] Stored: ${storageId}`);
     return { storageId };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return { storageId: null, error: message };
   }
 }
@@ -71,11 +71,7 @@ async function downloadAndStoreImage(
 /**
  * Use AI (Stagehand) to find and extract the main logo from a website
  */
-async function fetchLogoWithAI(
-  ctx: ActionCtx,
-  website: string,
-  orgName: string
-): Promise<Id<"_storage"> | null> {
+async function fetchLogoWithAI(ctx: ActionCtx, website: string, orgName: string): Promise<Id<'_storage'> | null> {
   // Validate URL before attempting
   if (!isValidUrl(website)) {
     console.log(`[Logos] Skipping AI extraction for ${orgName}: invalid URL "${website}"`);
@@ -88,13 +84,13 @@ async function fetchLogoWithAI(
     console.log(`[Logos] AI extraction for ${orgName}: ${website}`);
 
     stagehand = new Stagehand({
-      env: "BROWSERBASE",
+      env: 'BROWSERBASE',
       apiKey: process.env.BROWSERBASE_API_KEY,
       projectId: process.env.BROWSERBASE_PROJECT_ID!,
       disablePino: true, // Avoid pino-pretty transport errors in Convex runtime
       verbose: 0, // Minimal logging
       model: {
-        modelName: "anthropic/claude-sonnet-4-20250514",
+        modelName: 'anthropic/claude-sonnet-4-20250514',
         apiKey: process.env.ANTHROPIC_API_KEY!,
       },
     });
@@ -103,7 +99,7 @@ async function fetchLogoWithAI(
     const page = stagehand.context.pages()[0];
 
     // Navigate to the website
-    await page.goto(website, { waitUntil: "domcontentloaded", timeoutMs: 30000 });
+    await page.goto(website, { waitUntil: 'domcontentloaded', timeoutMs: 30000 });
     await page.waitForTimeout(2000);
 
     // Use AI to find the main logo by extracting structured data
@@ -117,8 +113,8 @@ async function fetchLogoWithAI(
       If multiple logos exist, choose the highest quality/largest one.`;
 
     const schema = z.object({
-      logoUrl: z.string().optional().describe("The absolute URL of the logo image"),
-      confidence: z.enum(["high", "medium", "low"]).describe("How confident you are this is the main logo"),
+      logoUrl: z.string().optional().describe('The absolute URL of the logo image'),
+      confidence: z.enum(['high', 'medium', 'low']).describe('How confident you are this is the main logo'),
     });
 
     const logoData = await stagehand.extract(instruction, schema);
@@ -126,12 +122,12 @@ async function fetchLogoWithAI(
     await stagehand.close();
     stagehand = null;
 
-    if (logoData?.logoUrl && logoData.confidence !== "low") {
+    if (logoData?.logoUrl && logoData.confidence !== 'low') {
       console.log(`[Logos] AI found logo for ${orgName}: ${logoData.logoUrl} (${logoData.confidence} confidence)`);
 
       // Make URL absolute if needed
       let logoUrl = logoData.logoUrl;
-      if (logoUrl.startsWith("/")) {
+      if (logoUrl.startsWith('/')) {
         const url = new URL(website);
         logoUrl = `${url.origin}${logoUrl}`;
       }
@@ -162,8 +158,8 @@ async function extractFaviconFromHtml(website: string): Promise<string | null> {
   try {
     const response = await fetch(website, {
       headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; PDXCampsBot/1.0)",
-        Accept: "text/html",
+        'User-Agent': 'Mozilla/5.0 (compatible; PDXCampsBot/1.0)',
+        'Accept': 'text/html',
       },
     });
 
@@ -187,11 +183,11 @@ async function extractFaviconFromHtml(website: string): Promise<string | null> {
       if (match && match[1]) {
         let faviconUrl = match[1];
         // Make absolute URL
-        if (faviconUrl.startsWith("//")) {
+        if (faviconUrl.startsWith('//')) {
           faviconUrl = `https:${faviconUrl}`;
-        } else if (faviconUrl.startsWith("/")) {
+        } else if (faviconUrl.startsWith('/')) {
           faviconUrl = `${url.origin}${faviconUrl}`;
-        } else if (!faviconUrl.startsWith("http")) {
+        } else if (!faviconUrl.startsWith('http')) {
           faviconUrl = `${url.origin}/${faviconUrl}`;
         }
         console.log(`[Logos] Found favicon in HTML: ${faviconUrl}`);
@@ -209,10 +205,7 @@ async function extractFaviconFromHtml(website: string): Promise<string | null> {
 /**
  * Try to fetch a favicon or logo from a website using traditional methods
  */
-async function fetchLogoFromWebsite(
-  ctx: ActionCtx,
-  website: string
-): Promise<Id<"_storage"> | null> {
+async function fetchLogoFromWebsite(ctx: ActionCtx, website: string): Promise<Id<'_storage'> | null> {
   // Validate URL before attempting
   if (!isValidUrl(website)) {
     console.log(`[Logos] Skipping traditional fetch: invalid URL "${website}"`);
@@ -276,28 +269,27 @@ function getPlaceholderLogoUrl(orgName: string): string {
     .split(/\s+/)
     .slice(0, 2)
     .map((word) => word[0])
-    .join("")
+    .join('')
     .toUpperCase();
 
   // Generate a consistent color from the name
   const colors = [
-    "3B82F6", // blue
-    "10B981", // green
-    "8B5CF6", // purple
-    "F59E0B", // amber
-    "EF4444", // red
-    "06B6D4", // cyan
-    "EC4899", // pink
-    "84CC16", // lime
+    '3B82F6', // blue
+    '10B981', // green
+    '8B5CF6', // purple
+    'F59E0B', // amber
+    'EF4444', // red
+    '06B6D4', // cyan
+    'EC4899', // pink
+    '84CC16', // lime
   ];
 
   // Simple hash to pick a color
-  const hash = orgName.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const hash = orgName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   const color = colors[hash % colors.length];
 
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&size=128&background=${color}&color=ffffff&bold=true`;
 }
-
 
 /**
  * Populate logos for all organizations that don't have them
@@ -307,7 +299,10 @@ export const populateOrgLogos = action({
     limit: v.optional(v.number()),
     usePlaceholders: v.optional(v.boolean()),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     success: boolean;
     processed: number;
     stored: number;
@@ -323,16 +318,16 @@ export const populateOrgLogos = action({
     const organizations = await ctx.runQuery(api.organizations.queries.listAllOrganizations, {});
 
     // Filter to orgs without logos
-    const orgsWithoutLogos = organizations.filter(
-      (org: Doc<"organizations">) => !org.logoStorageId
-    );
+    const orgsWithoutLogos = organizations.filter((org: Doc<'organizations'>) => !org.logoStorageId);
 
-    console.log(`[Logos] Processing ${Math.min(orgsWithoutLogos.length, limit)} of ${orgsWithoutLogos.length} organizations without logos`);
+    console.log(
+      `[Logos] Processing ${Math.min(orgsWithoutLogos.length, limit)} of ${orgsWithoutLogos.length} organizations without logos`,
+    );
 
     for (const org of orgsWithoutLogos.slice(0, limit)) {
       processed++;
 
-      let logoStorageId: Id<"_storage"> | null = null;
+      let logoStorageId: Id<'_storage'> | null = null;
 
       if (org.website) {
         // First, try AI-powered logo extraction (most accurate)
@@ -381,7 +376,7 @@ export const populateOrgLogos = action({
  */
 export const fetchOrgLogoForSource = internalAction({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
   },
   handler: async (ctx, args): Promise<{ success: boolean; message: string }> => {
     // Get the source to find its organization
@@ -390,7 +385,7 @@ export const fetchOrgLogoForSource = internalAction({
     });
 
     if (!source || !source.organizationId) {
-      return { success: false, message: "Source or organization not found" };
+      return { success: false, message: 'Source or organization not found' };
     }
 
     // Get the organization
@@ -399,17 +394,17 @@ export const fetchOrgLogoForSource = internalAction({
     });
 
     if (!org) {
-      return { success: false, message: "Organization not found" };
+      return { success: false, message: 'Organization not found' };
     }
 
     // Skip if already has a logo
     if (org.logoStorageId) {
-      return { success: true, message: "Logo already exists" };
+      return { success: true, message: 'Logo already exists' };
     }
 
     console.log(`[Logos] Fetching logo for ${org.name}`);
 
-    let logoStorageId: Id<"_storage"> | null = null;
+    let logoStorageId: Id<'_storage'> | null = null;
 
     if (org.website) {
       // First try AI-powered extraction (most accurate)
@@ -450,7 +445,10 @@ export const resetAndRefetchAllLogos = action({
   args: {
     usePlaceholders: v.optional(v.boolean()),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     success: boolean;
     processed: number;
     updated: number;
@@ -477,7 +475,7 @@ export const resetAndRefetchAllLogos = action({
 
       // Fix website URL if needed
       let website = org.website;
-      if (website && website !== "<UNKNOWN>" && !website.startsWith("http")) {
+      if (website && website !== '<UNKNOWN>' && !website.startsWith('http')) {
         website = `https://${website}`;
         await ctx.runMutation(internal.organizations.mutations.fixOrgWebsite, {
           orgId: org._id,
@@ -551,7 +549,10 @@ export const refreshOrgLogos = action({
   args: {
     limit: v.optional(v.number()),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     success: boolean;
     processed: number;
     updated: number;
@@ -566,7 +567,9 @@ export const refreshOrgLogos = action({
 
     // Get all organizations with websites
     const organizations = await ctx.runQuery(api.organizations.queries.listAllOrganizations, {});
-    const orgsWithWebsites = organizations.filter((org: Doc<"organizations">) => org.website && isValidUrl(org.website));
+    const orgsWithWebsites = organizations.filter(
+      (org: Doc<'organizations'>) => org.website && isValidUrl(org.website),
+    );
 
     console.log(`[Logos] Refreshing logos for ${Math.min(orgsWithWebsites.length, limit)} organizations`);
 

@@ -1,7 +1,7 @@
-import { MutationCtx } from "../_generated/server";
-import { components } from "../_generated/api";
-import { ConvexError } from "convex/values";
-import { Id } from "../_generated/dataModel";
+import { MutationCtx } from '../_generated/server';
+import { components } from '../_generated/api';
+import { ConvexError } from 'convex/values';
+import { Id } from '../_generated/dataModel';
 
 /**
  * Free tier limit for saved/active camps (registrations + custom camps).
@@ -19,16 +19,13 @@ export async function checkIsPremium(ctx: MutationCtx): Promise<boolean> {
   if (!identity) return false;
 
   try {
-    const subscriptions = await ctx.runQuery(
-      components.stripe.public.listSubscriptionsByUserId,
-      { userId: identity.subject }
-    );
-    return subscriptions.some(
-      (sub) => sub.status === "active" || sub.status === "trialing"
-    );
+    const subscriptions = await ctx.runQuery(components.stripe.public.listSubscriptionsByUserId, {
+      userId: identity.subject,
+    });
+    return subscriptions.some((sub) => sub.status === 'active' || sub.status === 'trialing');
   } catch (e) {
     // If Stripe component fails, assume not premium but don't block the user
-    console.error("Failed to check subscription status:", e);
+    console.error('Failed to check subscription status:', e);
     return false;
   }
 }
@@ -37,37 +34,29 @@ export async function checkIsPremium(ctx: MutationCtx): Promise<boolean> {
  * Count a family's active saved camps across both registrations and custom camps.
  * "Active" means interested, registered, or waitlisted (not cancelled).
  */
-export async function countActiveSavedCamps(
-  ctx: MutationCtx,
-  familyId: Id<"families">
-): Promise<number> {
+export async function countActiveSavedCamps(ctx: MutationCtx, familyId: Id<'families'>): Promise<number> {
   // Count active registrations
   const registrations = await ctx.db
-    .query("registrations")
-    .withIndex("by_family", (q) => q.eq("familyId", familyId))
+    .query('registrations')
+    .withIndex('by_family', (q) => q.eq('familyId', familyId))
     .collect();
 
   const activeRegistrations = registrations.filter(
-    (r) =>
-      r.status === "interested" ||
-      r.status === "registered" ||
-      r.status === "waitlisted"
+    (r) => r.status === 'interested' || r.status === 'registered' || r.status === 'waitlisted',
   ).length;
 
   // Count active custom camps
   const customCamps = await ctx.db
-    .query("customCamps")
-    .withIndex("by_family", (q) => q.eq("familyId", familyId))
+    .query('customCamps')
+    .withIndex('by_family', (q) => q.eq('familyId', familyId))
     .collect();
 
-  const activeCustomCamps = customCamps.filter(
-    (c) => c.isActive && c.status !== "cancelled"
-  ).length;
+  const activeCustomCamps = customCamps.filter((c) => c.isActive && c.status !== 'cancelled').length;
 
   return activeRegistrations + activeCustomCamps;
 }
 
-type PaywallAction = "save_camp" | "add_custom_camp";
+type PaywallAction = 'save_camp' | 'add_custom_camp';
 
 /**
  * Enforce the free-tier saved camp limit.
@@ -80,8 +69,8 @@ type PaywallAction = "save_camp" | "add_custom_camp";
  */
 export async function enforceSavedCampLimit(
   ctx: MutationCtx,
-  familyId: Id<"families">,
-  action: PaywallAction
+  familyId: Id<'families'>,
+  action: PaywallAction,
 ): Promise<void> {
   const isPremium = await checkIsPremium(ctx);
   if (isPremium) return;
@@ -90,8 +79,8 @@ export async function enforceSavedCampLimit(
 
   if (savedCount >= FREE_SAVED_CAMPS_LIMIT) {
     throw new ConvexError({
-      type: "PAYWALL",
-      code: "CAMP_LIMIT",
+      type: 'PAYWALL',
+      code: 'CAMP_LIMIT',
       savedCount,
       limit: FREE_SAVED_CAMPS_LIMIT,
     });

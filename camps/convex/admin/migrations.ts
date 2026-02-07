@@ -1,8 +1,8 @@
 /**
  * Admin migrations for data cleanup and updates
  */
-import { mutation, query, internalMutation } from "../_generated/server";
-import { v } from "convex/values";
+import { mutation, query, internalMutation } from '../_generated/server';
+import { v } from 'convex/values';
 
 /**
  * Check which organizations are missing city data
@@ -10,15 +10,15 @@ import { v } from "convex/values";
 export const checkMissingCityData = query({
   args: {},
   handler: async (ctx) => {
-    const orgs = await ctx.db.query("organizations").collect();
-    const sources = await ctx.db.query("scrapeSources").collect();
+    const orgs = await ctx.db.query('organizations').collect();
+    const sources = await ctx.db.query('scrapeSources').collect();
 
-    const orgsWithoutCity = orgs.filter(o => !o.cityIds || o.cityIds.length === 0);
+    const orgsWithoutCity = orgs.filter((o) => !o.cityIds || o.cityIds.length === 0);
 
     // Find Portland city
     const portland = await ctx.db
-      .query("cities")
-      .withIndex("by_slug", q => q.eq("slug", "portland"))
+      .query('cities')
+      .withIndex('by_slug', (q) => q.eq('slug', 'portland'))
       .first();
 
     return {
@@ -27,7 +27,7 @@ export const checkMissingCityData = query({
       organizationsWithCity: orgs.length - orgsWithoutCity.length,
       totalScrapeSources: sources.length,
       portlandCity: portland ? { id: portland._id, name: portland.name } : null,
-      sampleOrgsWithoutCity: orgsWithoutCity.slice(0, 5).map(o => ({
+      sampleOrgsWithoutCity: orgsWithoutCity.slice(0, 5).map((o) => ({
         id: o._id,
         name: o.name,
         cityIds: o.cityIds,
@@ -48,24 +48,24 @@ export const populatePortlandCity = mutation({
 
     // Find Portland city
     const portland = await ctx.db
-      .query("cities")
-      .withIndex("by_slug", q => q.eq("slug", "portland"))
+      .query('cities')
+      .withIndex('by_slug', (q) => q.eq('slug', 'portland'))
       .first();
 
     if (!portland) {
-      throw new Error("Portland city not found. Create the Portland city first.");
+      throw new Error('Portland city not found. Create the Portland city first.');
     }
 
     // Find all organizations without city data
-    const orgs = await ctx.db.query("organizations").collect();
-    const orgsWithoutCity = orgs.filter(o => !o.cityIds || o.cityIds.length === 0);
+    const orgs = await ctx.db.query('organizations').collect();
+    const orgsWithoutCity = orgs.filter((o) => !o.cityIds || o.cityIds.length === 0);
 
     if (dryRun) {
       return {
         dryRun: true,
         wouldUpdate: orgsWithoutCity.length,
         portlandCityId: portland._id,
-        sampleOrgs: orgsWithoutCity.slice(0, 10).map(o => o.name),
+        sampleOrgs: orgsWithoutCity.slice(0, 10).map((o) => o.name),
       };
     }
 
@@ -93,13 +93,13 @@ export const populatePortlandCity = mutation({
 export const checkLocationCityData = query({
   args: {},
   handler: async (ctx) => {
-    const locations = await ctx.db.query("locations").collect();
+    const locations = await ctx.db.query('locations').collect();
 
     // Locations already require cityId in schema, so just count
     const cities = new Map<string, number>();
     for (const loc of locations) {
       const city = await ctx.db.get(loc.cityId);
-      const cityName = city?.name || "unknown";
+      const cityName = city?.name || 'unknown';
       cities.set(cityName, (cities.get(cityName) || 0) + 1);
     }
 
@@ -116,12 +116,12 @@ export const checkLocationCityData = query({
 export const checkSessionCityData = query({
   args: {},
   handler: async (ctx) => {
-    const sessions = await ctx.db.query("sessions").collect();
+    const sessions = await ctx.db.query('sessions').collect();
 
     const cities = new Map<string, number>();
     for (const session of sessions) {
       const city = await ctx.db.get(session.cityId);
-      const cityName = city?.name || "unknown";
+      const cityName = city?.name || 'unknown';
       cities.set(cityName, (cities.get(cityName) || 0) + 1);
     }
 
@@ -138,8 +138,8 @@ export const checkSessionCityData = query({
 export const listCities = query({
   args: {},
   handler: async (ctx) => {
-    const cities = await ctx.db.query("cities").collect();
-    return cities.map(c => ({
+    const cities = await ctx.db.query('cities').collect();
+    return cities.map((c) => ({
       id: c._id,
       name: c.name,
       slug: c.slug,
@@ -155,8 +155,8 @@ export const listCities = query({
 export const organizationsByCity = query({
   args: {},
   handler: async (ctx) => {
-    const orgs = await ctx.db.query("organizations").collect();
-    const cities = await ctx.db.query("cities").collect();
+    const orgs = await ctx.db.query('organizations').collect();
+    const cities = await ctx.db.query('cities').collect();
 
     const cityCounts = new Map<string, { name: string; count: number }>();
 
@@ -177,9 +177,7 @@ export const organizationsByCity = query({
 
     return {
       totalOrganizations: orgs.length,
-      byCity: Object.fromEntries(
-        Array.from(cityCounts.entries()).map(([id, data]) => [data.name, data.count])
-      ),
+      byCity: Object.fromEntries(Array.from(cityCounts.entries()).map(([id, data]) => [data.name, data.count])),
     };
   },
 });
@@ -190,10 +188,10 @@ export const organizationsByCity = query({
 export const checkScrapeSourcesCityData = query({
   args: {},
   handler: async (ctx) => {
-    const sources = await ctx.db.query("scrapeSources").collect();
+    const sources = await ctx.db.query('scrapeSources').collect();
 
-    const withCity = sources.filter(s => s.cityId);
-    const withoutCity = sources.filter(s => !s.cityId);
+    const withCity = sources.filter((s) => s.cityId);
+    const withoutCity = sources.filter((s) => !s.cityId);
 
     // Check which ones have organizationId we can derive from
     const derivable = await Promise.all(
@@ -208,13 +206,11 @@ export const checkScrapeSourcesCityData = query({
           orgName: org.name,
           cityId: org.cityIds[0],
         };
-      })
+      }),
     );
 
     const canDerive = derivable.filter(Boolean);
-    const cannotDerive = withoutCity.filter(
-      s => !canDerive.some(d => d?.sourceId === s._id)
-    );
+    const cannotDerive = withoutCity.filter((s) => !canDerive.some((d) => d?.sourceId === s._id));
 
     return {
       totalSources: sources.length,
@@ -222,7 +218,7 @@ export const checkScrapeSourcesCityData = query({
       withoutDirectCityId: withoutCity.length,
       canDeriveFromOrg: canDerive.length,
       cannotDerive: cannotDerive.length,
-      sampleCannotDerive: cannotDerive.slice(0, 5).map(s => ({
+      sampleCannotDerive: cannotDerive.slice(0, 5).map((s) => ({
         id: s._id,
         name: s.name,
         url: s.url,
@@ -242,20 +238,20 @@ export const populateScrapeSourcesCityId = mutation({
   },
   handler: async (ctx, args) => {
     const dryRun = args.dryRun ?? true;
-    const defaultCitySlug = args.defaultCitySlug ?? "portland";
+    const defaultCitySlug = args.defaultCitySlug ?? 'portland';
 
     // Get default city
     const defaultCity = await ctx.db
-      .query("cities")
-      .withIndex("by_slug", q => q.eq("slug", defaultCitySlug))
+      .query('cities')
+      .withIndex('by_slug', (q) => q.eq('slug', defaultCitySlug))
       .first();
 
     if (!defaultCity) {
       throw new Error(`Default city '${defaultCitySlug}' not found`);
     }
 
-    const sources = await ctx.db.query("scrapeSources").collect();
-    const sourcesWithoutCity = sources.filter(s => !s.cityId);
+    const sources = await ctx.db.query('scrapeSources').collect();
+    const sourcesWithoutCity = sources.filter((s) => !s.cityId);
 
     const updates: Array<{
       sourceId: string;
@@ -268,7 +264,7 @@ export const populateScrapeSourcesCityId = mutation({
     for (const source of sourcesWithoutCity) {
       let cityId = defaultCity._id;
       let cityName = defaultCity.name;
-      let derivedFrom = "default";
+      let derivedFrom = 'default';
 
       if (source.organizationId) {
         const org = await ctx.db.get(source.organizationId);
@@ -321,16 +317,16 @@ export const populateScrapeSourcesCityId = mutation({
 export const checkDevRequestsCityData = query({
   args: {},
   handler: async (ctx) => {
-    const requests = await ctx.db.query("scraperDevelopmentRequests").collect();
+    const requests = await ctx.db.query('scraperDevelopmentRequests').collect();
 
-    const withCity = requests.filter(r => r.cityId);
-    const withoutCity = requests.filter(r => !r.cityId);
+    const withCity = requests.filter((r) => r.cityId);
+    const withoutCity = requests.filter((r) => !r.cityId);
 
     return {
       totalRequests: requests.length,
       withDirectCityId: withCity.length,
       withoutDirectCityId: withoutCity.length,
-      sampleWithoutCity: withoutCity.slice(0, 5).map(r => ({
+      sampleWithoutCity: withoutCity.slice(0, 5).map((r) => ({
         id: r._id,
         name: r.sourceName,
         url: r.sourceUrl,
@@ -346,8 +342,8 @@ export const checkDevRequestsCityData = query({
 export const scrapeSourcesByCity = query({
   args: {},
   handler: async (ctx) => {
-    const sources = await ctx.db.query("scrapeSources").collect();
-    const cities = await ctx.db.query("cities").collect();
+    const sources = await ctx.db.query('scrapeSources').collect();
+    const cities = await ctx.db.query('cities').collect();
 
     const cityCounts = new Map<string, { name: string; count: number }>();
 
@@ -366,9 +362,7 @@ export const scrapeSourcesByCity = query({
 
     return {
       totalSources: sources.length,
-      byCity: Object.fromEntries(
-        Array.from(cityCounts.entries()).map(([id, data]) => [data.name, data.count])
-      ),
+      byCity: Object.fromEntries(Array.from(cityCounts.entries()).map(([id, data]) => [data.name, data.count])),
     };
   },
 });
@@ -383,20 +377,20 @@ export const populateDevRequestsCityId = mutation({
   },
   handler: async (ctx, args) => {
     const dryRun = args.dryRun ?? true;
-    const defaultCitySlug = args.defaultCitySlug ?? "portland";
+    const defaultCitySlug = args.defaultCitySlug ?? 'portland';
 
     // Get default city
     const defaultCity = await ctx.db
-      .query("cities")
-      .withIndex("by_slug", q => q.eq("slug", defaultCitySlug))
+      .query('cities')
+      .withIndex('by_slug', (q) => q.eq('slug', defaultCitySlug))
       .first();
 
     if (!defaultCity) {
       throw new Error(`Default city '${defaultCitySlug}' not found`);
     }
 
-    const requests = await ctx.db.query("scraperDevelopmentRequests").collect();
-    const requestsWithoutCity = requests.filter(r => !r.cityId);
+    const requests = await ctx.db.query('scraperDevelopmentRequests').collect();
+    const requestsWithoutCity = requests.filter((r) => !r.cityId);
 
     const updates: Array<{
       requestId: string;
@@ -409,7 +403,7 @@ export const populateDevRequestsCityId = mutation({
     for (const request of requestsWithoutCity) {
       let cityId = defaultCity._id;
       let cityName = defaultCity.name;
-      let derivedFrom = "default";
+      let derivedFrom = 'default';
 
       // Try to derive from sourceId -> organization -> city
       if (request.sourceId) {
@@ -486,7 +480,7 @@ export const recalculateSourceSessionCounts = mutation({
     const batchSize = args.batchSize ?? 10;
     const cursorIndex = args.cursor ?? 0;
 
-    const sources = await ctx.db.query("scrapeSources").collect();
+    const sources = await ctx.db.query('scrapeSources').collect();
     const batch = sources.slice(cursorIndex, cursorIndex + batchSize);
 
     const updates: Array<{
@@ -500,12 +494,12 @@ export const recalculateSourceSessionCounts = mutation({
 
     for (const source of batch) {
       const sessions = await ctx.db
-        .query("sessions")
-        .withIndex("by_source", (q) => q.eq("sourceId", source._id))
+        .query('sessions')
+        .withIndex('by_source', (q) => q.eq('sourceId', source._id))
         .collect();
 
       const sessionCount = sessions.length;
-      const activeSessionCount = sessions.filter(s => s.status === "active").length;
+      const activeSessionCount = sessions.filter((s) => s.status === 'active').length;
 
       if (sessionCount !== (source.sessionCount ?? 0) || activeSessionCount !== (source.activeSessionCount ?? 0)) {
         updates.push({
@@ -537,7 +531,7 @@ export const recalculateSourceSessionCounts = mutation({
       processed: batch.length,
       totalSources: sources.length,
       updated: updates.length,
-      sampleUpdates: updates.slice(0, 10).map(u => ({
+      sampleUpdates: updates.slice(0, 10).map((u) => ({
         name: u.sourceName,
         old: `${u.oldCount} (${u.oldActiveCount} active)`,
         new: `${u.newCount} (${u.newActiveCount} active)`,
@@ -562,16 +556,14 @@ export const fixZeroPriceSessions = mutation({
 
     // Find all active sessions with $0 price
     const sessions = await ctx.db
-      .query("sessions")
-      .withIndex("by_city_and_status", (q) => q.eq("cityId", undefined as any))
+      .query('sessions')
+      .withIndex('by_city_and_status', (q) => q.eq('cityId', undefined as any))
       .collect();
 
     // Actually we need to check all sessions since we can't query by price
-    const allSessions = await ctx.db.query("sessions").collect();
+    const allSessions = await ctx.db.query('sessions').collect();
 
-    const zeroPriceActive = allSessions.filter(
-      (s) => s.status === "active" && s.price === 0
-    );
+    const zeroPriceActive = allSessions.filter((s) => s.status === 'active' && s.price === 0);
 
     if (dryRun) {
       // Group by source for better visibility
@@ -579,7 +571,7 @@ export const fixZeroPriceSessions = mutation({
       for (const session of zeroPriceActive) {
         if (session.sourceId) {
           const source = await ctx.db.get(session.sourceId);
-          const sourceName = source?.name || "Unknown";
+          const sourceName = source?.name || 'Unknown';
           const existing = bySource.get(session.sourceId) || { name: sourceName, count: 0 };
           existing.count++;
           bySource.set(session.sourceId, existing);
@@ -602,7 +594,7 @@ export const fixZeroPriceSessions = mutation({
     let fixed = 0;
     for (const session of zeroPriceActive) {
       await ctx.db.patch(session._id, {
-        status: "draft",
+        status: 'draft',
       });
       fixed++;
     }
@@ -627,11 +619,11 @@ export const fixSessionCityIds = mutation({
     const dryRun = args.dryRun ?? true;
 
     // Get all sources with their cityId
-    const sources = await ctx.db.query("scrapeSources").collect();
-    const sourceMap = new Map(sources.map(s => [s._id, s.cityId]));
+    const sources = await ctx.db.query('scrapeSources').collect();
+    const sourceMap = new Map(sources.map((s) => [s._id, s.cityId]));
 
     // Get all sessions
-    const sessions = await ctx.db.query("sessions").collect();
+    const sessions = await ctx.db.query('sessions').collect();
 
     const fixes: { sessionId: string; oldCityId: string; newCityId: string; sourceName: string }[] = [];
 
@@ -643,26 +635,26 @@ export const fixSessionCityIds = mutation({
 
       // Check if session's cityId doesn't match source's cityId
       if (session.cityId !== sourceCityId) {
-        const source = sources.find(s => s._id === session.sourceId);
+        const source = sources.find((s) => s._id === session.sourceId);
         fixes.push({
           sessionId: session._id,
           oldCityId: session.cityId,
           newCityId: sourceCityId,
-          sourceName: source?.name || "Unknown",
+          sourceName: source?.name || 'Unknown',
         });
       }
     }
 
     if (dryRun) {
       // Get city names for better output
-      const cities = await ctx.db.query("cities").collect();
-      const cityNames = new Map(cities.map(c => [c._id, c.name]));
+      const cities = await ctx.db.query('cities').collect();
+      const cityNames = new Map(cities.map((c) => [c._id, c.name]));
 
       return {
         dryRun: true,
         totalSessions: sessions.length,
         sessionsNeedingFix: fixes.length,
-        sampleFixes: fixes.slice(0, 10).map(f => ({
+        sampleFixes: fixes.slice(0, 10).map((f) => ({
           oldCity: cityNames.get(f.oldCityId as any) || f.oldCityId,
           newCity: cityNames.get(f.newCityId as any) || f.newCityId,
           source: f.sourceName,

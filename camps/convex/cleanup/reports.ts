@@ -1,6 +1,6 @@
-import { mutation } from "../_generated/server";
-import { v } from "convex/values";
-import { Id } from "../_generated/dataModel";
+import { mutation } from '../_generated/server';
+import { v } from 'convex/values';
+import { Id } from '../_generated/dataModel';
 
 /**
  * Get a comprehensive data quality report
@@ -9,17 +9,17 @@ export const getDataQualityReport = mutation({
   args: {},
   handler: async (ctx) => {
     const [orgs, camps, sessions, locations, sources] = await Promise.all([
-      ctx.db.query("organizations").collect(),
-      ctx.db.query("camps").collect(),
-      ctx.db.query("sessions").collect(),
-      ctx.db.query("locations").collect(),
-      ctx.db.query("scrapeSources").collect(),
+      ctx.db.query('organizations').collect(),
+      ctx.db.query('camps').collect(),
+      ctx.db.query('sessions').collect(),
+      ctx.db.query('locations').collect(),
+      ctx.db.query('scrapeSources').collect(),
     ]);
 
     // Org issues
     const orgsWithoutLogo = orgs.filter((o) => !o.logoStorageId).length;
     const orgsWithBadWebsite = orgs.filter(
-      (o) => !o.website || o.website === "<UNKNOWN>" || !o.website.startsWith("http")
+      (o) => !o.website || o.website === '<UNKNOWN>' || !o.website.startsWith('http'),
     ).length;
 
     // Duplicate orgs
@@ -30,25 +30,22 @@ export const getDataQualityReport = mutation({
     // Session issues
     const sessionsWithBadDates = sessions.filter(
       (s) =>
-        s.startDate?.includes("UNKNOWN") ||
-        s.startDate?.includes("<") ||
-        s.endDate?.includes("UNKNOWN") ||
-        s.endDate?.includes("<") ||
-        (s.startDate && !/^\d{4}-\d{2}-\d{2}$/.test(s.startDate))
+        s.startDate?.includes('UNKNOWN') ||
+        s.startDate?.includes('<') ||
+        s.endDate?.includes('UNKNOWN') ||
+        s.endDate?.includes('<') ||
+        (s.startDate && !/^\d{4}-\d{2}-\d{2}$/.test(s.startDate)),
     ).length;
 
-    const sessionsWithPastDates = sessions.filter(
-      (s) => s.startDate && s.startDate < "2025-01-01"
-    ).length;
+    const sessionsWithPastDates = sessions.filter((s) => s.startDate && s.startDate < '2025-01-01').length;
 
     // Location issues
     const locationsWithTBD = locations.filter(
-      (l) => !l.address?.street || l.address.street === "TBD" || l.address.street === ""
+      (l) => !l.address?.street || l.address.street === 'TBD' || l.address.street === '',
     ).length;
 
     const locationsWithDefaultCoords = locations.filter(
-      (l) =>
-        Math.abs(l.latitude - 45.5152) < 0.001 && Math.abs(l.longitude - -122.6784) < 0.001
+      (l) => Math.abs(l.latitude - 45.5152) < 0.001 && Math.abs(l.longitude - -122.6784) < 0.001,
     ).length;
 
     // Orphan check
@@ -87,10 +84,10 @@ export const getDataQualityReport = mutation({
 export const getOrganizationQualityReport = mutation({
   args: {},
   handler: async (ctx) => {
-    const organizations = await ctx.db.query("organizations").collect();
-    const camps = await ctx.db.query("camps").collect();
-    const sessions = await ctx.db.query("sessions").collect();
-    const sources = await ctx.db.query("scrapeSources").collect();
+    const organizations = await ctx.db.query('organizations').collect();
+    const camps = await ctx.db.query('camps').collect();
+    const sessions = await ctx.db.query('sessions').collect();
+    const sources = await ctx.db.query('scrapeSources').collect();
 
     const orgReports: Array<{
       id: string;
@@ -142,21 +139,19 @@ export const getOrganizationQualityReport = mutation({
 
       const issues: string[] = [];
       if (orgSessions.length > 0) {
-        if (quality.withDates < orgSessions.length * 0.8) issues.push("missing_dates");
-        if (quality.withPrices < orgSessions.length * 0.5) issues.push("missing_prices");
-        if (quality.withAges < orgSessions.length * 0.5) issues.push("missing_ages");
-        if (quality.withLocations < orgSessions.length * 0.8) issues.push("missing_locations");
-        if (quality.withRegistrationUrl < orgSessions.length * 0.8) issues.push("missing_registration_urls");
+        if (quality.withDates < orgSessions.length * 0.8) issues.push('missing_dates');
+        if (quality.withPrices < orgSessions.length * 0.5) issues.push('missing_prices');
+        if (quality.withAges < orgSessions.length * 0.5) issues.push('missing_ages');
+        if (quality.withLocations < orgSessions.length * 0.8) issues.push('missing_locations');
+        if (quality.withRegistrationUrl < orgSessions.length * 0.8) issues.push('missing_registration_urls');
       }
 
       // Check if camps have images
       const campsWithImages = orgCamps.filter(
-        (c) =>
-          (c.imageUrls && c.imageUrls.length > 0) ||
-          (c.imageStorageIds && c.imageStorageIds.length > 0)
+        (c) => (c.imageUrls && c.imageUrls.length > 0) || (c.imageStorageIds && c.imageStorageIds.length > 0),
       ).length;
       if (campsWithImages < orgCamps.length * 0.5 && orgCamps.length > 0) {
-        issues.push("missing_images");
+        issues.push('missing_images');
       }
 
       orgReports.push({
@@ -195,20 +190,20 @@ export const getOrganizationQualityReport = mutation({
 export const getCityScrapingStatus = mutation({
   args: {},
   handler: async (ctx) => {
-    const cities = await ctx.db.query("cities").collect();
-    const sources = await ctx.db.query("scrapeSources").collect();
-    const sessions = await ctx.db.query("sessions").collect();
-    const organizations = await ctx.db.query("organizations").collect();
+    const cities = await ctx.db.query('cities').collect();
+    const sources = await ctx.db.query('scrapeSources').collect();
+    const sessions = await ctx.db.query('sessions').collect();
+    const organizations = await ctx.db.query('organizations').collect();
 
     const cityStats = await Promise.all(
       cities.map(async (city) => {
-        const citySources = sources.filter(s => s.cityId === city._id);
-        const activeSources = citySources.filter(s => s.isActive);
-        const citySessions = sessions.filter(s => s.cityId === city._id);
-        const activeSessions = citySessions.filter(s => s.status === "active");
+        const citySources = sources.filter((s) => s.cityId === city._id);
+        const activeSources = citySources.filter((s) => s.isActive);
+        const citySessions = sessions.filter((s) => s.cityId === city._id);
+        const activeSessions = citySessions.filter((s) => s.status === 'active');
 
         // Get unique org IDs from sources
-        const orgIds = new Set(citySources.map(s => s.organizationId).filter(Boolean));
+        const orgIds = new Set(citySources.map((s) => s.organizationId).filter(Boolean));
 
         return {
           id: city._id,
@@ -220,12 +215,12 @@ export const getCityScrapingStatus = mutation({
           totalSessions: citySessions.length,
           activeSessions: activeSessions.length,
           organizations: orgIds.size,
-          sourcesWithScrapers: citySources.filter(s => s.scraperModule || s.scraperCode).length,
-          recentlyScraped: citySources.filter(s =>
-            s.lastScrapedAt && Date.now() - s.lastScrapedAt < 7 * 24 * 60 * 60 * 1000
+          sourcesWithScrapers: citySources.filter((s) => s.scraperModule || s.scraperCode).length,
+          recentlyScraped: citySources.filter(
+            (s) => s.lastScrapedAt && Date.now() - s.lastScrapedAt < 7 * 24 * 60 * 60 * 1000,
           ).length,
         };
-      })
+      }),
     );
 
     // Sort by session count descending
@@ -246,7 +241,7 @@ export const getCityScrapingStatus = mutation({
 export const getCityScrapingDetails = mutation({
   args: {
     citySlug: v.optional(v.string()),
-    cityId: v.optional(v.id("cities")),
+    cityId: v.optional(v.id('cities')),
   },
   handler: async (ctx, args) => {
     let city;
@@ -254,51 +249,54 @@ export const getCityScrapingDetails = mutation({
       city = await ctx.db.get(args.cityId);
     } else if (args.citySlug) {
       city = await ctx.db
-        .query("cities")
-        .withIndex("by_slug", q => q.eq("slug", args.citySlug!))
+        .query('cities')
+        .withIndex('by_slug', (q) => q.eq('slug', args.citySlug!))
         .unique();
     }
 
     if (!city) {
-      return { error: "City not found", availableCities: (await ctx.db.query("cities").collect()).map(c => ({ slug: c.slug, name: c.name })) };
+      return {
+        error: 'City not found',
+        availableCities: (await ctx.db.query('cities').collect()).map((c) => ({ slug: c.slug, name: c.name })),
+      };
     }
 
     // Get sources for this city
     const sources = await ctx.db
-      .query("scrapeSources")
-      .withIndex("by_city", q => q.eq("cityId", city._id))
+      .query('scrapeSources')
+      .withIndex('by_city', (q) => q.eq('cityId', city._id))
       .collect();
 
     // Get sessions for this city
     const sessions = await ctx.db
-      .query("sessions")
-      .withIndex("by_city_and_status", q => q.eq("cityId", city._id))
+      .query('sessions')
+      .withIndex('by_city_and_status', (q) => q.eq('cityId', city._id))
       .collect();
 
     // Get recent scrape jobs
     const recentJobs = [];
     for (const source of sources.slice(0, 10)) {
       const jobs = await ctx.db
-        .query("scrapeJobs")
-        .withIndex("by_source", q => q.eq("sourceId", source._id))
-        .order("desc")
+        .query('scrapeJobs')
+        .withIndex('by_source', (q) => q.eq('sourceId', source._id))
+        .order('desc')
         .take(3);
-      recentJobs.push(...jobs.map(j => ({
-        sourceId: source._id,
-        sourceName: source.name,
-        status: j.status,
-        sessionsFound: j.sessionsFound,
-        sessionsCreated: j.sessionsCreated,
-        error: j.errorMessage || j.error,
-        completedAt: j.completedAt,
-      })));
+      recentJobs.push(
+        ...jobs.map((j) => ({
+          sourceId: source._id,
+          sourceName: source.name,
+          status: j.status,
+          sessionsFound: j.sessionsFound,
+          sessionsCreated: j.sessionsCreated,
+          error: j.errorMessage || j.error,
+          completedAt: j.completedAt,
+        })),
+      );
     }
 
     // Get organizations linked to this city
-    const orgIds = new Set(sources.map(s => s.organizationId).filter(Boolean));
-    const orgs = await Promise.all(
-      Array.from(orgIds).map(id => ctx.db.get(id as Id<"organizations">))
-    );
+    const orgIds = new Set(sources.map((s) => s.organizationId).filter(Boolean));
+    const orgs = await Promise.all(Array.from(orgIds).map((id) => ctx.db.get(id as Id<'organizations'>)));
 
     return {
       city: {
@@ -309,13 +307,13 @@ export const getCityScrapingDetails = mutation({
       },
       stats: {
         totalSources: sources.length,
-        activeSources: sources.filter(s => s.isActive).length,
-        sourcesWithScrapers: sources.filter(s => s.scraperModule || s.scraperCode).length,
+        activeSources: sources.filter((s) => s.isActive).length,
+        sourcesWithScrapers: sources.filter((s) => s.scraperModule || s.scraperCode).length,
         totalSessions: sessions.length,
-        activeSessions: sessions.filter(s => s.status === "active").length,
+        activeSessions: sessions.filter((s) => s.status === 'active').length,
         organizations: orgs.filter(Boolean).length,
       },
-      sources: sources.map(s => ({
+      sources: sources.map((s) => ({
         id: s._id,
         name: s.name,
         url: s.url,
@@ -329,7 +327,7 @@ export const getCityScrapingDetails = mutation({
         organizationId: s.organizationId,
       })),
       recentJobs: recentJobs.slice(0, 20),
-      organizations: orgs.filter(Boolean).map(o => ({
+      organizations: orgs.filter(Boolean).map((o) => ({
         id: o!._id,
         name: o!.name,
         website: o!.website,
@@ -350,24 +348,22 @@ export const listScraperDevRequests = mutation({
     status: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const requests = await ctx.db.query("scraperDevelopmentRequests").collect();
+    const requests = await ctx.db.query('scraperDevelopmentRequests').collect();
 
-    const filtered = args.status
-      ? requests.filter(r => r.status === args.status)
-      : requests;
+    const filtered = args.status ? requests.filter((r) => r.status === args.status) : requests;
 
     return {
       total: requests.length,
       filtered: filtered.length,
       byStatus: {
-        pending: requests.filter(r => r.status === "pending").length,
-        in_progress: requests.filter(r => r.status === "in_progress").length,
-        testing: requests.filter(r => r.status === "testing").length,
-        needs_feedback: requests.filter(r => r.status === "needs_feedback").length,
-        completed: requests.filter(r => r.status === "completed").length,
-        failed: requests.filter(r => r.status === "failed").length,
+        pending: requests.filter((r) => r.status === 'pending').length,
+        in_progress: requests.filter((r) => r.status === 'in_progress').length,
+        testing: requests.filter((r) => r.status === 'testing').length,
+        needs_feedback: requests.filter((r) => r.status === 'needs_feedback').length,
+        completed: requests.filter((r) => r.status === 'completed').length,
+        failed: requests.filter((r) => r.status === 'failed').length,
       },
-      requests: filtered.map(r => ({
+      requests: filtered.map((r) => ({
         id: r._id,
         sourceName: r.sourceName,
         sourceUrl: r.sourceUrl,
@@ -384,13 +380,9 @@ export const listScraperDevRequests = mutation({
  */
 export const resetScraperDevRequests = mutation({
   args: {
-    requestIds: v.optional(v.array(v.id("scraperDevelopmentRequests"))),
+    requestIds: v.optional(v.array(v.id('scraperDevelopmentRequests'))),
     fromStatus: v.optional(v.string()), // Reset all requests with this status
-    toStatus: v.union(
-      v.literal("pending"),
-      v.literal("failed"),
-      v.literal("completed")
-    ),
+    toStatus: v.union(v.literal('pending'), v.literal('failed'), v.literal('completed')),
     dryRun: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -398,15 +390,13 @@ export const resetScraperDevRequests = mutation({
 
     let requests;
     if (args.requestIds && args.requestIds.length > 0) {
-      requests = await Promise.all(
-        args.requestIds.map(id => ctx.db.get(id))
-      );
+      requests = await Promise.all(args.requestIds.map((id) => ctx.db.get(id)));
       requests = requests.filter(Boolean);
     } else if (args.fromStatus) {
-      const allRequests = await ctx.db.query("scraperDevelopmentRequests").collect();
-      requests = allRequests.filter(r => r.status === args.fromStatus);
+      const allRequests = await ctx.db.query('scraperDevelopmentRequests').collect();
+      requests = allRequests.filter((r) => r.status === args.fromStatus);
     } else {
-      return { error: "Must specify requestIds or fromStatus" };
+      return { error: 'Must specify requestIds or fromStatus' };
     }
 
     const updated: Array<{ id: string; sourceName: string; oldStatus: string; newStatus: string }> = [];

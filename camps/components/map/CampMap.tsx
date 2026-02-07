@@ -149,20 +149,20 @@ function ClusterLayer({
     (clusterId: number, latitude: number, longitude: number) => {
       if (!supercluster) return;
 
-      const expansionZoom = Math.min(
-        supercluster.getClusterExpansionZoom(clusterId),
-        17
-      );
+      const expansionZoom = Math.min(supercluster.getClusterExpansionZoom(clusterId), 17);
       map.setView([latitude, longitude], expansionZoom);
     },
-    [supercluster, map]
+    [supercluster, map],
   );
 
   return (
     <>
       {clusters.map((cluster) => {
         const [longitude, latitude] = cluster.geometry.coordinates;
-        const { cluster: isCluster, point_count: pointCount } = cluster.properties as { cluster: boolean; point_count?: number };
+        const { cluster: isCluster, point_count: pointCount } = cluster.properties as {
+          cluster: boolean;
+          point_count?: number;
+        };
 
         if (isCluster) {
           return (
@@ -179,13 +179,7 @@ function ClusterLayer({
         const session = cluster.properties.session as MapSession;
         const color = getMarkerColor ? getMarkerColor(session) : '#3b82f6';
 
-        return (
-          <SessionMarker
-            key={`session-${session._id}`}
-            session={session}
-            color={color}
-          />
-        );
+        return <SessionMarker key={`session-${session._id}`} session={session} color={color} />;
       })}
     </>
   );

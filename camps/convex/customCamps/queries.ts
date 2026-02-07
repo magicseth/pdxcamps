@@ -1,6 +1,6 @@
-import { query } from "../_generated/server";
-import { v } from "convex/values";
-import { getFamily } from "../lib/auth";
+import { query } from '../_generated/server';
+import { v } from 'convex/values';
+import { getFamily } from '../lib/auth';
 
 /**
  * Get all custom camps for the current family
@@ -14,10 +14,8 @@ export const listCustomCamps = query({
     }
 
     return await ctx.db
-      .query("customCamps")
-      .withIndex("by_family_and_active", (q) =>
-        q.eq("familyId", family._id).eq("isActive", true)
-      )
+      .query('customCamps')
+      .withIndex('by_family_and_active', (q) => q.eq('familyId', family._id).eq('isActive', true))
       .collect();
   },
 });
@@ -27,7 +25,7 @@ export const listCustomCamps = query({
  */
 export const listCustomCampsForChild = query({
   args: {
-    childId: v.id("children"),
+    childId: v.id('children'),
   },
   handler: async (ctx, args) => {
     const family = await getFamily(ctx);
@@ -42,10 +40,8 @@ export const listCustomCampsForChild = query({
     }
 
     return await ctx.db
-      .query("customCamps")
-      .withIndex("by_child_and_active", (q) =>
-        q.eq("childId", args.childId).eq("isActive", true)
-      )
+      .query('customCamps')
+      .withIndex('by_child_and_active', (q) => q.eq('childId', args.childId).eq('isActive', true))
       .collect();
   },
 });
@@ -55,7 +51,7 @@ export const listCustomCampsForChild = query({
  */
 export const getCustomCamp = query({
   args: {
-    customCampId: v.id("customCamps"),
+    customCampId: v.id('customCamps'),
   },
   handler: async (ctx, args) => {
     const family = await getFamily(ctx);

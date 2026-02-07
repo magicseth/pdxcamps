@@ -1,14 +1,14 @@
-import { mutation } from "../_generated/server";
-import { v } from "convex/values";
-import { slugify } from "../lib/helpers";
-import { ageRangeValidator } from "../lib/validators";
+import { mutation } from '../_generated/server';
+import { v } from 'convex/values';
+import { slugify } from '../lib/helpers';
+import { ageRangeValidator } from '../lib/validators';
 
 /**
  * Create a new camp
  */
 export const createCamp = mutation({
   args: {
-    organizationId: v.id("organizations"),
+    organizationId: v.id('organizations'),
     name: v.string(),
     description: v.string(),
     categories: v.array(v.string()),
@@ -20,7 +20,7 @@ export const createCamp = mutation({
     // Verify organization exists
     const organization = await ctx.db.get(args.organizationId);
     if (!organization) {
-      throw new Error("Organization not found");
+      throw new Error('Organization not found');
     }
 
     // Generate slug from name
@@ -31,8 +31,8 @@ export const createCamp = mutation({
     let counter = 1;
     while (true) {
       const existing = await ctx.db
-        .query("camps")
-        .withIndex("by_slug", (q) => q.eq("slug", slug))
+        .query('camps')
+        .withIndex('by_slug', (q) => q.eq('slug', slug))
         .unique();
 
       if (!existing) {
@@ -43,7 +43,7 @@ export const createCamp = mutation({
       slug = `${baseSlug}-${counter}`;
     }
 
-    const campId = await ctx.db.insert("camps", {
+    const campId = await ctx.db.insert('camps', {
       organizationId: args.organizationId,
       name: args.name,
       slug,
@@ -66,7 +66,7 @@ export const createCamp = mutation({
  */
 export const updateCamp = mutation({
   args: {
-    campId: v.id("camps"),
+    campId: v.id('camps'),
     name: v.optional(v.string()),
     description: v.optional(v.string()),
     categories: v.optional(v.array(v.string())),
@@ -80,7 +80,7 @@ export const updateCamp = mutation({
 
     const camp = await ctx.db.get(campId);
     if (!camp) {
-      throw new Error("Camp not found");
+      throw new Error('Camp not found');
     }
 
     // Build update object with only defined fields
@@ -94,8 +94,8 @@ export const updateCamp = mutation({
       let counter = 1;
       while (true) {
         const existing = await ctx.db
-          .query("camps")
-          .withIndex("by_slug", (q) => q.eq("slug", slug))
+          .query('camps')
+          .withIndex('by_slug', (q) => q.eq('slug', slug))
           .unique();
 
         if (!existing || existing._id === campId) {
@@ -138,13 +138,13 @@ export const updateCamp = mutation({
  */
 export const updateCampImages = mutation({
   args: {
-    campId: v.id("camps"),
-    imageStorageIds: v.array(v.id("_storage")),
+    campId: v.id('camps'),
+    imageStorageIds: v.array(v.id('_storage')),
   },
   handler: async (ctx, args) => {
     const camp = await ctx.db.get(args.campId);
     if (!camp) {
-      throw new Error("Camp not found");
+      throw new Error('Camp not found');
     }
 
     await ctx.db.patch(args.campId, {
@@ -160,13 +160,13 @@ export const updateCampImages = mutation({
  */
 export const updateCampImageStyle = mutation({
   args: {
-    campId: v.id("camps"),
+    campId: v.id('camps'),
     imageStylePrompt: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const camp = await ctx.db.get(args.campId);
     if (!camp) {
-      throw new Error("Camp not found");
+      throw new Error('Camp not found');
     }
 
     await ctx.db.patch(args.campId, {
@@ -182,12 +182,12 @@ export const updateCampImageStyle = mutation({
  */
 export const toggleFeatured = mutation({
   args: {
-    campId: v.id("camps"),
+    campId: v.id('camps'),
   },
   handler: async (ctx, args) => {
     const camp = await ctx.db.get(args.campId);
     if (!camp) {
-      throw new Error("Camp not found");
+      throw new Error('Camp not found');
     }
 
     await ctx.db.patch(args.campId, {

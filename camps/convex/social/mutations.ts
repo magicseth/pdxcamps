@@ -1,7 +1,7 @@
-import { mutation } from "../_generated/server";
-import { v } from "convex/values";
-import { requireFamily, getFamily } from "../lib/auth";
-import { friendshipStatusValidator } from "../lib/validators";
+import { mutation } from '../_generated/server';
+import { v } from 'convex/values';
+import { requireFamily, getFamily } from '../lib/auth';
+import { friendshipStatusValidator } from '../lib/validators';
 
 /**
  * Send a friend request by email.
@@ -16,75 +16,71 @@ export const sendFriendRequest = mutation({
 
     // Find the family by email
     const addressee = await ctx.db
-      .query("families")
-      .withIndex("by_email", (q) => q.eq("email", args.addresseeEmail))
+      .query('families')
+      .withIndex('by_email', (q) => q.eq('email', args.addresseeEmail))
       .unique();
 
     if (!addressee) {
-      throw new Error("No family found with that email address");
+      throw new Error('No family found with that email address');
     }
 
     // Cannot friend yourself
     if (addressee._id === family._id) {
-      throw new Error("Cannot send a friend request to yourself");
+      throw new Error('Cannot send a friend request to yourself');
     }
 
     // Check if a friendship already exists between these families
     const existingAsRequester = await ctx.db
-      .query("friendships")
-      .withIndex("by_requester_and_addressee", (q) =>
-        q.eq("requesterId", family._id).eq("addresseeId", addressee._id)
-      )
+      .query('friendships')
+      .withIndex('by_requester_and_addressee', (q) => q.eq('requesterId', family._id).eq('addresseeId', addressee._id))
       .unique();
 
     if (existingAsRequester) {
-      if (existingAsRequester.status === "pending") {
-        throw new Error("Friend request already sent");
+      if (existingAsRequester.status === 'pending') {
+        throw new Error('Friend request already sent');
       }
-      if (existingAsRequester.status === "accepted") {
-        throw new Error("You are already friends with this family");
+      if (existingAsRequester.status === 'accepted') {
+        throw new Error('You are already friends with this family');
       }
-      if (existingAsRequester.status === "blocked") {
-        throw new Error("Cannot send friend request to this family");
+      if (existingAsRequester.status === 'blocked') {
+        throw new Error('Cannot send friend request to this family');
       }
       // If declined, allow re-requesting
-      if (existingAsRequester.status === "declined") {
+      if (existingAsRequester.status === 'declined') {
         await ctx.db.patch(existingAsRequester._id, {
-          status: "pending",
+          status: 'pending',
         });
         return existingAsRequester._id;
       }
     }
 
     const existingAsAddressee = await ctx.db
-      .query("friendships")
-      .withIndex("by_requester_and_addressee", (q) =>
-        q.eq("requesterId", addressee._id).eq("addresseeId", family._id)
-      )
+      .query('friendships')
+      .withIndex('by_requester_and_addressee', (q) => q.eq('requesterId', addressee._id).eq('addresseeId', family._id))
       .unique();
 
     if (existingAsAddressee) {
-      if (existingAsAddressee.status === "pending") {
+      if (existingAsAddressee.status === 'pending') {
         // They already sent us a request, auto-accept it
         await ctx.db.patch(existingAsAddressee._id, {
-          status: "accepted",
+          status: 'accepted',
           acceptedAt: Date.now(),
         });
         return existingAsAddressee._id;
       }
-      if (existingAsAddressee.status === "accepted") {
-        throw new Error("You are already friends with this family");
+      if (existingAsAddressee.status === 'accepted') {
+        throw new Error('You are already friends with this family');
       }
-      if (existingAsAddressee.status === "blocked") {
-        throw new Error("Cannot send friend request to this family");
+      if (existingAsAddressee.status === 'blocked') {
+        throw new Error('Cannot send friend request to this family');
       }
     }
 
     // Create new friend request
-    const friendshipId = await ctx.db.insert("friendships", {
+    const friendshipId = await ctx.db.insert('friendships', {
       requesterId: family._id,
       addresseeId: addressee._id,
-      status: "pending",
+      status: 'pending',
     });
 
     return friendshipId;
@@ -96,27 +92,27 @@ export const sendFriendRequest = mutation({
  */
 export const acceptFriendRequest = mutation({
   args: {
-    friendshipId: v.id("friendships"),
+    friendshipId: v.id('friendships'),
   },
   handler: async (ctx, args) => {
     const family = await requireFamily(ctx);
 
     const friendship = await ctx.db.get(args.friendshipId);
     if (!friendship) {
-      throw new Error("Friend request not found");
+      throw new Error('Friend request not found');
     }
 
     // Only the addressee can accept
     if (friendship.addresseeId !== family._id) {
-      throw new Error("You cannot accept this friend request");
+      throw new Error('You cannot accept this friend request');
     }
 
-    if (friendship.status !== "pending") {
-      throw new Error("This friend request is no longer pending");
+    if (friendship.status !== 'pending') {
+      throw new Error('This friend request is no longer pending');
     }
 
     await ctx.db.patch(args.friendshipId, {
-      status: "accepted",
+      status: 'accepted',
       acceptedAt: Date.now(),
     });
 
@@ -129,27 +125,27 @@ export const acceptFriendRequest = mutation({
  */
 export const declineFriendRequest = mutation({
   args: {
-    friendshipId: v.id("friendships"),
+    friendshipId: v.id('friendships'),
   },
   handler: async (ctx, args) => {
     const family = await requireFamily(ctx);
 
     const friendship = await ctx.db.get(args.friendshipId);
     if (!friendship) {
-      throw new Error("Friend request not found");
+      throw new Error('Friend request not found');
     }
 
     // Only the addressee can decline
     if (friendship.addresseeId !== family._id) {
-      throw new Error("You cannot decline this friend request");
+      throw new Error('You cannot decline this friend request');
     }
 
-    if (friendship.status !== "pending") {
-      throw new Error("This friend request is no longer pending");
+    if (friendship.status !== 'pending') {
+      throw new Error('This friend request is no longer pending');
     }
 
     await ctx.db.patch(args.friendshipId, {
-      status: "declined",
+      status: 'declined',
     });
 
     return args.friendshipId;
@@ -162,46 +158,40 @@ export const declineFriendRequest = mutation({
  */
 export const removeFriend = mutation({
   args: {
-    friendshipId: v.id("friendships"),
+    friendshipId: v.id('friendships'),
   },
   handler: async (ctx, args) => {
     const family = await requireFamily(ctx);
 
     const friendship = await ctx.db.get(args.friendshipId);
     if (!friendship) {
-      throw new Error("Friendship not found");
+      throw new Error('Friendship not found');
     }
 
     // Either party can remove the friendship
-    if (
-      friendship.requesterId !== family._id &&
-      friendship.addresseeId !== family._id
-    ) {
-      throw new Error("You are not part of this friendship");
+    if (friendship.requesterId !== family._id && friendship.addresseeId !== family._id) {
+      throw new Error('You are not part of this friendship');
     }
 
-    if (friendship.status !== "accepted") {
-      throw new Error("This is not an active friendship");
+    if (friendship.status !== 'accepted') {
+      throw new Error('This is not an active friendship');
     }
 
     // Delete the friendship
     await ctx.db.delete(args.friendshipId);
 
     // Also revoke any calendar shares between these families
-    const otherFamilyId =
-      friendship.requesterId === family._id
-        ? friendship.addresseeId
-        : friendship.requesterId;
+    const otherFamilyId = friendship.requesterId === family._id ? friendship.addresseeId : friendship.requesterId;
 
     // Find and deactivate calendar shares in both directions
     const ourShares = await ctx.db
-      .query("calendarShares")
-      .withIndex("by_owner", (q) => q.eq("ownerFamilyId", family._id))
+      .query('calendarShares')
+      .withIndex('by_owner', (q) => q.eq('ownerFamilyId', family._id))
       .collect();
 
     const theirShares = await ctx.db
-      .query("calendarShares")
-      .withIndex("by_owner", (q) => q.eq("ownerFamilyId", otherFamilyId))
+      .query('calendarShares')
+      .withIndex('by_owner', (q) => q.eq('ownerFamilyId', otherFamilyId))
       .collect();
 
     const sharesToRevoke = [
@@ -223,68 +213,64 @@ export const removeFriend = mutation({
  */
 export const blockFamily = mutation({
   args: {
-    familyId: v.id("families"),
+    familyId: v.id('families'),
   },
   handler: async (ctx, args) => {
     const family = await requireFamily(ctx);
 
     if (args.familyId === family._id) {
-      throw new Error("Cannot block yourself");
+      throw new Error('Cannot block yourself');
     }
 
     // Check if target family exists
     const targetFamily = await ctx.db.get(args.familyId);
     if (!targetFamily) {
-      throw new Error("Family not found");
+      throw new Error('Family not found');
     }
 
     // Check for existing friendship in either direction
     const existingAsRequester = await ctx.db
-      .query("friendships")
-      .withIndex("by_requester_and_addressee", (q) =>
-        q.eq("requesterId", family._id).eq("addresseeId", args.familyId)
-      )
+      .query('friendships')
+      .withIndex('by_requester_and_addressee', (q) => q.eq('requesterId', family._id).eq('addresseeId', args.familyId))
       .unique();
 
     const existingAsAddressee = await ctx.db
-      .query("friendships")
-      .withIndex("by_requester_and_addressee", (q) =>
-        q.eq("requesterId", args.familyId).eq("addresseeId", family._id)
-      )
+      .query('friendships')
+      .withIndex('by_requester_and_addressee', (q) => q.eq('requesterId', args.familyId).eq('addresseeId', family._id))
       .unique();
 
     // If we have an existing friendship record as requester, update it to blocked
     if (existingAsRequester) {
       await ctx.db.patch(existingAsRequester._id, {
-        status: "blocked",
+        status: 'blocked',
         acceptedAt: undefined,
       });
     } else if (existingAsAddressee) {
       // Delete their record and create our own blocked record
       await ctx.db.delete(existingAsAddressee._id);
-      await ctx.db.insert("friendships", {
+      await ctx.db.insert('friendships', {
         requesterId: family._id,
         addresseeId: args.familyId,
-        status: "blocked",
+        status: 'blocked',
       });
     } else {
       // No existing relationship, create a blocked record
-      await ctx.db.insert("friendships", {
+      await ctx.db.insert('friendships', {
         requesterId: family._id,
         addresseeId: args.familyId,
-        status: "blocked",
+        status: 'blocked',
       });
     }
 
     // Revoke any calendar shares between these families
     const ourShares = await ctx.db
-      .query("calendarShares")
-      .withIndex("by_owner", (q) => q.eq("ownerFamilyId", family._id))
+      .query('calendarShares')
+      .withIndex('by_owner', (q) => q.eq('ownerFamilyId', family._id))
       .collect();
 
     const theirShares = await ctx.db
-      .query("calendarShares")
-      .withIndex("by_owner", (q) => q.eq("ownerFamilyId", args.familyId))
+      .query('calendarShares')
+      .withIndex('by_owner', (q) => q.eq('ownerFamilyId', args.familyId))
       .collect();
 
     const sharesToRevoke = [
@@ -306,9 +292,9 @@ export const blockFamily = mutation({
  */
 export const shareCalendar = mutation({
   args: {
-    friendFamilyId: v.id("families"),
-    childIds: v.array(v.id("children")),
-    permission: v.union(v.literal("view_sessions"), v.literal("view_details")),
+    friendFamilyId: v.id('families'),
+    childIds: v.array(v.id('children')),
+    permission: v.union(v.literal('view_sessions'), v.literal('view_details')),
   },
   handler: async (ctx, args) => {
     const family = await requireFamily(ctx);
@@ -319,42 +305,40 @@ export const shareCalendar = mutation({
 
     // Verify friendship exists and is accepted
     const friendshipAsRequester = await ctx.db
-      .query("friendships")
-      .withIndex("by_requester_and_addressee", (q) =>
-        q.eq("requesterId", family._id).eq("addresseeId", args.friendFamilyId)
+      .query('friendships')
+      .withIndex('by_requester_and_addressee', (q) =>
+        q.eq('requesterId', family._id).eq('addresseeId', args.friendFamilyId),
       )
       .unique();
 
     const friendshipAsAddressee = await ctx.db
-      .query("friendships")
-      .withIndex("by_requester_and_addressee", (q) =>
-        q.eq("requesterId", args.friendFamilyId).eq("addresseeId", family._id)
+      .query('friendships')
+      .withIndex('by_requester_and_addressee', (q) =>
+        q.eq('requesterId', args.friendFamilyId).eq('addresseeId', family._id),
       )
       .unique();
 
     const friendship = friendshipAsRequester || friendshipAsAddressee;
 
-    if (!friendship || friendship.status !== "accepted") {
-      throw new Error("You must be friends with this family to share your calendar");
+    if (!friendship || friendship.status !== 'accepted') {
+      throw new Error('You must be friends with this family to share your calendar');
     }
 
     // Verify all children belong to this family
     for (const childId of args.childIds) {
       const child = await ctx.db.get(childId);
       if (!child || child.familyId !== family._id) {
-        throw new Error("Invalid child ID");
+        throw new Error('Invalid child ID');
       }
     }
 
     // Check if share already exists
     const existingShares = await ctx.db
-      .query("calendarShares")
-      .withIndex("by_owner", (q) => q.eq("ownerFamilyId", family._id))
+      .query('calendarShares')
+      .withIndex('by_owner', (q) => q.eq('ownerFamilyId', family._id))
       .collect();
 
-    const existingShare = existingShares.find(
-      (s) => s.sharedWithFamilyId === args.friendFamilyId
-    );
+    const existingShare = existingShares.find((s) => s.sharedWithFamilyId === args.friendFamilyId);
 
     if (existingShare) {
       // Update existing share
@@ -367,7 +351,7 @@ export const shareCalendar = mutation({
     }
 
     // Create new share
-    const shareId = await ctx.db.insert("calendarShares", {
+    const shareId = await ctx.db.insert('calendarShares', {
       ownerFamilyId: family._id,
       sharedWithFamilyId: args.friendFamilyId,
       childIds: args.childIds,
@@ -384,11 +368,9 @@ export const shareCalendar = mutation({
  */
 export const updateCalendarShare = mutation({
   args: {
-    shareId: v.id("calendarShares"),
-    childIds: v.optional(v.array(v.id("children"))),
-    permission: v.optional(
-      v.union(v.literal("view_sessions"), v.literal("view_details"))
-    ),
+    shareId: v.id('calendarShares'),
+    childIds: v.optional(v.array(v.id('children'))),
+    permission: v.optional(v.union(v.literal('view_sessions'), v.literal('view_details'))),
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -396,12 +378,12 @@ export const updateCalendarShare = mutation({
 
     const share = await ctx.db.get(args.shareId);
     if (!share) {
-      throw new Error("Calendar share not found");
+      throw new Error('Calendar share not found');
     }
 
     // Only the owner can update the share
     if (share.ownerFamilyId !== family._id) {
-      throw new Error("You cannot update this calendar share");
+      throw new Error('You cannot update this calendar share');
     }
 
     const updates: Record<string, unknown> = {};
@@ -414,7 +396,7 @@ export const updateCalendarShare = mutation({
       for (const childId of args.childIds) {
         const child = await ctx.db.get(childId);
         if (!child || child.familyId !== family._id) {
-          throw new Error("Invalid child ID");
+          throw new Error('Invalid child ID');
         }
       }
       updates.childIds = args.childIds;
@@ -441,19 +423,19 @@ export const updateCalendarShare = mutation({
  */
 export const revokeCalendarShare = mutation({
   args: {
-    shareId: v.id("calendarShares"),
+    shareId: v.id('calendarShares'),
   },
   handler: async (ctx, args) => {
     const family = await requireFamily(ctx);
 
     const share = await ctx.db.get(args.shareId);
     if (!share) {
-      throw new Error("Calendar share not found");
+      throw new Error('Calendar share not found');
     }
 
     // Only the owner can revoke the share
     if (share.ownerFamilyId !== family._id) {
-      throw new Error("You cannot revoke this calendar share");
+      throw new Error('You cannot revoke this calendar share');
     }
 
     // Soft delete by setting isActive to false

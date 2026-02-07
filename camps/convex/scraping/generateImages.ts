@@ -1,4 +1,4 @@
-"use node";
+'use node';
 
 /**
  * AI Image Generation for Camps (Node.js Actions)
@@ -7,12 +7,12 @@
  * Works with the workflow defined in imageWorkflow.ts for rate limiting.
  */
 
-import { action, internalAction } from "../_generated/server";
-import { api, internal } from "../_generated/api";
-import { v } from "convex/values";
-import { fal } from "@fal-ai/client";
-import { workflow, vWorkflowId } from "./imageWorkflow";
-import Anthropic from "@anthropic-ai/sdk";
+import { action, internalAction } from '../_generated/server';
+import { api, internal } from '../_generated/api';
+import { v } from 'convex/values';
+import { fal } from '@fal-ai/client';
+import { workflow, vWorkflowId } from './imageWorkflow';
+import Anthropic from '@anthropic-ai/sdk';
 
 // Configure FAL client
 fal.config({
@@ -26,7 +26,7 @@ function hashString(str: string): number {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash = hash & hash; // Convert to 32bit integer
   }
   return Math.abs(hash);
@@ -47,50 +47,50 @@ function generateStylePrompt(campId: string): string {
 
   // Photography style — real-world look, not illustration
   const photoStyle = [
-    "candid documentary photography, shot on Canon EOS R5, 85mm f/1.4",
-    "lifestyle editorial photography, shot on Sony A7IV, 35mm f/1.8",
-    "vibrant photojournalism style, shot on Nikon Z9, 24-70mm f/2.8",
-    "warm family photography style, shot on Fujifilm X-T5, 56mm f/1.2",
-    "bright commercial photography for a summer catalog, shot on Phase One",
-    "authentic moment captured by a parent with an iPhone 15 Pro, natural and unposed",
-    "sports action photography, shot on Canon R3, 70-200mm f/2.8, high shutter speed",
-    "environmental portrait photography, shot on Hasselblad, medium format film look",
+    'candid documentary photography, shot on Canon EOS R5, 85mm f/1.4',
+    'lifestyle editorial photography, shot on Sony A7IV, 35mm f/1.8',
+    'vibrant photojournalism style, shot on Nikon Z9, 24-70mm f/2.8',
+    'warm family photography style, shot on Fujifilm X-T5, 56mm f/1.2',
+    'bright commercial photography for a summer catalog, shot on Phase One',
+    'authentic moment captured by a parent with an iPhone 15 Pro, natural and unposed',
+    'sports action photography, shot on Canon R3, 70-200mm f/2.8, high shutter speed',
+    'environmental portrait photography, shot on Hasselblad, medium format film look',
   ];
 
   // Composition — camera angles and framing
   const composition = [
-    "low angle looking up at the action, kids filling the frame",
-    "eye-level with the children, intimate perspective",
-    "over-the-shoulder shot showing what the child sees",
-    "wide establishing shot showing the full environment and activity",
-    "close-up on hands working, shallow depth of field with bokeh background",
-    "candid profile shot from the side, capturing concentration",
-    "pull-back shot with foreground framing (doorway, trees, equipment)",
-    "dynamic shot with slight motion blur on the edges, tack-sharp subject",
+    'low angle looking up at the action, kids filling the frame',
+    'eye-level with the children, intimate perspective',
+    'over-the-shoulder shot showing what the child sees',
+    'wide establishing shot showing the full environment and activity',
+    'close-up on hands working, shallow depth of field with bokeh background',
+    'candid profile shot from the side, capturing concentration',
+    'pull-back shot with foreground framing (doorway, trees, equipment)',
+    'dynamic shot with slight motion blur on the edges, tack-sharp subject',
   ];
 
   // Lighting — natural, realistic
   const lighting = [
-    "golden hour morning light, warm tones, long soft shadows",
-    "bright midday Oregon summer sun, vivid colors, hard shadows",
-    "open shade under trees, even soft light on faces",
-    "overcast Pacific Northwest sky, diffused light, rich saturated colors",
-    "backlit with sun flare, rim light on hair",
-    "indoor with large windows, natural light flooding in",
-    "mixed sun and cloud, dappled light through tree canopy",
-    "late afternoon warm side-light, dramatic but natural",
+    'golden hour morning light, warm tones, long soft shadows',
+    'bright midday Oregon summer sun, vivid colors, hard shadows',
+    'open shade under trees, even soft light on faces',
+    'overcast Pacific Northwest sky, diffused light, rich saturated colors',
+    'backlit with sun flare, rim light on hair',
+    'indoor with large windows, natural light flooding in',
+    'mixed sun and cloud, dappled light through tree canopy',
+    'late afternoon warm side-light, dramatic but natural',
   ];
 
   // Setting detail — grounds the image in a real place
   const setting = [
-    "at a Portland park with Douglas fir trees in background",
-    "in a bright modern classroom or maker space",
-    "on a grassy sports field with a treeline behind",
-    "at an outdoor picnic table area with craft supplies spread out",
-    "in a gymnasium or indoor sports facility",
-    "along a forest trail in the Pacific Northwest",
-    "at a waterfront or creek with kids in rubber boots",
-    "in an art studio with paint-splattered tables and supplies everywhere",
+    'at a Portland park with Douglas fir trees in background',
+    'in a bright modern classroom or maker space',
+    'on a grassy sports field with a treeline behind',
+    'at an outdoor picnic table area with craft supplies spread out',
+    'in a gymnasium or indoor sports facility',
+    'along a forest trail in the Pacific Northwest',
+    'at a waterfront or creek with kids in rubber boots',
+    'in an art studio with paint-splattered tables and supplies everywhere',
   ];
 
   const selectedPhoto = pickFromHash(photoStyle, hash, 0);
@@ -116,15 +116,15 @@ async function generateImagePromptWithClaude(camp: {
   });
 
   const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
+    model: 'claude-sonnet-4-20250514',
     max_tokens: 500,
     messages: [
       {
-        role: "user",
+        role: 'user',
         content: `You write prompts for photorealistic image generation. Generate a prompt for a PHOTOGRAPH (not illustration) representing this summer camp:
 
 Camp Name: ${camp.name}
-Organization: ${camp.organizationName || "Unknown"}
+Organization: ${camp.organizationName || 'Unknown'}
 Description: ${camp.description}
 Age Group: ${camp.ageDescription}
 
@@ -137,13 +137,16 @@ Rules:
 
 Photography direction: ${camp.stylePrompt}
 
-Respond with ONLY the prompt, 2-4 sentences. End with "Photorealistic, high resolution photograph. No text, words, logos, or watermarks."`
-      }
-    ]
+Respond with ONLY the prompt, 2-4 sentences. End with "Photorealistic, high resolution photograph. No text, words, logos, or watermarks."`,
+      },
+    ],
   });
 
-  const textContent = response.content.find(c => c.type === "text");
-  return textContent?.text || `Children at ${camp.name} summer camp, candid photograph. ${camp.stylePrompt} Photorealistic, high resolution photograph. No text, words, logos, or watermarks.`;
+  const textContent = response.content.find((c) => c.type === 'text');
+  return (
+    textContent?.text ||
+    `Children at ${camp.name} summer camp, candid photograph. ${camp.stylePrompt} Photorealistic, high resolution photograph. No text, words, logos, or watermarks.`
+  );
 }
 
 /**
@@ -155,7 +158,7 @@ function getAgeDescription(ageReqs?: {
   minGrade?: number;
   maxGrade?: number;
 }): string {
-  if (!ageReqs) return "children ages 6-12";
+  if (!ageReqs) return 'children ages 6-12';
 
   // Calculate age from grade if needed (rough estimate: grade + 5 = age)
   let minAge = ageReqs.minAge;
@@ -170,21 +173,21 @@ function getAgeDescription(ageReqs?: {
 
   // Default fallback
   if (minAge === undefined && maxAge === undefined) {
-    return "children ages 6-12";
+    return 'children ages 6-12';
   }
 
   // Age-appropriate descriptions
   if (maxAge && maxAge <= 5) {
-    return "toddlers and preschoolers (ages 3-5)";
+    return 'toddlers and preschoolers (ages 3-5)';
   }
   if (minAge && minAge >= 13) {
-    return "teenagers (ages 13-17)";
+    return 'teenagers (ages 13-17)';
   }
   if (minAge && minAge >= 10) {
-    return "older kids and tweens (ages 10-13)";
+    return 'older kids and tweens (ages 10-13)';
   }
   if (maxAge && maxAge <= 8) {
-    return "young children (ages 5-8)";
+    return 'young children (ages 5-8)';
   }
 
   // General range
@@ -234,11 +237,14 @@ async function generatePrompt(camp: {
  */
 export const generateSingleImage = internalAction({
   args: {
-    campId: v.id("camps"),
+    campId: v.id('camps'),
     campName: v.string(),
     prompt: v.string(),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     success: boolean;
     campId: string;
     campName: string;
@@ -249,12 +255,12 @@ export const generateSingleImage = internalAction({
       console.log(`[GenerateImages] Generating for: ${args.campName}`);
 
       // Call FAL to generate image using FLUX Pro 1.1 (photorealistic quality)
-      const result = await fal.subscribe("fal-ai/flux-pro/v1.1", {
+      const result = await fal.subscribe('fal-ai/flux-pro/v1.1', {
         input: {
           prompt: args.prompt,
-          image_size: "landscape_16_9",
+          image_size: 'landscape_16_9',
           num_images: 1,
-          safety_tolerance: "2",
+          safety_tolerance: '2',
         },
       });
 
@@ -265,7 +271,7 @@ export const generateSingleImage = internalAction({
           campId: args.campId,
           campName: args.campName,
           storageId: null,
-          error: "No images generated",
+          error: 'No images generated',
         };
       }
 
@@ -302,7 +308,7 @@ export const generateSingleImage = internalAction({
         storageId,
       };
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
+      const message = error instanceof Error ? error.message : 'Unknown error';
       console.error(`[GenerateImages] Failed for ${args.campName}: ${message}`);
       return {
         success: false,
@@ -322,7 +328,10 @@ export const startImageGeneration = action({
   args: {
     limit: v.optional(v.number()), // Max camps to process (default 10)
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     workflowId: string;
     campsQueued: number;
     campNames: string[];
@@ -330,14 +339,13 @@ export const startImageGeneration = action({
     const limit = args.limit ?? 10;
 
     // Get camps without images using targeted query
-    const result = await ctx.runQuery(
-      api.camps.queries.listCampsNeedingImageGeneration,
-      { limit }
-    );
+    const result = await ctx.runQuery(api.camps.queries.listCampsNeedingImageGeneration, { limit });
 
     const campsToProcess = result.camps;
     const campNames = campsToProcess.map((c) => c.name);
-    console.log(`[GenerateImages] Found ${result.total} total camps needing images, processing ${campsToProcess.length}`);
+    console.log(
+      `[GenerateImages] Found ${result.total} total camps needing images, processing ${campsToProcess.length}`,
+    );
 
     // Pre-compute prompts for each camp (need to await since generatePrompt is async)
     const campData = await Promise.all(
@@ -359,17 +367,13 @@ export const startImageGeneration = action({
             organizationName: organization?.name,
           }),
         };
-      })
+      }),
     );
 
     console.log(`[GenerateImages] Starting workflow for ${campData.length} camps`);
 
     // Start the workflow
-    const workflowId = await workflow.start(
-      ctx,
-      internal.scraping.imageWorkflow.generateImagesWorkflow,
-      { campData }
-    );
+    const workflowId = await workflow.start(ctx, internal.scraping.imageWorkflow.generateImagesWorkflow, { campData });
 
     return {
       workflowId: workflowId as string,
@@ -386,7 +390,10 @@ export const getWorkflowStatus = action({
   args: {
     workflowId: vWorkflowId,
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     status: string;
     result?: {
       completed: number;
@@ -396,9 +403,9 @@ export const getWorkflowStatus = action({
   }> => {
     const status = await workflow.status(ctx, args.workflowId);
 
-    if (status.type === "completed") {
+    if (status.type === 'completed') {
       return {
-        status: "completed",
+        status: 'completed',
         result: status.result as {
           completed: number;
           failed: number;
@@ -416,10 +423,13 @@ export const getWorkflowStatus = action({
  */
 export const generateCampImage = action({
   args: {
-    campId: v.id("camps"),
+    campId: v.id('camps'),
     customPrompt: v.optional(v.string()),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     success: boolean;
     storageId: string | null;
     error?: string;
@@ -429,7 +439,7 @@ export const generateCampImage = action({
     });
 
     if (!camp) {
-      return { success: false, storageId: null, error: "Camp not found" };
+      return { success: false, storageId: null, error: 'Camp not found' };
     }
 
     // Get organization name for better prompt context
@@ -437,10 +447,12 @@ export const generateCampImage = action({
       organizationId: camp.organizationId,
     });
 
-    const prompt = args.customPrompt || await generatePrompt({
-      ...camp,
-      organizationName: organization?.name,
-    });
+    const prompt =
+      args.customPrompt ||
+      (await generatePrompt({
+        ...camp,
+        organizationName: organization?.name,
+      }));
 
     console.log(`[GenerateImages] Prompt for ${camp.name}: ${prompt}`);
 
@@ -465,15 +477,15 @@ export const listCampsWithoutImages = action({
   args: {
     limit: v.optional(v.number()),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     count: number;
     camps: Array<{ id: string; name: string; categories: string[]; description: string }>;
   }> => {
     const limit = args.limit ?? 100;
-    const result = await ctx.runQuery(
-      api.camps.queries.listCampsNeedingImageGeneration,
-      { limit }
-    );
+    const result = await ctx.runQuery(api.camps.queries.listCampsNeedingImageGeneration, { limit });
 
     return {
       count: result.total,

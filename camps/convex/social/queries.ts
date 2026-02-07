@@ -1,6 +1,6 @@
-import { query } from "../_generated/server";
-import { v } from "convex/values";
-import { requireFamily, getFamily } from "../lib/auth";
+import { query } from '../_generated/server';
+import { v } from 'convex/values';
+import { requireFamily, getFamily } from '../lib/auth';
 
 /**
  * List all accepted friendships for the current family.
@@ -16,30 +16,21 @@ export const listFriends = query({
 
     // Get friendships where current family is the requester
     const asRequester = await ctx.db
-      .query("friendships")
-      .withIndex("by_requester_and_status", (q) =>
-        q.eq("requesterId", family._id).eq("status", "accepted")
-      )
+      .query('friendships')
+      .withIndex('by_requester_and_status', (q) => q.eq('requesterId', family._id).eq('status', 'accepted'))
       .collect();
 
     // Get friendships where current family is the addressee
     const asAddressee = await ctx.db
-      .query("friendships")
-      .withIndex("by_addressee_and_status", (q) =>
-        q.eq("addresseeId", family._id).eq("status", "accepted")
-      )
+      .query('friendships')
+      .withIndex('by_addressee_and_status', (q) => q.eq('addresseeId', family._id).eq('status', 'accepted'))
       .collect();
 
     // Collect friend family IDs
-    const friendFamilyIds = [
-      ...asRequester.map((f) => f.addresseeId),
-      ...asAddressee.map((f) => f.requesterId),
-    ];
+    const friendFamilyIds = [...asRequester.map((f) => f.addresseeId), ...asAddressee.map((f) => f.requesterId)];
 
     // Fetch friend family info
-    const friendFamilies = await Promise.all(
-      friendFamilyIds.map((id) => ctx.db.get(id))
-    );
+    const friendFamilies = await Promise.all(friendFamilyIds.map((id) => ctx.db.get(id)));
 
     // Build result with friendship info and friend details
     const allFriendships = [...asRequester, ...asAddressee];
@@ -74,29 +65,21 @@ export const listPendingFriendRequests = query({
 
     // Get pending requests sent by current family
     const sent = await ctx.db
-      .query("friendships")
-      .withIndex("by_requester_and_status", (q) =>
-        q.eq("requesterId", family._id).eq("status", "pending")
-      )
+      .query('friendships')
+      .withIndex('by_requester_and_status', (q) => q.eq('requesterId', family._id).eq('status', 'pending'))
       .collect();
 
     // Get pending requests received by current family
     const received = await ctx.db
-      .query("friendships")
-      .withIndex("by_addressee_and_status", (q) =>
-        q.eq("addresseeId", family._id).eq("status", "pending")
-      )
+      .query('friendships')
+      .withIndex('by_addressee_and_status', (q) => q.eq('addresseeId', family._id).eq('status', 'pending'))
       .collect();
 
     // Fetch addressee info for sent requests
-    const sentFamilies = await Promise.all(
-      sent.map((f) => ctx.db.get(f.addresseeId))
-    );
+    const sentFamilies = await Promise.all(sent.map((f) => ctx.db.get(f.addresseeId)));
 
     // Fetch requester info for received requests
-    const receivedFamilies = await Promise.all(
-      received.map((f) => ctx.db.get(f.requesterId))
-    );
+    const receivedFamilies = await Promise.all(received.map((f) => ctx.db.get(f.requesterId)));
 
     return {
       sent: sent.map((request, index) => ({
@@ -131,7 +114,7 @@ export const listPendingFriendRequests = query({
  */
 export const getFriendsAtSession = query({
   args: {
-    sessionId: v.id("sessions"),
+    sessionId: v.id('sessions'),
   },
   handler: async (ctx, args) => {
     const family = await getFamily(ctx);
@@ -141,8 +124,8 @@ export const getFriendsAtSession = query({
 
     // Get all calendar shares where this family is the recipient
     const calendarShares = await ctx.db
-      .query("calendarShares")
-      .withIndex("by_shared_with", (q) => q.eq("sharedWithFamilyId", family._id))
+      .query('calendarShares')
+      .withIndex('by_shared_with', (q) => q.eq('sharedWithFamilyId', family._id))
       .collect();
 
     // Filter to active shares only
@@ -154,19 +137,15 @@ export const getFriendsAtSession = query({
 
     // Get registrations for this session
     const registrations = await ctx.db
-      .query("registrations")
-      .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+      .query('registrations')
+      .withIndex('by_session', (q) => q.eq('sessionId', args.sessionId))
       .collect();
 
     // Filter to registered or waitlisted statuses
-    const activeRegistrations = registrations.filter(
-      (r) => r.status === "registered" || r.status === "waitlisted"
-    );
+    const activeRegistrations = registrations.filter((r) => r.status === 'registered' || r.status === 'waitlisted');
 
     // Build a map of family -> their calendar share info
-    const shareByFamily = new Map(
-      activeShares.map((share) => [share.ownerFamilyId.toString(), share])
-    );
+    const shareByFamily = new Map(activeShares.map((share) => [share.ownerFamilyId.toString(), share]));
 
     // Find registrations from families that have shared with us
     const friendRegistrations = activeRegistrations.filter((reg) => {
@@ -179,7 +158,11 @@ export const getFriendsAtSession = query({
     // Get unique family IDs and their registrations
     const familyRegistrationsMap = new Map<
       string,
-      { familyId: typeof friendRegistrations[0]["familyId"]; childIds: typeof friendRegistrations[0]["childId"][]; share: typeof activeShares[0] }
+      {
+        familyId: (typeof friendRegistrations)[0]['familyId'];
+        childIds: (typeof friendRegistrations)[0]['childId'][];
+        share: (typeof activeShares)[0];
+      }
     >();
 
     for (const reg of friendRegistrations) {
@@ -203,26 +186,22 @@ export const getFriendsAtSession = query({
       if (!friendFamily) continue;
 
       // Fetch children info based on permission level
-      const children = await Promise.all(
-        data.childIds.map((childId) => ctx.db.get(childId))
-      );
+      const children = await Promise.all(data.childIds.map((childId) => ctx.db.get(childId)));
 
-      const childrenInfo = children
-        .filter(Boolean)
-        .map((child) => {
-          // view_sessions shows only first name, view_details shows more
-          if (data.share.permission === "view_details") {
-            return {
-              _id: child!._id,
-              firstName: child!.firstName,
-              lastName: child!.lastName,
-            };
-          }
+      const childrenInfo = children.filter(Boolean).map((child) => {
+        // view_sessions shows only first name, view_details shows more
+        if (data.share.permission === 'view_details') {
           return {
             _id: child!._id,
             firstName: child!.firstName,
+            lastName: child!.lastName,
           };
-        });
+        }
+        return {
+          _id: child!._id,
+          firstName: child!.firstName,
+        };
+      });
 
       results.push({
         family: {
@@ -251,8 +230,8 @@ export const getSharedCalendars = query({
     }
 
     const calendarShares = await ctx.db
-      .query("calendarShares")
-      .withIndex("by_shared_with", (q) => q.eq("sharedWithFamilyId", family._id))
+      .query('calendarShares')
+      .withIndex('by_shared_with', (q) => q.eq('sharedWithFamilyId', family._id))
       .collect();
 
     // Filter to active shares
@@ -262,9 +241,7 @@ export const getSharedCalendars = query({
     const results = await Promise.all(
       activeShares.map(async (share) => {
         const ownerFamily = await ctx.db.get(share.ownerFamilyId);
-        const children = await Promise.all(
-          share.childIds.map((childId) => ctx.db.get(childId))
-        );
+        const children = await Promise.all(share.childIds.map((childId) => ctx.db.get(childId)));
 
         return {
           shareId: share._id,
@@ -280,7 +257,7 @@ export const getSharedCalendars = query({
             firstName: child!.firstName,
           })),
         };
-      })
+      }),
     );
 
     return results;
@@ -300,8 +277,8 @@ export const getMyCalendarShares = query({
     }
 
     const calendarShares = await ctx.db
-      .query("calendarShares")
-      .withIndex("by_owner", (q) => q.eq("ownerFamilyId", family._id))
+      .query('calendarShares')
+      .withIndex('by_owner', (q) => q.eq('ownerFamilyId', family._id))
       .collect();
 
     // Filter to active shares
@@ -311,9 +288,7 @@ export const getMyCalendarShares = query({
     const results = await Promise.all(
       activeShares.map(async (share) => {
         const sharedWithFamily = await ctx.db.get(share.sharedWithFamilyId);
-        const children = await Promise.all(
-          share.childIds.map((childId) => ctx.db.get(childId))
-        );
+        const children = await Promise.all(share.childIds.map((childId) => ctx.db.get(childId)));
 
         return {
           shareId: share._id,
@@ -329,7 +304,7 @@ export const getMyCalendarShares = query({
             firstName: child!.firstName,
           })),
         };
-      })
+      }),
     );
 
     return results;
@@ -342,7 +317,7 @@ export const getMyCalendarShares = query({
  */
 export const getFriendCalendar = query({
   args: {
-    friendFamilyId: v.id("families"),
+    friendFamilyId: v.id('families'),
   },
   handler: async (ctx, args) => {
     const family = await getFamily(ctx);
@@ -352,13 +327,11 @@ export const getFriendCalendar = query({
 
     // Check if this friend has shared their calendar with us
     const calendarShares = await ctx.db
-      .query("calendarShares")
-      .withIndex("by_shared_with", (q) => q.eq("sharedWithFamilyId", family._id))
+      .query('calendarShares')
+      .withIndex('by_shared_with', (q) => q.eq('sharedWithFamilyId', family._id))
       .collect();
 
-    const share = calendarShares.find(
-      (s) => s.ownerFamilyId === args.friendFamilyId && s.isActive
-    );
+    const share = calendarShares.find((s) => s.ownerFamilyId === args.friendFamilyId && s.isActive);
 
     if (!share) {
       return null;
@@ -371,9 +344,7 @@ export const getFriendCalendar = query({
     }
 
     // Get children info for shared children
-    const children = await Promise.all(
-      share.childIds.map((childId) => ctx.db.get(childId))
-    );
+    const children = await Promise.all(share.childIds.map((childId) => ctx.db.get(childId)));
 
     const validChildren = children.filter(Boolean);
 
@@ -381,16 +352,13 @@ export const getFriendCalendar = query({
     const registrationsByChild = await Promise.all(
       validChildren.map(async (child) => {
         const registrations = await ctx.db
-          .query("registrations")
-          .withIndex("by_child", (q) => q.eq("childId", child!._id))
+          .query('registrations')
+          .withIndex('by_child', (q) => q.eq('childId', child!._id))
           .collect();
 
         // Filter to active registrations
         const activeRegistrations = registrations.filter(
-          (r) =>
-            r.status === "registered" ||
-            r.status === "waitlisted" ||
-            r.status === "interested"
+          (r) => r.status === 'registered' || r.status === 'waitlisted' || r.status === 'interested',
         );
 
         // Get session details for each registration
@@ -422,7 +390,7 @@ export const getFriendCalendar = query({
             };
 
             // Additional info at view_details level
-            if (share.permission === "view_details") {
+            if (share.permission === 'view_details') {
               return {
                 ...baseInfo,
                 session: {
@@ -435,12 +403,12 @@ export const getFriendCalendar = query({
             }
 
             return baseInfo;
-          })
+          }),
         );
 
         // Build child info based on permission level
         const childInfo =
-          share.permission === "view_details"
+          share.permission === 'view_details'
             ? {
                 _id: child!._id,
                 firstName: child!.firstName,
@@ -456,7 +424,7 @@ export const getFriendCalendar = query({
           child: childInfo,
           registrations: registrationsWithSessions.filter(Boolean),
         };
-      })
+      }),
     );
 
     return {

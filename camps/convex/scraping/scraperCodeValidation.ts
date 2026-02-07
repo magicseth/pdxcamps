@@ -25,9 +25,7 @@ export function validateScraperCode(code: string): void {
   // Count template literal delimiters - should be balanced
   const backtickCount = (code.match(/(?<!\\)`/g) || []).length;
   if (backtickCount % 2 !== 0) {
-    throw new Error(
-      "Syntax validation failed: Unbalanced template literal backticks - code may be truncated"
-    );
+    throw new Error('Syntax validation failed: Unbalanced template literal backticks - code may be truncated');
   }
 
   // Check for unclosed ${} in template literals
@@ -41,7 +39,7 @@ export function validateScraperCode(code: string): void {
     const closeBraces = (content.match(/\}/g) || []).length;
     if (openBraces > closeBraces) {
       throw new Error(
-        `Syntax validation failed: Unclosed template expression \${} in template literal - found ${openBraces} opens but only ${closeBraces} closes`
+        `Syntax validation failed: Unclosed template expression \${} in template literal - found ${openBraces} opens but only ${closeBraces} closes`,
       );
     }
   }
@@ -54,19 +52,17 @@ export function validateScraperCode(code: string): void {
     new Function(`return async function() { ${code} }`);
   } catch (e) {
     const error = e as SyntaxError;
-    throw new Error(
-      `Syntax validation failed: ${error.message}. The scraper code contains JavaScript syntax errors.`
-    );
+    throw new Error(`Syntax validation failed: ${error.message}. The scraper code contains JavaScript syntax errors.`);
   }
 
   // Additional check for common scraper issues
   const dangerPatterns = [
     // Incomplete function definitions
-    { pattern: /function\s+\w+\s*\([^)]*\)\s*\{[^}]*$/, msg: "Incomplete function definition" },
+    { pattern: /function\s+\w+\s*\([^)]*\)\s*\{[^}]*$/, msg: 'Incomplete function definition' },
     // Incomplete arrow functions
-    { pattern: /=>\s*\{[^}]*$/, msg: "Incomplete arrow function" },
+    { pattern: /=>\s*\{[^}]*$/, msg: 'Incomplete arrow function' },
     // Incomplete object literals
-    { pattern: /\{\s*\w+\s*:[^}]*$/, msg: "Incomplete object literal" },
+    { pattern: /\{\s*\w+\s*:[^}]*$/, msg: 'Incomplete object literal' },
   ];
 
   for (const { pattern, msg } of dangerPatterns) {
@@ -82,7 +78,7 @@ export function validateScraperCode(code: string): void {
  * scraperModule is auto-assigned.
  */
 export const BUILTIN_SCRAPER_DOMAINS: Record<string, string[]> = {
-  omsi: ["omsi.edu", "secure.omsi.edu"],
+  omsi: ['omsi.edu', 'secure.omsi.edu'],
   // Add more as built-in scrapers are created:
   // "portland-parks": ["portlandoregon.gov/parks"],
 };

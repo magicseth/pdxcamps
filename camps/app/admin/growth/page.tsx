@@ -13,7 +13,10 @@ export default function GrowthPage() {
   return (
     <>
       <header className="sticky top-0 z-10 bg-background p-4 border-b-2 border-slate-200 dark:border-slate-800 flex flex-row justify-between items-center">
-        <Link href="/admin" className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+        <Link
+          href="/admin"
+          className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
           Admin Dashboard
         </Link>
         <h1 className="text-lg font-semibold">Growth & Expansion</h1>
@@ -26,13 +29,8 @@ export default function GrowthPage() {
         </Authenticated>
         <Unauthenticated>
           <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-            <p className="text-slate-600 dark:text-slate-400">
-              Please sign in to access the admin dashboard.
-            </p>
-            <a
-              href="/sign-in"
-              className="bg-foreground text-background px-6 py-2 rounded-md"
-            >
+            <p className="text-slate-600 dark:text-slate-400">Please sign in to access the admin dashboard.</p>
+            <a href="/sign-in" className="bg-foreground text-background px-6 py-2 rounded-md">
               Sign in
             </a>
           </div>
@@ -93,9 +91,7 @@ function GrowthContent() {
     return (
       <div className="max-w-2xl mx-auto text-center py-16">
         <h2 className="text-xl font-semibold mb-2 text-red-600">Access Denied</h2>
-        <p className="text-slate-600 dark:text-slate-400">
-          You don't have permission to access the admin dashboard.
-        </p>
+        <p className="text-slate-600 dark:text-slate-400">You don't have permission to access the admin dashboard.</p>
         <Link href="/" className="inline-block mt-4 text-primary hover:underline">
           Return to Home
         </Link>
@@ -114,12 +110,8 @@ function GrowthContent() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Growth & Expansion
-          </h2>
-          <p className="text-slate-500 mt-1">
-            Add new markets, discover sources, and manage organizations
-          </p>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Growth & Expansion</h2>
+          <p className="text-slate-500 mt-1">Add new markets, discover sources, and manage organizations</p>
         </div>
         <Link
           href="/admin/market-seeding"
@@ -219,7 +211,7 @@ function MarketSeedingTab({ cities }: { cities: any[] | undefined }) {
           organized.organizations.map((org) => ({
             ...org,
             included: true,
-          }))
+          })),
         );
       }
     } catch (err) {
@@ -333,19 +325,11 @@ function MarketSeedingTab({ cities }: { cities: any[] | undefined }) {
   };
 
   const toggleOrg = (domain: string) => {
-    setOrganizations((prev) =>
-      prev.map((org) =>
-        org.domain === domain ? { ...org, included: !org.included } : org
-      )
-    );
+    setOrganizations((prev) => prev.map((org) => (org.domain === domain ? { ...org, included: !org.included } : org)));
   };
 
   const updateOrgName = (domain: string, name: string) => {
-    setOrganizations((prev) =>
-      prev.map((org) =>
-        org.domain === domain ? { ...org, customName: name } : org
-      )
-    );
+    setOrganizations((prev) => prev.map((org) => (org.domain === domain ? { ...org, customName: name } : org)));
   };
 
   return (
@@ -355,9 +339,7 @@ function MarketSeedingTab({ cities }: { cities: any[] | undefined }) {
         <h3 className="text-lg font-semibold mb-4">1. Select Market</h3>
         <div className="flex gap-4 items-end">
           <div className="flex-1">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              City
-            </label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">City</label>
             <select
               value={selectedCitySlug}
               onChange={(e) => {
@@ -412,7 +394,8 @@ function MarketSeedingTab({ cities }: { cities: any[] | undefined }) {
       <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
         <h3 className="text-lg font-semibold mb-4">2. Add Camp URLs (Direct)</h3>
         <p className="text-sm text-slate-500 mb-4">
-          Paste camp organization URLs below (one per line). Creates organizations and scrape sources immediately - no scraping needed.
+          Paste camp organization URLs below (one per line). Creates organizations and scrape sources immediately - no
+          scraping needed.
         </p>
         <div className="space-y-4">
           <textarea
@@ -431,16 +414,19 @@ function MarketSeedingTab({ cities }: { cities: any[] | undefined }) {
               setIsLoading(true);
               setError(null);
               try {
-                const urls = manualUrls.split('\n').map(u => u.trim()).filter(u => u.startsWith('http'));
+                const urls = manualUrls
+                  .split('\n')
+                  .map((u) => u.trim())
+                  .filter((u) => u.startsWith('http'));
                 const result = await seedCampUrls({
                   citySlug: selectedCitySlug,
-                  urls
+                  urls,
                 });
                 setManualUrls('');
                 setSeedingResult({
                   success: true,
                   cityId: null,
-                  results: result.results.map(r => ({
+                  results: result.results.map((r) => ({
                     url: r.url,
                     name: r.name,
                     organizationId: null,
@@ -453,7 +439,7 @@ function MarketSeedingTab({ cities }: { cities: any[] | undefined }) {
                     created: result.created,
                     existing: result.existed,
                     errors: result.total - result.created - result.existed,
-                  }
+                  },
                 });
               } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to seed URLs');
@@ -471,93 +457,98 @@ function MarketSeedingTab({ cities }: { cities: any[] | undefined }) {
 
       {/* Directory Queue (for automated scraping) */}
       <details className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-        <summary className="p-6 cursor-pointer text-lg font-semibold">Queue Directory URLs (Automated Scraping)</summary>
+        <summary className="p-6 cursor-pointer text-lg font-semibold">
+          Queue Directory URLs (Automated Scraping)
+        </summary>
         <div className="p-6 pt-0">
-        <p className="text-sm text-slate-500 mb-4">
-          Queue directory/listing pages to be scraped. May fail with 403 if site blocks bots.
-        </p>
-        <div className="space-y-4">
-          <textarea
-            value={manualUrls}
-            onChange={(e) => setManualUrls(e.target.value)}
-            placeholder="https://example.com/summer-camps&#10;https://another-site.com/camps"
-            rows={5}
-            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white font-mono text-sm"
-          />
-          <div className="flex gap-4">
-            <button
-              onClick={async () => {
-                if (!selectedCitySlug || !manualUrls.trim()) {
-                  setError('Select a city and enter at least one URL');
-                  return;
-                }
-                setIsLoading(true);
-                setError(null);
-                try {
-                  const urls = manualUrls.split('\n').map(u => u.trim()).filter(u => u.startsWith('http'));
-                  const result = await queueDirectoryUrls({ citySlug: selectedCitySlug, urls });
-                  setManualUrls('');
-                  alert(`Queued ${result.queued} URLs for processing`);
-                } catch (err) {
-                  setError(err instanceof Error ? err.message : 'Failed to queue URLs');
-                } finally {
-                  setIsLoading(false);
-                }
-              }}
-              disabled={isLoading || !selectedCitySlug}
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
-            >
-              {isLoading ? 'Queuing...' : 'Queue for Processing'}
-            </button>
-          </div>
-
-          {/* Queue Status */}
-          {queueStatus && (
-            <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="font-medium">Queue Status</h4>
-                {queueStatus.pending > 0 && (
-                  <button
-                    onClick={async () => {
-                      setIsLoading(true);
-                      setError(null);
-                      try {
-                        const result = await processQueue({});
-                        alert(`Processed ${result.processed} directories, ${result.errors} errors`);
-                      } catch (err) {
-                        setError(err instanceof Error ? err.message : 'Failed to process queue');
-                      } finally {
-                        setIsLoading(false);
-                      }
-                    }}
-                    disabled={isLoading}
-                    className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    {isLoading ? 'Processing...' : 'Process Queue Now'}
-                  </button>
-                )}
-              </div>
-              <div className="grid grid-cols-4 gap-4 text-sm">
-                <div>
-                  <p className="text-slate-500">Pending</p>
-                  <p className="text-xl font-bold text-amber-600">{queueStatus.pending}</p>
-                </div>
-                <div>
-                  <p className="text-slate-500">Processing</p>
-                  <p className="text-xl font-bold text-blue-600">{queueStatus.processing}</p>
-                </div>
-                <div>
-                  <p className="text-slate-500">Completed</p>
-                  <p className="text-xl font-bold text-green-600">{queueStatus.completed}</p>
-                </div>
-                <div>
-                  <p className="text-slate-500">Failed</p>
-                  <p className="text-xl font-bold text-red-600">{queueStatus.failed}</p>
-                </div>
-              </div>
+          <p className="text-sm text-slate-500 mb-4">
+            Queue directory/listing pages to be scraped. May fail with 403 if site blocks bots.
+          </p>
+          <div className="space-y-4">
+            <textarea
+              value={manualUrls}
+              onChange={(e) => setManualUrls(e.target.value)}
+              placeholder="https://example.com/summer-camps&#10;https://another-site.com/camps"
+              rows={5}
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white font-mono text-sm"
+            />
+            <div className="flex gap-4">
+              <button
+                onClick={async () => {
+                  if (!selectedCitySlug || !manualUrls.trim()) {
+                    setError('Select a city and enter at least one URL');
+                    return;
+                  }
+                  setIsLoading(true);
+                  setError(null);
+                  try {
+                    const urls = manualUrls
+                      .split('\n')
+                      .map((u) => u.trim())
+                      .filter((u) => u.startsWith('http'));
+                    const result = await queueDirectoryUrls({ citySlug: selectedCitySlug, urls });
+                    setManualUrls('');
+                    alert(`Queued ${result.queued} URLs for processing`);
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : 'Failed to queue URLs');
+                  } finally {
+                    setIsLoading(false);
+                  }
+                }}
+                disabled={isLoading || !selectedCitySlug}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+              >
+                {isLoading ? 'Queuing...' : 'Queue for Processing'}
+              </button>
             </div>
-          )}
-        </div>
+
+            {/* Queue Status */}
+            {queueStatus && (
+              <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium">Queue Status</h4>
+                  {queueStatus.pending > 0 && (
+                    <button
+                      onClick={async () => {
+                        setIsLoading(true);
+                        setError(null);
+                        try {
+                          const result = await processQueue({});
+                          alert(`Processed ${result.processed} directories, ${result.errors} errors`);
+                        } catch (err) {
+                          setError(err instanceof Error ? err.message : 'Failed to process queue');
+                        } finally {
+                          setIsLoading(false);
+                        }
+                      }}
+                      disabled={isLoading}
+                      className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {isLoading ? 'Processing...' : 'Process Queue Now'}
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-slate-500">Pending</p>
+                    <p className="text-xl font-bold text-amber-600">{queueStatus.pending}</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-500">Processing</p>
+                    <p className="text-xl font-bold text-blue-600">{queueStatus.processing}</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-500">Completed</p>
+                    <p className="text-xl font-bold text-green-600">{queueStatus.completed}</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-500">Failed</p>
+                    <p className="text-xl font-bold text-red-600">{queueStatus.failed}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </details>
 
@@ -565,59 +556,57 @@ function MarketSeedingTab({ cities }: { cities: any[] | undefined }) {
       <details className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
         <summary className="p-6 cursor-pointer text-lg font-semibold">Manual Scraping (Legacy)</summary>
         <div className="p-6 pt-0">
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Directory URL
-            </label>
-            <input
-              type="url"
-              value={directoryUrl}
-              onChange={(e) => setDirectoryUrl(e.target.value)}
-              placeholder="https://example.com/portland-summer-camps"
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-            />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Link Pattern (optional regex)
-              </label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Directory URL</label>
               <input
-                type="text"
-                value={linkPattern}
-                onChange={(e) => setLinkPattern(e.target.value)}
-                placeholder="camp|program|summer"
+                type="url"
+                value={directoryUrl}
+                onChange={(e) => setDirectoryUrl(e.target.value)}
+                placeholder="https://example.com/portland-summer-camps"
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Domain Filter (optional)
-              </label>
-              <input
-                type="text"
-                value={baseUrlFilter}
-                onChange={(e) => setBaseUrlFilter(e.target.value)}
-                placeholder="example.com"
-                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Link Pattern (optional regex)
+                </label>
+                <input
+                  type="text"
+                  value={linkPattern}
+                  onChange={(e) => setLinkPattern(e.target.value)}
+                  placeholder="camp|program|summer"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Domain Filter (optional)
+                </label>
+                <input
+                  type="text"
+                  value={baseUrlFilter}
+                  onChange={(e) => setBaseUrlFilter(e.target.value)}
+                  placeholder="example.com"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                />
+              </div>
             </div>
+            <button
+              onClick={handleScrapeDirectory}
+              disabled={isLoading || !directoryUrl}
+              className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark disabled:opacity-50"
+            >
+              {isLoading ? 'Scraping...' : 'Scrape Directory'}
+            </button>
           </div>
-          <button
-            onClick={handleScrapeDirectory}
-            disabled={isLoading || !directoryUrl}
-            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark disabled:opacity-50"
-          >
-            {isLoading ? 'Scraping...' : 'Scrape Directory'}
-          </button>
-        </div>
 
-        {extractedLinks.length > 0 && (
-          <div className="mt-4 text-sm text-slate-600 dark:text-slate-400">
-            Found {extractedLinks.length} links, organized into {organizations.length} organizations
-          </div>
-        )}
+          {extractedLinks.length > 0 && (
+            <div className="mt-4 text-sm text-slate-600 dark:text-slate-400">
+              Found {extractedLinks.length} links, organized into {organizations.length} organizations
+            </div>
+          )}
         </div>
       </details>
 
@@ -790,7 +779,7 @@ function DiscoveryQueueTab({ cities }: { cities: any[] | undefined }) {
           cityId,
           status: statusFilter !== 'all' ? (statusFilter as DiscoveredSourceStatus) : undefined,
         }
-      : 'skip'
+      : 'skip',
   );
 
   const reviewSource = useMutation(api.discovery.mutations.reviewSource);
@@ -823,9 +812,7 @@ function DiscoveryQueueTab({ cities }: { cities: any[] | undefined }) {
     <div className="space-y-6">
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm font-medium text-slate-700 dark:text-slate-300 mr-2">
-          Status:
-        </span>
+        <span className="text-sm font-medium text-slate-700 dark:text-slate-300 mr-2">Status:</span>
         {statusFilters.map((filter) => (
           <button
             key={filter.value}
@@ -850,9 +837,7 @@ function DiscoveryQueueTab({ cities }: { cities: any[] | undefined }) {
           <div className="text-slate-400 mb-4">
             <EmptyIcon />
           </div>
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-            No sources found
-          </h3>
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">No sources found</h3>
           <p className="text-slate-600 dark:text-slate-400">
             {statusFilter !== 'all'
               ? `No sources with status "${statusFilter.replace(/_/g, ' ')}"`
@@ -895,14 +880,10 @@ function DiscoverySourceRow({
             <span className={`px-2 py-0.5 text-xs font-medium rounded ${getStatusBadgeClass(source.status)}`}>
               {source.status.replace(/_/g, ' ')}
             </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">
-              {source.domain}
-            </span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">{source.domain}</span>
           </div>
 
-          <h3 className="font-semibold text-slate-900 dark:text-white mb-1 line-clamp-1">
-            {source.title}
-          </h3>
+          <h3 className="font-semibold text-slate-900 dark:text-white mb-1 line-clamp-1">{source.title}</h3>
 
           <a
             href={source.url}
@@ -914,16 +895,12 @@ function DiscoverySourceRow({
           </a>
 
           {source.snippet && (
-            <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 mb-3">
-              {source.snippet}
-            </p>
+            <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 mb-3">{source.snippet}</p>
           )}
 
           {source.aiAnalysis && (
             <div className="bg-slate-50 dark:bg-slate-900 rounded-md p-3 mb-3">
-              <h4 className="text-xs font-medium text-slate-700 dark:text-slate-300 uppercase mb-2">
-                AI Analysis
-              </h4>
+              <h4 className="text-xs font-medium text-slate-700 dark:text-slate-300 uppercase mb-2">AI Analysis</h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                 <div>
                   <span className="text-slate-500 dark:text-slate-400">Likely Camp:</span>
@@ -964,9 +941,7 @@ function DiscoverySourceRow({
               </div>
               {source.aiAnalysis.detectedCampNames.length > 0 && (
                 <div className="mt-2">
-                  <span className="text-xs text-slate-500 dark:text-slate-400">
-                    Detected camps:
-                  </span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">Detected camps:</span>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {source.aiAnalysis.detectedCampNames.map((name: string, i: number) => (
                       <span
@@ -983,9 +958,7 @@ function DiscoverySourceRow({
           )}
 
           <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
-            <span>
-              Discovered: {new Date(source.discoveredAt).toLocaleDateString()}
-            </span>
+            <span>Discovered: {new Date(source.discoveredAt).toLocaleDateString()}</span>
             <span>Query: &quot;{source.discoveryQuery}&quot;</span>
           </div>
         </div>
@@ -1040,13 +1013,10 @@ function OrganizationsTab({ cities }: { cities: any[] | undefined }) {
   const [selectedCityId, setSelectedCityId] = useState<string>('');
 
   // Single query for both organizations and counts
-  const organizationsData = useQuery(
-    api.organizations.queries.listOrganizationsPaginated,
-    {
-      cityId: selectedCityId ? (selectedCityId as Id<'cities'>) : undefined,
-      limit: 50,
-    }
-  );
+  const organizationsData = useQuery(api.organizations.queries.listOrganizationsPaginated, {
+    cityId: selectedCityId ? (selectedCityId as Id<'cities'>) : undefined,
+    limit: 50,
+  });
 
   const organizations = organizationsData?.organizations ?? [];
   const counts = organizationsData?.counts;
@@ -1073,20 +1043,13 @@ function OrganizationsTab({ cities }: { cities: any[] | undefined }) {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label="Total Organizations" value={counts?.total ?? 0} />
-        <StatCard
-          label="With Logo"
-          value={counts?.withLogo ?? 0}
-          variant="success"
-        />
+        <StatCard label="With Logo" value={counts?.withLogo ?? 0} variant="success" />
         <StatCard
           label="Without Logo"
           value={counts?.withoutLogo ?? 0}
           variant={(counts?.withoutLogo ?? 0) > 0 ? 'warning' : 'default'}
         />
-        <StatCard
-          label="With Website"
-          value={counts?.withWebsite ?? 0}
-        />
+        <StatCard label="With Website" value={counts?.withWebsite ?? 0} />
       </div>
 
       {/* Organizations List */}
@@ -1102,13 +1065,22 @@ function OrganizationsTab({ cities }: { cities: any[] | undefined }) {
             <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
               <thead className="bg-slate-50 dark:bg-slate-900">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider"
+                  >
                     Organization
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider"
+                  >
                     Website
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider"
+                  >
                     Status
                   </th>
                 </tr>
@@ -1118,7 +1090,7 @@ function OrganizationsTab({ cities }: { cities: any[] | undefined }) {
                   <tr key={org._id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        {(org.logoUrl || org.logoStorageId) ? (
+                        {org.logoUrl || org.logoStorageId ? (
                           <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0 text-green-600">
                             <CheckIcon />
                           </div>

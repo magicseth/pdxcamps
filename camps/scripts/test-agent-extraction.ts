@@ -10,47 +10,50 @@
  *   npx tsx scripts/test-agent-extraction.ts "https://omsi.edu/camps" --max-steps=100 --verbose
  */
 
-import { Stagehand } from "@browserbasehq/stagehand";
-import { z } from "zod";
-import * as dotenv from "dotenv";
+import { Stagehand } from '@browserbasehq/stagehand';
+import { z } from 'zod';
+import * as dotenv from 'dotenv';
 
 // Load environment variables
-dotenv.config({ path: ".env.local" });
+dotenv.config({ path: '.env.local' });
 
 // Schema for extracted sessions
 const SessionSchema = z.object({
-  name: z.string().describe("Name of the camp or program"),
-  description: z.string().optional().describe("Description of what the camp involves"),
-  startDate: z.string().optional().describe("Start date in YYYY-MM-DD format"),
-  endDate: z.string().optional().describe("End date in YYYY-MM-DD format"),
-  dateRaw: z.string().optional().describe("Raw date text if unable to parse into YYYY-MM-DD"),
-  dropOffTime: z.string().optional().describe("Drop-off time in HH:MM 24-hour format"),
-  pickUpTime: z.string().optional().describe("Pick-up time in HH:MM 24-hour format"),
-  timeRaw: z.string().optional().describe("Raw time text if unable to parse"),
-  location: z.string().optional().describe("Location name or address"),
-  address: z.object({
-    street: z.string().optional(),
-    city: z.string().optional(),
-    state: z.string().optional(),
-    zip: z.string().optional(),
-  }).optional().describe("Structured address if available"),
-  minAge: z.number().optional().describe("Minimum age in years"),
-  maxAge: z.number().optional().describe("Maximum age in years"),
-  minGrade: z.number().optional().describe("Minimum grade (-1 for Pre-K, 0 for K, 1-12 for grades)"),
-  maxGrade: z.number().optional().describe("Maximum grade"),
-  ageGradeRaw: z.string().optional().describe("Raw age/grade text if unable to parse"),
-  priceInCents: z.number().optional().describe("Price in cents (e.g., $350 = 35000)"),
-  priceRaw: z.string().optional().describe("Raw price text"),
-  registrationUrl: z.string().optional().describe("Direct URL to register for this specific session"),
+  name: z.string().describe('Name of the camp or program'),
+  description: z.string().optional().describe('Description of what the camp involves'),
+  startDate: z.string().optional().describe('Start date in YYYY-MM-DD format'),
+  endDate: z.string().optional().describe('End date in YYYY-MM-DD format'),
+  dateRaw: z.string().optional().describe('Raw date text if unable to parse into YYYY-MM-DD'),
+  dropOffTime: z.string().optional().describe('Drop-off time in HH:MM 24-hour format'),
+  pickUpTime: z.string().optional().describe('Pick-up time in HH:MM 24-hour format'),
+  timeRaw: z.string().optional().describe('Raw time text if unable to parse'),
+  location: z.string().optional().describe('Location name or address'),
+  address: z
+    .object({
+      street: z.string().optional(),
+      city: z.string().optional(),
+      state: z.string().optional(),
+      zip: z.string().optional(),
+    })
+    .optional()
+    .describe('Structured address if available'),
+  minAge: z.number().optional().describe('Minimum age in years'),
+  maxAge: z.number().optional().describe('Maximum age in years'),
+  minGrade: z.number().optional().describe('Minimum grade (-1 for Pre-K, 0 for K, 1-12 for grades)'),
+  maxGrade: z.number().optional().describe('Maximum grade'),
+  ageGradeRaw: z.string().optional().describe('Raw age/grade text if unable to parse'),
+  priceInCents: z.number().optional().describe('Price in cents (e.g., $350 = 35000)'),
+  priceRaw: z.string().optional().describe('Raw price text'),
+  registrationUrl: z.string().optional().describe('Direct URL to register for this specific session'),
   category: z.string().optional().describe("Category like 'Sports', 'Arts', 'STEM', etc."),
-  spotsLeft: z.number().optional().describe("Number of spots remaining if shown"),
-  isSoldOut: z.boolean().optional().describe("Whether the session is sold out"),
+  spotsLeft: z.number().optional().describe('Number of spots remaining if shown'),
+  isSoldOut: z.boolean().optional().describe('Whether the session is sold out'),
 });
 
 const ExtractionResultSchema = z.object({
-  sessions: z.array(SessionSchema).describe("All camp sessions found on the website"),
-  pagesVisited: z.number().optional().describe("Approximate number of pages navigated"),
-  notes: z.string().optional().describe("Any issues encountered or notes about the extraction"),
+  sessions: z.array(SessionSchema).describe('All camp sessions found on the website'),
+  pagesVisited: z.number().optional().describe('Approximate number of pages navigated'),
+  notes: z.string().optional().describe('Any issues encountered or notes about the extraction'),
 });
 
 type Session = z.infer<typeof SessionSchema>;
@@ -58,8 +61,8 @@ type ExtractionResult = z.infer<typeof ExtractionResultSchema>;
 
 // Parse command line arguments
 const args = process.argv.slice(2);
-const url = args.find(arg => !arg.startsWith('--'));
-const maxSteps = parseInt(args.find(arg => arg.startsWith('--max-steps='))?.split('=')[1] || '50');
+const url = args.find((arg) => !arg.startsWith('--'));
+const maxSteps = parseInt(args.find((arg) => arg.startsWith('--max-steps='))?.split('=')[1] || '50');
 const verbose = args.includes('--verbose');
 
 if (!url) {
@@ -118,8 +121,10 @@ function formatSession(session: Session, index: number): string {
   if (session.minAge !== undefined || session.maxAge !== undefined) {
     lines.push(`Ages: ${session.minAge ?? '?'} - ${session.maxAge ?? '?'}`);
   } else if (session.minGrade !== undefined || session.maxGrade !== undefined) {
-    const gradeLabel = (g: number) => g === -1 ? 'Pre-K' : g === 0 ? 'K' : `${g}`;
-    lines.push(`Grades: ${session.minGrade !== undefined ? gradeLabel(session.minGrade) : '?'} - ${session.maxGrade !== undefined ? gradeLabel(session.maxGrade) : '?'}`);
+    const gradeLabel = (g: number) => (g === -1 ? 'Pre-K' : g === 0 ? 'K' : `${g}`);
+    lines.push(
+      `Grades: ${session.minGrade !== undefined ? gradeLabel(session.minGrade) : '?'} - ${session.maxGrade !== undefined ? gradeLabel(session.maxGrade) : '?'}`,
+    );
   } else if (session.ageGradeRaw) {
     lines.push(`Age/Grade (raw): ${session.ageGradeRaw}`);
   }
@@ -156,13 +161,16 @@ function calculateCompleteness(session: Session): { score: number; missing: stri
     { name: 'dates', present: !!(session.startDate && session.endDate) || !!session.dateRaw },
     { name: 'times', present: !!(session.dropOffTime && session.pickUpTime) || !!session.timeRaw },
     { name: 'location', present: !!session.location || !!session.address?.street },
-    { name: 'age/grade', present: session.minAge !== undefined || session.minGrade !== undefined || !!session.ageGradeRaw },
+    {
+      name: 'age/grade',
+      present: session.minAge !== undefined || session.minGrade !== undefined || !!session.ageGradeRaw,
+    },
     { name: 'price', present: session.priceInCents !== undefined || !!session.priceRaw },
     { name: 'registration', present: !!session.registrationUrl },
   ];
 
-  const present = fields.filter(f => f.present).length;
-  const missing = fields.filter(f => !f.present).map(f => f.name);
+  const present = fields.filter((f) => f.present).length;
+  const missing = fields.filter((f) => !f.present).map((f) => f.name);
 
   return {
     score: Math.round((present / fields.length) * 100),
@@ -174,11 +182,11 @@ async function runAgentExtraction(targetUrl: string): Promise<ExtractionResult |
   log(`Initializing Stagehand with Browserbase...`);
 
   const stagehand = new Stagehand({
-    env: "BROWSERBASE",
+    env: 'BROWSERBASE',
     apiKey: process.env.BROWSERBASE_API_KEY,
     projectId: process.env.BROWSERBASE_PROJECT_ID,
     model: {
-      modelName: "anthropic/claude-sonnet-4-20250514",
+      modelName: 'anthropic/claude-sonnet-4-20250514',
       apiKey: process.env.MODEL_API_KEY,
     },
     disablePino: true,
@@ -190,7 +198,7 @@ async function runAgentExtraction(targetUrl: string): Promise<ExtractionResult |
     const page = stagehand.context.pages()[0];
 
     log(`Navigating to ${targetUrl}...`);
-    await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeoutMs: 30000 });
+    await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeoutMs: 30000 });
     await page.waitForTimeout(3000);
 
     log(`Starting agent extraction (max ${maxSteps} steps)...`);
@@ -266,7 +274,6 @@ Return every session you can see.
     const extraction = await stagehand.extract(extractionInstruction, ExtractionResultSchema);
 
     return extraction as ExtractionResult;
-
   } catch (error) {
     log(`Error: ${error instanceof Error ? error.message : String(error)}`);
     return null;
@@ -277,7 +284,7 @@ Return every session you can see.
 
 async function main() {
   if (!url) {
-    console.error("URL is required");
+    console.error('URL is required');
     process.exit(1);
   }
 

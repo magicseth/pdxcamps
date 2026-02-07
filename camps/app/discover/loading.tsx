@@ -4,7 +4,10 @@ export default function DiscoverLoading() {
       {/* Header skeleton */}
       <div className="sticky top-0 z-10 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-4">
         <div className="max-w-6xl mx-auto">
-          <div className="h-8 w-48 bg-slate-200 dark:bg-slate-700 rounded animate-pulse motion-reduce:animate-none" aria-hidden="true" />
+          <div
+            className="h-8 w-48 bg-slate-200 dark:bg-slate-700 rounded animate-pulse motion-reduce:animate-none"
+            aria-hidden="true"
+          />
         </div>
       </div>
 
@@ -24,11 +27,7 @@ export default function DiscoverLoading() {
         {/* Camp cards skeleton */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div
-              key={i}
-              className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden"
-              aria-hidden="true"
-            >
+            <div key={i} className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden" aria-hidden="true">
               <div className="h-32 bg-slate-200 dark:bg-slate-700 animate-pulse motion-reduce:animate-none" />
               <div className="p-4 space-y-3">
                 <div className="h-5 w-3/4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse motion-reduce:animate-none" />

@@ -1,8 +1,8 @@
-import { query } from "../_generated/server";
-import { v } from "convex/values";
-import { Doc, Id } from "../_generated/dataModel";
-import { getFamily } from "../lib/auth";
-import { registrationStatusValidator } from "../lib/validators";
+import { query } from '../_generated/server';
+import { v } from 'convex/values';
+import { Doc, Id } from '../_generated/dataModel';
+import { getFamily } from '../lib/auth';
+import { registrationStatusValidator } from '../lib/validators';
 
 /**
  * Get all registrations for the current family within a date range.
@@ -22,21 +22,19 @@ export const getFamilyCalendar = query({
 
     // Get registrations for the family
     let registrations = await ctx.db
-      .query("registrations")
-      .withIndex("by_family", (q) => q.eq("familyId", family._id))
+      .query('registrations')
+      .withIndex('by_family', (q) => q.eq('familyId', family._id))
       .collect();
 
     // Filter by status if specified
     if (args.statuses && args.statuses.length > 0) {
-      registrations = registrations.filter((reg) =>
-        args.statuses!.includes(reg.status)
-      );
+      registrations = registrations.filter((reg) => args.statuses!.includes(reg.status));
     }
 
     // Fetch all related sessions
     const sessionIds = Array.from(new Set(registrations.map((r) => r.sessionId)));
     const sessionsRaw = await Promise.all(sessionIds.map((id) => ctx.db.get(id)));
-    const sessions = sessionsRaw.filter((s): s is Doc<"sessions"> => s !== null);
+    const sessions = sessionsRaw.filter((s): s is Doc<'sessions'> => s !== null);
     const sessionMap = new Map(sessions.map((s) => [s._id, s]));
 
     // Filter registrations by session date range
@@ -62,10 +60,10 @@ export const getFamilyCalendar = query({
     ]);
 
     // Create lookup maps with proper typing
-    const camps = campsRaw.filter((c): c is Doc<"camps"> => c !== null);
-    const locations = locationsRaw.filter((l): l is Doc<"locations"> => l !== null);
-    const organizations = organizationsRaw.filter((o): o is Doc<"organizations"> => o !== null);
-    const children = childrenRaw.filter((c): c is Doc<"children"> => c !== null);
+    const camps = campsRaw.filter((c): c is Doc<'camps'> => c !== null);
+    const locations = locationsRaw.filter((l): l is Doc<'locations'> => l !== null);
+    const organizations = organizationsRaw.filter((o): o is Doc<'organizations'> => o !== null);
+    const children = childrenRaw.filter((c): c is Doc<'children'> => c !== null);
 
     const campMap = new Map(camps.map((c) => [c._id, c]));
     const locationMap = new Map(locations.map((l) => [l._id, l]));
@@ -102,7 +100,7 @@ export const getFamilyCalendar = query({
  */
 export const getRegistration = query({
   args: {
-    registrationId: v.id("registrations"),
+    registrationId: v.id('registrations'),
   },
   handler: async (ctx, args) => {
     const family = await getFamily(ctx);
@@ -153,21 +151,21 @@ export const getRegistration = query({
  */
 export const getRegistrationsBySession = query({
   args: {
-    sessionId: v.id("sessions"),
+    sessionId: v.id('sessions'),
   },
   handler: async (ctx, args) => {
     const family = await getFamily(ctx);
 
     // Get all registrations for this session
     const registrations = await ctx.db
-      .query("registrations")
-      .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+      .query('registrations')
+      .withIndex('by_session', (q) => q.eq('sessionId', args.sessionId))
       .collect();
 
     // Get unique child IDs
     const childIds = Array.from(new Set(registrations.map((r) => r.childId)));
     const childrenRaw = await Promise.all(childIds.map((id) => ctx.db.get(id)));
-    const children = childrenRaw.filter((c): c is Doc<"children"> => c !== null);
+    const children = childrenRaw.filter((c): c is Doc<'children'> => c !== null);
     const childMap = new Map(children.map((c) => [c._id, c]));
 
     // Return registrations with child first name only (for privacy)
@@ -180,13 +178,11 @@ export const getRegistrationsBySession = query({
         status: registration.status,
         waitlistPosition: registration.waitlistPosition,
         // Only show full details for own family's registrations
-        childFirstName: child?.firstName ?? "Unknown",
+        childFirstName: child?.firstName ?? 'Unknown',
         isOwnFamily,
         // Include notes only for own family
         notes: isOwnFamily ? registration.notes : undefined,
-        externalConfirmationCode: isOwnFamily
-          ? registration.externalConfirmationCode
-          : undefined,
+        externalConfirmationCode: isOwnFamily ? registration.externalConfirmationCode : undefined,
       };
     });
   },
@@ -198,7 +194,7 @@ export const getRegistrationsBySession = query({
  */
 export const getChildCalendar = query({
   args: {
-    childId: v.id("children"),
+    childId: v.id('children'),
     startDate: v.string(),
     endDate: v.string(),
   },
@@ -216,14 +212,14 @@ export const getChildCalendar = query({
 
     // Get registrations for this child
     const registrations = await ctx.db
-      .query("registrations")
-      .withIndex("by_child", (q) => q.eq("childId", args.childId))
+      .query('registrations')
+      .withIndex('by_child', (q) => q.eq('childId', args.childId))
       .collect();
 
     // Fetch all sessions
     const sessionIds = Array.from(new Set(registrations.map((r) => r.sessionId)));
     const sessionsRaw = await Promise.all(sessionIds.map((id) => ctx.db.get(id)));
-    const sessions = sessionsRaw.filter((s): s is Doc<"sessions"> => s !== null);
+    const sessions = sessionsRaw.filter((s): s is Doc<'sessions'> => s !== null);
     const sessionMap = new Map(sessions.map((s) => [s._id, s]));
 
     // Filter by date range
@@ -244,9 +240,9 @@ export const getChildCalendar = query({
       Promise.all(organizationIds.map((id) => ctx.db.get(id))),
     ]);
 
-    const camps = campsRaw.filter((c): c is Doc<"camps"> => c !== null);
-    const locations = locationsRaw.filter((l): l is Doc<"locations"> => l !== null);
-    const organizations = organizationsRaw.filter((o): o is Doc<"organizations"> => o !== null);
+    const camps = campsRaw.filter((c): c is Doc<'camps'> => c !== null);
+    const locations = locationsRaw.filter((l): l is Doc<'locations'> => l !== null);
+    const organizations = organizationsRaw.filter((o): o is Doc<'organizations'> => o !== null);
 
     const campMap = new Map(camps.map((c) => [c._id, c]));
     const locationMap = new Map(locations.map((l) => [l._id, l]));
@@ -293,14 +289,14 @@ export const getSavedCamps = query({
 
     // Get all registrations for the family
     const registrations = await ctx.db
-      .query("registrations")
-      .withIndex("by_family", (q) => q.eq("familyId", family._id))
+      .query('registrations')
+      .withIndex('by_family', (q) => q.eq('familyId', family._id))
       .collect();
 
     // Fetch all related sessions
     const sessionIds = Array.from(new Set(registrations.map((r) => r.sessionId)));
     const sessionsRaw = await Promise.all(sessionIds.map((id) => ctx.db.get(id)));
-    const sessions = sessionsRaw.filter((s): s is Doc<"sessions"> => s !== null);
+    const sessions = sessionsRaw.filter((s): s is Doc<'sessions'> => s !== null);
     const sessionMap = new Map(sessions.map((s) => [s._id, s]));
 
     // Collect all unique IDs for batch fetching
@@ -318,10 +314,10 @@ export const getSavedCamps = query({
     ]);
 
     // Create lookup maps
-    const camps = campsRaw.filter((c): c is Doc<"camps"> => c !== null);
-    const locations = locationsRaw.filter((l): l is Doc<"locations"> => l !== null);
-    const organizations = organizationsRaw.filter((o): o is Doc<"organizations"> => o !== null);
-    const children = childrenRaw.filter((c): c is Doc<"children"> => c !== null);
+    const camps = campsRaw.filter((c): c is Doc<'camps'> => c !== null);
+    const locations = locationsRaw.filter((l): l is Doc<'locations'> => l !== null);
+    const organizations = organizationsRaw.filter((o): o is Doc<'organizations'> => o !== null);
+    const children = childrenRaw.filter((c): c is Doc<'children'> => c !== null);
 
     const campMap = new Map(camps.map((c) => [c._id, c]));
     const locationMap = new Map(locations.map((l) => [l._id, l]));
@@ -351,26 +347,18 @@ export const getSavedCamps = query({
     });
 
     // Sort by session start date
-    const sortByDate = (a: typeof enrichedRegistrations[0], b: typeof enrichedRegistrations[0]) => {
-      const dateA = a.session?.startDate ?? "";
-      const dateB = b.session?.startDate ?? "";
+    const sortByDate = (a: (typeof enrichedRegistrations)[0], b: (typeof enrichedRegistrations)[0]) => {
+      const dateA = a.session?.startDate ?? '';
+      const dateB = b.session?.startDate ?? '';
       return dateA.localeCompare(dateB);
     };
 
     // Group by status
     return {
-      interested: enrichedRegistrations
-        .filter((r) => r.status === "interested")
-        .sort(sortByDate),
-      registered: enrichedRegistrations
-        .filter((r) => r.status === "registered")
-        .sort(sortByDate),
-      waitlisted: enrichedRegistrations
-        .filter((r) => r.status === "waitlisted")
-        .sort(sortByDate),
-      cancelled: enrichedRegistrations
-        .filter((r) => r.status === "cancelled")
-        .sort(sortByDate),
+      interested: enrichedRegistrations.filter((r) => r.status === 'interested').sort(sortByDate),
+      registered: enrichedRegistrations.filter((r) => r.status === 'registered').sort(sortByDate),
+      waitlisted: enrichedRegistrations.filter((r) => r.status === 'waitlisted').sort(sortByDate),
+      cancelled: enrichedRegistrations.filter((r) => r.status === 'cancelled').sort(sortByDate),
     };
   },
 });

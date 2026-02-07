@@ -27,23 +27,20 @@ export function MarketCard({ market, onSelect, isSelected }: MarketCardProps) {
       className={`
         w-full text-left p-4 rounded-lg border-2 transition-all
         ${tierColors[market.tier]}
-        ${isSelected
-          ? 'ring-2 ring-primary ring-offset-2 dark:ring-offset-slate-900'
-          : 'hover:border-primary/50 hover:shadow-md'
+        ${
+          isSelected
+            ? 'ring-2 ring-primary ring-offset-2 dark:ring-offset-slate-900'
+            : 'hover:border-primary/50 hover:shadow-md'
         }
       `}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-2">
         <div>
-          <h3 className="font-semibold text-slate-900 dark:text-white">
-            {market.name}
-          </h3>
+          <h3 className="font-semibold text-slate-900 dark:text-white">{market.name}</h3>
           <p className="text-xs text-slate-500">{market.state}</p>
         </div>
-        <span className={`px-2 py-0.5 text-xs rounded-full ${tierBadgeColors[market.tier]}`}>
-          Tier {market.tier}
-        </span>
+        <span className={`px-2 py-0.5 text-xs rounded-full ${tierBadgeColors[market.tier]}`}>Tier {market.tier}</span>
       </div>
 
       {/* Status Badge */}
@@ -55,9 +52,7 @@ export function MarketCard({ market, onSelect, isSelected }: MarketCardProps) {
       </div>
 
       {/* Market Info */}
-      <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 mb-2">
-        {market.keyStats}
-      </p>
+      <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 mb-2">{market.keyStats}</p>
 
       {/* Data Stats - only show if city exists */}
       {market.stats && (
@@ -104,11 +99,7 @@ function ProgressDot({ filled, label }: { filled: boolean; label: string }) {
   return (
     <div className="flex flex-col items-center">
       <div
-        className={`w-2 h-2 rounded-full ${
-          filled
-            ? 'bg-green-500'
-            : 'bg-slate-300 dark:bg-slate-600'
-        }`}
+        className={`w-2 h-2 rounded-full ${filled ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-600'}`}
         title={label}
       />
     </div>
@@ -116,13 +107,5 @@ function ProgressDot({ filled, label }: { filled: boolean; label: string }) {
 }
 
 function ProgressLine({ filled }: { filled: boolean }) {
-  return (
-    <div
-      className={`flex-1 h-0.5 ${
-        filled
-          ? 'bg-green-500'
-          : 'bg-slate-300 dark:bg-slate-600'
-      }`}
-    />
-  );
+  return <div className={`flex-1 h-0.5 ${filled ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-600'}`} />;
 }

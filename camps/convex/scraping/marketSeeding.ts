@@ -1,4 +1,4 @@
-"use node";
+'use node';
 
 /**
  * Market Seeding
@@ -7,10 +7,10 @@
  * Creates organizations, scrape sources, and queues scraper development.
  */
 
-import { action } from "../_generated/server";
-import { api } from "../_generated/api";
-import { v } from "convex/values";
-import { Id } from "../_generated/dataModel";
+import { action } from '../_generated/server';
+import { api } from '../_generated/api';
+import { v } from 'convex/values';
+import { Id } from '../_generated/dataModel';
 
 /**
  * Extract organization name from URL
@@ -23,13 +23,13 @@ function extractOrgNameFromUrl(url: string): string {
     let domain = parsed.hostname;
 
     // Remove www prefix
-    domain = domain.replace(/^www\./, "");
+    domain = domain.replace(/^www\./, '');
 
     // Remove common TLDs and suffixes
-    domain = domain.replace(/\.(com|org|edu|net|gov|co|io)$/, "");
+    domain = domain.replace(/\.(com|org|edu|net|gov|co|io)$/, '');
 
     // Handle subdomains (e.g., secure.omsi.edu -> omsi)
-    const parts = domain.split(".");
+    const parts = domain.split('.');
     if (parts.length > 1) {
       // Take the main domain part, not subdomains
       domain = parts[parts.length - 1] || parts[0];
@@ -40,16 +40,16 @@ function extractOrgNameFromUrl(url: string): string {
       // Split on common separators
       .split(/[-_]/)
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(" ");
+      .join(' ');
 
     // Handle all-caps acronyms
     if (domain.toUpperCase() === domain && domain.length <= 5) {
       name = domain.toUpperCase();
     }
 
-    return name || "Unknown Organization";
+    return name || 'Unknown Organization';
   } catch {
-    return "Unknown Organization";
+    return 'Unknown Organization';
   }
 }
 
@@ -69,12 +69,12 @@ export const seedMarket = action({
         url: v.string(),
         name: v.optional(v.string()), // Optional override for org name
         notes: v.optional(v.string()), // Notes for scraper development
-      })
+      }),
     ),
   },
   handler: async (
     ctx,
-    args
+    args,
   ): Promise<{
     success: boolean;
     cityId: string | null;
@@ -84,7 +84,7 @@ export const seedMarket = action({
       organizationId: string | null;
       sourceId: string | null;
       developmentRequestId: string | null;
-      status: "created" | "exists" | "error";
+      status: 'created' | 'exists' | 'error';
       error?: string;
     }>;
     summary: {
@@ -114,7 +114,7 @@ export const seedMarket = action({
       organizationId: string | null;
       sourceId: string | null;
       developmentRequestId: string | null;
-      status: "created" | "exists" | "error";
+      status: 'created' | 'exists' | 'error';
       error?: string;
     }> = [];
 
@@ -127,23 +127,17 @@ export const seedMarket = action({
 
       try {
         // Check if organization already exists (by URL domain)
-        const domain = new URL(camp.url).hostname.replace(/^www\./, "");
-        const existingOrgs = await ctx.runQuery(
-          api.organizations.queries.listOrganizations,
-          { cityId: city._id }
-        );
+        const domain = new URL(camp.url).hostname.replace(/^www\./, '');
+        const existingOrgs = await ctx.runQuery(api.organizations.queries.listOrganizations, { cityId: city._id });
 
-        let organizationId: Id<"organizations"> | null = null;
+        let organizationId: Id<'organizations'> | null = null;
         let orgExists = false;
 
         // Check for existing org by website domain
         for (const org of existingOrgs || []) {
           if (org.website) {
             try {
-              const orgDomain = new URL(org.website).hostname.replace(
-                /^www\./,
-                ""
-              );
+              const orgDomain = new URL(org.website).hostname.replace(/^www\./, '');
               if (orgDomain === domain) {
                 organizationId = org._id;
                 orgExists = true;
@@ -157,22 +151,16 @@ export const seedMarket = action({
 
         // Create organization if it doesn't exist
         if (!organizationId) {
-          organizationId = await ctx.runMutation(
-            api.organizations.mutations.createOrganization,
-            {
-              name,
-              website: camp.url,
-              cityIds: [city._id],
-            }
-          );
+          organizationId = await ctx.runMutation(api.organizations.mutations.createOrganization, {
+            name,
+            website: camp.url,
+            cityIds: [city._id],
+          });
         }
 
         // Check if scrape source already exists for this URL
-        const existingSources = await ctx.runQuery(
-          api.scraping.queries.listScrapeSources,
-          {}
-        );
-        let sourceId: Id<"scrapeSources"> | null = null;
+        const existingSources = await ctx.runQuery(api.scraping.queries.listScrapeSources, {});
+        let sourceId: Id<'scrapeSources'> | null = null;
         let sourceExists = false;
 
         for (const source of existingSources || []) {
@@ -185,31 +173,25 @@ export const seedMarket = action({
 
         // Create scrape source if it doesn't exist
         if (!sourceId) {
-          sourceId = await ctx.runMutation(
-            api.scraping.sources.createScrapeSourceSimple,
-            {
-              name,
-              url: camp.url,
-              organizationId: organizationId!,
-            }
-          );
+          sourceId = await ctx.runMutation(api.scraping.sources.createScrapeSourceSimple, {
+            name,
+            url: camp.url,
+            organizationId: organizationId!,
+          });
         }
 
         // Queue scraper development request (always queue even if source exists)
         let developmentRequestId: string | null = null;
         if (!sourceExists) {
           try {
-            developmentRequestId = await ctx.runMutation(
-              api.scraping.development.requestScraperDevelopment,
-              {
-                sourceName: name,
-                sourceUrl: camp.url,
-                cityId: city._id,
-                sourceId: sourceId!,
-                notes: camp.notes,
-                requestedBy: "market-seeding",
-              }
-            );
+            developmentRequestId = await ctx.runMutation(api.scraping.development.requestScraperDevelopment, {
+              sourceName: name,
+              sourceUrl: camp.url,
+              cityId: city._id,
+              sourceId: sourceId!,
+              notes: camp.notes,
+              requestedBy: 'market-seeding',
+            });
           } catch (e) {
             // Request might already exist, that's ok
             console.log(`Dev request may already exist for ${camp.url}`);
@@ -224,7 +206,7 @@ export const seedMarket = action({
             organizationId,
             sourceId,
             developmentRequestId,
-            status: "exists",
+            status: 'exists',
           });
         } else {
           created++;
@@ -234,7 +216,7 @@ export const seedMarket = action({
             organizationId,
             sourceId,
             developmentRequestId,
-            status: "created",
+            status: 'created',
           });
         }
       } catch (error) {
@@ -245,8 +227,8 @@ export const seedMarket = action({
           organizationId: null,
           sourceId: null,
           developmentRequestId: null,
-          status: "error",
-          error: error instanceof Error ? error.message : "Unknown error",
+          status: 'error',
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     }
@@ -273,7 +255,10 @@ export const getMarketStatus = action({
   args: {
     citySlug: v.string(),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     city: { id: string; name: string; slug: string };
     organizations: number;
     scrapeSources: number;
@@ -308,20 +293,17 @@ export const getMarketStatus = action({
     // Filter sources to this city's orgs
     const orgIds = new Set(orgList.map((o: { _id: string }) => o._id));
     const citySources = sourceList.filter(
-      (s: { organizationId?: string }) => s.organizationId && orgIds.has(s.organizationId)
+      (s: { organizationId?: string }) => s.organizationId && orgIds.has(s.organizationId),
     );
 
     // Get development requests
-    const devRequests = await ctx.runQuery(
-      api.scraping.development.listRequests,
-      { limit: 100 }
-    );
+    const devRequests = await ctx.runQuery(api.scraping.development.listRequests, { limit: 100 });
     const devRequestList = devRequests || [];
 
     // Filter to this city's sources
     const sourceIds = new Set(citySources.map((s: { _id: string }) => s._id));
     const cityDevRequests = devRequestList.filter(
-      (r: { sourceId?: string }) => r.sourceId && sourceIds.has(r.sourceId)
+      (r: { sourceId?: string }) => r.sourceId && sourceIds.has(r.sourceId),
     );
 
     // Count by status
@@ -371,7 +353,7 @@ export const scrapeDirectoryForCampUrls = action({
   },
   handler: async (
     _ctx,
-    args
+    args,
   ): Promise<{
     success: boolean;
     directoryUrl: string;
@@ -386,29 +368,26 @@ export const scrapeDirectoryForCampUrls = action({
       // Fetch the directory page with more browser-like headers
       const response = await fetch(args.directoryUrl, {
         headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-          Accept:
-            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-          "Accept-Language": "en-US,en;q=0.9",
-          "Accept-Encoding": "gzip, deflate, br",
-          "Cache-Control": "no-cache",
-          Pragma: "no-cache",
-          "Sec-Ch-Ua": '"Not A(Brand";v="99", "Google Chrome";v="121", "Chromium";v="121"',
-          "Sec-Ch-Ua-Mobile": "?0",
-          "Sec-Ch-Ua-Platform": '"macOS"',
-          "Sec-Fetch-Dest": "document",
-          "Sec-Fetch-Mode": "navigate",
-          "Sec-Fetch-Site": "none",
-          "Sec-Fetch-User": "?1",
-          "Upgrade-Insecure-Requests": "1",
+          'User-Agent':
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'Sec-Ch-Ua': '"Not A(Brand";v="99", "Google Chrome";v="121", "Chromium";v="121"',
+          'Sec-Ch-Ua-Mobile': '?0',
+          'Sec-Ch-Ua-Platform': '"macOS"',
+          'Sec-Fetch-Dest': 'document',
+          'Sec-Fetch-Mode': 'navigate',
+          'Sec-Fetch-Site': 'none',
+          'Sec-Fetch-User': '?1',
+          'Upgrade-Insecure-Requests': '1',
         },
       });
 
       if (!response.ok) {
-        throw new Error(
-          `HTTP error: ${response.status} ${response.statusText}`
-        );
+        throw new Error(`HTTP error: ${response.status} ${response.statusText}`);
       }
 
       const html = await response.text();
@@ -426,10 +405,10 @@ export const scrapeDirectoryForCampUrls = action({
         // Skip empty links, anchors, javascript, mailto, tel
         if (
           !url ||
-          url.startsWith("#") ||
-          url.startsWith("javascript:") ||
-          url.startsWith("mailto:") ||
-          url.startsWith("tel:")
+          url.startsWith('#') ||
+          url.startsWith('javascript:') ||
+          url.startsWith('mailto:') ||
+          url.startsWith('tel:')
         ) {
           continue;
         }
@@ -451,14 +430,14 @@ export const scrapeDirectoryForCampUrls = action({
         // Extract domain
         let domain: string;
         try {
-          domain = new URL(url).hostname.replace(/^www\./, "");
+          domain = new URL(url).hostname.replace(/^www\./, '');
         } catch {
           continue;
         }
 
         // Apply base URL filter if provided
         if (args.baseUrlFilter) {
-          const filterDomain = args.baseUrlFilter.replace(/^www\./, "");
+          const filterDomain = args.baseUrlFilter.replace(/^www\./, '');
           if (!domain.includes(filterDomain)) {
             continue;
           }
@@ -467,7 +446,7 @@ export const scrapeDirectoryForCampUrls = action({
         // Apply link pattern if provided
         if (args.linkPattern) {
           try {
-            const pattern = new RegExp(args.linkPattern, "i");
+            const pattern = new RegExp(args.linkPattern, 'i');
             if (!pattern.test(url) && !pattern.test(text)) {
               continue;
             }
@@ -504,7 +483,7 @@ export const scrapeDirectoryForCampUrls = action({
         success: false,
         directoryUrl: args.directoryUrl,
         links: [],
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   },
@@ -523,12 +502,12 @@ export const organizeExtractedUrls = action({
         url: v.string(),
         text: v.string(),
         domain: v.string(),
-      })
+      }),
     ),
   },
   handler: async (
     _ctx,
-    args
+    args,
   ): Promise<{
     organizations: Array<{
       domain: string;
@@ -538,10 +517,7 @@ export const organizeExtractedUrls = action({
     }>;
   }> => {
     // Group links by domain
-    const byDomain = new Map<
-      string,
-      Array<{ url: string; text: string }>
-    >();
+    const byDomain = new Map<string, Array<{ url: string; text: string }>>();
 
     for (const link of args.links) {
       const existing = byDomain.get(link.domain) || [];
@@ -593,10 +569,10 @@ export const organizeExtractedUrls = action({
 
       // Generate suggested name from domain
       let suggestedName = domain
-        .replace(/\.(com|org|edu|net|gov|co|io)$/i, "")
+        .replace(/\.(com|org|edu|net|gov|co|io)$/i, '')
         .split(/[.-]/)
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" ");
+        .join(' ');
 
       // Use link text if more descriptive
       const bestText = scored[0].text;

@@ -1,14 +1,14 @@
-import { mutation, action } from "../_generated/server";
-import { api } from "../_generated/api";
-import { v } from "convex/values";
-import { checkIsAdmin } from "../lib/adminAuth";
+import { mutation, action } from '../_generated/server';
+import { api } from '../_generated/api';
+import { v } from 'convex/values';
+import { checkIsAdmin } from '../lib/adminAuth';
 
 /**
  * Update a location's address and coordinates
  */
 export const updateLocation = mutation({
   args: {
-    locationId: v.id("locations"),
+    locationId: v.id('locations'),
     name: v.optional(v.string()),
     street: v.optional(v.string()),
     city: v.optional(v.string()),
@@ -20,12 +20,12 @@ export const updateLocation = mutation({
   handler: async (ctx, args) => {
     const isAdminUser = await checkIsAdmin(ctx);
     if (!isAdminUser) {
-      throw new Error("Not authorized");
+      throw new Error('Not authorized');
     }
 
     const location = await ctx.db.get(args.locationId);
     if (!location) {
-      throw new Error("Location not found");
+      throw new Error('Location not found');
     }
 
     // Build update object
@@ -41,12 +41,7 @@ export const updateLocation = mutation({
     }
 
     // Update address if any address fields provided
-    if (
-      args.street !== undefined ||
-      args.city !== undefined ||
-      args.state !== undefined ||
-      args.zip !== undefined
-    ) {
+    if (args.street !== undefined || args.city !== undefined || args.state !== undefined || args.zip !== undefined) {
       updates.address = {
         street: args.street ?? location.address.street,
         city: args.city ?? location.address.city,
@@ -75,9 +70,12 @@ export const updateLocation = mutation({
  */
 export const geocodeLocation = action({
   args: {
-    locationId: v.id("locations"),
+    locationId: v.id('locations'),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     success: boolean;
     latitude?: number;
     longitude?: number;
@@ -90,12 +88,12 @@ export const geocodeLocation = action({
     });
 
     if (!location) {
-      return { success: false, error: "Location not found" };
+      return { success: false, error: 'Location not found' };
     }
 
     // Build geocode query from available data
-    let query = "";
-    if (location.address.street && location.address.street !== "TBD") {
+    let query = '';
+    if (location.address.street && location.address.street !== 'TBD') {
       query = `${location.address.street}, ${location.address.city}, ${location.address.state} ${location.address.zip}`;
     } else {
       // Fall back to location name
@@ -103,17 +101,17 @@ export const geocodeLocation = action({
     }
 
     if (!query) {
-      return { success: false, error: "No address data to geocode" };
+      return { success: false, error: 'No address data to geocode' };
     }
 
     // Call geocode action
     const result = await ctx.runAction(api.lib.geocoding.geocodeQuery, {
       query,
-      nearCity: "Portland, OR",
+      nearCity: 'Portland, OR',
     });
 
     if (!result) {
-      return { success: false, error: "Geocoding failed - no results found" };
+      return { success: false, error: 'Geocoding failed - no results found' };
     }
 
     // Update the location with new coordinates and any address components
@@ -122,18 +120,11 @@ export const geocodeLocation = action({
       latitude: result.latitude,
       longitude: result.longitude,
       // Only update address components if we got better data
-      street: result.street && (!location.address.street || location.address.street === "TBD")
-        ? result.street
-        : undefined,
-      city: result.city && !location.address.city
-        ? result.city
-        : undefined,
-      state: result.state && !location.address.state
-        ? result.state
-        : undefined,
-      zip: result.zip && !location.address.zip
-        ? result.zip
-        : undefined,
+      street:
+        result.street && (!location.address.street || location.address.street === 'TBD') ? result.street : undefined,
+      city: result.city && !location.address.city ? result.city : undefined,
+      state: result.state && !location.address.state ? result.state : undefined,
+      zip: result.zip && !location.address.zip ? result.zip : undefined,
     });
 
     return {
@@ -152,7 +143,10 @@ export const bulkGeocodeLocations = action({
   args: {
     limit: v.optional(v.number()), // Limit to avoid API rate limits
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     success: boolean;
     processed: number;
     succeeded: number;
@@ -170,7 +164,7 @@ export const bulkGeocodeLocations = action({
         processed: 0,
         succeeded: 0,
         failed: 0,
-        errors: ["Not authorized or no data"],
+        errors: ['Not authorized or no data'],
       };
     }
 
@@ -196,7 +190,7 @@ export const bulkGeocodeLocations = action({
         await new Promise((resolve) => setTimeout(resolve, 200));
       } catch (error) {
         failed++;
-        errors.push(`${location.name}: ${error instanceof Error ? error.message : "Unknown error"}`);
+        errors.push(`${location.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
 

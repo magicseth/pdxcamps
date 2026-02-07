@@ -5,6 +5,7 @@ import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
 import { CloseIcon } from '../shared/icons';
+import posthog from 'posthog-js';
 
 type EventType = 'vacation' | 'family_visit' | 'day_camp' | 'summer_school' | 'other';
 
@@ -55,11 +56,14 @@ export function AddEventModal({
   const createEvent = useMutation(api.planner.mutations.createFamilyEvent);
 
   // ESC key to close modal
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Escape' && !isSubmitting) {
-      onClose();
-    }
-  }, [onClose, isSubmitting]);
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isSubmitting) {
+        onClose();
+      }
+    },
+    [onClose, isSubmitting],
+  );
 
   useEffect(() => {
     if (isOpen) {
@@ -101,10 +105,22 @@ export function AddEventModal({
         color,
       });
 
+      // Track family event creation
+      const durationDays =
+        Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      posthog.capture('family_event_created', {
+        event_type: eventType,
+        duration_days: durationDays,
+        children_count: selectedChildIds.length,
+        has_location: !!location.trim(),
+        has_notes: !!notes.trim(),
+      });
+
       // Reset form and close
       resetForm();
       onClose();
     } catch (err) {
+      posthog.captureException(err);
       setError(err instanceof Error ? err.message : 'Failed to create event');
     } finally {
       setIsSubmitting(false);
@@ -125,11 +141,7 @@ export function AddEventModal({
   };
 
   const toggleChild = (childId: Id<'children'>) => {
-    setSelectedChildIds((prev) =>
-      prev.includes(childId)
-        ? prev.filter((id) => id !== childId)
-        : [...prev, childId]
-    );
+    setSelectedChildIds((prev) => (prev.includes(childId) ? prev.filter((id) => id !== childId) : [...prev, childId]));
   };
 
   const selectAllChildren = () => {
@@ -139,11 +151,14 @@ export function AddEventModal({
   };
 
   // Handle click outside modal
-  const handleBackdropClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget && !isSubmitting) {
-      onClose();
-    }
-  }, [onClose, isSubmitting]);
+  const handleBackdropClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (e.target === e.currentTarget && !isSubmitting) {
+        onClose();
+      }
+    },
+    [onClose, isSubmitting],
+  );
 
   if (!isOpen) return null;
 
@@ -175,7 +190,10 @@ export function AddEventModal({
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           {error && (
-            <div role="alert" className="p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm">
+            <div
+              role="alert"
+              className="p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm"
+            >
               {error}
             </div>
           )}
@@ -200,9 +218,7 @@ export function AddEventModal({
 
           {/* Event Type */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Event Type
-            </label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Event Type</label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {EVENT_TYPES.map((type) => (
                 <button
@@ -270,7 +286,10 @@ export function AddEventModal({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="event-start-date" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              <label
+                htmlFor="event-start-date"
+                className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+              >
                 Start Date *
               </label>
               <input
@@ -291,7 +310,10 @@ export function AddEventModal({
               />
             </div>
             <div>
-              <label htmlFor="event-end-date" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              <label
+                htmlFor="event-end-date"
+                className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+              >
                 End Date *
               </label>
               <input
@@ -310,9 +332,7 @@ export function AddEventModal({
           {/* Children Selection */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Children *
-              </label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Children *</label>
               {children && children.length > 1 && (
                 <button
                   type="button"
@@ -345,9 +365,7 @@ export function AddEventModal({
                       {child.firstName[0]}
                     </span>
                     {child.firstName}
-                    {selectedChildIds.includes(child._id) && (
-                      <span className="text-primary">✓</span>
-                    )}
+                    {selectedChildIds.includes(child._id) && <span className="text-primary">✓</span>}
                   </button>
                 ))}
               </div>
@@ -356,7 +374,10 @@ export function AddEventModal({
 
           {/* Location (optional) */}
           <div>
-            <label htmlFor="event-location" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label
+              htmlFor="event-location"
+              className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+            >
               Location (optional)
             </label>
             <input
@@ -371,9 +392,7 @@ export function AddEventModal({
 
           {/* Color */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Color
-            </label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Color</label>
             <div className="flex gap-2">
               {COLORS.map((c) => (
                 <button
@@ -381,9 +400,7 @@ export function AddEventModal({
                   type="button"
                   onClick={() => setColor(c.value)}
                   className={`w-8 h-8 rounded-full ${c.class} ${
-                    color === c.value
-                      ? 'ring-2 ring-offset-2 ring-slate-400 dark:ring-offset-slate-800'
-                      : ''
+                    color === c.value ? 'ring-2 ring-offset-2 ring-slate-400 dark:ring-offset-slate-800' : ''
                   }`}
                   title={c.label}
                   aria-label={`Select ${c.label.toLowerCase()} color`}
@@ -436,4 +453,3 @@ export function AddEventModal({
     </div>
   );
 }
-

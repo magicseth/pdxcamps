@@ -18,31 +18,34 @@
  * 7. Feedback triggers another Claude Code session
  */
 
-import { ConvexHttpClient } from "convex/browser";
-import { api } from "../convex/_generated/api";
-import { spawn, ChildProcess } from "child_process";
-import * as path from "path";
-import * as fs from "fs";
+import { ConvexHttpClient } from 'convex/browser';
+import { api } from '../convex/_generated/api';
+import { spawn, ChildProcess } from 'child_process';
+import * as path from 'path';
+import * as fs from 'fs';
 
 // Stagehand is optional - only used for testing scrapers
 let Stagehand: any = null;
 try {
-  Stagehand = require("@browserbasehq/stagehand").Stagehand;
+  Stagehand = require('@browserbasehq/stagehand').Stagehand;
 } catch {
   // Stagehand not installed - testing will be skipped
 }
 
 // Load environment from .env.local, but don't overwrite existing env vars
-const envPath = path.join(process.cwd(), ".env.local");
+const envPath = path.join(process.cwd(), '.env.local');
 if (fs.existsSync(envPath)) {
-  const envContent = fs.readFileSync(envPath, "utf-8");
-  for (const line of envContent.split("\n")) {
-    const [key, ...valueParts] = line.split("=");
+  const envContent = fs.readFileSync(envPath, 'utf-8');
+  for (const line of envContent.split('\n')) {
+    const [key, ...valueParts] = line.split('=');
     if (key && valueParts.length > 0) {
       const trimmedKey = key.trim();
       // Don't overwrite existing env vars (allows command-line override)
       if (!process.env[trimmedKey]) {
-        process.env[trimmedKey] = valueParts.join("=").trim().replace(/^["']|["']$/g, "");
+        process.env[trimmedKey] = valueParts
+          .join('=')
+          .trim()
+          .replace(/^["']|["']$/g, '');
       }
     }
   }
@@ -50,7 +53,7 @@ if (fs.existsSync(envPath)) {
 
 const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL;
 if (!CONVEX_URL) {
-  console.error("Error: NEXT_PUBLIC_CONVEX_URL not set in .env.local");
+  console.error('Error: NEXT_PUBLIC_CONVEX_URL not set in .env.local');
   process.exit(1);
 }
 
@@ -59,18 +62,26 @@ const client = new ConvexHttpClient(CONVEX_URL);
 /**
  * Fetch and log all queue statuses
  */
-async function logQueueStatus(prefix: string = "") {
+async function logQueueStatus(prefix: string = '') {
   try {
     // Fetch all queue counts in parallel
     const [scraperRequests, directoryStatus, contactStats] = await Promise.all([
       client.query(api.scraping.development.getPendingRequests, {}).catch(() => []),
-      client.query(api.scraping.directoryDaemon.getQueueStatus, {}).catch(() => ({ pending: 0, processing: 0, completed: 0, failed: 0 })),
-      client.query(api.scraping.contactExtractorHelpers.getContactExtractionStats, {}).catch(() => ({ needsExtraction: 0, withEmail: 0, total: 0 })),
+      client
+        .query(api.scraping.directoryDaemon.getQueueStatus, {})
+        .catch(() => ({ pending: 0, processing: 0, completed: 0, failed: 0 })),
+      client
+        .query(api.scraping.contactExtractorHelpers.getContactExtractionStats, {})
+        .catch(() => ({ needsExtraction: 0, withEmail: 0, total: 0 })),
     ]);
 
-    const scraperPending = (scraperRequests as any[]).filter((r: any) => r.status === "pending" || r.status === "in_progress").length;
+    const scraperPending = (scraperRequests as any[]).filter(
+      (r: any) => r.status === 'pending' || r.status === 'in_progress',
+    ).length;
 
-    console.log(`${prefix}📊 Backlog: 🔧 Scrapers: ${scraperPending} | 📂 Directories: ${directoryStatus.pending} | 📧 Contacts: ${contactStats.needsExtraction}`);
+    console.log(
+      `${prefix}📊 Backlog: 🔧 Scrapers: ${scraperPending} | 📂 Directories: ${directoryStatus.pending} | 📧 Contacts: ${contactStats.needsExtraction}`,
+    );
   } catch (err) {
     // Silently ignore errors fetching status
   }
@@ -78,13 +89,13 @@ async function logQueueStatus(prefix: string = "") {
 
 // Scratchpad directory for Claude Code work
 // Place scraper development outside Next.js project to avoid triggering Turbopack rebuilds
-const SCRATCHPAD_DIR = path.join(process.cwd(), "..", ".scraper-development");
+const SCRATCHPAD_DIR = path.join(process.cwd(), '..', '.scraper-development');
 if (!fs.existsSync(SCRATCHPAD_DIR)) {
   fs.mkdirSync(SCRATCHPAD_DIR, { recursive: true });
 }
 
 // Log file for current session
-const LOG_FILE = path.join(SCRATCHPAD_DIR, "daemon.log");
+const LOG_FILE = path.join(SCRATCHPAD_DIR, 'daemon.log');
 
 function writeLog(message: string) {
   const timestamp = new Date().toISOString();
@@ -135,7 +146,7 @@ let shutdownRequested = false;
 
 // Parse --workers N flag (default 1)
 function getWorkerCount(): number {
-  const idx = process.argv.findIndex(arg => arg === "--workers" || arg === "-w");
+  const idx = process.argv.findIndex((arg) => arg === '--workers' || arg === '-w');
   if (idx !== -1 && process.argv[idx + 1]) {
     const count = parseInt(process.argv[idx + 1], 10);
     if (!isNaN(count) && count > 0 && count <= 10) {
@@ -147,7 +158,7 @@ function getWorkerCount(): number {
 
 // Parse --city <slug> flag to filter by locale
 function getCitySlug(): string | undefined {
-  const idx = process.argv.findIndex(arg => arg === "--city" || arg === "-c");
+  const idx = process.argv.findIndex((arg) => arg === '--city' || arg === '-c');
   if (idx !== -1 && process.argv[idx + 1]) {
     return process.argv[idx + 1];
   }
@@ -163,8 +174,8 @@ async function getCityIdFromSlug(slug: string): Promise<string | null> {
       return city._id;
     }
     // Try partial match (e.g., "sf" matches "san-francisco-bay-area")
-    const partialMatch = (cities as any[]).find((c: any) =>
-      c.slug.includes(slug) || c.name.toLowerCase().includes(slug.toLowerCase())
+    const partialMatch = (cities as any[]).find(
+      (c: any) => c.slug.includes(slug) || c.name.toLowerCase().includes(slug.toLowerCase()),
     );
     if (partialMatch) {
       console.log(`   (Matched "${slug}" to "${partialMatch.name}")`);
@@ -178,7 +189,7 @@ async function getCityIdFromSlug(slug: string): Promise<string | null> {
 }
 
 async function main() {
-  const verbose = process.argv.includes("--verbose") || process.argv.includes("-v");
+  const verbose = process.argv.includes('--verbose') || process.argv.includes('-v');
   const workerCount = getWorkerCount();
   const citySlug = getCitySlug();
 
@@ -205,7 +216,7 @@ async function main() {
   fs.writeFileSync(LOG_FILE, `=== Scraper Daemon Started ${new Date().toISOString()} ===\n`);
   writeLog(`Starting with ${workerCount} worker(s)${cityId ? ` for ${cityName}` : ''}`);
 
-  console.log("🤖 Scraper Development Daemon Started");
+  console.log('🤖 Scraper Development Daemon Started');
   console.log(`   Convex: ${CONVEX_URL}`);
   console.log(`   Workers: ${workerCount}`);
   if (cityId && cityName) {
@@ -215,10 +226,10 @@ async function main() {
   }
   console.log(`   Logs: tail -f ${LOG_FILE}`);
   if (verbose) {
-    console.log("   Mode: Verbose");
+    console.log('   Mode: Verbose');
   }
-  console.log("   Running autonomously. Submit requests & feedback via /admin/scraper-dev");
-  console.log("   Press Ctrl+C to stop.\n");
+  console.log('   Running autonomously. Submit requests & feedback via /admin/scraper-dev');
+  console.log('   Press Ctrl+C to stop.\n');
 
   // Initialize workers
   for (let i = 0; i < workerCount; i++) {
@@ -227,8 +238,8 @@ async function main() {
   }
 
   // Handle graceful shutdown
-  process.on("SIGINT", () => {
-    console.log("\nShutting down...");
+  process.on('SIGINT', () => {
+    console.log('\nShutting down...');
     shutdownRequested = true;
     for (const worker of workers.values()) {
       if (worker.process) {
@@ -243,7 +254,7 @@ async function main() {
   while (!shutdownRequested) {
     try {
       // Find idle workers
-      const idleWorkers = Array.from(workers.values()).filter(w => !w.busy);
+      const idleWorkers = Array.from(workers.values()).filter((w) => !w.busy);
 
       // For each idle worker, try to claim work
       for (const worker of idleWorkers) {
@@ -276,12 +287,12 @@ async function main() {
       }
 
       // Log status periodically
-      const busyCount = Array.from(workers.values()).filter(w => w.busy).length;
+      const busyCount = Array.from(workers.values()).filter((w) => w.busy).length;
       if (busyCount > 0 && verbose) {
         console.log(`   Active workers: ${busyCount}/${workerCount}`);
       }
     } catch (error) {
-      console.error("Error:", error instanceof Error ? error.message : error);
+      console.error('Error:', error instanceof Error ? error.message : error);
     }
 
     await sleep(POLL_INTERVAL_MS);
@@ -346,8 +357,35 @@ function extractSearchTerms(sourceName: string, url: string): string[] {
   const terms: string[] = [];
 
   // Extract meaningful words from the source name (skip common words)
-  const skipWords = new Set(['the', 'and', 'of', 'for', 'a', 'an', 'in', 'at', 'to', 'summer', 'camp', 'camps', 'kids', 'youth', 'portland', 'seattle', 'oregon', 'washington', 'inc', 'llc', 'org', 'com']);
-  const words = sourceName.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length > 2 && !skipWords.has(w));
+  const skipWords = new Set([
+    'the',
+    'and',
+    'of',
+    'for',
+    'a',
+    'an',
+    'in',
+    'at',
+    'to',
+    'summer',
+    'camp',
+    'camps',
+    'kids',
+    'youth',
+    'portland',
+    'seattle',
+    'oregon',
+    'washington',
+    'inc',
+    'llc',
+    'org',
+    'com',
+  ]);
+  const words = sourceName
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length > 2 && !skipWords.has(w));
 
   // Take up to 3 meaningful words
   terms.push(...words.slice(0, 3));
@@ -377,18 +415,20 @@ function extractUrlPattern(url: string): string | undefined {
     const pathParts = parsed.pathname.split('/').filter(Boolean);
 
     // Look for numeric IDs or UUIDs that could be parameters
-    const pattern = pathParts.map(part => {
-      if (/^\d+$/.test(part)) {
-        return '{id}';
-      }
-      if (/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(part)) {
-        return '{uuid}';
-      }
-      if (/^[a-f0-9]{24}$/i.test(part)) {
-        return '{objectId}';
-      }
-      return part;
-    }).join('/');
+    const pattern = pathParts
+      .map((part) => {
+        if (/^\d+$/.test(part)) {
+          return '{id}';
+        }
+        if (/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(part)) {
+          return '{uuid}';
+        }
+        if (/^[a-f0-9]{24}$/i.test(part)) {
+          return '{objectId}';
+        }
+        return part;
+      })
+      .join('/');
 
     return `${parsed.origin}/${pattern}`;
   } catch {
@@ -402,7 +442,7 @@ function extractUrlPattern(url: string): string | undefined {
 async function exploreSiteNavigation(
   url: string,
   sourceName: string,
-  log: (msg: string) => void
+  log: (msg: string) => void,
 ): Promise<SiteExplorationResult> {
   const result: SiteExplorationResult = {
     siteType: 'unknown',
@@ -434,11 +474,11 @@ async function exploreSiteNavigation(
   try {
     // Initialize Stagehand for exploration
     stagehand = new Stagehand({
-      env: "BROWSERBASE",
+      env: 'BROWSERBASE',
       apiKey: process.env.BROWSERBASE_API_KEY,
       projectId: process.env.BROWSERBASE_PROJECT_ID,
       model: {
-        modelName: "anthropic/claude-sonnet-4-20250514",
+        modelName: 'anthropic/claude-sonnet-4-20250514',
         apiKey: process.env.MODEL_API_KEY,
       },
       disablePino: true,
@@ -450,11 +490,14 @@ async function exploreSiteNavigation(
 
     // ========== API DISCOVERY: Set up network monitoring ==========
     // Track all network requests and search for camp data in JSON responses
-    const capturedRequests = new Map<string, {
-      url: string;
-      method: string;
-      resourceType: string;
-    }>();
+    const capturedRequests = new Map<
+      string,
+      {
+        url: string;
+        method: string;
+        resourceType: string;
+      }
+    >();
     const discoveredApis: DiscoveredApi[] = [];
 
     // Extract a search term from the source name or URL for API discovery
@@ -484,72 +527,72 @@ async function exploreSiteNavigation(
 
     // Monitor responses - wrapped in try-catch
     try {
-    page.on('response', async (response: any) => {
-      const respUrl = response.url();
-      const request = capturedRequests.get(respUrl);
+      page.on('response', async (response: any) => {
+        const respUrl = response.url();
+        const request = capturedRequests.get(respUrl);
 
-      if (request && response.status() === 200) {
-        try {
-          const contentType = response.headers()['content-type'] || '';
-          if (contentType.includes('application/json')) {
-            const body = await response.text();
-            const bodySize = body.length;
+        if (request && response.status() === 200) {
+          try {
+            const contentType = response.headers()['content-type'] || '';
+            if (contentType.includes('application/json')) {
+              const body = await response.text();
+              const bodySize = body.length;
 
-            // Search for camp-related terms in the response
-            let totalMatches = 0;
-            for (const term of searchTerms) {
-              const regex = new RegExp(term, 'gi');
-              const matches = (body.match(regex) || []).length;
-              totalMatches += matches;
-            }
-
-            // Also check for generic camp indicators
-            const campIndicators = /camp|session|program|registration|enroll|price|cost|age|grade/gi;
-            const campMatches = (body.match(campIndicators) || []).length;
-
-            // If we found matches or camp indicators, record this API
-            if (totalMatches > 0 || campMatches >= 5) {
-              let structureHint: string | undefined;
-              try {
-                const json = JSON.parse(body);
-                if (Array.isArray(json)) {
-                  structureHint = `Array[${json.length}]`;
-                } else if (typeof json === 'object' && json !== null) {
-                  const keys = Object.keys(json).slice(0, 5);
-                  structureHint = `Object with keys: ${keys.join(', ')}${Object.keys(json).length > 5 ? '...' : ''}`;
-                }
-              } catch {}
-
-              // Capture sample data (truncated to 2KB for storage)
-              let sampleData: string | undefined;
-              try {
-                const json = JSON.parse(body);
-                // Pretty print with limited depth and truncate
-                sampleData = JSON.stringify(json, null, 2).slice(0, 2000);
-                if (sampleData.length >= 2000) {
-                  sampleData += '\n... (truncated)';
-                }
-              } catch {
-                sampleData = body.slice(0, 2000);
+              // Search for camp-related terms in the response
+              let totalMatches = 0;
+              for (const term of searchTerms) {
+                const regex = new RegExp(term, 'gi');
+                const matches = (body.match(regex) || []).length;
+                totalMatches += matches;
               }
 
-              discoveredApis.push({
-                url: respUrl,
-                method: request.method,
-                contentType,
-                responseSize: bodySize,
-                matchCount: totalMatches + campMatches,
-                structureHint,
-                urlPattern: extractUrlPattern(respUrl),
-                sampleData,
-              });
+              // Also check for generic camp indicators
+              const campIndicators = /camp|session|program|registration|enroll|price|cost|age|grade/gi;
+              const campMatches = (body.match(campIndicators) || []).length;
+
+              // If we found matches or camp indicators, record this API
+              if (totalMatches > 0 || campMatches >= 5) {
+                let structureHint: string | undefined;
+                try {
+                  const json = JSON.parse(body);
+                  if (Array.isArray(json)) {
+                    structureHint = `Array[${json.length}]`;
+                  } else if (typeof json === 'object' && json !== null) {
+                    const keys = Object.keys(json).slice(0, 5);
+                    structureHint = `Object with keys: ${keys.join(', ')}${Object.keys(json).length > 5 ? '...' : ''}`;
+                  }
+                } catch {}
+
+                // Capture sample data (truncated to 2KB for storage)
+                let sampleData: string | undefined;
+                try {
+                  const json = JSON.parse(body);
+                  // Pretty print with limited depth and truncate
+                  sampleData = JSON.stringify(json, null, 2).slice(0, 2000);
+                  if (sampleData.length >= 2000) {
+                    sampleData += '\n... (truncated)';
+                  }
+                } catch {
+                  sampleData = body.slice(0, 2000);
+                }
+
+                discoveredApis.push({
+                  url: respUrl,
+                  method: request.method,
+                  contentType,
+                  responseSize: bodySize,
+                  matchCount: totalMatches + campMatches,
+                  structureHint,
+                  urlPattern: extractUrlPattern(respUrl),
+                  sampleData,
+                });
+              }
             }
+          } catch {
+            // Response body not available
           }
-        } catch {
-          // Response body not available
         }
-      }
-    });
+      });
     } catch (e) {
       log(`   ⚠️ Response monitoring not supported, skipping API discovery`);
     }
@@ -586,54 +629,55 @@ async function exploreSiteNavigation(
 
 Return a structured analysis of how camps are organized on this site.`,
       schema: {
-        type: "object",
+        type: 'object',
         properties: {
           organizationType: {
-            type: "string",
-            description: "How camps are organized: 'by_location', 'by_category', 'by_age', 'single_list', 'calendar', or 'unknown'"
+            type: 'string',
+            description:
+              "How camps are organized: 'by_location', 'by_category', 'by_age', 'single_list', 'calendar', or 'unknown'",
           },
           locations: {
-            type: "array",
+            type: 'array',
             items: {
-              type: "object",
+              type: 'object',
               properties: {
-                name: { type: "string" },
-                linkText: { type: "string" },
-                urlPattern: { type: "string" }
-              }
+                name: { type: 'string' },
+                linkText: { type: 'string' },
+                urlPattern: { type: 'string' },
+              },
             },
-            description: "List of locations/facilities if camps are organized by location"
+            description: 'List of locations/facilities if camps are organized by location',
           },
           categories: {
-            type: "array",
+            type: 'array',
             items: {
-              type: "object",
+              type: 'object',
               properties: {
-                name: { type: "string" },
-                description: { type: "string" }
-              }
+                name: { type: 'string' },
+                description: { type: 'string' },
+              },
             },
-            description: "List of camp categories if organized that way"
+            description: 'List of camp categories if organized that way',
           },
           externalRegistration: {
-            type: "object",
+            type: 'object',
             properties: {
-              platform: { type: "string" },
-              baseUrl: { type: "string" },
-              urlParameters: { type: "array", items: { type: "string" } }
+              platform: { type: 'string' },
+              baseUrl: { type: 'string' },
+              urlParameters: { type: 'array', items: { type: 'string' } },
             },
-            description: "External registration system details if applicable"
+            description: 'External registration system details if applicable',
           },
           navigationInstructions: {
-            type: "string",
-            description: "Step-by-step instructions for how to navigate to find ALL camps"
+            type: 'string',
+            description: 'Step-by-step instructions for how to navigate to find ALL camps',
           },
           estimatedCampCount: {
-            type: "string",
-            description: "Rough estimate of how many camps/sessions this org offers"
-          }
-        }
-      }
+            type: 'string',
+            description: 'Rough estimate of how many camps/sessions this org offers',
+          },
+        },
+      },
     });
 
     const extracted = extraction as {
@@ -654,19 +698,23 @@ Return a structured analysis of how camps are organized on this site.`,
 
     if (extracted.locations && extracted.locations.length > 0) {
       result.hasMultipleLocations = true;
-      result.locations = extracted.locations.map(loc => ({
+      result.locations = extracted.locations.map((loc) => ({
         name: loc.name,
         url: loc.urlPattern,
       }));
-      result.navigationNotes.push(`Found ${extracted.locations.length} locations: ${extracted.locations.map(l => l.name).join(', ')}`);
+      result.navigationNotes.push(
+        `Found ${extracted.locations.length} locations: ${extracted.locations.map((l) => l.name).join(', ')}`,
+      );
     }
 
     if (extracted.categories && extracted.categories.length > 0) {
       result.hasCategories = true;
-      result.categories = extracted.categories.map(cat => ({
+      result.categories = extracted.categories.map((cat) => ({
         name: cat.name,
       }));
-      result.navigationNotes.push(`Found ${extracted.categories.length} categories: ${extracted.categories.map(c => c.name).join(', ')}`);
+      result.navigationNotes.push(
+        `Found ${extracted.categories.length} categories: ${extracted.categories.map((c) => c.name).join(', ')}`,
+      );
     }
 
     if (extracted.externalRegistration) {
@@ -696,34 +744,36 @@ Return a structured analysis of how camps are organized on this site.`,
 For each location, extract the full URL that leads to camps at that location.
 Look for links in lists, tables, or navigation that point to facility-specific camp pages.`,
         schema: {
-          type: "object",
+          type: 'object',
           properties: {
             locationLinks: {
-              type: "array",
+              type: 'array',
               items: {
-                type: "object",
+                type: 'object',
                 properties: {
-                  locationName: { type: "string" },
-                  url: { type: "string" },
-                  siteIdOrParam: { type: "string" }
-                }
-              }
-            }
-          }
-        }
+                  locationName: { type: 'string' },
+                  url: { type: 'string' },
+                  siteIdOrParam: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
       });
 
-      const links = linkExtraction as { locationLinks?: Array<{ locationName: string; url: string; siteIdOrParam?: string }> };
+      const links = linkExtraction as {
+        locationLinks?: Array<{ locationName: string; url: string; siteIdOrParam?: string }>;
+      };
 
       if (links.locationLinks && links.locationLinks.length > 0) {
-        result.locations = links.locationLinks.map(link => ({
+        result.locations = links.locationLinks.map((link) => ({
           name: link.locationName,
           url: link.url,
           siteId: link.siteIdOrParam,
         }));
 
         // Extract URL pattern
-        const urls = links.locationLinks.map(l => l.url).filter(u => u);
+        const urls = links.locationLinks.map((l) => l.url).filter((u) => u);
         if (urls.length > 0) {
           result.urlPatterns.push(urls[0]);
         }
@@ -733,13 +783,24 @@ Look for links in lists, tables, or navigation that point to facility-specific c
     // Check if this is a directory/listing site (lists multiple camp organizations)
     const urlLower = url.toLowerCase();
     const directoryIndicators = [
-      'kidsoutandabout.com', 'parentmap.com', 'seattlesummercamps.com',
-      'summercamps.com', 'campnavigator.com', 'kidscamps.com',
-      'activityhero.com', 'sawyer.com', 'acacamps.org',
-      '/guide', '/list', '/directory', '/best-', '/top-'
+      'kidsoutandabout.com',
+      'parentmap.com',
+      'seattlesummercamps.com',
+      'summercamps.com',
+      'campnavigator.com',
+      'kidscamps.com',
+      'activityhero.com',
+      'sawyer.com',
+      'acacamps.org',
+      '/guide',
+      '/list',
+      '/directory',
+      '/best-',
+      '/top-',
     ];
 
-    const isLikelyDirectory = directoryIndicators.some(ind => urlLower.includes(ind)) ||
+    const isLikelyDirectory =
+      directoryIndicators.some((ind) => urlLower.includes(ind)) ||
       (extracted.estimatedCampCount && parseInt(extracted.estimatedCampCount) > 20);
 
     if (isLikelyDirectory) {
@@ -767,7 +828,7 @@ Look for links in lists, tables, or navigation that point to facility-specific c
           /\/provider[s]?\/[^/]+$/i,
           /\/organization[s]?\/[^/]+$/i,
           /\/venue[s]?\/[^/]+$/i,
-          /camp.*-\d{4}$/i,  // e.g., "summer-camp-2026"
+          /camp.*-\d{4}$/i, // e.g., "summer-camp-2026"
         ];
 
         // Patterns to exclude (navigation, pagination, filters)
@@ -788,13 +849,14 @@ Look for links in lists, tables, or navigation that point to facility-specific c
           /\/privacy/i,
           /\/terms/i,
           /\/faq/i,
-          /^\/?$/,  // Homepage
+          /^\/?$/, // Homepage
         ];
 
         // Social and non-camp domains to skip
-        const skipDomains = /facebook|twitter|instagram|linkedin|youtube|google|yelp|tripadvisor|amazon|pinterest|reddit|tiktok|snapchat/i;
+        const skipDomains =
+          /facebook|twitter|instagram|linkedin|youtube|google|yelp|tripadvisor|amazon|pinterest|reddit|tiktok|snapchat/i;
 
-        document.querySelectorAll('a[href]').forEach(a => {
+        document.querySelectorAll('a[href]').forEach((a) => {
           const href = a.getAttribute('href');
           if (!href) return;
 
@@ -809,7 +871,7 @@ Look for links in lists, tables, or navigation that point to facility-specific c
             if (seenUrls.has(fullUrl)) return;
 
             // Skip excluded patterns
-            if (excludePatterns.some(p => p.test(path))) return;
+            if (excludePatterns.some((p) => p.test(path))) return;
 
             // Skip current page
             if (path === currentPath) return;
@@ -819,7 +881,7 @@ Look for links in lists, tables, or navigation that point to facility-specific c
 
             if (isInternal) {
               // For internal links, check if it looks like a camp detail page
-              const isCampDetail = campDetailPatterns.some(p => p.test(path));
+              const isCampDetail = campDetailPatterns.some((p) => p.test(path));
 
               // Also check if the link text suggests it's a camp
               const textSuggestsCamp = /camp|program|class|activity|workshop|lesson/i.test(name);
@@ -842,14 +904,14 @@ Look for links in lists, tables, or navigation that point to facility-specific c
                 links.push({ url: fullUrl, name: linkName, isInternal: false });
               }
             }
-          } catch { }
+          } catch {}
         });
 
         return links;
       });
 
-      const externalLinks = dirLinks.filter(l => !l.isInternal);
-      const internalLinks = dirLinks.filter(l => l.isInternal);
+      const externalLinks = dirLinks.filter((l) => !l.isInternal);
+      const internalLinks = dirLinks.filter((l) => l.isInternal);
 
       log(`   ✅ Found ${externalLinks.length} external camp org links`);
       log(`   ✅ Found ${internalLinks.length} internal camp detail pages`);
@@ -876,14 +938,15 @@ Look for links in lists, tables, or navigation that point to facility-specific c
 
     await stagehand.close();
     stagehand = null;
-
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
     log(`   ⚠️ Exploration error: ${errorMsg.slice(0, 100)}`);
     result.navigationNotes.push(`Exploration encountered error: ${errorMsg.slice(0, 200)}`);
 
     if (stagehand) {
-      try { await stagehand.close(); } catch { }
+      try {
+        await stagehand.close();
+      } catch {}
     }
   }
 
@@ -964,7 +1027,9 @@ function formatExplorationForPrompt(exploration: SiteExplorationResult): string 
   // ========== API DISCOVERY RESULTS ==========
   if (exploration.discoveredApis && exploration.discoveredApis.length > 0) {
     lines.push('\n### 🎯 DISCOVERED APIs (High Priority!)\n');
-    lines.push('**These APIs were found by monitoring network traffic. They likely contain the camp data you need.**\n');
+    lines.push(
+      '**These APIs were found by monitoring network traffic. They likely contain the camp data you need.**\n',
+    );
     lines.push('**STRONGLY PREFER using these APIs over scraping HTML.**\n\n');
 
     if (exploration.apiSearchTerm) {
@@ -1011,7 +1076,7 @@ function formatExplorationForPrompt(exploration: SiteExplorationResult): string 
 
 async function processRequest(request: DevelopmentRequest, verbose: boolean = false, workerId?: string) {
   const requestId = request._id;
-  const prefix = workerId ? `[${workerId}]` : "";
+  const prefix = workerId ? `[${workerId}]` : '';
 
   const log = (msg: string) => {
     const prefixedMsg = prefix ? `${prefix} ${msg}` : msg;
@@ -1072,10 +1137,18 @@ async function processRequest(request: DevelopmentRequest, verbose: boolean = fa
         }
 
         // Handle directory sites - extract camp links and create requests for each
-        if (explorationResult.isDirectory && explorationResult.directoryLinks && explorationResult.directoryLinks.length > 0) {
-          const allLinks = explorationResult.directoryLinks as Array<{ url: string; name: string; isInternal?: boolean }>;
-          const externalLinks = allLinks.filter(l => !l.isInternal);
-          const internalLinks = allLinks.filter(l => l.isInternal);
+        if (
+          explorationResult.isDirectory &&
+          explorationResult.directoryLinks &&
+          explorationResult.directoryLinks.length > 0
+        ) {
+          const allLinks = explorationResult.directoryLinks as Array<{
+            url: string;
+            name: string;
+            isInternal?: boolean;
+          }>;
+          const externalLinks = allLinks.filter((l) => !l.isInternal);
+          const internalLinks = allLinks.filter((l) => l.isInternal);
 
           log(`   📂 Directory detected:`);
           log(`      - ${externalLinks.length} external camp organization links`);
@@ -1086,7 +1159,11 @@ async function processRequest(request: DevelopmentRequest, verbose: boolean = fa
             // Filter out known non-camp URLs
             const filterNonCamp = (link: { url: string; name: string }) => {
               const url = link.url.toLowerCase();
-              if (/facebook|twitter|instagram|linkedin|youtube|google|yelp|tripadvisor|amazon|pinterest|reddit|wikipedia|tiktok/i.test(url)) {
+              if (
+                /facebook|twitter|instagram|linkedin|youtube|google|yelp|tripadvisor|amazon|pinterest|reddit|wikipedia|tiktok/i.test(
+                  url,
+                )
+              ) {
                 return false;
               }
               return true;
@@ -1181,52 +1258,45 @@ async function processRequest(request: DevelopmentRequest, verbose: boolean = fa
     log(`   Prompt file: ${promptFile}`);
 
     // Write status file for monitoring
-    const statusFile = path.join(SCRATCHPAD_DIR, "current-status.txt");
+    const statusFile = path.join(SCRATCHPAD_DIR, 'current-status.txt');
     const startTime = Date.now();
-    fs.writeFileSync(statusFile, `Processing: ${request.sourceName}\nURL: ${request.sourceUrl}\nStarted: ${new Date().toISOString()}\nTimeout: ${CLAUDE_TIMEOUT_MS / 60000} minutes\n`);
+    fs.writeFileSync(
+      statusFile,
+      `Processing: ${request.sourceName}\nURL: ${request.sourceUrl}\nStarted: ${new Date().toISOString()}\nTimeout: ${CLAUDE_TIMEOUT_MS / 60000} minutes\n`,
+    );
 
     // Create a transcript file for this session
     const transcriptFile = path.join(SCRATCHPAD_DIR, `transcript-${requestId}.txt`);
     const transcriptStream = fs.createWriteStream(transcriptFile);
 
-    console.log(`\n${"=".repeat(60)}`);
+    console.log(`\n${'='.repeat(60)}`);
     console.log(`   CLAUDE SESSION: ${request.sourceName}`);
-    console.log(`${"=".repeat(60)}\n`);
+    console.log(`${'='.repeat(60)}\n`);
 
     // Run Claude with --print and stream-json to see what it's doing
     // IMPORTANT: stdin must be "ignore" or Claude hangs waiting for input
     // Ensure PATH includes common locations for claude binary
-    const pathAdditions = [
-      `${process.env.HOME}/.local/bin`,
-      '/usr/local/bin',
-      '/opt/homebrew/bin',
-    ].join(':');
+    const pathAdditions = [`${process.env.HOME}/.local/bin`, '/usr/local/bin', '/opt/homebrew/bin'].join(':');
     const enhancedPath = `${pathAdditions}:${process.env.PATH || ''}`;
 
     const claudeProcess = spawn(
-      "claude",
-      [
-        "--dangerously-skip-permissions",
-        "--print",
-        "--output-format", "stream-json",
-        "-p",
-        prompt,
-      ],
+      'claude',
+      ['--dangerously-skip-permissions', '--print', '--output-format', 'stream-json', '-p', prompt],
       {
         cwd: process.cwd(),
-        stdio: ["ignore", "pipe", "pipe"], // ignore stdin or Claude hangs!
+        stdio: ['ignore', 'pipe', 'pipe'], // ignore stdin or Claude hangs!
         env: {
           ...process.env,
           PATH: enhancedPath,
           SCRAPER_OUTPUT_FILE: outputFile,
         },
-      }
+      },
     );
 
     // Stream stdout and parse JSON events
-    let stdout = "";
-    let lastAssistantMessage = "";
-    claudeProcess.stdout?.on("data", (data: Buffer) => {
+    let stdout = '';
+    let lastAssistantMessage = '';
+    claudeProcess.stdout?.on('data', (data: Buffer) => {
       const text = data.toString();
       stdout += text;
 
@@ -1234,51 +1304,53 @@ async function processRequest(request: DevelopmentRequest, verbose: boolean = fa
       transcriptStream.write(text);
 
       // Parse each JSON line and display nicely
-      for (const line of text.split("\n")) {
+      for (const line of text.split('\n')) {
         if (!line.trim()) continue;
         try {
           const event = JSON.parse(line);
 
-          if (event.type === "system" && event.subtype === "init") {
+          if (event.type === 'system' && event.subtype === 'init') {
             console.log(`   Model: ${event.model}`);
-          } else if (event.type === "assistant" && event.message?.content) {
+          } else if (event.type === 'assistant' && event.message?.content) {
             // Show assistant's text
             for (const block of event.message.content) {
-              if (block.type === "text" && block.text !== lastAssistantMessage) {
+              if (block.type === 'text' && block.text !== lastAssistantMessage) {
                 const newText = block.text.slice(lastAssistantMessage.length);
                 if (newText) {
                   process.stdout.write(newText);
                   lastAssistantMessage = block.text;
                 }
-              } else if (block.type === "tool_use") {
+              } else if (block.type === 'tool_use') {
                 console.log(`\n   🔧 ${block.name}: ${JSON.stringify(block.input).slice(0, 100)}...`);
               }
             }
-          } else if (event.type === "tool_result") {
+          } else if (event.type === 'tool_result') {
             // Show tool result summary
-            const result = event.result?.slice?.(0, 200) || "";
+            const result = event.result?.slice?.(0, 200) || '';
             if (result) {
-              console.log(`   📋 Result: ${result.slice(0, 100)}${result.length > 100 ? "..." : ""}`);
+              console.log(`   📋 Result: ${result.slice(0, 100)}${result.length > 100 ? '...' : ''}`);
             }
-          } else if (event.type === "result") {
-            console.log(`\n   ✓ Completed in ${event.duration_ms}ms, cost: $${event.total_cost_usd?.toFixed(4) || "?"}`);
+          } else if (event.type === 'result') {
+            console.log(
+              `\n   ✓ Completed in ${event.duration_ms}ms, cost: $${event.total_cost_usd?.toFixed(4) || '?'}`,
+            );
           }
         } catch {
           // Not valid JSON, just log it
           if (line.trim()) {
-            fs.appendFileSync(LOG_FILE, line + "\n");
+            fs.appendFileSync(LOG_FILE, line + '\n');
           }
         }
       }
     });
 
     // Capture stderr
-    let stderr = "";
-    claudeProcess.stderr?.on("data", (data: Buffer) => {
+    let stderr = '';
+    claudeProcess.stderr?.on('data', (data: Buffer) => {
       const text = data.toString();
       stderr += text;
       // Only show stderr if it's not empty noise
-      if (text.trim() && !text.includes("Debugger")) {
+      if (text.trim() && !text.includes('Debugger')) {
         process.stderr.write(`   [stderr] ${text}`);
       }
     });
@@ -1288,14 +1360,14 @@ async function processRequest(request: DevelopmentRequest, verbose: boolean = fa
       const timeout = setTimeout(() => {
         console.log(`\n   ⏱️  Timeout after ${CLAUDE_TIMEOUT_MS / 60000} minutes - killing process`);
         writeLog(`Timeout after ${CLAUDE_TIMEOUT_MS / 60000} minutes`);
-        claudeProcess.kill("SIGTERM");
+        claudeProcess.kill('SIGTERM');
         setTimeout(() => {
-          claudeProcess.kill("SIGKILL");
+          claudeProcess.kill('SIGKILL');
         }, 5000);
         resolve(124);
       }, CLAUDE_TIMEOUT_MS);
 
-      claudeProcess.on("close", (code) => {
+      claudeProcess.on('close', (code) => {
         clearTimeout(timeout);
         transcriptStream.end();
         resolve(code ?? 1);
@@ -1303,9 +1375,9 @@ async function processRequest(request: DevelopmentRequest, verbose: boolean = fa
     });
     const duration = Math.round((Date.now() - startTime) / 1000);
 
-    console.log(`\n${"=".repeat(60)}`);
+    console.log(`\n${'='.repeat(60)}`);
     console.log(`   SESSION ENDED - ${duration}s - Exit code: ${exitCode}`);
-    console.log(`${"=".repeat(60)}\n`);
+    console.log(`${'='.repeat(60)}\n`);
 
     writeLog(`\nClaude finished in ${duration}s with exit code ${exitCode}`);
     if (stderr) writeLog(`stderr: ${stderr}`);
@@ -1316,7 +1388,7 @@ async function processRequest(request: DevelopmentRequest, verbose: boolean = fa
 
     // First, check if Claude wrote directly to the output file
     if (fs.existsSync(outputFile)) {
-      scraperCode = fs.readFileSync(outputFile, "utf-8");
+      scraperCode = fs.readFileSync(outputFile, 'utf-8');
       if (scraperCode.trim().length > 50) {
         log(`   ✅ Scraper code saved to file (${scraperCode.length} bytes)`);
       } else {
@@ -1332,10 +1404,10 @@ async function processRequest(request: DevelopmentRequest, verbose: boolean = fa
       if (codeMatch && codeMatch[1].length > 50) {
         // Unescape the JSON string
         scraperCode = codeMatch[1]
-          .replace(/\\n/g, "\n")
-          .replace(/\\t/g, "\t")
+          .replace(/\\n/g, '\n')
+          .replace(/\\t/g, '\t')
           .replace(/\\"/g, '"')
-          .replace(/\\\\/g, "\\");
+          .replace(/\\\\/g, '\\');
         fs.writeFileSync(outputFile, scraperCode);
         log(`   ✅ Extracted scraper code from JSON stream (${scraperCode.length} bytes)`);
       }
@@ -1377,9 +1449,7 @@ async function processRequest(request: DevelopmentRequest, verbose: boolean = fa
       await client.mutation(api.scraping.development.recordTestResults, {
         requestId: requestId as any,
         sessionsFound: testResult.sessions.length,
-        sampleData: visibleSamples.length > 0
-          ? JSON.stringify(visibleSamples, null, 2)
-          : undefined,
+        sampleData: visibleSamples.length > 0 ? JSON.stringify(visibleSamples, null, 2) : undefined,
         error: testResult.error,
       });
 
@@ -1397,7 +1467,7 @@ async function processRequest(request: DevelopmentRequest, verbose: boolean = fa
         await client.mutation(api.scraping.development.submitFeedback, {
           requestId: requestId as any,
           feedback: autoFeedback,
-          feedbackBy: "auto-diagnosis",
+          feedbackBy: 'auto-diagnosis',
         });
       } else if (testResult.sessions.length === 0) {
         // Check if 0 sessions is expected/valid (seasonal catalog, not published yet, etc.)
@@ -1414,7 +1484,7 @@ async function processRequest(request: DevelopmentRequest, verbose: boolean = fa
             sampleData: JSON.stringify({
               note: zeroIsValid.reason,
               expectedEmpty: true,
-              checkAgainAfter: zeroIsValid.checkAfter
+              checkAgainAfter: zeroIsValid.checkAfter,
             }),
           });
         } else {
@@ -1428,7 +1498,7 @@ async function processRequest(request: DevelopmentRequest, verbose: boolean = fa
           await client.mutation(api.scraping.development.submitFeedback, {
             requestId: requestId as any,
             feedback: autoFeedback,
-            feedbackBy: "auto-diagnosis",
+            feedbackBy: 'auto-diagnosis',
           });
 
           console.log(`   📝 Submitted auto-feedback - will retry with better guidance`);
@@ -1444,7 +1514,7 @@ async function processRequest(request: DevelopmentRequest, verbose: boolean = fa
       await client.mutation(api.scraping.development.recordTestResults, {
         requestId: requestId as any,
         sessionsFound: 0,
-        error: "Claude did not produce any scraper code",
+        error: 'Claude did not produce any scraper code',
       });
     }
   } catch (error) {
@@ -1506,7 +1576,7 @@ function getSiteSpecificGuidance(url: string): string {
     guidance.push('### Check for Location-Based Organization:\n');
     guidance.push('Many Parks & Rec sites organize camps by facility/location.\n');
     guidance.push('Look for `site_ids` parameters in URLs - you may need to iterate through multiple.\n\n');
-    guidance.push("Wait with `networkidle` AND `page.waitForTimeout(5000)` for React to render.\n\n");
+    guidance.push('Wait with `networkidle` AND `page.waitForTimeout(5000)` for React to render.\n\n');
   }
 
   // OMSI/secure sites
@@ -1528,7 +1598,7 @@ function getSiteSpecificGuidance(url: string): string {
   }
 
   // Parks & Recreation general pattern
-  if (url.includes('parks') && url.includes('recreation') || url.includes('parksandrec')) {
+  if ((url.includes('parks') && url.includes('recreation')) || url.includes('parksandrec')) {
     guidance.push('\n## Parks & Recreation Site Pattern\n');
     guidance.push('**WARNING: These sites often organize camps by LOCATION.**\n');
     guidance.push('Look for:\n');
@@ -1542,14 +1612,14 @@ function getSiteSpecificGuidance(url: string): string {
 }
 
 function buildClaudePrompt(request: DevelopmentRequest, exploration?: SiteExplorationResult | null): string {
-  const templatePath = path.join(process.cwd(), "scripts", "scraper-prompt-template.md");
+  const templatePath = path.join(process.cwd(), 'scripts', 'scraper-prompt-template.md');
   let template: string;
 
   try {
-    template = fs.readFileSync(templatePath, "utf-8");
+    template = fs.readFileSync(templatePath, 'utf-8');
   } catch {
     console.error(`Error: Could not read template file at ${templatePath}`);
-    console.error("Using fallback prompt.");
+    console.error('Using fallback prompt.');
     template = `# Scraper Development Task
 
 You are developing a web scraper for: **{{SOURCE_NAME}}**
@@ -1584,37 +1654,35 @@ Notes: {{NOTES}}
   // Notes section
   if (request.notes) {
     prompt = prompt
-      .replace(/\{\{#NOTES\}\}/g, "")
-      .replace(/\{\{\/NOTES\}\}/g, "")
+      .replace(/\{\{#NOTES\}\}/g, '')
+      .replace(/\{\{\/NOTES\}\}/g, '')
       .replace(/\{\{NOTES\}\}/g, request.notes);
   } else {
-    prompt = prompt.replace(/\{\{#NOTES\}\}[\s\S]*?\{\{\/NOTES\}\}/g, "");
+    prompt = prompt.replace(/\{\{#NOTES\}\}[\s\S]*?\{\{\/NOTES\}\}/g, '');
   }
 
   // Feedback section
   const hasFeedback = request.feedbackHistory && request.feedbackHistory.length > 0;
-  const latestFeedback = hasFeedback
-    ? request.feedbackHistory![request.feedbackHistory!.length - 1]
-    : null;
+  const latestFeedback = hasFeedback ? request.feedbackHistory![request.feedbackHistory!.length - 1] : null;
 
   if (hasFeedback && latestFeedback) {
     prompt = prompt
-      .replace(/\{\{#FEEDBACK\}\}/g, "")
-      .replace(/\{\{\/FEEDBACK\}\}/g, "")
+      .replace(/\{\{#FEEDBACK\}\}/g, '')
+      .replace(/\{\{\/FEEDBACK\}\}/g, '')
       .replace(/\{\{FEEDBACK_VERSION\}\}/g, String(latestFeedback.scraperVersionBefore))
       .replace(/\{\{FEEDBACK_TEXT\}\}/g, latestFeedback.feedback);
   } else {
-    prompt = prompt.replace(/\{\{#FEEDBACK\}\}[\s\S]*?\{\{\/FEEDBACK\}\}/g, "");
+    prompt = prompt.replace(/\{\{#FEEDBACK\}\}[\s\S]*?\{\{\/FEEDBACK\}\}/g, '');
   }
 
   // Previous code section
   if (request.generatedScraperCode) {
     prompt = prompt
-      .replace(/\{\{#PREVIOUS_CODE\}\}/g, "")
-      .replace(/\{\{\/PREVIOUS_CODE\}\}/g, "")
+      .replace(/\{\{#PREVIOUS_CODE\}\}/g, '')
+      .replace(/\{\{\/PREVIOUS_CODE\}\}/g, '')
       .replace(/\{\{PREVIOUS_CODE\}\}/g, request.generatedScraperCode);
   } else {
-    prompt = prompt.replace(/\{\{#PREVIOUS_CODE\}\}[\s\S]*?\{\{\/PREVIOUS_CODE\}\}/g, "");
+    prompt = prompt.replace(/\{\{#PREVIOUS_CODE\}\}[\s\S]*?\{\{\/PREVIOUS_CODE\}\}/g, '');
   }
 
   return prompt;
@@ -1630,12 +1698,8 @@ interface TestResult {
  * Run the test-scraper.ts script to test a scraper
  * This uses the same execution path as the Convex executor
  */
-async function runTestScript(
-  scraperFile: string,
-  url: string,
-  verbose: boolean = false
-): Promise<TestResult> {
-  const { execSync } = require("child_process");
+async function runTestScript(scraperFile: string, url: string, verbose: boolean = false): Promise<TestResult> {
+  const { execSync } = require('child_process');
   const log = (msg: string) => {
     writeLog(msg);
     if (verbose) console.log(msg);
@@ -1644,16 +1708,13 @@ async function runTestScript(
   try {
     log(`   Running: npx tsx scripts/test-scraper.ts "${scraperFile}" "${url}"`);
 
-    const output = execSync(
-      `npx tsx scripts/test-scraper.ts "${scraperFile}" "${url}"`,
-      {
-        cwd: process.cwd(),
-        timeout: 180000, // 3 minute timeout
-        encoding: "utf-8",
-        stdio: ["pipe", "pipe", "pipe"],
-        env: { ...process.env },
-      }
-    );
+    const output = execSync(`npx tsx scripts/test-scraper.ts "${scraperFile}" "${url}"`, {
+      cwd: process.cwd(),
+      timeout: 180000, // 3 minute timeout
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env },
+    });
 
     log(`   Test output:\n${output.slice(-1500)}`);
 
@@ -1665,7 +1726,7 @@ async function runTestScript(
         if (jsonData.success && jsonData.sessionCount > 0) {
           // Use the actual sample data from the scraper
           const sessions = jsonData.samples.map((s: any) => ({
-            name: s.name || "(no name)",
+            name: s.name || '(no name)',
             dates: s.startDate && s.endDate ? `${s.startDate} - ${s.endDate}` : s.startDate,
             location: s.location,
             ages: s.minAge || s.maxAge ? `${s.minAge || '?'}-${s.maxAge || '?'}` : undefined,
@@ -1702,10 +1763,12 @@ async function runTestScript(
     const successMatch = output.match(/SUCCESS: Found (\d+) sessions/);
     if (successMatch) {
       const sessionCount = parseInt(successMatch[1]);
-      const sessions: any[] = [{
-        name: `Found ${sessionCount} sessions`,
-        note: "JSON parsing failed - see test output for details"
-      }];
+      const sessions: any[] = [
+        {
+          name: `Found ${sessionCount} sessions`,
+          note: 'JSON parsing failed - see test output for details',
+        },
+      ];
 
       // Pad to correct count
       while (sessions.length < sessionCount) {
@@ -1716,26 +1779,25 @@ async function runTestScript(
     }
 
     // Test passed but couldn't parse output
-    return { sessions: [{ name: "Test passed but could not parse output" }], error: undefined };
-
+    return { sessions: [{ name: 'Test passed but could not parse output' }], error: undefined };
   } catch (error: any) {
     // Test failed - extract error message
-    const stderr = error.stderr || "";
-    const stdout = error.stdout || "";
-    const fullOutput = stdout + "\n" + stderr;
+    const stderr = error.stderr || '';
+    const stdout = error.stdout || '';
+    const fullOutput = stdout + '\n' + stderr;
 
     log(`   Test failed:\n${fullOutput.slice(-2000)}`);
 
     // Try to extract the error message
-    let errorMessage = "Test failed";
+    let errorMessage = 'Test failed';
 
     const errorMatch = fullOutput.match(/Error: (.+)/);
     if (errorMatch) {
       errorMessage = errorMatch[1].slice(0, 500);
-    } else if (fullOutput.includes("0 sessions")) {
-      errorMessage = "Found 0 sessions - scraper may not be extracting data correctly";
-    } else if (fullOutput.includes("timeout")) {
-      errorMessage = "Test timed out - page may be slow to load";
+    } else if (fullOutput.includes('0 sessions')) {
+      errorMessage = 'Found 0 sessions - scraper may not be extracting data correctly';
+    } else if (fullOutput.includes('timeout')) {
+      errorMessage = 'Test timed out - page may be slow to load';
     } else if (error.message) {
       errorMessage = error.message.slice(0, 500);
     }
@@ -1815,31 +1877,45 @@ function diagnoseSiteCharacteristics(url: string, scraperCode: string): ScraperD
  * Check if 0 sessions is a valid/expected result
  * Returns true for seasonal catalogs, not-yet-published schedules, etc.
  */
-function isZeroSessionsValid(scraperCode: string, url: string): { valid: boolean; reason: string; checkAfter?: string } {
+function isZeroSessionsValid(
+  scraperCode: string,
+  url: string,
+): { valid: boolean; reason: string; checkAfter?: string } {
   const codeLower = scraperCode.toLowerCase();
   const urlLower = url.toLowerCase();
 
   // Patterns that indicate scraper intentionally handles 0 sessions
   const seasonalPatterns = [
-    { pattern: /not (yet )?(published|available|posted|released)/i, reason: "Catalog not yet published" },
-    { pattern: /coming soon/i, reason: "Coming soon" },
-    { pattern: /check back (later|in|after)/i, reason: "Seasonal - check back later" },
-    { pattern: /registration (opens|begins|starts) (in|on|after)/i, reason: "Registration not yet open" },
-    { pattern: /(\d{4}) (summer|camp|program)s? (will be|are) (posted|published|available)/i, reason: "Future catalog - not yet published" },
-    { pattern: /schedule (for )?\d{4} (not|isn't|is not) (yet )?(available|ready|published)/i, reason: "Schedule not yet available" },
-    { pattern: /late (may|june|winter|spring|summer|fall)/i, reason: "Seasonal catalog" },
-    { pattern: /catalog (is )?(empty|unavailable)/i, reason: "Catalog currently empty" },
-    { pattern: /no (camps?|sessions?|programs?) (are )?(currently|presently) (listed|available|scheduled)/i, reason: "No programs currently scheduled" },
+    { pattern: /not (yet )?(published|available|posted|released)/i, reason: 'Catalog not yet published' },
+    { pattern: /coming soon/i, reason: 'Coming soon' },
+    { pattern: /check back (later|in|after)/i, reason: 'Seasonal - check back later' },
+    { pattern: /registration (opens|begins|starts) (in|on|after)/i, reason: 'Registration not yet open' },
+    {
+      pattern: /(\d{4}) (summer|camp|program)s? (will be|are) (posted|published|available)/i,
+      reason: 'Future catalog - not yet published',
+    },
+    {
+      pattern: /schedule (for )?\d{4} (not|isn't|is not) (yet )?(available|ready|published)/i,
+      reason: 'Schedule not yet available',
+    },
+    { pattern: /late (may|june|winter|spring|summer|fall)/i, reason: 'Seasonal catalog' },
+    { pattern: /catalog (is )?(empty|unavailable)/i, reason: 'Catalog currently empty' },
+    {
+      pattern: /no (camps?|sessions?|programs?) (are )?(currently|presently) (listed|available|scheduled)/i,
+      reason: 'No programs currently scheduled',
+    },
   ];
 
   for (const { pattern, reason } of seasonalPatterns) {
     if (pattern.test(scraperCode)) {
       // Try to extract a date for when to check again
-      const monthMatch = scraperCode.match(/(?:after|in|on|by)\s+(january|february|march|april|may|june|july|august|september|october|november|december)\s*(\d{1,2})?\s*,?\s*(\d{4})?/i);
+      const monthMatch = scraperCode.match(
+        /(?:after|in|on|by)\s+(january|february|march|april|may|june|july|august|september|october|november|december)\s*(\d{1,2})?\s*,?\s*(\d{4})?/i,
+      );
       let checkAfter: string | undefined;
       if (monthMatch) {
         const month = monthMatch[1];
-        const day = monthMatch[2] || "1";
+        const day = monthMatch[2] || '1';
         const year = monthMatch[3] || new Date().getFullYear().toString();
         checkAfter = `${month} ${day}, ${year}`;
       }
@@ -1849,37 +1925,38 @@ function isZeroSessionsValid(scraperCode: string, url: string): { valid: boolean
 
   // Known sites that have seasonal catalogs
   const seasonalSites = [
-    { pattern: /pcc\.edu/i, reason: "PCC - publishes catalog late May", checkAfter: "May 28" },
-    { pattern: /college|university/i, reason: "Academic institution - likely seasonal catalog" },
+    { pattern: /pcc\.edu/i, reason: 'PCC - publishes catalog late May', checkAfter: 'May 28' },
+    { pattern: /college|university/i, reason: 'Academic institution - likely seasonal catalog' },
   ];
 
   for (const { pattern, reason, checkAfter } of seasonalSites) {
-    if (pattern.test(urlLower) && codeLower.includes("0 sessions") || codeLower.includes("no sessions") || codeLower.includes("empty")) {
+    if (
+      (pattern.test(urlLower) && codeLower.includes('0 sessions')) ||
+      codeLower.includes('no sessions') ||
+      codeLower.includes('empty')
+    ) {
       return { valid: true, reason, checkAfter };
     }
   }
 
   // Check if scraper explicitly returns empty with explanation
-  if (codeLower.includes("return []") && (
-    codeLower.includes("// no camps") ||
-    codeLower.includes("// empty") ||
-    codeLower.includes("// seasonal") ||
-    codeLower.includes("// not published")
-  )) {
-    return { valid: true, reason: "Scraper explicitly handles empty state" };
+  if (
+    codeLower.includes('return []') &&
+    (codeLower.includes('// no camps') ||
+      codeLower.includes('// empty') ||
+      codeLower.includes('// seasonal') ||
+      codeLower.includes('// not published'))
+  ) {
+    return { valid: true, reason: 'Scraper explicitly handles empty state' };
   }
 
-  return { valid: false, reason: "" };
+  return { valid: false, reason: '' };
 }
 
 /**
  * Generate intelligent auto-feedback when scraper finds 0 sessions
  */
-function generateAutoFeedback(
-  url: string,
-  scraperCode: string,
-  testError?: string
-): string {
+function generateAutoFeedback(url: string, scraperCode: string, testError?: string): string {
   const diagnostics = diagnoseSiteCharacteristics(url, scraperCode);
 
   const feedback: string[] = ['Automatic diagnosis based on test results:\n'];
@@ -1957,7 +2034,8 @@ function analyzeScraperType(scraperCode: string): {
 
   // Check for programmatic session generation patterns
   // Handle various patterns: weeks = [, weeks: [...] = [, weeks: Array<...> = [
-  const hasHardcodedWeeks = scraperCode.includes('weeks = [') ||
+  const hasHardcodedWeeks =
+    scraperCode.includes('weeks = [') ||
     scraperCode.includes('weeks: [') ||
     /weeks:\s*Array<[^>]+>\s*=\s*\[/.test(scraperCode) ||
     /const\s+weeks\s*=\s*\[/.test(scraperCode);
@@ -1972,7 +2050,7 @@ function analyzeScraperType(scraperCode: string): {
     return {
       needsBrowser: true,
       isProgrammatic: false,
-      reason: `Browser-dependent: extract=${usesStagehandExtract}, goto=${usesPageGoto}, domTraversal=${usesDOMTraversal}`
+      reason: `Browser-dependent: extract=${usesStagehandExtract}, goto=${usesPageGoto}, domTraversal=${usesDOMTraversal}`,
     };
   }
 
@@ -1983,7 +2061,7 @@ function analyzeScraperType(scraperCode: string): {
     return {
       needsBrowser: false,
       isProgrammatic: true,
-      reason: `Programmatic: hardcoded weeks array with loop to push sessions`
+      reason: `Programmatic: hardcoded weeks array with loop to push sessions`,
     };
   }
 
@@ -1991,7 +2069,7 @@ function analyzeScraperType(scraperCode: string): {
     return {
       needsBrowser: false,
       isProgrammatic: true,
-      reason: `Programmatic: generateWeeklySessions function`
+      reason: `Programmatic: generateWeeklySessions function`,
     };
   }
 
@@ -2000,7 +2078,7 @@ function analyzeScraperType(scraperCode: string): {
     return {
       needsBrowser: true,
       isProgrammatic: false,
-      reason: `Browser-dependent: click=${usesPageClick}, waitFor=${usesPageWaitFor}`
+      reason: `Browser-dependent: click=${usesPageClick}, waitFor=${usesPageWaitFor}`,
     };
   }
 
@@ -2013,7 +2091,7 @@ function analyzeScraperType(scraperCode: string): {
     return {
       needsBrowser: false,
       isProgrammatic: true,
-      reason: `Programmatic: loop-based session generation`
+      reason: `Programmatic: loop-based session generation`,
     };
   }
 
@@ -2021,7 +2099,7 @@ function analyzeScraperType(scraperCode: string): {
   return {
     needsBrowser: true,
     isProgrammatic: false,
-    reason: 'No clear programmatic patterns detected - needs browser testing'
+    reason: 'No clear programmatic patterns detected - needs browser testing',
   };
 }
 
@@ -2032,7 +2110,7 @@ function analyzeScraperType(scraperCode: string): {
 async function executeScraperWithMock(
   scraperCode: string,
   url: string,
-  log: (msg: string) => void
+  log: (msg: string) => void,
 ): Promise<TestResult | null> {
   try {
     log(`   Executing scraper with mock page...`);
@@ -2124,10 +2202,7 @@ main();
 /**
  * Static analysis fallback for counting sessions
  */
-function staticAnalysis(
-  scraperCode: string,
-  log: (msg: string) => void
-): TestResult | null {
+function staticAnalysis(scraperCode: string, log: (msg: string) => void): TestResult | null {
   log(`   Using static analysis fallback...`);
 
   // Count hardcoded week definitions: { start: '2026-06-15', end: '...' }
@@ -2185,7 +2260,9 @@ function staticAnalysis(
 
   // Extract week dates to generate sample sessions
   const sessions = [];
-  const weekDates = scraperCode.matchAll(/\{\s*start:\s*['"](\d{4}-\d{2}-\d{2})['"],\s*end:\s*['"](\d{4}-\d{2}-\d{2})['"]/g);
+  const weekDates = scraperCode.matchAll(
+    /\{\s*start:\s*['"](\d{4}-\d{2}-\d{2})['"],\s*end:\s*['"](\d{4}-\d{2}-\d{2})['"]/g,
+  );
 
   let weekNum = 1;
   for (const match of weekDates) {
@@ -2225,7 +2302,7 @@ function staticAnalysis(
 async function tryDirectExecution(
   scraperCode: string,
   url: string,
-  log: (msg: string) => void
+  log: (msg: string) => void,
 ): Promise<TestResult | null> {
   // Analyze the scraper type
   const analysis = analyzeScraperType(scraperCode);
@@ -2271,12 +2348,17 @@ async function testScraper(scraperCode: string, url: string, verbose: boolean = 
 
   // Check if Stagehand is available for browser-based testing
   if (!Stagehand) {
-    log("   Stagehand not installed - marking for manual review");
+    log('   Stagehand not installed - marking for manual review');
     // If the code looks like it generates sessions, treat as success
     if (scraperCode.includes('generateWeeklySessions') || scraperCode.includes('sessions.push')) {
-      log("   Code appears to generate sessions - marking as ready for review");
+      log('   Code appears to generate sessions - marking as ready for review');
       return {
-        sessions: [{ name: "Generated sessions (manual verification needed)", note: "Scraper generates sessions programmatically" }],
+        sessions: [
+          {
+            name: 'Generated sessions (manual verification needed)',
+            note: 'Scraper generates sessions programmatically',
+          },
+        ],
         error: undefined,
       };
     }
@@ -2293,14 +2375,14 @@ async function testScraper(scraperCode: string, url: string, verbose: boolean = 
     if (!process.env.BROWSERBASE_API_KEY || !process.env.BROWSERBASE_PROJECT_ID) {
       return {
         sessions: [],
-        error: "Missing BROWSERBASE_API_KEY or BROWSERBASE_PROJECT_ID environment variables",
+        error: 'Missing BROWSERBASE_API_KEY or BROWSERBASE_PROJECT_ID environment variables',
       };
     }
 
     if (!process.env.MODEL_API_KEY) {
       return {
         sessions: [],
-        error: "Missing MODEL_API_KEY environment variable",
+        error: 'Missing MODEL_API_KEY environment variable',
       };
     }
 
@@ -2308,11 +2390,11 @@ async function testScraper(scraperCode: string, url: string, verbose: boolean = 
 
     // Initialize Stagehand
     stagehand = new Stagehand({
-      env: "BROWSERBASE",
+      env: 'BROWSERBASE',
       apiKey: process.env.BROWSERBASE_API_KEY,
       projectId: process.env.BROWSERBASE_PROJECT_ID,
       model: {
-        modelName: "anthropic/claude-sonnet-4-20250514",
+        modelName: 'anthropic/claude-sonnet-4-20250514',
         apiKey: process.env.MODEL_API_KEY,
       },
       disablePino: true,
@@ -2325,7 +2407,7 @@ async function testScraper(scraperCode: string, url: string, verbose: boolean = 
     const page = stagehand.context.pages()[0];
 
     log(`   Navigating to ${url}...`);
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
     // Wait for dynamic content
     await page.waitForTimeout(5000);
@@ -2341,7 +2423,7 @@ async function testScraper(scraperCode: string, url: string, verbose: boolean = 
 
     // Extract the scrape function body from the code
     const functionMatch = scraperCode.match(
-      /async function scrape\s*\([^)]*\)\s*(?::\s*Promise<[^>]+>)?\s*\{([\s\S]*)\}[\s\S]*$/
+      /async function scrape\s*\([^)]*\)\s*(?::\s*Promise<[^>]+>)?\s*\{([\s\S]*)\}[\s\S]*$/,
     );
 
     if (!functionMatch) {
@@ -2349,7 +2431,7 @@ async function testScraper(scraperCode: string, url: string, verbose: boolean = 
       // guided by the scraper code as instructions
       log(`   Using AI extraction (no scrape function found)...`);
 
-      const { z } = await import("zod");
+      const { z } = await import('zod');
 
       const schema = z.object({
         sessions: z.array(
@@ -2374,7 +2456,7 @@ async function testScraper(scraperCode: string, url: string, verbose: boolean = 
             priceRaw: z.string().optional(),
             registrationUrl: z.string().optional(),
             isAvailable: z.boolean().optional(),
-          })
+          }),
         ),
       });
 
@@ -2400,7 +2482,7 @@ Follow the logic in the code to extract sessions. Return all sessions found.`;
     // For now, fall back to AI extraction
     log(`   Found scrape function, using AI-guided extraction...`);
 
-    const { z } = await import("zod");
+    const { z } = await import('zod');
 
     const schema = z.object({
       sessions: z.array(
@@ -2425,7 +2507,7 @@ Follow the logic in the code to extract sessions. Return all sessions found.`;
           priceRaw: z.string().optional(),
           registrationUrl: z.string().optional(),
           isAvailable: z.boolean().optional(),
-        })
+        }),
       ),
     });
 
@@ -2485,20 +2567,20 @@ async function processDirectoryQueue(verbose: boolean = false) {
     if (verbose) console.log(msg);
   };
 
-  log("📂 Checking directory queue...");
+  log('📂 Checking directory queue...');
 
   // Get pending items
   const pending = await client.query(api.scraping.directoryDaemon.getPendingDirectories, { limit: 3 });
 
   if (!pending || pending.length === 0) {
-    log("   No pending directory items");
+    log('   No pending directory items');
     return;
   }
 
   log(`   Found ${pending.length} pending directory items`);
 
   for (const item of pending as DirectoryQueueItem[]) {
-    await logQueueStatus("   ");
+    await logQueueStatus('   ');
     log(`\n   Processing: ${item.url}`);
 
     try {
@@ -2538,7 +2620,6 @@ async function processDirectoryQueue(verbose: boolean = false) {
       });
 
       log(`   ✅ Created ${completion.created} orgs, ${completion.existed} already existed`);
-
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
       log(`   ❌ Error: ${errorMsg}`);
@@ -2564,15 +2645,16 @@ async function fetchDirectoryLocally(
   url: string,
   linkPattern?: string,
   baseUrlFilter?: string,
-  log: (msg: string) => void = console.log
+  log: (msg: string) => void = console.log,
 ): Promise<{ success: boolean; urls: string[]; error?: string }> {
   // Try simple fetch first
   try {
     const response = await fetch(url, {
       headers: {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
+        'User-Agent':
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
       },
     });
 
@@ -2588,7 +2670,6 @@ async function fetchDirectoryLocally(
     }
 
     return { success: false, urls: [], error: `HTTP ${response.status}: ${response.statusText}` };
-
   } catch (error) {
     // Network error - try Stagehand
     log(`   Fetch error, trying Stagehand: ${error instanceof Error ? error.message : error}`);
@@ -2604,7 +2685,7 @@ function extractLinksFromHtml(
   sourceUrl: string,
   linkPattern?: string,
   baseUrlFilter?: string,
-  log: (msg: string) => void = console.log
+  log: (msg: string) => void = console.log,
 ): { success: boolean; urls: string[]; error?: string } {
   const linkRegex = /<a[^>]*href=["']([^"']+)["'][^>]*>([^<]*)</gi;
   const urls: string[] = [];
@@ -2616,8 +2697,13 @@ function extractLinksFromHtml(
     const text = match[2].trim();
 
     // Skip empty, anchors, javascript, mailto, tel
-    if (!linkUrl || linkUrl.startsWith("#") || linkUrl.startsWith("javascript:") ||
-        linkUrl.startsWith("mailto:") || linkUrl.startsWith("tel:")) {
+    if (
+      !linkUrl ||
+      linkUrl.startsWith('#') ||
+      linkUrl.startsWith('javascript:') ||
+      linkUrl.startsWith('mailto:') ||
+      linkUrl.startsWith('tel:')
+    ) {
       continue;
     }
 
@@ -2632,24 +2718,24 @@ function extractLinksFromHtml(
     // Get domain
     let domain: string;
     try {
-      domain = new URL(linkUrl).hostname.replace(/^www\./, "");
+      domain = new URL(linkUrl).hostname.replace(/^www\./, '');
     } catch {
       continue;
     }
 
     // Skip the source domain itself
-    const sourceHost = new URL(sourceUrl).hostname.replace(/^www\./, "");
+    const sourceHost = new URL(sourceUrl).hostname.replace(/^www\./, '');
     if (domain === sourceHost) continue;
 
     // Apply filters
     if (baseUrlFilter) {
-      const filterDomain = baseUrlFilter.replace(/^www\./, "");
+      const filterDomain = baseUrlFilter.replace(/^www\./, '');
       if (!domain.includes(filterDomain)) continue;
     }
 
     if (linkPattern) {
       try {
-        const pattern = new RegExp(linkPattern, "i");
+        const pattern = new RegExp(linkPattern, 'i');
         if (!pattern.test(linkUrl) && !pattern.test(text)) continue;
       } catch {
         // Invalid regex, skip filter
@@ -2683,14 +2769,14 @@ async function fetchWithStagehand(
   url: string,
   linkPattern?: string,
   baseUrlFilter?: string,
-  log: (msg: string) => void = console.log
+  log: (msg: string) => void = console.log,
 ): Promise<{ success: boolean; urls: string[]; error?: string }> {
   if (!Stagehand) {
-    return { success: false, urls: [], error: "Stagehand not available - install @browserbasehq/stagehand" };
+    return { success: false, urls: [], error: 'Stagehand not available - install @browserbasehq/stagehand' };
   }
 
   if (!process.env.BROWSERBASE_API_KEY || !process.env.BROWSERBASE_PROJECT_ID) {
-    return { success: false, urls: [], error: "Missing BROWSERBASE_API_KEY or BROWSERBASE_PROJECT_ID" };
+    return { success: false, urls: [], error: 'Missing BROWSERBASE_API_KEY or BROWSERBASE_PROJECT_ID' };
   }
 
   let stagehand: any = null;
@@ -2699,11 +2785,11 @@ async function fetchWithStagehand(
     log(`   Initializing Stagehand...`);
 
     stagehand = new Stagehand({
-      env: "BROWSERBASE",
+      env: 'BROWSERBASE',
       apiKey: process.env.BROWSERBASE_API_KEY,
       projectId: process.env.BROWSERBASE_PROJECT_ID,
       model: {
-        modelName: "anthropic/claude-sonnet-4-20250514",
+        modelName: 'anthropic/claude-sonnet-4-20250514',
         apiKey: process.env.MODEL_API_KEY,
       },
       disablePino: true,
@@ -2725,10 +2811,11 @@ async function fetchWithStagehand(
 
     // Extract links from the rendered HTML
     return extractLinksFromHtml(html, url, linkPattern, baseUrlFilter, log);
-
   } catch (error) {
     if (stagehand) {
-      try { await stagehand.close(); } catch { }
+      try {
+        await stagehand.close();
+      } catch {}
     }
     return {
       success: false,
@@ -2755,25 +2842,25 @@ interface ContactInfo {
  */
 async function extractContactLocally(
   url: string,
-  log: (msg: string) => void
+  log: (msg: string) => void,
 ): Promise<{ success: boolean; contactInfo?: ContactInfo; error?: string }> {
   if (!Stagehand) {
-    return { success: false, error: "Stagehand not available" };
+    return { success: false, error: 'Stagehand not available' };
   }
 
   if (!process.env.BROWSERBASE_API_KEY || !process.env.BROWSERBASE_PROJECT_ID) {
-    return { success: false, error: "Missing BROWSERBASE_API_KEY or BROWSERBASE_PROJECT_ID" };
+    return { success: false, error: 'Missing BROWSERBASE_API_KEY or BROWSERBASE_PROJECT_ID' };
   }
 
   let stagehand: any = null;
 
   try {
     stagehand = new Stagehand({
-      env: "BROWSERBASE",
+      env: 'BROWSERBASE',
       apiKey: process.env.BROWSERBASE_API_KEY,
       projectId: process.env.BROWSERBASE_PROJECT_ID,
       model: {
-        modelName: "anthropic/claude-sonnet-4-20250514",
+        modelName: 'anthropic/claude-sonnet-4-20250514',
         apiKey: process.env.MODEL_API_KEY,
       },
       disablePino: true,
@@ -2783,17 +2870,17 @@ async function extractContactLocally(
     await stagehand.init();
     const page = stagehand.context.pages()[0];
 
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForTimeout(3000);
 
     // Use Stagehand's extract with a zod-like schema
-    const { z } = await import("zod");
+    const { z } = await import('zod');
     const ContactInfoSchema = z.object({
-      email: z.string().optional().describe("Primary contact email address"),
-      phone: z.string().optional().describe("Primary contact phone number"),
-      contactName: z.string().optional().describe("Name of the contact person"),
-      contactTitle: z.string().optional().describe("Title/role of the contact person"),
-      address: z.string().optional().describe("Physical address"),
+      email: z.string().optional().describe('Primary contact email address'),
+      phone: z.string().optional().describe('Primary contact phone number'),
+      contactName: z.string().optional().describe('Name of the contact person'),
+      contactTitle: z.string().optional().describe('Title/role of the contact person'),
+      address: z.string().optional().describe('Physical address'),
     });
 
     const instruction = `Extract all contact information from this page. Look carefully for:
@@ -2815,7 +2902,9 @@ Check the header, footer, sidebar, and main content areas. Also look for "Contac
     };
   } catch (error) {
     if (stagehand) {
-      try { await stagehand.close(); } catch { }
+      try {
+        await stagehand.close();
+      } catch {}
     }
     return {
       success: false,
@@ -2835,13 +2924,12 @@ async function processContactExtraction(verbose: boolean = false) {
   };
 
   // Get orgs needing contact info
-  const orgsNeedingContact = await client.query(
-    api.scraping.contactExtractorHelpers.getOrgsNeedingContactInfo,
-    { limit: 3 }
-  );
+  const orgsNeedingContact = await client.query(api.scraping.contactExtractorHelpers.getOrgsNeedingContactInfo, {
+    limit: 3,
+  });
 
   if (!orgsNeedingContact || orgsNeedingContact.length === 0) {
-    if (verbose) log("📧 No orgs need contact extraction");
+    if (verbose) log('📧 No orgs need contact extraction');
     return;
   }
 
@@ -2850,7 +2938,7 @@ async function processContactExtraction(verbose: boolean = false) {
   for (const org of orgsNeedingContact) {
     if (!org.website) continue;
 
-    await logQueueStatus("   ");
+    await logQueueStatus('   ');
     log(`   🔍 ${org.name}: ${org.website}`);
 
     try {
@@ -2883,7 +2971,7 @@ async function processContactExtraction(verbose: boolean = false) {
         await client.mutation(api.scraping.contactExtractorHelpers.saveOrgContactInfo, {
           organizationId: org._id,
         });
-      } catch { }
+      } catch {}
     }
   }
 }
@@ -2910,29 +2998,29 @@ interface DiscoveredUrl {
 
 // Known camp directory domains to prioritize for deep crawl
 const KNOWN_DIRECTORIES = [
-  "activityhero.com",
-  "sawyer.com",
-  "campsearch.com",
-  "mysummercamps.com",
-  "acacamps.org",
-  "campnavigator.com",
-  "kidscamps.com",
-  "summercampdirectories.com",
+  'activityhero.com',
+  'sawyer.com',
+  'campsearch.com',
+  'mysummercamps.com',
+  'acacamps.org',
+  'campnavigator.com',
+  'kidscamps.com',
+  'summercampdirectories.com',
 ];
 
 // URL patterns that indicate a camp-related page
 const CAMP_SIGNAL_KEYWORDS = [
-  "summer camp",
-  "day camp",
-  "kids camp",
-  "registration",
-  "enroll",
-  "sign up",
-  "ages",
-  "grades",
-  "children",
-  "youth",
-  "program",
+  'summer camp',
+  'day camp',
+  'kids camp',
+  'registration',
+  'enroll',
+  'sign up',
+  'ages',
+  'grades',
+  'children',
+  'youth',
+  'program',
 ];
 
 // URLs to skip (not camp organizations)
@@ -2959,9 +3047,9 @@ function shouldSkipDiscoveryUrl(url: string): boolean {
 
 function extractDomainFromUrl(url: string): string {
   try {
-    return new URL(url).hostname.replace(/^www\./, "");
+    return new URL(url).hostname.replace(/^www\./, '');
   } catch {
-    return "";
+    return '';
   }
 }
 
@@ -2977,7 +3065,7 @@ async function processMarketDiscoveryQueue(verbose: boolean = false) {
 
   // Check if Stagehand is available
   if (!Stagehand) {
-    if (verbose) log("🌍 Market discovery skipped - Stagehand not available");
+    if (verbose) log('🌍 Market discovery skipped - Stagehand not available');
     return;
   }
 
@@ -2985,13 +3073,13 @@ async function processMarketDiscoveryQueue(verbose: boolean = false) {
   const tasks = await client.query(api.scraping.marketDiscovery.getPendingDiscoveryTasks, { limit: 1 });
 
   if (!tasks || tasks.length === 0) {
-    if (verbose) log("🌍 No pending market discovery tasks");
+    if (verbose) log('🌍 No pending market discovery tasks');
     return;
   }
 
   const task = tasks[0] as DiscoveryTask;
   log(`🌍 Processing market discovery: ${task.regionName}`);
-  await logQueueStatus("   ");
+  await logQueueStatus('   ');
 
   // Claim the task
   const claimed = await client.mutation(api.scraping.marketDiscovery.claimDiscoveryTask, {
@@ -3014,11 +3102,11 @@ async function processMarketDiscoveryQueue(verbose: boolean = false) {
     // Initialize Stagehand
     log(`   🔧 Initializing Stagehand...`);
     stagehand = new Stagehand({
-      env: "BROWSERBASE",
+      env: 'BROWSERBASE',
       apiKey: process.env.BROWSERBASE_API_KEY,
       projectId: process.env.BROWSERBASE_PROJECT_ID,
       model: {
-        modelName: "anthropic/claude-sonnet-4-20250514",
+        modelName: 'anthropic/claude-sonnet-4-20250514',
         apiKey: process.env.MODEL_API_KEY,
       },
       disablePino: true,
@@ -3037,22 +3125,28 @@ async function processMarketDiscoveryQueue(verbose: boolean = false) {
 
       try {
         const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}&num=20`;
-        await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+        await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
         await page.waitForTimeout(3000);
 
         // Debug: Check page title to detect captcha/consent
         const pageTitle = await page.title();
-        if (pageTitle.toLowerCase().includes("captcha") || pageTitle.toLowerCase().includes("consent") || pageTitle.toLowerCase().includes("before you continue")) {
+        if (
+          pageTitle.toLowerCase().includes('captcha') ||
+          pageTitle.toLowerCase().includes('consent') ||
+          pageTitle.toLowerCase().includes('before you continue')
+        ) {
           log(`      ⚠️ Detected blocking page: "${pageTitle}"`);
           // Try to handle consent
           try {
-            const acceptButton = await page.$('button[id*="accept"], button[aria-label*="Accept"], button:has-text("Accept all")');
+            const acceptButton = await page.$(
+              'button[id*="accept"], button[aria-label*="Accept"], button:has-text("Accept all")',
+            );
             if (acceptButton) {
               await acceptButton.click();
               await page.waitForTimeout(2000);
               log(`      ✓ Clicked consent button`);
             }
-          } catch { }
+          } catch {}
         }
 
         // Extract search results using Stagehand
@@ -3064,15 +3158,15 @@ For each result, extract:
 Skip ads, "People also ask", and other non-result elements.
 Focus on actual website links that could be summer camp organizations.`,
           schema: {
-            type: "object",
+            type: 'object',
             properties: {
               results: {
-                type: "array",
+                type: 'array',
                 items: {
-                  type: "object",
+                  type: 'object',
                   properties: {
-                    url: { type: "string" },
-                    title: { type: "string" },
+                    url: { type: 'string' },
+                    title: { type: 'string' },
                   },
                 },
               },
@@ -3089,7 +3183,7 @@ Focus on actual website links that could be summer camp organizations.`,
             const results: Array<{ url: string; title: string }> = [];
             // Google search results are in divs with class 'g' or data-hveid
             const searchResults = document.querySelectorAll('div.g, div[data-hveid]');
-            searchResults.forEach(div => {
+            searchResults.forEach((div) => {
               const linkEl = div.querySelector('a[href^="http"]');
               const titleEl = div.querySelector('h3');
               if (linkEl && titleEl) {
@@ -3122,13 +3216,13 @@ Focus on actual website links that could be summer camp organizations.`,
             seenDomains.add(domain);
             discoveredUrls.push({
               url: result.url,
-              source: "google",
+              source: 'google',
               title: result.title,
               domain,
             });
 
             // Check if it's a known directory
-            const isDirectory = KNOWN_DIRECTORIES.some(d => domain.includes(d));
+            const isDirectory = KNOWN_DIRECTORIES.some((d) => domain.includes(d));
             if (isDirectory) {
               directoriesFound++;
               log(`         📂 Directory: ${domain}`);
@@ -3149,11 +3243,12 @@ Focus on actual website links that could be summer camp organizations.`,
         });
 
         const newResults = extracted.results?.length || 0;
-        log(`      ✓ Found ${newResults} results | Total: ${discoveredUrls.length} unique URLs, ${directoriesFound} directories`);
+        log(
+          `      ✓ Found ${newResults} results | Total: ${discoveredUrls.length} unique URLs, ${directoriesFound} directories`,
+        );
 
         // Rate limit between searches
         await page.waitForTimeout(2000);
-
       } catch (searchError) {
         const errorMsg = searchError instanceof Error ? searchError.message : String(searchError);
         log(`      ⚠️ Search error: ${errorMsg.slice(0, 100)}`);
@@ -3162,9 +3257,9 @@ Focus on actual website links that could be summer camp organizations.`,
 
     // Phase 2: Search for combinations of discovered camp names to find more directories
     const discoveredCampNames = discoveredUrls
-      .filter(u => !KNOWN_DIRECTORIES.some(d => u.domain.includes(d)))
+      .filter((u) => !KNOWN_DIRECTORIES.some((d) => u.domain.includes(d)))
       .slice(0, 10)
-      .map(u => u.title || u.domain.split('.')[0]);
+      .map((u) => u.title || u.domain.split('.')[0]);
 
     if (discoveredCampNames.length >= 3 && !shutdownRequested) {
       log(`   🔍 Phase 2: Searching for camp name combinations...`);
@@ -3183,14 +3278,14 @@ Focus on actual website links that could be summer camp organizations.`,
 
         try {
           await page.goto(`https://www.google.com/search?q=${encodeURIComponent(comboQuery)}&num=20`, {
-            waitUntil: "domcontentloaded",
-            timeout: 30000
+            waitUntil: 'domcontentloaded',
+            timeout: 30000,
           });
           await page.waitForTimeout(3000);
 
           const comboResults = await page.evaluate(() => {
             const results: Array<{ url: string; title: string }> = [];
-            document.querySelectorAll('div.g, div[data-hveid]').forEach(div => {
+            document.querySelectorAll('div.g, div[data-hveid]').forEach((div) => {
               const linkEl = div.querySelector('a[href^="http"]');
               const titleEl = div.querySelector('h3');
               if (linkEl && titleEl) {
@@ -3211,7 +3306,7 @@ Focus on actual website links that could be summer camp organizations.`,
             if (!domain || seenDomains.has(domain)) continue;
 
             seenDomains.add(domain);
-            discoveredUrls.push({ url: result.url, source: "google-combo", title: result.title, domain });
+            discoveredUrls.push({ url: result.url, source: 'google-combo', title: result.title, domain });
             newFromCombo++;
             log(`         + ${domain}`);
           }
@@ -3224,16 +3319,20 @@ Focus on actual website links that could be summer camp organizations.`,
     }
 
     // Phase 3: Crawl discovered directories to extract all camp links
-    const directoryUrls = discoveredUrls.filter(u => {
-      const domainLower = u.domain.toLowerCase();
-      // Known directories + sites that look like camp listing pages
-      return KNOWN_DIRECTORIES.some(d => domainLower.includes(d)) ||
-        u.url.includes('/camps') ||
-        u.url.includes('/summer') ||
-        u.title?.toLowerCase().includes('best') ||
-        u.title?.toLowerCase().includes('guide') ||
-        u.title?.toLowerCase().includes('list');
-    }).slice(0, 5); // Limit to 5 directories to avoid timeout
+    const directoryUrls = discoveredUrls
+      .filter((u) => {
+        const domainLower = u.domain.toLowerCase();
+        // Known directories + sites that look like camp listing pages
+        return (
+          KNOWN_DIRECTORIES.some((d) => domainLower.includes(d)) ||
+          u.url.includes('/camps') ||
+          u.url.includes('/summer') ||
+          u.title?.toLowerCase().includes('best') ||
+          u.title?.toLowerCase().includes('guide') ||
+          u.title?.toLowerCase().includes('list')
+        );
+      })
+      .slice(0, 5); // Limit to 5 directories to avoid timeout
 
     if (directoryUrls.length > 0 && !shutdownRequested) {
       log(`   📂 Phase 3: Crawling ${directoryUrls.length} directories for more camps...`);
@@ -3243,7 +3342,7 @@ Focus on actual website links that could be summer camp organizations.`,
         log(`      📂 Crawling: ${dir.domain}`);
 
         try {
-          await page.goto(dir.url, { waitUntil: "domcontentloaded", timeout: 30000 });
+          await page.goto(dir.url, { waitUntil: 'domcontentloaded', timeout: 30000 });
           await page.waitForTimeout(3000);
 
           // Extract all external links that look like camp websites
@@ -3251,7 +3350,7 @@ Focus on actual website links that could be summer camp organizations.`,
             const links: Array<{ url: string; title: string }> = [];
             const seenUrls = new Set<string>();
 
-            document.querySelectorAll('a[href^="http"]').forEach(a => {
+            document.querySelectorAll('a[href^="http"]').forEach((a) => {
               const href = a.getAttribute('href');
               if (!href || seenUrls.has(href)) return;
 
@@ -3293,7 +3392,9 @@ Focus on actual website links that could be summer camp organizations.`,
     await stagehand.close();
     stagehand = null;
 
-    log(`   ✅ Discovery complete: ${discoveredUrls.length} URLs from ${searchesCompleted}/${totalSearches} searches + directory crawl`);
+    log(
+      `   ✅ Discovery complete: ${discoveredUrls.length} URLs from ${searchesCompleted}/${totalSearches} searches + directory crawl`,
+    );
 
     // Process results and create organizations
     if (discoveredUrls.length > 0) {
@@ -3304,7 +3405,9 @@ Focus on actual website links that could be summer camp organizations.`,
         discoveredUrls,
       });
 
-      log(`   ✅ Created ${result.orgsCreated} orgs, ${result.orgsExisted} existed, ${result.sourcesCreated} scraper requests queued`);
+      log(
+        `   ✅ Created ${result.orgsCreated} orgs, ${result.orgsExisted} existed, ${result.sourcesCreated} scraper requests queued`,
+      );
     } else {
       // No URLs found - mark as completed with zeros
       await client.mutation(api.scraping.marketDiscovery.completeDiscoveryTask, {
@@ -3315,7 +3418,6 @@ Focus on actual website links that could be summer camp organizations.`,
       });
       log(`   ⚠️ No camp URLs discovered`);
     }
-
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
     log(`   ❌ Discovery failed: ${errorMsg}`);
@@ -3326,50 +3428,58 @@ Focus on actual website links that could be summer camp organizations.`,
     });
 
     if (stagehand) {
-      try { await stagehand.close(); } catch { }
+      try {
+        await stagehand.close();
+      } catch {}
     }
   }
 }
 
 // Check for --directory flag to only process directory queue
-const directoryOnly = process.argv.includes("--directory") || process.argv.includes("-d");
-const contactOnly = process.argv.includes("--contact") || process.argv.includes("-c");
-const discoveryOnly = process.argv.includes("--discovery") || process.argv.includes("-D");
+const directoryOnly = process.argv.includes('--directory') || process.argv.includes('-d');
+const contactOnly = process.argv.includes('--contact') || process.argv.includes('-c');
+const discoveryOnly = process.argv.includes('--discovery') || process.argv.includes('-D');
 
 if (directoryOnly) {
   // One-shot directory processing
-  console.log("📂 Processing directory queue only...");
-  processDirectoryQueue(true).then(() => {
-    console.log("Done.");
-    process.exit(0);
-  }).catch((err) => {
-    console.error("Error:", err);
-    process.exit(1);
-  });
+  console.log('📂 Processing directory queue only...');
+  processDirectoryQueue(true)
+    .then(() => {
+      console.log('Done.');
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error('Error:', err);
+      process.exit(1);
+    });
 } else if (contactOnly) {
   // One-shot contact extraction
-  console.log("📧 Processing contact extraction only...");
-  processContactExtraction(true).then(() => {
-    console.log("Done.");
-    process.exit(0);
-  }).catch((err) => {
-    console.error("Error:", err);
-    process.exit(1);
-  });
+  console.log('📧 Processing contact extraction only...');
+  processContactExtraction(true)
+    .then(() => {
+      console.log('Done.');
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error('Error:', err);
+      process.exit(1);
+    });
 } else if (discoveryOnly) {
   // One-shot market discovery processing
-  console.log("🌍 Processing market discovery only...");
-  processMarketDiscoveryQueue(true).then(() => {
-    console.log("Done.");
-    process.exit(0);
-  }).catch((err) => {
-    console.error("Error:", err);
-    process.exit(1);
-  });
+  console.log('🌍 Processing market discovery only...');
+  processMarketDiscoveryQueue(true)
+    .then(() => {
+      console.log('Done.');
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error('Error:', err);
+      process.exit(1);
+    });
 } else {
   // Run the full daemon (scraper development + directory queue + contact extraction + market discovery)
   const originalMain = main;
-  main = async function() {
+  main = async function () {
     // Start the original main loop
     const mainPromise = originalMain();
 
@@ -3377,9 +3487,9 @@ if (directoryOnly) {
     const directoryInterval = setInterval(async () => {
       if (!shutdownRequested) {
         try {
-          await processDirectoryQueue(process.argv.includes("-v") || process.argv.includes("--verbose"));
+          await processDirectoryQueue(process.argv.includes('-v') || process.argv.includes('--verbose'));
         } catch (err) {
-          console.error("Directory queue error:", err);
+          console.error('Directory queue error:', err);
         }
       }
     }, 30000); // Check every 30 seconds
@@ -3388,9 +3498,9 @@ if (directoryOnly) {
     const contactInterval = setInterval(async () => {
       if (!shutdownRequested) {
         try {
-          await processContactExtraction(process.argv.includes("-v") || process.argv.includes("--verbose"));
+          await processContactExtraction(process.argv.includes('-v') || process.argv.includes('--verbose'));
         } catch (err) {
-          console.error("Contact extraction error:", err);
+          console.error('Contact extraction error:', err);
         }
       }
     }, 60000); // Check every 60 seconds
@@ -3399,17 +3509,17 @@ if (directoryOnly) {
     const discoveryInterval = setInterval(async () => {
       if (!shutdownRequested) {
         try {
-          await processMarketDiscoveryQueue(process.argv.includes("-v") || process.argv.includes("--verbose"));
+          await processMarketDiscoveryQueue(process.argv.includes('-v') || process.argv.includes('--verbose'));
         } catch (err) {
-          console.error("Market discovery error:", err);
+          console.error('Market discovery error:', err);
         }
       }
     }, 30000); // Check every 30 seconds
 
     // Initial checks
-    setTimeout(() => processDirectoryQueue(process.argv.includes("-v")), 5000);
-    setTimeout(() => processContactExtraction(process.argv.includes("-v")), 10000);
-    setTimeout(() => processMarketDiscoveryQueue(process.argv.includes("-v")), 15000);
+    setTimeout(() => processDirectoryQueue(process.argv.includes('-v')), 5000);
+    setTimeout(() => processContactExtraction(process.argv.includes('-v')), 10000);
+    setTimeout(() => processMarketDiscoveryQueue(process.argv.includes('-v')), 15000);
 
     await mainPromise;
     clearInterval(directoryInterval);

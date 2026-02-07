@@ -1,8 +1,8 @@
-import { mutation } from "../_generated/server";
-import { internal } from "../_generated/api";
-import { v } from "convex/values";
-import { requireAuth, requireFamily, getFamily } from "../lib/auth";
-import { addressValidator, calendarSharingDefaultValidator } from "../lib/validators";
+import { mutation } from '../_generated/server';
+import { internal } from '../_generated/api';
+import { v } from 'convex/values';
+import { requireAuth, requireFamily, getFamily } from '../lib/auth';
+import { addressValidator, calendarSharingDefaultValidator } from '../lib/validators';
 
 // Flag to control new user notifications (set to true to enable)
 const NOTIFY_ON_SIGNUP = true;
@@ -15,8 +15,9 @@ export const createFamily = mutation({
   args: {
     displayName: v.string(),
     email: v.string(),
-    primaryCityId: v.id("cities"),
+    primaryCityId: v.id('cities'),
     calendarSharingDefault: calendarSharingDefaultValidator,
+    referralCode: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await requireAuth(ctx);
@@ -24,22 +25,43 @@ export const createFamily = mutation({
     // Check if user already has a family
     const existingFamily = await getFamily(ctx);
     if (existingFamily) {
-      throw new Error("User already has a family");
+      throw new Error('User already has a family');
     }
 
     // Verify the city exists
     const city = await ctx.db.get(args.primaryCityId);
     if (!city) {
-      throw new Error("City not found");
+      throw new Error('City not found');
     }
 
-    const familyId = await ctx.db.insert("families", {
+    // Validate referral code if provided
+    let validReferralCode: string | undefined;
+    if (args.referralCode) {
+      const referral = await ctx.db
+        .query('referrals')
+        .withIndex('by_code', (q) => q.eq('referralCode', args.referralCode!))
+        .first();
+      if (referral) {
+        validReferralCode = args.referralCode;
+      }
+    }
+
+    const familyId = await ctx.db.insert('families', {
       workosUserId: identity.subject,
       email: args.email,
       displayName: args.displayName,
       primaryCityId: args.primaryCityId,
       calendarSharingDefault: args.calendarSharingDefault,
+      referredByCode: validReferralCode,
     });
+
+    // Create pending referral event if valid code
+    if (validReferralCode) {
+      await ctx.scheduler.runAfter(0, internal.referrals.mutations.attributeReferral, {
+        refereeFamilyId: familyId,
+        referralCode: validReferralCode,
+      });
+    }
 
     // Notify Seth about new signups
     if (NOTIFY_ON_SIGNUP) {
@@ -47,7 +69,7 @@ export const createFamily = mutation({
         userEmail: args.email,
         displayName: args.displayName,
         cityName: city.name,
-        brandName: city.brandName || "PDX Camps",
+        brandName: city.brandName || 'PDX Camps',
       });
     }
 
@@ -62,8 +84,8 @@ export const createFamily = mutation({
 export const updateFamily = mutation({
   args: {
     displayName: v.optional(v.string()),
-    primaryCityId: v.optional(v.id("cities")),
-    homeNeighborhoodId: v.optional(v.id("neighborhoods")),
+    primaryCityId: v.optional(v.id('cities')),
+    homeNeighborhoodId: v.optional(v.id('neighborhoods')),
     homeAddress: v.optional(addressValidator),
     maxDriveTimeMinutes: v.optional(v.number()),
     calendarSharingDefault: v.optional(calendarSharingDefaultValidator),
@@ -82,7 +104,7 @@ export const updateFamily = mutation({
       // Verify the city exists
       const city = await ctx.db.get(args.primaryCityId);
       if (!city) {
-        throw new Error("City not found");
+        throw new Error('City not found');
       }
       updates.primaryCityId = args.primaryCityId;
     }
@@ -91,7 +113,7 @@ export const updateFamily = mutation({
       // Verify the neighborhood exists
       const neighborhood = await ctx.db.get(args.homeNeighborhoodId);
       if (!neighborhood) {
-        throw new Error("Neighborhood not found");
+        throw new Error('Neighborhood not found');
       }
       updates.homeNeighborhoodId = args.homeNeighborhoodId;
     }
@@ -102,7 +124,7 @@ export const updateFamily = mutation({
 
     if (args.maxDriveTimeMinutes !== undefined) {
       if (args.maxDriveTimeMinutes < 0) {
-        throw new Error("Max drive time must be non-negative");
+        throw new Error('Max drive time must be non-negative');
       }
       updates.maxDriveTimeMinutes = args.maxDriveTimeMinutes;
     }
@@ -125,13 +147,13 @@ export const updateFamily = mutation({
  */
 export const adminUpdateWorkosUserId = mutation({
   args: {
-    familyId: v.id("families"),
+    familyId: v.id('families'),
     workosUserId: v.string(),
   },
   handler: async (ctx, args) => {
     const family = await ctx.db.get(args.familyId);
     if (!family) {
-      throw new Error("Family not found");
+      throw new Error('Family not found');
     }
     await ctx.db.patch(args.familyId, {
       workosUserId: args.workosUserId,
@@ -143,6 +165,7 @@ export const adminUpdateWorkosUserId = mutation({
 /**
  * Mark the current family's onboarding as completed.
  * Sends welcome email immediately and schedules tips email for next day.
+ * Also completes any pending referral and awards credit to the referrer.
  */
 export const completeOnboarding = mutation({
   args: {},
@@ -157,10 +180,10 @@ export const completeOnboarding = mutation({
 
       // Get the city info for personalized emails
       const city = await ctx.db.get(family.primaryCityId);
-      const cityName = city?.name || "your area";
-      const brandName = city?.brandName || "PDX Camps";
-      const domain = city?.domain || "pdxcamps.com";
-      const fromEmail = city?.fromEmail || "hello@pdxcamps.com";
+      const cityName = city?.name || 'your area';
+      const brandName = city?.brandName || 'PDX Camps';
+      const domain = city?.domain || 'pdxcamps.com';
+      const fromEmail = city?.fromEmail || 'hello@pdxcamps.com';
 
       // Send welcome email immediately
       await ctx.scheduler.runAfter(0, internal.email.sendWelcomeEmail, {
@@ -182,6 +205,37 @@ export const completeOnboarding = mutation({
         domain,
         fromEmail,
       });
+
+      // Generate referral code and schedule referral email for day 3
+      const referralCode = Array.from(crypto.getRandomValues(new Uint8Array(8)))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+
+      await ctx.db.insert('referrals', {
+        referrerFamilyId: family._id,
+        referralCode,
+        creditsEarned: 0,
+        creditsApplied: 0,
+        createdAt: Date.now(),
+      });
+
+      // Schedule referral email for 72 hours (3 days) later
+      const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
+      await ctx.scheduler.runAfter(threeDaysMs, internal.email.sendReferralEmail, {
+        to: family.email,
+        displayName: family.displayName,
+        referralCode,
+        brandName,
+        domain,
+        fromEmail,
+      });
+
+      // Complete referral if this family was referred
+      if (family.referredByCode) {
+        await ctx.scheduler.runAfter(0, internal.referrals.mutations.completeReferral, {
+          refereeFamilyId: family._id,
+        });
+      }
     }
 
     return family._id;

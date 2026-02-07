@@ -18,30 +18,30 @@ function formatPrice(price: number | null | undefined) {
 }
 
 interface SavedCamp {
-  _id: Id<"registrations">;
+  _id: Id<'registrations'>;
   status: string;
   notes?: string;
   externalConfirmationCode?: string;
   child: {
-    _id: Id<"children">;
+    _id: Id<'children'>;
     firstName: string;
   } | null;
   session: {
-    _id: Id<"sessions">;
+    _id: Id<'sessions'>;
     startDate: string;
     endDate: string;
     price: number | null;
     externalRegistrationUrl?: string;
     camp: {
-      _id: Id<"camps">;
+      _id: Id<'camps'>;
       name: string;
     } | null;
     organization: {
-      _id: Id<"organizations">;
+      _id: Id<'organizations'>;
       name: string;
     } | null;
     location: {
-      _id: Id<"locations">;
+      _id: Id<'locations'>;
       name: string;
       neighborhood?: string;
     } | null;
@@ -82,9 +82,7 @@ function TodoCampCard({
               >
                 {campInfo?.name ?? 'Unknown Camp'}
               </Link>
-              <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
-                {org?.name}
-              </p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{org?.name}</p>
             </div>
             {camp.child && (
               <span className="text-xs font-medium text-primary dark:text-primary-light bg-primary/10 dark:bg-primary/20 px-2 py-0.5 rounded-full flex-shrink-0">
@@ -96,16 +94,14 @@ function TodoCampCard({
           {/* Details row */}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-sm text-slate-600 dark:text-slate-400">
             {session && (
-              <span>{formatDate(session.startDate)} - {formatDate(session.endDate)}</span>
-            )}
-            {session?.price && (
-              <span className="font-medium text-slate-900 dark:text-white">
-                {formatPrice(session.price)}
+              <span>
+                {formatDate(session.startDate)} - {formatDate(session.endDate)}
               </span>
             )}
-            {location?.neighborhood && (
-              <span>{location.neighborhood}</span>
+            {session?.price && (
+              <span className="font-medium text-slate-900 dark:text-white">{formatPrice(session.price)}</span>
             )}
+            {location?.neighborhood && <span>{location.neighborhood}</span>}
           </div>
 
           {/* Action buttons */}
@@ -119,7 +115,12 @@ function TodoCampCard({
               >
                 Register
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                  />
                 </svg>
               </a>
             )}
@@ -130,8 +131,20 @@ function TodoCampCard({
             >
               {isProcessing ? (
                 <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    fill="none"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
                 </svg>
               ) : (
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -189,9 +202,7 @@ function RegisteredCampCard({
               >
                 {campInfo?.name ?? 'Unknown Camp'}
               </Link>
-              <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
-                {org?.name}
-              </p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{org?.name}</p>
             </div>
             {camp.child && (
               <span className="text-xs font-medium text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded-full flex-shrink-0">
@@ -203,12 +214,12 @@ function RegisteredCampCard({
           {/* Details row */}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-sm text-slate-600 dark:text-slate-400">
             {session && (
-              <span>{formatDate(session.startDate)} - {formatDate(session.endDate)}</span>
+              <span>
+                {formatDate(session.startDate)} - {formatDate(session.endDate)}
+              </span>
             )}
             {session?.price && (
-              <span className="font-medium text-slate-900 dark:text-white">
-                {formatPrice(session.price)}
-              </span>
+              <span className="font-medium text-slate-900 dark:text-white">{formatPrice(session.price)}</span>
             )}
           </div>
 
@@ -216,7 +227,12 @@ function RegisteredCampCard({
           {camp.externalConfirmationCode && (
             <div className="mt-2 inline-flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
               Confirmation: {camp.externalConfirmationCode}
             </div>
@@ -253,9 +269,7 @@ function ProgressHeader({
   return (
     <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
       <div className="max-w-3xl mx-auto px-4 py-6">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
-          My Summer Camps
-        </h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">My Summer Camps</h1>
 
         {totalCamps > 0 && (
           <>
@@ -305,7 +319,7 @@ function ProgressHeader({
 function SectionHeader({
   title,
   count,
-  color
+  color,
 }: {
   title: string;
   count: number;
@@ -321,9 +335,7 @@ function SectionHeader({
   return (
     <div className="flex items-center gap-3 mb-4">
       <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{title}</h2>
-      <span className={`px-2 py-0.5 rounded-full text-sm font-medium ${colors[color]}`}>
-        {count}
-      </span>
+      <span className={`px-2 py-0.5 rounded-full text-sm font-medium ${colors[color]}`}>{count}</span>
     </div>
   );
 }
@@ -390,10 +402,10 @@ export default function SavedCampsPage() {
     });
   };
 
-  const handleMarkRegistered = async (registrationId: Id<"registrations">) => {
+  const handleMarkRegistered = async (registrationId: Id<'registrations'>) => {
     setProcessingId(registrationId);
     try {
-      const registration = savedCamps?.interested.find(r => r._id === registrationId);
+      const registration = savedCamps?.interested.find((r) => r._id === registrationId);
       if (registration && registration.child && registration.session) {
         await register({
           childId: registration.child._id,
@@ -408,7 +420,7 @@ export default function SavedCampsPage() {
     }
   };
 
-  const handleRemove = async (registrationId: Id<"registrations">) => {
+  const handleRemove = async (registrationId: Id<'registrations'>) => {
     setProcessingId(registrationId);
     try {
       await cancelRegistration({ registrationId });
@@ -434,9 +446,7 @@ export default function SavedCampsPage() {
   }
 
   const hasAnySaved =
-    savedCamps.interested.length > 0 ||
-    savedCamps.registered.length > 0 ||
-    savedCamps.waitlisted.length > 0;
+    savedCamps.interested.length > 0 || savedCamps.registered.length > 0 || savedCamps.waitlisted.length > 0;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
@@ -478,9 +488,7 @@ export default function SavedCampsPage() {
         {!hasAnySaved ? (
           <div className="text-center py-12">
             <div className="text-4xl mb-4">💭</div>
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
-              No camps saved yet
-            </h2>
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">No camps saved yet</h2>
             <p className="text-slate-600 dark:text-slate-400 mb-6">
               Browse camps and tap the heart to save them for later
             </p>
@@ -496,11 +504,7 @@ export default function SavedCampsPage() {
             {/* Need to Register - Action Items */}
             {savedCamps.interested.length > 0 && (
               <section>
-                <SectionHeader
-                  title="Need to Register"
-                  count={savedCamps.interested.length}
-                  color="amber"
-                />
+                <SectionHeader title="Need to Register" count={savedCamps.interested.length} color="amber" />
                 <div className="space-y-3">
                   {savedCamps.interested.map((camp) => (
                     <TodoCampCard
@@ -518,11 +522,7 @@ export default function SavedCampsPage() {
             {/* Waitlisted */}
             {savedCamps.waitlisted.length > 0 && (
               <section>
-                <SectionHeader
-                  title="On Waitlist"
-                  count={savedCamps.waitlisted.length}
-                  color="yellow"
-                />
+                <SectionHeader title="On Waitlist" count={savedCamps.waitlisted.length} color="yellow" />
                 <div className="space-y-3">
                   {savedCamps.waitlisted.map((camp) => (
                     <TodoCampCard
@@ -540,11 +540,7 @@ export default function SavedCampsPage() {
             {/* Registered */}
             {savedCamps.registered.length > 0 && (
               <section>
-                <SectionHeader
-                  title="Registered"
-                  count={savedCamps.registered.length}
-                  color="green"
-                />
+                <SectionHeader title="Registered" count={savedCamps.registered.length} color="green" />
                 <div className="space-y-3">
                   {savedCamps.registered.map((camp) => (
                     <RegisteredCampCard
@@ -564,16 +560,25 @@ export default function SavedCampsPage() {
       {/* Bottom nav link */}
       <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 px-4 py-3">
         <div className="max-w-3xl mx-auto flex justify-around">
-          <Link href="/" className="text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary-light text-sm font-medium">
+          <Link
+            href="/"
+            className="text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary-light text-sm font-medium"
+          >
             Home
           </Link>
-          <Link href="/discover/portland" className="text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary-light text-sm font-medium">
+          <Link
+            href="/discover/portland"
+            className="text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary-light text-sm font-medium"
+          >
             Discover
           </Link>
           <Link href="/saved" className="text-primary dark:text-primary-light text-sm font-medium">
             My Camps
           </Link>
-          <Link href="/planner" className="text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary-light text-sm font-medium">
+          <Link
+            href="/planner"
+            className="text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary-light text-sm font-medium"
+          >
             Planner
           </Link>
         </div>

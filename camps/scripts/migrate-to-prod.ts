@@ -10,13 +10,13 @@
  * 2. Imports them into prod, mapping IDs appropriately
  */
 
-import { ConvexHttpClient } from "convex/browser";
-import { api } from "../convex/_generated/api";
-import { Id } from "../convex/_generated/dataModel";
+import { ConvexHttpClient } from 'convex/browser';
+import { api } from '../convex/_generated/api';
+import { Id } from '../convex/_generated/dataModel';
 
 // Configuration
-const DEV_URL = "https://brazen-vulture-927.convex.cloud";
-const PROD_URL = "https://deafening-schnauzer-923.convex.cloud";
+const DEV_URL = 'https://brazen-vulture-927.convex.cloud';
+const PROD_URL = 'https://deafening-schnauzer-923.convex.cloud';
 
 const devClient = new ConvexHttpClient(DEV_URL);
 const prodClient = new ConvexHttpClient(PROD_URL);
@@ -31,30 +31,30 @@ const idMap = {
 };
 
 async function main() {
-  console.log("🚀 Starting migration from dev to prod...\n");
+  console.log('🚀 Starting migration from dev to prod...\n');
 
   // Step 1: Export and import cities
-  console.log("📍 Migrating cities...");
+  console.log('📍 Migrating cities...');
   await migrateCities();
 
   // Step 2: Export and import organizations
-  console.log("\n🏢 Migrating organizations...");
+  console.log('\n🏢 Migrating organizations...');
   await migrateOrganizations();
 
   // Step 3: Export and import locations
-  console.log("\n📌 Migrating locations...");
+  console.log('\n📌 Migrating locations...');
   await migrateLocations();
 
   // Step 4: Export and import camps
-  console.log("\n🏕️ Migrating camps...");
+  console.log('\n🏕️ Migrating camps...');
   await migrateCamps();
 
   // Step 5: Export and import scrapeSources
-  console.log("\n🔧 Migrating scrape sources...");
+  console.log('\n🔧 Migrating scrape sources...');
   await migrateScrapeSources();
 
-  console.log("\n✅ Migration complete!");
-  console.log("\nID Mappings:");
+  console.log('\n✅ Migration complete!');
+  console.log('\nID Mappings:');
   console.log(`  Cities: ${idMap.cities.size}`);
   console.log(`  Organizations: ${idMap.organizations.size}`);
   console.log(`  Locations: ${idMap.locations.size}`);
@@ -105,7 +105,7 @@ async function migrateOrganizations() {
       // Map city IDs
       const prodCityIds = org.cityIds
         .map((devCityId: string) => idMap.cities.get(devCityId))
-        .filter((id): id is string => id !== undefined) as Id<"cities">[];
+        .filter((id): id is string => id !== undefined) as Id<'cities'>[];
 
       if (prodCityIds.length === 0) {
         console.log(`  ⚠️  Skipping org "${org.name}" - no valid city mappings`);
@@ -146,7 +146,7 @@ async function migrateLocations() {
 
     // Check if location already exists (by name and city)
     const existingLocations = await prodClient.query(api.locations.queries.listLocations, {
-      cityId: prodCityId as Id<"cities">
+      cityId: prodCityId as Id<'cities'>,
     });
     const existingLoc = existingLocations?.find((l: any) => l.name === loc.name);
 
@@ -155,10 +155,10 @@ async function migrateLocations() {
       idMap.locations.set(loc._id, existingLoc._id);
     } else {
       const prodId = await prodClient.mutation(api.locations.mutations.createLocation, {
-        organizationId: prodOrgId as Id<"organizations"> | undefined,
+        organizationId: prodOrgId as Id<'organizations'> | undefined,
         name: loc.name,
         address: loc.address,
-        cityId: prodCityId as Id<"cities">,
+        cityId: prodCityId as Id<'cities'>,
         neighborhoodId: undefined, // Skip neighborhood mapping for now
         latitude: loc.latitude,
         longitude: loc.longitude,
@@ -193,7 +193,7 @@ async function migrateCamps() {
       idMap.camps.set(camp._id, existingCamp._id);
     } else {
       const prodId = await prodClient.mutation(api.camps.mutations.createCamp, {
-        organizationId: prodOrgId as Id<"organizations">,
+        organizationId: prodOrgId as Id<'organizations'>,
         name: camp.name,
         slug: camp.slug,
         description: camp.description,
@@ -234,8 +234,8 @@ async function migrateScrapeSources() {
       idMap.scrapeSources.set(source._id, existingSources._id);
     } else {
       const prodId = await prodClient.mutation(api.scraping.sources.createScrapeSource, {
-        organizationId: prodOrgId as Id<"organizations"> | undefined,
-        cityId: prodCityId as Id<"cities">,
+        organizationId: prodOrgId as Id<'organizations'> | undefined,
+        cityId: prodCityId as Id<'cities'>,
         name: source.name,
         url: source.url,
         additionalUrls: source.additionalUrls,

@@ -13,7 +13,14 @@ export type { RegistrationClickData, EventClickData };
 
 interface PlannerGridProps {
   coverage: WeekData[];
-  children: { _id: Id<'children'>; firstName: string; birthdate?: string; currentGrade?: number; color?: string; shareToken?: string }[];
+  children: {
+    _id: Id<'children'>;
+    firstName: string;
+    birthdate?: string;
+    currentGrade?: number;
+    color?: string;
+    shareToken?: string;
+  }[];
   citySlug?: string;
   sessionCounts?: Record<string, Record<string, number>> | null; // { weekStart: { childId: count } }
   onGapClick?: (weekStart: string, weekEnd: string, childId: Id<'children'>) => void;
@@ -22,7 +29,16 @@ interface PlannerGridProps {
   onAddChild?: () => void;
 }
 
-export function PlannerGrid({ coverage, children, citySlug, sessionCounts, onGapClick, onRegistrationClick, onEventClick, onAddChild }: PlannerGridProps) {
+export function PlannerGrid({
+  coverage,
+  children,
+  citySlug,
+  sessionCounts,
+  onGapClick,
+  onRegistrationClick,
+  onEventClick,
+  onAddChild,
+}: PlannerGridProps) {
   const generateShareToken = useMutation(api.children.mutations.generateShareToken);
   const [generatingToken, setGeneratingToken] = useState<Id<'children'> | null>(null);
   const [copiedChildId, setCopiedChildId] = useState<Id<'children'> | null>(null);
@@ -32,7 +48,7 @@ export function PlannerGrid({ coverage, children, citySlug, sessionCounts, onGap
     if (!token) {
       setGeneratingToken(childId);
       try {
-        token = await generateShareToken({ childId }) || undefined;
+        token = (await generateShareToken({ childId })) || undefined;
       } finally {
         setGeneratingToken(null);
       }
@@ -72,7 +88,7 @@ export function PlannerGrid({ coverage, children, citySlug, sessionCounts, onGap
     if (!token) {
       setGeneratingToken(childId);
       try {
-        token = await generateShareToken({ childId }) || undefined;
+        token = (await generateShareToken({ childId })) || undefined;
       } finally {
         setGeneratingToken(null);
       }
@@ -80,7 +96,9 @@ export function PlannerGrid({ coverage, children, citySlug, sessionCounts, onGap
     if (token) {
       const url = `${window.location.origin}/api/calendar/${token}`;
       navigator.clipboard.writeText(url);
-      alert(`Calendar URL copied for ${childName}!\n\nTo add to Google Calendar:\n1. Open Google Calendar\n2. Click + next to "Other calendars"\n3. Select "From URL"\n4. Paste the copied URL`);
+      alert(
+        `Calendar URL copied for ${childName}!\n\nTo add to Google Calendar:\n1. Open Google Calendar\n2. Click + next to "Other calendars"\n3. Select "From URL"\n4. Paste the copied URL`,
+      );
     }
   };
 
@@ -112,7 +130,7 @@ export function PlannerGrid({ coverage, children, citySlug, sessionCounts, onGap
 
   // Get cell status for a child in a given week
   const getCellData = (childId: Id<'children'>, week: WeekData) => {
-    const childCov = week.childCoverage.find(c => c.childId === childId);
+    const childCov = week.childCoverage.find((c) => c.childId === childId);
     return childCov || null;
   };
 
@@ -130,7 +148,10 @@ export function PlannerGrid({ coverage, children, citySlug, sessionCounts, onGap
       {/* Mobile layout: months stacked vertically */}
       <div className="md:hidden space-y-3">
         {weeksByMonth.map(([month, weeks], monthIndex) => (
-          <div key={month} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
+          <div
+            key={month}
+            className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm"
+          >
             {/* Month header */}
             <div className="px-4 py-2 text-center text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900">
               {month}
@@ -139,8 +160,7 @@ export function PlannerGrid({ coverage, children, citySlug, sessionCounts, onGap
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-slate-50 dark:bg-slate-800/50">
-                    <th className="sticky left-0 z-10 bg-slate-50 dark:bg-slate-800/50 px-3 py-1.5 text-left text-xs font-medium text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700 min-w-[90px]">
-                    </th>
+                    <th className="sticky left-0 z-10 bg-slate-50 dark:bg-slate-800/50 px-3 py-1.5 text-left text-xs font-medium text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700 min-w-[90px]"></th>
                     {weeks.map((week) => {
                       const current = isCurrentWeek(week);
                       const past = isPastWeek(week);
@@ -151,8 +171,8 @@ export function PlannerGrid({ coverage, children, citySlug, sessionCounts, onGap
                             current
                               ? 'bg-primary/20 dark:bg-primary-dark/30 text-primary-dark dark:text-white/60 font-bold'
                               : past
-                              ? 'text-slate-400 dark:text-slate-500'
-                              : 'text-slate-500 dark:text-slate-400'
+                                ? 'text-slate-400 dark:text-slate-500'
+                                : 'text-slate-500 dark:text-slate-400'
                           }`}
                           title={`${week.week.startDate} - ${week.week.endDate}`}
                         >
@@ -169,7 +189,9 @@ export function PlannerGrid({ coverage, children, citySlug, sessionCounts, onGap
                     return (
                       <tr
                         key={child._id}
-                        className={childIndex % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50/50 dark:bg-slate-800/50'}
+                        className={
+                          childIndex % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50/50 dark:bg-slate-800/50'
+                        }
                       >
                         <td className="sticky left-0 z-10 px-3 py-2 text-sm font-medium text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-700/50 bg-inherit">
                           <div className="flex items-center gap-1.5">
@@ -190,7 +212,12 @@ export function PlannerGrid({ coverage, children, citySlug, sessionCounts, onGap
                                 <span className="text-xs text-green-600 dark:text-green-400 font-medium">Copied!</span>
                               ) : (
                                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                                  />
                                 </svg>
                               )}
                             </button>
@@ -260,9 +287,7 @@ export function PlannerGrid({ coverage, children, citySlug, sessionCounts, onGap
           {/* Month headers */}
           <thead>
             <tr className="bg-slate-100 dark:bg-slate-900">
-              <th className="sticky left-0 z-10 bg-slate-100 dark:bg-slate-900 px-4 py-2 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide border-b border-slate-200 dark:border-slate-700 min-w-[120px]">
-
-              </th>
+              <th className="sticky left-0 z-10 bg-slate-100 dark:bg-slate-900 px-4 py-2 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide border-b border-slate-200 dark:border-slate-700 min-w-[120px]"></th>
               {weeksByMonth.map(([month, weeks]) => (
                 <th
                   key={month}
@@ -275,9 +300,7 @@ export function PlannerGrid({ coverage, children, citySlug, sessionCounts, onGap
             </tr>
             {/* Week number headers */}
             <tr className="bg-slate-50 dark:bg-slate-800/50">
-              <th className="sticky left-0 z-10 bg-slate-50 dark:bg-slate-800/50 px-4 py-1.5 text-left text-xs font-medium text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
-
-              </th>
+              <th className="sticky left-0 z-10 bg-slate-50 dark:bg-slate-800/50 px-4 py-1.5 text-left text-xs font-medium text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700"></th>
               {coverage.map((week) => {
                 const current = isCurrentWeek(week);
                 const past = isPastWeek(week);
@@ -286,13 +309,15 @@ export function PlannerGrid({ coverage, children, citySlug, sessionCounts, onGap
                   <th
                     key={week.week.startDate}
                     className={`px-1 py-1.5 text-center text-xs border-b border-slate-200 dark:border-slate-700 ${
-                      isMonthStart ? 'border-l border-l-slate-300 dark:border-l-slate-600' : 'border-l border-l-slate-200 dark:border-l-slate-700'
+                      isMonthStart
+                        ? 'border-l border-l-slate-300 dark:border-l-slate-600'
+                        : 'border-l border-l-slate-200 dark:border-l-slate-700'
                     } ${
                       current
                         ? 'bg-primary/20 dark:bg-primary-dark/30 text-primary-dark dark:text-white/60 font-bold'
                         : past
-                        ? 'text-slate-400 dark:text-slate-500'
-                        : 'text-slate-500 dark:text-slate-400'
+                          ? 'text-slate-400 dark:text-slate-500'
+                          : 'text-slate-500 dark:text-slate-400'
                     }`}
                     title={`${week.week.startDate} - ${week.week.endDate}`}
                   >
@@ -307,73 +332,85 @@ export function PlannerGrid({ coverage, children, citySlug, sessionCounts, onGap
             {children.map((child, childIndex) => {
               const childColor = child.color || DEFAULT_CHILD_COLORS[childIndex % DEFAULT_CHILD_COLORS.length];
               return (
-              <tr
-                key={child._id}
-                className={childIndex % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50/50 dark:bg-slate-800/50'}
-              >
-                {/* Child name - sticky left column */}
-                <td className="sticky left-0 z-10 px-4 py-3 text-sm font-medium text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-700/50 bg-inherit">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                      style={{ backgroundColor: childColor }}
-                    >
-                      {child.firstName[0]}
-                    </span>
-                    <span>{child.firstName}</span>
-                    <button
-                      onClick={() => handleShareClick(child._id, child.firstName, child.shareToken)}
-                      disabled={generatingToken === child._id}
-                      className="text-slate-400 hover:text-primary transition-colors disabled:opacity-50"
-                      title={`Share ${child.firstName}'s schedule`}
-                    >
-                      {copiedChildId === child._id ? (
-                        <span className="text-xs text-green-600 dark:text-green-400 font-medium">Copied!</span>
-                      ) : (
+                <tr
+                  key={child._id}
+                  className={
+                    childIndex % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50/50 dark:bg-slate-800/50'
+                  }
+                >
+                  {/* Child name - sticky left column */}
+                  <td className="sticky left-0 z-10 px-4 py-3 text-sm font-medium text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-700/50 bg-inherit">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                        style={{ backgroundColor: childColor }}
+                      >
+                        {child.firstName[0]}
+                      </span>
+                      <span>{child.firstName}</span>
+                      <button
+                        onClick={() => handleShareClick(child._id, child.firstName, child.shareToken)}
+                        disabled={generatingToken === child._id}
+                        className="text-slate-400 hover:text-primary transition-colors disabled:opacity-50"
+                        title={`Share ${child.firstName}'s schedule`}
+                      >
+                        {copiedChildId === child._id ? (
+                          <span className="text-xs text-green-600 dark:text-green-400 font-medium">Copied!</span>
+                        ) : (
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                            />
+                          </svg>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleCalendarClick(child._id, child.firstName, child.shareToken)}
+                        disabled={generatingToken === child._id}
+                        className="hidden md:inline-flex text-slate-400 hover:text-primary transition-colors disabled:opacity-50"
+                        title={`Copy calendar URL for ${child.firstName}`}
+                      >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          />
                         </svg>
-                      )}
-                    </button>
-                    <button
-                      onClick={() => handleCalendarClick(child._id, child.firstName, child.shareToken)}
-                      disabled={generatingToken === child._id}
-                      className="hidden md:inline-flex text-slate-400 hover:text-primary transition-colors disabled:opacity-50"
-                      title={`Copy calendar URL for ${child.firstName}`}
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </button>
-                  </div>
-                </td>
-                {/* Week cells */}
-                {coverage.map((week) => {
-                  const cellData = getCellData(child._id, week);
-                  const current = isCurrentWeek(week);
-                  const past = isPastWeek(week);
+                      </button>
+                    </div>
+                  </td>
+                  {/* Week cells */}
+                  {coverage.map((week) => {
+                    const cellData = getCellData(child._id, week);
+                    const current = isCurrentWeek(week);
+                    const past = isPastWeek(week);
 
-                  return (
-                    <CoverageCell
-                      key={`${child._id}-${week.week.startDate}`}
-                      data={cellData}
-                      week={week}
-                      childId={child._id}
-                      childName={child.firstName}
-                      childGrade={child.currentGrade}
-                      availableSessionCount={sessionCounts?.[week.week.startDate]?.[child._id]}
-                      isCurrentWeek={current}
-                      isPastWeek={past}
-                      isMonthStart={monthStartDates.has(week.week.startDate)}
-                      citySlug={citySlug}
-                      onGapClick={onGapClick}
-                      onRegistrationClick={onRegistrationClick}
-                      onEventClick={onEventClick}
-                    />
-                  );
-                })}
-              </tr>
-            );
+                    return (
+                      <CoverageCell
+                        key={`${child._id}-${week.week.startDate}`}
+                        data={cellData}
+                        week={week}
+                        childId={child._id}
+                        childName={child.firstName}
+                        childGrade={child.currentGrade}
+                        availableSessionCount={sessionCounts?.[week.week.startDate]?.[child._id]}
+                        isCurrentWeek={current}
+                        isPastWeek={past}
+                        isMonthStart={monthStartDates.has(week.week.startDate)}
+                        citySlug={citySlug}
+                        onGapClick={onGapClick}
+                        onRegistrationClick={onRegistrationClick}
+                        onEventClick={onEventClick}
+                      />
+                    );
+                  })}
+                </tr>
+              );
             })}
             {/* Add Kid row */}
             {onAddChild && (
@@ -395,7 +432,9 @@ export function PlannerGrid({ coverage, children, citySlug, sessionCounts, onGap
                   <td
                     key={`add-${week.week.startDate}`}
                     className={`border-b border-slate-100 dark:border-slate-700/50 p-0 ${
-                      monthStartDates.has(week.week.startDate) ? 'border-l border-l-slate-300 dark:border-l-slate-600' : 'border-l border-l-slate-100 dark:border-l-slate-700/50'
+                      monthStartDates.has(week.week.startDate)
+                        ? 'border-l border-l-slate-300 dark:border-l-slate-600'
+                        : 'border-l border-l-slate-100 dark:border-l-slate-700/50'
                     }`}
                   >
                     <div className="w-full min-h-[48px]" />
@@ -426,7 +465,21 @@ interface CoverageCellProps {
   onEventClick?: (data: EventClickData) => void;
 }
 
-function CoverageCell({ data, week, childId, childName, childGrade, availableSessionCount, isCurrentWeek, isPastWeek, isMonthStart, citySlug, onGapClick, onRegistrationClick, onEventClick }: CoverageCellProps) {
+function CoverageCell({
+  data,
+  week,
+  childId,
+  childName,
+  childGrade,
+  availableSessionCount,
+  isCurrentWeek,
+  isPastWeek,
+  isMonthStart,
+  citySlug,
+  onGapClick,
+  onRegistrationClick,
+  onEventClick,
+}: CoverageCellProps) {
   const status = data?.status || 'gap';
   const hasEvent = data?.events && data.events.length > 0;
   const hasRegistration = data?.registrations && data.registrations.length > 0;
@@ -442,7 +495,9 @@ function CoverageCell({ data, week, childId, childName, childGrade, availableSes
   const isWaitlisted = registrationStatus === 'waitlisted';
 
   const tdClass = `border-b border-slate-100 dark:border-slate-700/50 p-0 ${
-    isMonthStart ? 'border-l border-l-slate-300 dark:border-l-slate-600' : 'border-l border-l-slate-100 dark:border-l-slate-700/50'
+    isMonthStart
+      ? 'border-l border-l-slate-300 dark:border-l-slate-600'
+      : 'border-l border-l-slate-100 dark:border-l-slate-700/50'
   }`;
 
   // Determine cell appearance based on registration status
@@ -481,9 +536,10 @@ function CoverageCell({ data, week, childId, childName, childGrade, availableSes
   } else {
     bgColor = 'bg-accent/10 dark:bg-accent/20';
     icon = '';
-    tooltip = availableCount !== undefined
-      ? `${availableCount} camp${availableCount === 1 ? '' : 's'} available`
-      : 'Gap - needs camp';
+    tooltip =
+      availableCount !== undefined
+        ? `${availableCount} camp${availableCount === 1 ? '' : 's'} available`
+        : 'Gap - needs camp';
   }
 
   // Status badge component for org logo overlay
@@ -584,7 +640,11 @@ function CoverageCell({ data, week, childId, childName, childGrade, availableSes
     return (
       <td className={tdClass}>
         <Link
-          href={citySlug ? `/discover/${citySlug}?from=${week.week.startDate}&to=${week.week.endDate}&childId=${childId}${childGrade !== undefined ? `&grade=${childGrade}` : ''}` : `/planner/week/${week.week.startDate}`}
+          href={
+            citySlug
+              ? `/discover/${citySlug}?from=${week.week.startDate}&to=${week.week.endDate}&childId=${childId}${childGrade !== undefined ? `&grade=${childGrade}` : ''}`
+              : `/planner/week/${week.week.startDate}`
+          }
           className="block w-full h-full hover:bg-accent/20 dark:hover:bg-accent/30 transition-colors"
         >
           {cellContent}
@@ -648,9 +708,5 @@ function CoverageCell({ data, week, childId, childName, childGrade, availableSes
     );
   }
 
-  return (
-    <td className={tdClass}>
-      {cellContent}
-    </td>
-  );
+  return <td className={tdClass}>{cellContent}</td>;
 }

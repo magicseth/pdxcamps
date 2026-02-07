@@ -1,27 +1,27 @@
-"use node";
+'use node';
 
 /**
  * Fix organization websites and logos
  */
 
-import { action } from "../_generated/server";
-import { internal, api } from "../_generated/api";
-import { v } from "convex/values";
-import { Id } from "../_generated/dataModel";
-import { ActionCtx } from "../_generated/server";
+import { action } from '../_generated/server';
+import { internal, api } from '../_generated/api';
+import { v } from 'convex/values';
+import { Id } from '../_generated/dataModel';
+import { ActionCtx } from '../_generated/server';
 
 // Known organization websites
 const ORG_WEBSITES: Record<string, string> = {
-  "Northwest Children's Theater and School": "https://www.nwcts.org",
-  "Backbeat Music Academy": "https://backbeatpdx.com",
-  "Mittleman Jewish Community Center": "https://www.oregonjcc.org",
-  "Tualatin Hills Park & Recreation District": "https://www.thprd.org",
-  "Steve & Kate's Camp": "https://www.steveandkate.com",
-  "Nike Sports Camps": "https://www.ussportscamps.com/nike-sports-camps",
-  "Oregon Children's Theatre": "https://www.octc.org",
-  "Portland Parks & Recreation": "https://www.portland.gov/parks",
-  "Trackers Earth Portland": "https://trackerspdx.com",
-  "OMSI Science Camps": "https://omsi.edu",
+  "Northwest Children's Theater and School": 'https://www.nwcts.org',
+  'Backbeat Music Academy': 'https://backbeatpdx.com',
+  'Mittleman Jewish Community Center': 'https://www.oregonjcc.org',
+  'Tualatin Hills Park & Recreation District': 'https://www.thprd.org',
+  "Steve & Kate's Camp": 'https://www.steveandkate.com',
+  'Nike Sports Camps': 'https://www.ussportscamps.com/nike-sports-camps',
+  "Oregon Children's Theatre": 'https://www.octc.org',
+  'Portland Parks & Recreation': 'https://www.portland.gov/parks',
+  'Trackers Earth Portland': 'https://trackerspdx.com',
+  'OMSI Science Camps': 'https://omsi.edu',
 };
 
 /**
@@ -29,15 +29,15 @@ const ORG_WEBSITES: Record<string, string> = {
  */
 async function downloadAndStoreImage(
   ctx: ActionCtx,
-  url: string
-): Promise<{ storageId: Id<"_storage"> | null; error?: string }> {
+  url: string,
+): Promise<{ storageId: Id<'_storage'> | null; error?: string }> {
   try {
     console.log(`[Logos] Downloading: ${url}`);
 
     const response = await fetch(url, {
       headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; PDXCampsBot/1.0)",
-        Accept: "image/*",
+        'User-Agent': 'Mozilla/5.0 (compatible; PDXCampsBot/1.0)',
+        'Accept': 'image/*',
       },
     });
 
@@ -45,8 +45,8 @@ async function downloadAndStoreImage(
       return { storageId: null, error: `HTTP ${response.status}` };
     }
 
-    const contentType = response.headers.get("content-type") || "image/png";
-    if (!contentType.startsWith("image/")) {
+    const contentType = response.headers.get('content-type') || 'image/png';
+    if (!contentType.startsWith('image/')) {
       return { storageId: null, error: `Not an image: ${contentType}` };
     }
 
@@ -62,7 +62,7 @@ async function downloadAndStoreImage(
     console.log(`[Logos] Stored: ${storageId} (${blob.size} bytes)`);
     return { storageId };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return { storageId: null, error: message };
   }
 }
@@ -70,11 +70,7 @@ async function downloadAndStoreImage(
 /**
  * Try to fetch a high-quality logo from a website
  */
-async function fetchLogoFromWebsite(
-  ctx: ActionCtx,
-  website: string,
-  orgName: string
-): Promise<Id<"_storage"> | null> {
+async function fetchLogoFromWebsite(ctx: ActionCtx, website: string, orgName: string): Promise<Id<'_storage'> | null> {
   try {
     const url = new URL(website);
     const origin = url.origin;
@@ -113,7 +109,9 @@ async function fetchLogoFromWebsite(
  */
 export const fixOrgWebsitesAndLogos = action({
   args: {},
-  handler: async (ctx): Promise<{
+  handler: async (
+    ctx,
+  ): Promise<{
     success: boolean;
     updated: number;
     errors: string[];

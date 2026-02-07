@@ -9,9 +9,9 @@
  * - Total session count per sourceId (namespace)
  */
 
-import { TableAggregate } from "@convex-dev/aggregate";
-import { components } from "../_generated/api";
-import { DataModel, Doc } from "../_generated/dataModel";
+import { TableAggregate } from '@convex-dev/aggregate';
+import { components } from '../_generated/api';
+import { DataModel, Doc } from '../_generated/dataModel';
 
 /**
  * Aggregate for counting sessions by sourceId.
@@ -26,9 +26,9 @@ export const sessionsBySourceAggregate = new TableAggregate<{
   Namespace: string;
   Key: null;
   DataModel: DataModel;
-  TableName: "sessions";
+  TableName: 'sessions';
 }>(components.sessionsBySource, {
-  namespace: (doc) => doc.sourceId ?? "none",
+  namespace: (doc) => doc.sourceId ?? 'none',
   sortKey: () => null,
   sumValue: () => 1,
 });
@@ -37,8 +37,6 @@ export const sessionsBySourceAggregate = new TableAggregate<{
  * Get the namespace key for a session's sourceId.
  * Sessions without a sourceId are grouped under "none".
  */
-export function getSourceNamespace(
-  sourceId: string | undefined | null
-): string {
-  return sourceId ?? "none";
+export function getSourceNamespace(sourceId: string | undefined | null): string {
+  return sourceId ?? 'none';
 }

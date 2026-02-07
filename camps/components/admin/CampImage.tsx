@@ -20,13 +20,7 @@ const textSizeClasses = {
   lg: 'text-3xl',
 };
 
-export function CampImage({
-  resolvedImageUrl,
-  externalImageUrl,
-  name,
-  size = 'md',
-  className = '',
-}: CampImageProps) {
+export function CampImage({ resolvedImageUrl, externalImageUrl, name, size = 'md', className = '' }: CampImageProps) {
   const imageUrl = resolvedImageUrl || externalImageUrl;
   const initials = name
     .split(' ')

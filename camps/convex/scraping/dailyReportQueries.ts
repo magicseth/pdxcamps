@@ -5,7 +5,7 @@
  * These are separate from the action file because queries cannot be in "use node" files.
  */
 
-import { internalQuery } from "../_generated/server";
+import { internalQuery } from '../_generated/server';
 
 const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
 
@@ -14,7 +14,9 @@ const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
  */
 export const getDailyStats = internalQuery({
   args: {},
-  handler: async (ctx): Promise<{
+  handler: async (
+    ctx,
+  ): Promise<{
     jobsCompleted: number;
     jobsFailed: number;
     sessionsFound: number;
@@ -25,13 +27,8 @@ export const getDailyStats = internalQuery({
 
     // Get all jobs completed in the last 24 hours
     const recentJobs = await ctx.db
-      .query("scrapeJobs")
-      .filter((q) =>
-        q.and(
-          q.neq(q.field("completedAt"), undefined),
-          q.gte(q.field("completedAt"), cutoff)
-        )
-      )
+      .query('scrapeJobs')
+      .filter((q) => q.and(q.neq(q.field('completedAt'), undefined), q.gte(q.field('completedAt'), cutoff)))
       .collect();
 
     let jobsCompleted = 0;
@@ -41,12 +38,12 @@ export const getDailyStats = internalQuery({
     let sessionsUpdated = 0;
 
     for (const job of recentJobs) {
-      if (job.status === "completed") {
+      if (job.status === 'completed') {
         jobsCompleted++;
         sessionsFound += job.sessionsFound ?? 0;
         sessionsCreated += job.sessionsCreated ?? 0;
         sessionsUpdated += job.sessionsUpdated ?? 0;
-      } else if (job.status === "failed") {
+      } else if (job.status === 'failed') {
         jobsFailed++;
       }
     }
@@ -66,10 +63,12 @@ export const getDailyStats = internalQuery({
  */
 export const getRecentAlerts = internalQuery({
   args: {},
-  handler: async (ctx): Promise<
+  handler: async (
+    ctx,
+  ): Promise<
     Array<{
       message: string;
-      severity: "info" | "warning" | "error" | "critical";
+      severity: 'info' | 'warning' | 'error' | 'critical';
       alertType: string;
       createdAt: number;
     }>
@@ -78,9 +77,9 @@ export const getRecentAlerts = internalQuery({
 
     // Get unacknowledged alerts from the last 24 hours
     const alerts = await ctx.db
-      .query("scraperAlerts")
-      .withIndex("by_unacknowledged", (q) => q.eq("acknowledgedAt", undefined))
-      .filter((q) => q.gte(q.field("createdAt"), cutoff))
+      .query('scraperAlerts')
+      .withIndex('by_unacknowledged', (q) => q.eq('acknowledgedAt', undefined))
+      .filter((q) => q.gte(q.field('createdAt'), cutoff))
       .collect();
 
     // Sort by severity (critical first) then by time

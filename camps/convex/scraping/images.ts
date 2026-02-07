@@ -1,4 +1,4 @@
-"use node";
+'use node';
 
 /**
  * Image Storage Pipeline
@@ -7,28 +7,28 @@
  * Handles organization logos and camp images.
  */
 
-import { action } from "../_generated/server";
-import { api } from "../_generated/api";
-import { v } from "convex/values";
-import { Id } from "../_generated/dataModel";
-import { ActionCtx } from "../_generated/server";
-import { Stagehand } from "@browserbasehq/stagehand";
+import { action } from '../_generated/server';
+import { api } from '../_generated/api';
+import { v } from 'convex/values';
+import { Id } from '../_generated/dataModel';
+import { ActionCtx } from '../_generated/server';
+import { Stagehand } from '@browserbasehq/stagehand';
 
 /**
  * Helper function to download and store an image
  */
 async function downloadAndStoreImage(
   ctx: ActionCtx,
-  url: string
-): Promise<{ storageId: Id<"_storage"> | null; error?: string }> {
+  url: string,
+): Promise<{ storageId: Id<'_storage'> | null; error?: string }> {
   try {
     console.log(`[Images] Downloading: ${url}`);
 
     // Fetch the image
     const response = await fetch(url, {
       headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; PDXCampsBot/1.0)",
-        Accept: "image/*",
+        'User-Agent': 'Mozilla/5.0 (compatible; PDXCampsBot/1.0)',
+        'Accept': 'image/*',
       },
     });
 
@@ -37,8 +37,8 @@ async function downloadAndStoreImage(
     }
 
     // Get content type
-    const contentType = response.headers.get("content-type") || "image/jpeg";
-    if (!contentType.startsWith("image/") && !contentType.includes("svg")) {
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+    if (!contentType.startsWith('image/') && !contentType.includes('svg')) {
       return { storageId: null, error: `Not an image: ${contentType}` };
     }
 
@@ -51,7 +51,7 @@ async function downloadAndStoreImage(
     console.log(`[Images] Stored: ${url} -> ${storageId}`);
     return { storageId };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
+    const message = error instanceof Error ? error.message : 'Unknown error';
     console.error(`[Images] Failed to store ${url}: ${message}`);
     return { storageId: null, error: message };
   }
@@ -63,15 +63,9 @@ async function downloadAndStoreImage(
 export const storeImageFromUrl = action({
   args: {
     url: v.string(),
-    sourceType: v.union(
-      v.literal("organization_logo"),
-      v.literal("camp_image")
-    ),
+    sourceType: v.union(v.literal('organization_logo'), v.literal('camp_image')),
   },
-  handler: async (
-    ctx,
-    args
-  ): Promise<{ storageId: Id<"_storage"> | null; error?: string }> => {
+  handler: async (ctx, args): Promise<{ storageId: Id<'_storage'> | null; error?: string }> => {
     return downloadAndStoreImage(ctx, args.url);
   },
 });
@@ -83,16 +77,14 @@ export const processOmsiImages = action({
   args: {},
   handler: async (ctx): Promise<{ success: boolean; message: string }> => {
     // OMSI logo
-    const logoUrl = "https://omsi.edu/wp-content/uploads/2023/07/OMSI-Logo.svg";
+    const logoUrl = 'https://omsi.edu/wp-content/uploads/2023/07/OMSI-Logo.svg';
 
     const result = await downloadAndStoreImage(ctx, logoUrl);
 
     if (result.storageId) {
       // Find OMSI organization and update
       const sources = await ctx.runQuery(api.scraping.queries.listScrapeSources, {});
-      const omsiSource = sources.find((s: { name: string }) =>
-        s.name.toLowerCase().includes("omsi")
-      );
+      const omsiSource = sources.find((s: { name: string }) => s.name.toLowerCase().includes('omsi'));
 
       if (omsiSource?.organizationId) {
         await ctx.runMutation(api.scraping.mutations.updateOrganizationLogo, {
@@ -100,14 +92,14 @@ export const processOmsiImages = action({
           logoUrl,
           logoStorageId: result.storageId,
         });
-        return { success: true, message: "OMSI logo stored" };
+        return { success: true, message: 'OMSI logo stored' };
       }
-      return { success: true, message: "Logo stored but no organization linked" };
+      return { success: true, message: 'Logo stored but no organization linked' };
     }
 
     return {
       success: false,
-      message: result.error || "Failed to process OMSI logo",
+      message: result.error || 'Failed to process OMSI logo',
     };
   },
 });
@@ -118,7 +110,7 @@ export const processOmsiImages = action({
 export const processTrackersImages = action({
   args: {},
   handler: async (
-    ctx
+    ctx,
   ): Promise<{
     success: boolean;
     logoStored: boolean;
@@ -130,7 +122,7 @@ export const processTrackersImages = action({
     let themeImagesStored = 0;
 
     // Trackers logo
-    const logoUrl = "https://trackerspdx.com/images/logo-trackers-brand.png";
+    const logoUrl = 'https://trackerspdx.com/images/logo-trackers-brand.png';
 
     const logoResult = await downloadAndStoreImage(ctx, logoUrl);
 
@@ -139,8 +131,7 @@ export const processTrackersImages = action({
       const sources = await ctx.runQuery(api.scraping.queries.listScrapeSources, {});
       const trackersSource = sources.find(
         (s: { name: string; url: string }) =>
-          s.name.toLowerCase().includes("trackers") &&
-          s.url.includes("trackerspdx")
+          s.name.toLowerCase().includes('trackers') && s.url.includes('trackerspdx'),
       );
 
       if (trackersSource?.organizationId) {
@@ -159,10 +150,10 @@ export const processTrackersImages = action({
 
     // Fetch themes API for images
     try {
-      const themesResponse = await fetch("https://trackerspdx.com/api/themes", {
+      const themesResponse = await fetch('https://trackerspdx.com/api/themes', {
         headers: {
-          Accept: "application/json",
-          "User-Agent": "Mozilla/5.0 (compatible; PDXCampsBot/1.0)",
+          'Accept': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (compatible; PDXCampsBot/1.0)',
         },
       });
 
@@ -196,9 +187,7 @@ export const processTrackersImages = action({
         }
       }
     } catch (error) {
-      errors.push(
-        `Themes API: ${error instanceof Error ? error.message : "Unknown"}`
-      );
+      errors.push(`Themes API: ${error instanceof Error ? error.message : 'Unknown'}`);
     }
 
     return {
@@ -216,7 +205,9 @@ export const processTrackersImages = action({
  */
 export const storeAllLogos = action({
   args: {},
-  handler: async (ctx): Promise<{
+  handler: async (
+    ctx,
+  ): Promise<{
     success: boolean;
     results: Array<{ name: string; stored: boolean; error?: string }>;
   }> => {
@@ -225,14 +216,14 @@ export const storeAllLogos = action({
     // Logo URLs for each organization
     const logos: Array<{ name: string; organizationId: string; url: string }> = [
       {
-        name: "OMSI",
-        organizationId: "kh75v4zw4w3v6hc2m8y9jjze5h80dc22",
-        url: "https://omsi.edu/wp-content/uploads/2023/05/OMSI_FullLogo_RGB.png",
+        name: 'OMSI',
+        organizationId: 'kh75v4zw4w3v6hc2m8y9jjze5h80dc22',
+        url: 'https://omsi.edu/wp-content/uploads/2023/05/OMSI_FullLogo_RGB.png',
       },
       {
-        name: "Trackers Earth",
-        organizationId: "kh7f4thw13306rys338we33kqd80dkrm",
-        url: "https://trackerspdx.com/images/logo-trackers-brand.png",
+        name: 'Trackers Earth',
+        organizationId: 'kh7f4thw13306rys338we33kqd80dkrm',
+        url: 'https://trackerspdx.com/images/logo-trackers-brand.png',
       },
     ];
 
@@ -252,13 +243,13 @@ export const storeAllLogos = action({
         const convexUrl = await ctx.storage.getUrl(storeResult.storageId);
 
         if (!convexUrl) {
-          results.push({ name: logo.name, stored: false, error: "Failed to get storage URL" });
+          results.push({ name: logo.name, stored: false, error: 'Failed to get storage URL' });
           continue;
         }
 
         // Update the organization with the Convex URL
         await ctx.runMutation(api.scraping.mutations.updateOrganizationLogo, {
-          organizationId: logo.organizationId as Id<"organizations">,
+          organizationId: logo.organizationId as Id<'organizations'>,
           logoUrl: convexUrl,
           logoStorageId: storeResult.storageId,
         });
@@ -266,7 +257,7 @@ export const storeAllLogos = action({
         console.log(`[Logos] ${logo.name} stored: ${convexUrl}`);
         results.push({ name: logo.name, stored: true });
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Unknown error";
+        const message = error instanceof Error ? error.message : 'Unknown error';
         results.push({ name: logo.name, stored: false, error: message });
       }
     }
@@ -287,7 +278,7 @@ export const storeMultipleImages = action({
   },
   handler: async (
     ctx,
-    args
+    args,
   ): Promise<{
     success: boolean;
     stored: number;
@@ -334,7 +325,7 @@ export const extractTrackersImagesWithBrowser = action({
   },
   handler: async (
     ctx,
-    args
+    args,
   ): Promise<{
     success: boolean;
     pagesVisited: number;
@@ -349,20 +340,18 @@ export const extractTrackersImagesWithBrowser = action({
     let imagesStored = 0;
     let campsUpdated = 0;
 
-    const TRACKERS_ORG_ID = "kh7f4thw13306rys338we33kqd80dkrm" as Id<"organizations">;
+    const TRACKERS_ORG_ID = 'kh7f4thw13306rys338we33kqd80dkrm' as Id<'organizations'>;
 
     // Get Trackers camps
     const allCamps = await ctx.runQuery(api.camps.queries.listAllCamps, {});
-    const trackersCamps = allCamps.filter(
-      (c: { organizationId: string; imageStorageIds: string[] }) => {
-        if (c.organizationId !== TRACKERS_ORG_ID) return false;
-        if (!forceRefresh && c.imageStorageIds && c.imageStorageIds.length > 0) return false;
-        return true;
-      }
-    );
+    const trackersCamps = allCamps.filter((c: { organizationId: string; imageStorageIds: string[] }) => {
+      if (c.organizationId !== TRACKERS_ORG_ID) return false;
+      if (!forceRefresh && c.imageStorageIds && c.imageStorageIds.length > 0) return false;
+      return true;
+    });
 
     if (trackersCamps.length === 0) {
-      return { success: true, pagesVisited: 0, imagesStored: 0, campsUpdated: 0, errors: ["No camps need images"] };
+      return { success: true, pagesVisited: 0, imagesStored: 0, campsUpdated: 0, errors: ['No camps need images'] };
     }
 
     // Build map: campId → detail page URL from camp.website field
@@ -378,7 +367,7 @@ export const extractTrackersImagesWithBrowser = action({
       // Find a city ID from one of the camps via sessions
       const firstCamp = trackersCamps[0];
       const campSessions = await ctx.runQuery(api.sessions.queries.listSessionsByCamp, {
-        campId: firstCamp._id as Id<"camps">,
+        campId: firstCamp._id as Id<'camps'>,
       });
       if (campSessions.length > 0) {
         const cityId = campSessions[0].cityId;
@@ -411,17 +400,19 @@ export const extractTrackersImagesWithBrowser = action({
     // Take only `limit` unique URLs to visit
     const uniqueUrls = Array.from(urlToCamps.entries()).slice(0, limit);
 
-    console.log(`[TrackersImages] Processing ${uniqueUrls.length} unique pages for ${campsWithUrls.length} camps with Stagehand`);
+    console.log(
+      `[TrackersImages] Processing ${uniqueUrls.length} unique pages for ${campsWithUrls.length} camps with Stagehand`,
+    );
 
     // Initialize Stagehand
     let stagehand: Stagehand | null = null;
     try {
       stagehand = new Stagehand({
-        env: "BROWSERBASE",
+        env: 'BROWSERBASE',
         apiKey: process.env.BROWSERBASE_API_KEY,
         projectId: process.env.BROWSERBASE_PROJECT_ID!,
         model: {
-          modelName: "anthropic/claude-sonnet-4-20250514",
+          modelName: 'anthropic/claude-sonnet-4-20250514',
           apiKey: process.env.MODEL_API_KEY!,
         },
         disablePino: true,
@@ -435,15 +426,15 @@ export const extractTrackersImagesWithBrowser = action({
         console.log(`[TrackersImages] Visiting: ${url} for ${camps.length} camp(s): ${camps[0].name}`);
 
         try {
-          await page.goto(url, { waitUntil: "networkidle" as any, timeoutMs: 20000 });
+          await page.goto(url, { waitUntil: 'networkidle' as any, timeoutMs: 20000 });
           await page.waitForTimeout(3000); // Wait for JS-rendered images
 
           // Extract all image URLs from the rendered page
           const imageData = await page.evaluate(() => {
-            const imgs = Array.from(document.querySelectorAll("img"));
+            const imgs = Array.from(document.querySelectorAll('img'));
             return imgs.map((img) => ({
-              src: img.src || img.getAttribute("data-src") || "",
-              alt: img.alt || "",
+              src: img.src || img.getAttribute('data-src') || '',
+              alt: img.alt || '',
               width: img.naturalWidth || img.width || 0,
               height: img.naturalHeight || img.height || 0,
             }));
@@ -452,13 +443,13 @@ export const extractTrackersImagesWithBrowser = action({
           // Also check for background images in hero sections
           const bgImages = await page.evaluate(() => {
             const elements = document.querySelectorAll(
-              '[style*="background-image"], .hero, .banner, .camp-image, .theme-image, [class*="hero"], [class*="banner"], [class*="image"]'
+              '[style*="background-image"], .hero, .banner, .camp-image, .theme-image, [class*="hero"], [class*="banner"], [class*="image"]',
             );
             const urls: string[] = [];
             elements.forEach((el) => {
               const style = window.getComputedStyle(el);
               const bg = style.backgroundImage;
-              if (bg && bg !== "none") {
+              if (bg && bg !== 'none') {
                 const match = bg.match(/url\(["']?([^"')]+)["']?\)/);
                 if (match) urls.push(match[1]);
               }
@@ -470,12 +461,12 @@ export const extractTrackersImagesWithBrowser = action({
 
           // Filter to relevant camp images (not logos, icons, gifs, etc.)
           const relevantImages = imageData.filter((img) => {
-            if (!img.src || img.src.includes("data:")) return false;
-            if (img.src.includes("logo")) return false;
-            if (img.src.includes("countdownmail")) return false;
-            if (img.src.includes("favicon")) return false;
-            if (img.src.endsWith(".gif")) return false;
-            if (img.src.endsWith(".svg")) return false;
+            if (!img.src || img.src.includes('data:')) return false;
+            if (img.src.includes('logo')) return false;
+            if (img.src.includes('countdownmail')) return false;
+            if (img.src.includes('favicon')) return false;
+            if (img.src.endsWith('.gif')) return false;
+            if (img.src.endsWith('.svg')) return false;
             // Prefer larger images (likely camp photos)
             if (img.width > 0 && img.width < 100) return false;
             return true;
@@ -484,7 +475,7 @@ export const extractTrackersImagesWithBrowser = action({
           // Combine with background images
           const allImageUrls = [
             ...relevantImages.map((img) => img.src),
-            ...bgImages.filter((u) => !u.includes("logo") && !u.endsWith(".gif")),
+            ...bgImages.filter((u) => !u.includes('logo') && !u.endsWith('.gif')),
           ];
 
           // Deduplicate
@@ -506,7 +497,7 @@ export const extractTrackersImagesWithBrowser = action({
                 // Apply to all camps that share this URL
                 for (const camp of camps) {
                   await ctx.runMutation(api.camps.mutations.updateCampImages, {
-                    campId: camp._id as Id<"camps">,
+                    campId: camp._id as Id<'camps'>,
                     imageStorageIds: [result.storageId],
                   });
                   campsUpdated++;

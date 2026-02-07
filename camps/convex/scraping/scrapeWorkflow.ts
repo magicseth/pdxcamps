@@ -5,11 +5,11 @@
  * When a job is created, this workflow picks it up and executes the scraper.
  */
 
-import { WorkflowManager } from "@convex-dev/workflow";
-import { components, internal, api } from "../_generated/api";
-import { v } from "convex/values";
-import { mutation, internalMutation } from "../_generated/server";
-import { Id } from "../_generated/dataModel";
+import { WorkflowManager } from '@convex-dev/workflow';
+import { components, internal, api } from '../_generated/api';
+import { v } from 'convex/values';
+import { mutation, internalMutation } from '../_generated/server';
+import { Id } from '../_generated/dataModel';
 
 // Create workflow manager
 export const workflow = new WorkflowManager(components.workflow, {
@@ -23,8 +23,8 @@ export const workflow = new WorkflowManager(components.workflow, {
  */
 export const scrapeSourceWorkflow = workflow.define({
   args: {
-    jobId: v.id("scrapeJobs"),
-    sourceId: v.id("scrapeSources"),
+    jobId: v.id('scrapeJobs'),
+    sourceId: v.id('scrapeSources'),
   },
   returns: v.object({
     success: v.boolean(),
@@ -33,7 +33,10 @@ export const scrapeSourceWorkflow = workflow.define({
     sessionsUpdated: v.number(),
     error: v.optional(v.string()),
   }),
-  handler: async (step, args): Promise<{
+  handler: async (
+    step,
+    args,
+  ): Promise<{
     success: boolean;
     sessionsFound: number;
     sessionsCreated: number;
@@ -57,7 +60,7 @@ export const scrapeSourceWorkflow = workflow.define({
           jobId: args.jobId,
           sourceId: args.sourceId,
         },
-        { retry: true }
+        { retry: true },
       );
 
       // Mark job as complete
@@ -72,7 +75,7 @@ export const scrapeSourceWorkflow = workflow.define({
       await step.runAction(
         internal.scraping.populateOrgLogos.fetchOrgLogoForSource,
         { sourceId: args.sourceId },
-        { retry: false }
+        { retry: false },
       );
 
       return {
@@ -107,27 +110,23 @@ export const scrapeSourceWorkflow = workflow.define({
  */
 export const startScrapeWorkflow = mutation({
   args: {
-    jobId: v.id("scrapeJobs"),
+    jobId: v.id('scrapeJobs'),
   },
   returns: v.string(),
   handler: async (ctx, args): Promise<string> => {
     const job = await ctx.db.get(args.jobId);
     if (!job) {
-      throw new Error("Job not found");
+      throw new Error('Job not found');
     }
-    if (job.status !== "pending") {
+    if (job.status !== 'pending') {
       throw new Error(`Job is not pending (status: ${job.status})`);
     }
 
     // Start the workflow using workflow.start pattern
-    const workflowId: string = await workflow.start(
-      ctx,
-      internal.scraping.scrapeWorkflow.scrapeSourceWorkflow,
-      {
-        jobId: args.jobId,
-        sourceId: job.sourceId,
-      }
-    ) as string;
+    const workflowId: string = (await workflow.start(ctx, internal.scraping.scrapeWorkflow.scrapeSourceWorkflow, {
+      jobId: args.jobId,
+      sourceId: job.sourceId,
+    })) as string;
 
     // Store workflow ID on the job
     await ctx.db.patch(args.jobId, {
@@ -149,8 +148,8 @@ export const processPendingJobs = mutation({
   args: {},
   handler: async (ctx) => {
     const pendingJobs = await ctx.db
-      .query("scrapeJobs")
-      .withIndex("by_status", (q) => q.eq("status", "pending"))
+      .query('scrapeJobs')
+      .withIndex('by_status', (q) => q.eq('status', 'pending'))
       .take(10);
 
     const scheduled: string[] = [];
@@ -160,14 +159,10 @@ export const processPendingJobs = mutation({
       if ((job as Record<string, unknown>).workflowId) continue;
 
       // Schedule workflow start in a separate transaction
-      await ctx.scheduler.runAfter(
-        0,
-        internal.scraping.scrapeWorkflow.startWorkflowForJob,
-        {
-          jobId: job._id,
-          sourceId: job.sourceId,
-        }
-      );
+      await ctx.scheduler.runAfter(0, internal.scraping.scrapeWorkflow.startWorkflowForJob, {
+        jobId: job._id,
+        sourceId: job.sourceId,
+      });
 
       scheduled.push(job._id);
     }
@@ -185,8 +180,8 @@ export const processPendingJobs = mutation({
  */
 export const startWorkflowForJob = internalMutation({
   args: {
-    jobId: v.id("scrapeJobs"),
-    sourceId: v.id("scrapeSources"),
+    jobId: v.id('scrapeJobs'),
+    sourceId: v.id('scrapeSources'),
   },
   handler: async (ctx, args) => {
     const job = await ctx.db.get(args.jobId);
@@ -196,7 +191,7 @@ export const startWorkflowForJob = internalMutation({
     }
 
     // Skip if job is no longer pending (e.g., was cancelled)
-    if (job.status !== "pending") {
+    if (job.status !== 'pending') {
       console.log(`Job ${args.jobId} is not pending (status: ${job.status}), skipping workflow start`);
       return;
     }
@@ -207,14 +202,10 @@ export const startWorkflowForJob = internalMutation({
       return;
     }
 
-    const workflowId = await workflow.start(
-      ctx,
-      internal.scraping.scrapeWorkflow.scrapeSourceWorkflow,
-      {
-        jobId: args.jobId,
-        sourceId: args.sourceId,
-      }
-    );
+    const workflowId = await workflow.start(ctx, internal.scraping.scrapeWorkflow.scrapeSourceWorkflow, {
+      jobId: args.jobId,
+      sourceId: args.sourceId,
+    });
 
     await ctx.db.patch(args.jobId, {
       workflowId: workflowId as string,
@@ -224,10 +215,10 @@ export const startWorkflowForJob = internalMutation({
 
 // Internal mutations for workflow steps
 export const markJobStarted = internalMutation({
-  args: { jobId: v.id("scrapeJobs") },
+  args: { jobId: v.id('scrapeJobs') },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.jobId, {
-      status: "running",
+      status: 'running',
       startedAt: Date.now(),
     });
   },
@@ -235,7 +226,7 @@ export const markJobStarted = internalMutation({
 
 export const markJobCompleted = internalMutation({
   args: {
-    jobId: v.id("scrapeJobs"),
+    jobId: v.id('scrapeJobs'),
     sessionsFound: v.number(),
     sessionsCreated: v.number(),
     sessionsUpdated: v.number(),
@@ -244,7 +235,7 @@ export const markJobCompleted = internalMutation({
     const now = Date.now();
 
     await ctx.db.patch(args.jobId, {
-      status: "completed",
+      status: 'completed',
       completedAt: now,
       sessionsFound: args.sessionsFound,
       sessionsCreated: args.sessionsCreated,
@@ -263,11 +254,11 @@ export const markJobCompleted = internalMutation({
       const newZeroCount = prevZeroCount + 1;
 
       // Create warning alert on zero results
-      await ctx.db.insert("scraperAlerts", {
+      await ctx.db.insert('scraperAlerts', {
         sourceId: job.sourceId,
-        alertType: "zero_results",
+        alertType: 'zero_results',
         message: `Scraper "${source.name}" returned 0 sessions (${newZeroCount} consecutive) — may need attention`,
-        severity: "warning",
+        severity: 'warning',
         createdAt: now,
         acknowledgedAt: undefined,
         acknowledgedBy: undefined,
@@ -299,12 +290,12 @@ export const markJobCompleted = internalMutation({
 
 export const markJobFailed = internalMutation({
   args: {
-    jobId: v.id("scrapeJobs"),
+    jobId: v.id('scrapeJobs'),
     error: v.string(),
   },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.jobId, {
-      status: "failed",
+      status: 'failed',
       completedAt: Date.now(),
       error: args.error,
     });

@@ -5,6 +5,7 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import posthog from 'posthog-js';
 
 const COMMON_INTERESTS = [
   'Sports',
@@ -104,9 +105,19 @@ export default function ChildrenSetupPage() {
         currentGrade: childForm.currentGrade !== '' ? childForm.currentGrade : undefined,
         interests: childForm.interests,
       });
+
+      // Track child added during onboarding
+      posthog.capture('child_added', {
+        has_interests: childForm.interests.length > 0,
+        interests_count: childForm.interests.length,
+        has_grade: childForm.currentGrade !== '',
+        source: 'onboarding',
+      });
+
       setChildForm(emptyChildForm);
       setShowForm(false);
     } catch (err) {
+      posthog.captureException(err);
       setError(err instanceof Error ? err.message : 'Failed to add child');
     } finally {
       setIsAddingChild(false);
@@ -123,8 +134,15 @@ export default function ChildrenSetupPage() {
 
     try {
       await completeOnboarding({});
+
+      // Track onboarding completion
+      posthog.capture('onboarding_completed', {
+        children_count: children.length,
+      });
+
       router.push('/');
     } catch (err) {
+      posthog.captureException(err);
       setError(err instanceof Error ? err.message : 'Failed to complete setup');
       setIsCompleting(false);
     }
@@ -134,7 +152,10 @@ export default function ChildrenSetupPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div role="status" aria-live="polite" className="text-center">
-          <div className="animate-spin motion-reduce:animate-none rounded-full h-8 w-8 border-b-2 border-primary" aria-hidden="true"></div>
+          <div
+            className="animate-spin motion-reduce:animate-none rounded-full h-8 w-8 border-b-2 border-primary"
+            aria-hidden="true"
+          ></div>
           <span className="sr-only">Loading...</span>
         </div>
       </div>
@@ -182,7 +203,9 @@ export default function ChildrenSetupPage() {
               </span>
               <span>Family Profile</span>
               <span className="mx-2">-</span>
-              <span className="flex items-center justify-center w-6 h-6 bg-primary text-white rounded-full text-xs font-semibold">2</span>
+              <span className="flex items-center justify-center w-6 h-6 bg-primary text-white rounded-full text-xs font-semibold">
+                2
+              </span>
               <span>Add Children</span>
             </div>
           </div>
@@ -204,9 +227,7 @@ export default function ChildrenSetupPage() {
                         {child.firstName} {child.lastName}
                       </p>
                       <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {child.interests.length > 0
-                          ? child.interests.join(', ')
-                          : 'No interests selected'}
+                        {child.interests.length > 0 ? child.interests.join(', ') : 'No interests selected'}
                       </p>
                     </div>
                     <span className="text-green-600 dark:text-green-400">
@@ -224,14 +245,15 @@ export default function ChildrenSetupPage() {
           {showForm ? (
             <form onSubmit={handleAddChild} className="space-y-4">
               {hasChildren && (
-                <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Add Another Child
-                </h3>
+                <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300">Add Another Child</h3>
               )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="firstName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  <label
+                    htmlFor="firstName"
+                    className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+                  >
                     First Name *
                   </label>
                   <input
@@ -251,7 +273,10 @@ export default function ChildrenSetupPage() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="lastName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  <label
+                    htmlFor="lastName"
+                    className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+                  >
                     Last Name
                   </label>
                   <input
@@ -271,7 +296,10 @@ export default function ChildrenSetupPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="birthdate" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  <label
+                    htmlFor="birthdate"
+                    className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+                  >
                     Birthdate *
                   </label>
                   <input
@@ -293,7 +321,12 @@ export default function ChildrenSetupPage() {
                   <select
                     id="grade"
                     value={childForm.currentGrade}
-                    onChange={(e) => setChildForm({ ...childForm, currentGrade: e.target.value === '' ? '' : parseInt(e.target.value) })}
+                    onChange={(e) =>
+                      setChildForm({
+                        ...childForm,
+                        currentGrade: e.target.value === '' ? '' : parseInt(e.target.value),
+                      })
+                    }
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-primary focus:border-primary dark:bg-slate-700 dark:text-white text-sm"
                     disabled={isAddingChild}
                   >
@@ -308,9 +341,7 @@ export default function ChildrenSetupPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Interests
-                </label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Interests</label>
                 <div className="flex flex-wrap gap-2">
                   {COMMON_INTERESTS.map((interest) => (
                     <button
@@ -332,7 +363,10 @@ export default function ChildrenSetupPage() {
               </div>
 
               {error && (
-                <div role="alert" className="p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-md">
+                <div
+                  role="alert"
+                  className="p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-md"
+                >
                   <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
                 </div>
               )}

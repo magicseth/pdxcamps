@@ -1,4 +1,4 @@
-"use node";
+'use node';
 
 /**
  * Notification Actions
@@ -9,30 +9,30 @@
  * 2. A camp they saved has low availability (< 5 spots)
  */
 
-import { internalAction } from "../_generated/server";
-import { internal } from "../_generated/api";
-import { resend } from "../email";
-import { Id } from "../_generated/dataModel";
+import { internalAction } from '../_generated/server';
+import { internal } from '../_generated/api';
+import { resend } from '../email';
+import { Id } from '../_generated/dataModel';
 
 const LOW_AVAILABILITY_THRESHOLD = 5;
-const FROM_NAME_DEFAULT = "PDX Camps";
-const FROM_EMAIL_DEFAULT = "hello@pdxcamps.com";
+const FROM_NAME_DEFAULT = 'PDX Camps';
+const FROM_EMAIL_DEFAULT = 'hello@pdxcamps.com';
 
 // Helper to format time
 function formatTime(time: { hour: number; minute: number }): string {
   const hour12 = time.hour % 12 || 12;
-  const ampm = time.hour < 12 ? "AM" : "PM";
-  const minute = time.minute.toString().padStart(2, "0");
+  const ampm = time.hour < 12 ? 'AM' : 'PM';
+  const minute = time.minute.toString().padStart(2, '0');
   return `${hour12}:${minute} ${ampm}`;
 }
 
 // Helper to format date
 function formatDate(dateStr: string): string {
-  const date = new Date(dateStr + "T12:00:00");
-  return date.toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
+  const date = new Date(dateStr + 'T12:00:00');
+  return date.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
   });
 }
 
@@ -42,9 +42,9 @@ function formatPrice(cents: number): string {
 }
 
 interface SessionNotification {
-  sessionId: Id<"sessions">;
-  changeType: "registration_opened" | "low_availability";
-  changeId?: Id<"scrapeChanges">;
+  sessionId: Id<'sessions'>;
+  changeType: 'registration_opened' | 'low_availability';
+  changeId?: Id<'scrapeChanges'>;
   session: {
     campName: string;
     organizationName: string;
@@ -62,7 +62,7 @@ interface SessionNotification {
 }
 
 interface FamilyDigest {
-  familyId: Id<"families">;
+  familyId: Id<'families'>;
   email: string;
   displayName: string;
   notifications: SessionNotification[];
@@ -77,12 +77,8 @@ interface FamilyDigest {
 function buildDigestEmailHtml(digest: FamilyDigest): string {
   const { displayName, notifications, brandName, domain } = digest;
 
-  const registrationOpened = notifications.filter(
-    (n) => n.changeType === "registration_opened"
-  );
-  const lowAvailability = notifications.filter(
-    (n) => n.changeType === "low_availability"
-  );
+  const registrationOpened = notifications.filter((n) => n.changeType === 'registration_opened');
+  const lowAvailability = notifications.filter((n) => n.changeType === 'low_availability');
 
   let html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -110,13 +106,13 @@ function buildDigestEmailHtml(digest: FamilyDigest): string {
           <p style="margin: 4px 0; color: #666; font-size: 14px;">${session.organizationName}</p>
           <p style="margin: 4px 0; color: #666; font-size: 14px;">📅 ${dateRange}</p>
           <p style="margin: 4px 0; color: #666; font-size: 14px;">⏰ ${formatTime(session.dropOffTime)} - ${formatTime(session.pickUpTime)}</p>
-          ${session.locationAddress ? `<p style="margin: 4px 0; color: #666; font-size: 14px;">📍 ${session.locationName}</p>` : ""}
+          ${session.locationAddress ? `<p style="margin: 4px 0; color: #666; font-size: 14px;">📍 ${session.locationName}</p>` : ''}
           <p style="margin: 4px 0; color: #666; font-size: 14px;">💰 ${formatPrice(session.price)}</p>
           <p style="margin: 8px 0 0 0; color: #666; font-size: 14px;">👦 Saved for <strong>${childName}</strong></p>
           ${
             session.externalRegistrationUrl
               ? `<p style="margin: 12px 0 0 0;"><a href="${session.externalRegistrationUrl}" style="display: inline-block; padding: 10px 20px; background-color: #16a34a; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">Register Now</a></p>`
-              : ""
+              : ''
           }
         </div>
       `;
@@ -142,7 +138,7 @@ function buildDigestEmailHtml(digest: FamilyDigest): string {
       html += `
         <div style="background: white; border-radius: 6px; padding: 12px; margin: 12px 0; border: 1px solid #fde68a;">
           <h3 style="margin: 0 0 8px 0; color: #1a1a1a;">${session.campName}</h3>
-          <p style="margin: 4px 0; font-size: 14px;"><strong style="color: #dc2626;">Only ${session.spotsRemaining} spot${session.spotsRemaining === 1 ? "" : "s"} left!</strong></p>
+          <p style="margin: 4px 0; font-size: 14px;"><strong style="color: #dc2626;">Only ${session.spotsRemaining} spot${session.spotsRemaining === 1 ? '' : 's'} left!</strong></p>
           <p style="margin: 4px 0; color: #666; font-size: 14px;">${session.organizationName}</p>
           <p style="margin: 4px 0; color: #666; font-size: 14px;">📅 ${dateRange}</p>
           <p style="margin: 4px 0; color: #666; font-size: 14px;">⏰ ${formatTime(session.dropOffTime)} - ${formatTime(session.pickUpTime)}</p>
@@ -151,7 +147,7 @@ function buildDigestEmailHtml(digest: FamilyDigest): string {
           ${
             session.externalRegistrationUrl
               ? `<p style="margin: 12px 0 0 0;"><a href="${session.externalRegistrationUrl}" style="display: inline-block; padding: 10px 20px; background-color: #d97706; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">Register Now</a></p>`
-              : ""
+              : ''
           }
         </div>
       `;
@@ -177,18 +173,14 @@ function buildDigestEmailHtml(digest: FamilyDigest): string {
 function buildDigestEmailText(digest: FamilyDigest): string {
   const { displayName, notifications, brandName, domain } = digest;
 
-  const registrationOpened = notifications.filter(
-    (n) => n.changeType === "registration_opened"
-  );
-  const lowAvailability = notifications.filter(
-    (n) => n.changeType === "low_availability"
-  );
+  const registrationOpened = notifications.filter((n) => n.changeType === 'registration_opened');
+  const lowAvailability = notifications.filter((n) => n.changeType === 'low_availability');
 
   let text = `Camp Updates for You\n\nHi ${displayName}, here's what's happening with camps you're watching.\n\n`;
 
   if (registrationOpened.length > 0) {
     text += `🎉 NOW OPEN FOR REGISTRATION\n`;
-    text += `${"=".repeat(30)}\n\n`;
+    text += `${'='.repeat(30)}\n\n`;
 
     for (const notif of registrationOpened) {
       const { session, childName } = notif;
@@ -215,7 +207,7 @@ function buildDigestEmailText(digest: FamilyDigest): string {
 
   if (lowAvailability.length > 0) {
     text += `⚡ FILLING UP FAST\n`;
-    text += `${"=".repeat(30)}\n\n`;
+    text += `${'='.repeat(30)}\n\n`;
 
     for (const notif of lowAvailability) {
       const { session, childName } = notif;
@@ -225,7 +217,7 @@ function buildDigestEmailText(digest: FamilyDigest): string {
           : `${formatDate(session.startDate)} - ${formatDate(session.endDate)}`;
 
       text += `${session.campName}\n`;
-      text += `⚠️ Only ${session.spotsRemaining} spot${session.spotsRemaining === 1 ? "" : "s"} left!\n`;
+      text += `⚠️ Only ${session.spotsRemaining} spot${session.spotsRemaining === 1 ? '' : 's'} left!\n`;
       text += `${session.organizationName}\n`;
       text += `📅 ${dateRange}\n`;
       text += `⏰ ${formatTime(session.dropOffTime)} - ${formatTime(session.pickUpTime)}\n`;
@@ -249,12 +241,8 @@ function buildDigestEmailText(digest: FamilyDigest): string {
  * Build email subject based on notifications.
  */
 function buildEmailSubject(digest: FamilyDigest): string {
-  const registrationOpened = digest.notifications.filter(
-    (n) => n.changeType === "registration_opened"
-  );
-  const lowAvailability = digest.notifications.filter(
-    (n) => n.changeType === "low_availability"
-  );
+  const registrationOpened = digest.notifications.filter((n) => n.changeType === 'registration_opened');
+  const lowAvailability = digest.notifications.filter((n) => n.changeType === 'low_availability');
 
   // If only registration opened
   if (registrationOpened.length > 0 && lowAvailability.length === 0) {
@@ -282,7 +270,9 @@ function buildEmailSubject(digest: FamilyDigest): string {
  */
 export const processHourlyDigest = internalAction({
   args: {},
-  handler: async (ctx): Promise<{
+  handler: async (
+    ctx,
+  ): Promise<{
     success: boolean;
     emailsSent: number;
     notificationsSent: number;
@@ -295,20 +285,19 @@ export const processHourlyDigest = internalAction({
     try {
       // 1. Get recent registration opens (last 2 hours to catch any missed)
       const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
-      const registrationOpens = await ctx.runQuery(
-        internal.notifications.queries.getRecentRegistrationOpens,
-        { sinceTime: twoHoursAgo }
-      );
+      const registrationOpens = await ctx.runQuery(internal.notifications.queries.getRecentRegistrationOpens, {
+        sinceTime: twoHoursAgo,
+      });
 
       // 2. Get sessions with low availability
       const lowAvailabilitySessions = await ctx.runQuery(
         internal.notifications.queries.getSessionsWithLowAvailability,
-        { threshold: LOW_AVAILABILITY_THRESHOLD }
+        { threshold: LOW_AVAILABILITY_THRESHOLD },
       );
 
       // 3. Build notification list per family
       const familyNotifications = new Map<
-        Id<"families">,
+        Id<'families'>,
         {
           email: string;
           displayName: string;
@@ -318,21 +307,17 @@ export const processHourlyDigest = internalAction({
 
       // Process registration opens
       for (const { changeId, sessionId, session } of registrationOpens) {
-        const families = await ctx.runQuery(
-          internal.notifications.queries.getFamiliesWithInterestedRegistrations,
-          { sessionId }
-        );
+        const families = await ctx.runQuery(internal.notifications.queries.getFamiliesWithInterestedRegistrations, {
+          sessionId,
+        });
 
         for (const family of families) {
           // Check if already notified
-          const alreadySent = await ctx.runQuery(
-            internal.notifications.queries.hasNotificationBeenSent,
-            {
-              familyId: family.familyId,
-              sessionId,
-              changeType: "registration_opened",
-            }
-          );
+          const alreadySent = await ctx.runQuery(internal.notifications.queries.hasNotificationBeenSent, {
+            familyId: family.familyId,
+            sessionId,
+            changeType: 'registration_opened',
+          });
 
           if (alreadySent) continue;
 
@@ -347,7 +332,7 @@ export const processHourlyDigest = internalAction({
 
           familyNotifications.get(family.familyId)!.notifications.push({
             sessionId,
-            changeType: "registration_opened",
+            changeType: 'registration_opened',
             changeId,
             session,
             childName: family.childName,
@@ -357,21 +342,17 @@ export const processHourlyDigest = internalAction({
 
       // Process low availability
       for (const { sessionId, spotsRemaining, session } of lowAvailabilitySessions) {
-        const families = await ctx.runQuery(
-          internal.notifications.queries.getFamiliesWithInterestedRegistrations,
-          { sessionId }
-        );
+        const families = await ctx.runQuery(internal.notifications.queries.getFamiliesWithInterestedRegistrations, {
+          sessionId,
+        });
 
         for (const family of families) {
           // Check if already notified
-          const alreadySent = await ctx.runQuery(
-            internal.notifications.queries.hasNotificationBeenSent,
-            {
-              familyId: family.familyId,
-              sessionId,
-              changeType: "low_availability",
-            }
-          );
+          const alreadySent = await ctx.runQuery(internal.notifications.queries.hasNotificationBeenSent, {
+            familyId: family.familyId,
+            sessionId,
+            changeType: 'low_availability',
+          });
 
           if (alreadySent) continue;
 
@@ -386,24 +367,20 @@ export const processHourlyDigest = internalAction({
 
           familyNotifications.get(family.familyId)!.notifications.push({
             sessionId,
-            changeType: "low_availability",
+            changeType: 'low_availability',
             session: { ...session, spotsRemaining },
             childName: family.childName,
           });
 
           // Update the availability snapshot
-          await ctx.runMutation(
-            internal.notifications.mutations.updateAvailabilitySnapshot,
-            {
-              sessionId,
-              enrolledCount:
-                (session as unknown as { capacity?: number }).capacity !== undefined
-                  ? ((session as unknown as { capacity?: number }).capacity || 0) - spotsRemaining
-                  : 0,
-              capacity:
-                (session as unknown as { capacity?: number }).capacity || spotsRemaining,
-            }
-          );
+          await ctx.runMutation(internal.notifications.mutations.updateAvailabilitySnapshot, {
+            sessionId,
+            enrolledCount:
+              (session as unknown as { capacity?: number }).capacity !== undefined
+                ? ((session as unknown as { capacity?: number }).capacity || 0) - spotsRemaining
+                : 0,
+            capacity: (session as unknown as { capacity?: number }).capacity || spotsRemaining,
+          });
         }
       }
 
@@ -412,10 +389,7 @@ export const processHourlyDigest = internalAction({
         if (data.notifications.length === 0) continue;
 
         // Get brand info for this family
-        const brand = await ctx.runQuery(
-          internal.notifications.queries.getFamilyCityBrand,
-          { familyId }
-        );
+        const brand = await ctx.runQuery(internal.notifications.queries.getFamilyCityBrand, { familyId });
 
         const digest: FamilyDigest = {
           familyId,
@@ -423,7 +397,7 @@ export const processHourlyDigest = internalAction({
           displayName: data.displayName,
           notifications: data.notifications,
           brandName: brand?.brandName || FROM_NAME_DEFAULT,
-          domain: brand?.domain || "pdxcamps.com",
+          domain: brand?.domain || 'pdxcamps.com',
           fromEmail: brand?.fromEmail || FROM_EMAIL_DEFAULT,
         };
 
@@ -444,36 +418,30 @@ export const processHourlyDigest = internalAction({
 
           // Record each notification as sent
           for (const notif of data.notifications) {
-            await ctx.runMutation(
-              internal.notifications.mutations.markNotificationSent,
-              {
-                familyId,
-                sessionId: notif.sessionId,
-                changeType: notif.changeType,
-                emailId: emailId as string,
-              }
-            );
+            await ctx.runMutation(internal.notifications.mutations.markNotificationSent, {
+              familyId,
+              sessionId: notif.sessionId,
+              changeType: notif.changeType,
+              emailId: emailId as string,
+            });
 
             // Mark the scrape change as notified (if applicable)
             if (notif.changeId) {
-              await ctx.runMutation(
-                internal.notifications.mutations.markScrapeChangeNotified,
-                { changeId: notif.changeId }
-              );
+              await ctx.runMutation(internal.notifications.mutations.markScrapeChangeNotified, {
+                changeId: notif.changeId,
+              });
             }
 
             notificationsSent++;
           }
         } catch (error) {
           errors.push(
-            `Failed to send email to ${data.email}: ${error instanceof Error ? error.message : "Unknown error"}`
+            `Failed to send email to ${data.email}: ${error instanceof Error ? error.message : 'Unknown error'}`,
           );
         }
       }
 
-      console.log(
-        `Notification digest complete: ${emailsSent} emails sent, ${notificationsSent} notifications`
-      );
+      console.log(`Notification digest complete: ${emailsSent} emails sent, ${notificationsSent} notifications`);
 
       return {
         success: true,
@@ -482,10 +450,9 @@ export const processHourlyDigest = internalAction({
         errors,
       };
     } catch (error) {
-      const errorMsg =
-        error instanceof Error ? error.message : "Unknown error";
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       errors.push(`Fatal error: ${errorMsg}`);
-      console.error("Notification digest failed:", error);
+      console.error('Notification digest failed:', error);
 
       return {
         success: false,

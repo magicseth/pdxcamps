@@ -21,10 +21,7 @@ export default function OrganizationDetailPage() {
   const slug = params.slug as string;
   const market = useMarket();
 
-  const organization = useQuery(
-    api.organizations.queries.getOrganizationDetail,
-    slug ? { slug } : 'skip'
-  );
+  const organization = useQuery(api.organizations.queries.getOrganizationDetail, slug ? { slug } : 'skip');
 
   // Loading state
   if (organization === undefined) {
@@ -49,16 +46,9 @@ export default function OrganizationDetailPage() {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
-            Organization Not Found
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400 mb-6">
-            We couldn&apos;t find this organization.
-          </p>
-          <Link
-            href="/"
-            className="inline-block bg-primary text-white px-6 py-2 rounded-md hover:bg-primary-dark"
-          >
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Organization Not Found</h1>
+          <p className="text-slate-600 dark:text-slate-400 mb-6">We couldn&apos;t find this organization.</p>
+          <Link href="/" className="inline-block bg-primary text-white px-6 py-2 rounded-md hover:bg-primary-dark">
             Back to Home
           </Link>
         </div>
@@ -162,19 +152,13 @@ export default function OrganizationDetailPage() {
                 </div>
               ) : (
                 <div className="w-24 h-24 bg-gradient-to-br from-primary to-primary-dark rounded-lg flex items-center justify-center flex-shrink-0">
-                  <span className="text-3xl text-white font-bold">
-                    {organization.name.charAt(0)}
-                  </span>
+                  <span className="text-3xl text-white font-bold">{organization.name.charAt(0)}</span>
                 </div>
               )}
               <div className="flex-1">
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-                  {organization.name}
-                </h1>
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{organization.name}</h1>
                 {organization.description && (
-                  <p className="mt-2 text-slate-600 dark:text-slate-400">
-                    {organization.description}
-                  </p>
+                  <p className="mt-2 text-slate-600 dark:text-slate-400">{organization.description}</p>
                 )}
                 <div className="mt-4 flex flex-wrap gap-4 text-sm">
                   {organization.website && (
@@ -197,10 +181,7 @@ export default function OrganizationDetailPage() {
                     </a>
                   )}
                   {organization.email && organization.email !== '<UNKNOWN>' && (
-                    <a
-                      href={`mailto:${organization.email}`}
-                      className="text-primary hover:text-primary-dark"
-                    >
+                    <a href={`mailto:${organization.email}`} className="text-primary hover:text-primary-dark">
                       {organization.email}
                     </a>
                   )}
@@ -211,9 +192,7 @@ export default function OrganizationDetailPage() {
             {/* Stats */}
             <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700 grid grid-cols-3 gap-4 text-center">
               <div>
-                <div className="text-2xl font-bold text-slate-900 dark:text-white">
-                  {organization.stats.campCount}
-                </div>
+                <div className="text-2xl font-bold text-slate-900 dark:text-white">{organization.stats.campCount}</div>
                 <div className="text-sm text-slate-500 dark:text-slate-400">Camps</div>
               </div>
               <div>
@@ -236,9 +215,7 @@ export default function OrganizationDetailPage() {
         {organization.upcomingSessions.length > 0 && (
           <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden mb-6">
             <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                Upcoming Sessions
-              </h2>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Upcoming Sessions</h2>
             </div>
             <div className="divide-y divide-slate-200 dark:divide-slate-700">
               {organization.upcomingSessions.map((session) => (
@@ -249,9 +226,7 @@ export default function OrganizationDetailPage() {
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-slate-900 dark:text-white truncate">
-                        {session.campName}
-                      </h3>
+                      <h3 className="font-medium text-slate-900 dark:text-white truncate">{session.campName}</h3>
                       <div className="mt-1 flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
                         <span className="flex items-center gap-1">
                           <CalendarIcon className="w-4 h-4" />
@@ -294,23 +269,14 @@ export default function OrganizationDetailPage() {
         {organization.camps.length > 0 && (
           <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden mb-6">
             <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                All Camps
-              </h2>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">All Camps</h2>
             </div>
             <div className="divide-y divide-slate-200 dark:divide-slate-700">
               {organization.camps.map((camp) => (
-                <div
-                  key={camp._id}
-                  className="px-6 py-4"
-                >
-                  <h3 className="font-medium text-slate-900 dark:text-white">
-                    {camp.name}
-                  </h3>
+                <div key={camp._id} className="px-6 py-4">
+                  <h3 className="font-medium text-slate-900 dark:text-white">{camp.name}</h3>
                   {camp.description && (
-                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
-                      {camp.description}
-                    </p>
+                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-400 line-clamp-2">{camp.description}</p>
                   )}
                   <div className="mt-2 flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
                     <span>{formatAgeRange(camp.ageRequirements)}</span>
@@ -331,9 +297,7 @@ export default function OrganizationDetailPage() {
         {organization.locations.length > 0 && (
           <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                Locations
-              </h2>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Locations</h2>
             </div>
             <div className="divide-y divide-slate-200 dark:divide-slate-700">
               {organization.locations.map((location) => (
@@ -341,9 +305,7 @@ export default function OrganizationDetailPage() {
                   <div className="flex items-start gap-3">
                     <LocationIcon className="w-5 h-5 text-slate-400 mt-0.5 flex-shrink-0" />
                     <div>
-                      <h3 className="font-medium text-slate-900 dark:text-white">
-                        {location.name}
-                      </h3>
+                      <h3 className="font-medium text-slate-900 dark:text-white">{location.name}</h3>
                       {location.address && (
                         <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
                           {location.address.street !== 'TBD' && `${location.address.street}, `}
@@ -361,9 +323,7 @@ export default function OrganizationDetailPage() {
         {/* Empty State */}
         {organization.camps.length === 0 && organization.upcomingSessions.length === 0 && (
           <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-8 text-center">
-            <p className="text-slate-500 dark:text-slate-400">
-              No camps or sessions available at this time.
-            </p>
+            <p className="text-slate-500 dark:text-slate-400">No camps or sessions available at this time.</p>
           </div>
         )}
       </main>

@@ -33,9 +33,7 @@ export class QueryErrorBoundary extends React.Component<Props, State> {
       return (
         <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-6 text-center">
           <p className="text-red-800 dark:text-red-300 font-medium mb-1">
-            {this.props.section
-              ? `Something went wrong in ${this.props.section}`
-              : 'Something went wrong'}
+            {this.props.section ? `Something went wrong in ${this.props.section}` : 'Something went wrong'}
           </p>
           <p className="text-red-600 dark:text-red-400 text-sm mb-4">
             {this.state.error?.message || 'An unexpected error occurred.'}

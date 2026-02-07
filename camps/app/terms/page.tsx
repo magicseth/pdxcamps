@@ -12,23 +12,20 @@ export default function TermsPage() {
           &larr; Back to Home
         </Link>
 
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-8">
-          Terms of Service
-        </h1>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-8">Terms of Service</h1>
 
         <div className="prose prose-slate dark:prose-invert max-w-none">
           <p className="text-slate-600 dark:text-slate-400 mb-6">
-            <strong>Effective Date:</strong> February 3, 2025<br />
+            <strong>Effective Date:</strong> February 3, 2025
+            <br />
             <strong>Last Updated:</strong> February 3, 2025
           </p>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
-              1. Acceptance of Terms
-            </h2>
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">1. Acceptance of Terms</h2>
             <p className="text-slate-600 dark:text-slate-400 mb-4">
-              By accessing or using PDX Camps ("the Service") at pdxcamps.com, you agree to be bound
-              by these Terms of Service and our{' '}
+              By accessing or using PDX Camps ("the Service") at pdxcamps.com, you agree to be bound by these Terms of
+              Service and our{' '}
               <Link href="/privacy" className="text-primary hover:text-primary-dark">
                 Privacy Policy
               </Link>
@@ -40,12 +37,10 @@ export default function TermsPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
-              2. Description of Service
-            </h2>
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">2. Description of Service</h2>
             <p className="text-slate-600 dark:text-slate-400 mb-4">
-              PDX Camps is a planning tool that helps families discover and organize summer camps
-              for their children in the Portland, Oregon area. Our service includes:
+              PDX Camps is a planning tool that helps families discover and organize summer camps for their children in
+              the Portland, Oregon area. Our service includes:
             </p>
             <ul className="list-disc pl-6 text-slate-600 dark:text-slate-400 mb-4 space-y-2">
               <li>Browsing and searching summer camp listings</li>
@@ -54,20 +49,17 @@ export default function TermsPage() {
               <li>Sharing your schedule with other families</li>
             </ul>
             <p className="text-slate-600 dark:text-slate-400 mb-4">
-              <strong>Important:</strong> PDX Camps does not operate any camps. We aggregate publicly
-              available information about summer camps for informational purposes only. You are
-              responsible for verifying all camp details, availability, pricing, and registration
-              directly with the camp providers.
+              <strong>Important:</strong> PDX Camps does not operate any camps. We aggregate publicly available
+              information about summer camps for informational purposes only. You are responsible for verifying all camp
+              details, availability, pricing, and registration directly with the camp providers.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
-              3. User Accounts
-            </h2>
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">3. User Accounts</h2>
             <p className="text-slate-600 dark:text-slate-400 mb-4">
-              To access certain features of the Service, you must create an account using Google Sign-In.
-              By creating an account, you agree to:
+              To access certain features of the Service, you must create an account using Google Sign-In. By creating an
+              account, you agree to:
             </p>
             <ul className="list-disc pl-6 text-slate-600 dark:text-slate-400 mb-4 space-y-2">
               <li>Provide accurate and complete information</li>
@@ -77,29 +69,23 @@ export default function TermsPage() {
               <li>Not share your account with others</li>
             </ul>
             <p className="text-slate-600 dark:text-slate-400 mb-4">
-              You must be at least 18 years old to create an account. The Service is intended for
-              parents and guardians to plan activities for their children.
+              You must be at least 18 years old to create an account. The Service is intended for parents and guardians
+              to plan activities for their children.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
-              4. Subscription and Payments
-            </h2>
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">4. Subscription and Payments</h2>
             <p className="text-slate-600 dark:text-slate-400 mb-4">
               PDX Camps offers both free and premium subscription options:
             </p>
 
-            <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200 mb-3">
-              4.1 Free Tier
-            </h3>
+            <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200 mb-3">4.1 Free Tier</h3>
             <p className="text-slate-600 dark:text-slate-400 mb-4">
               Free accounts include limited access to planning features as described on our website.
             </p>
 
-            <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200 mb-3">
-              4.2 Premium Subscriptions
-            </h3>
+            <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200 mb-3">4.2 Premium Subscriptions</h3>
             <ul className="list-disc pl-6 text-slate-600 dark:text-slate-400 mb-4 space-y-2">
               <li>Payments are processed securely through Stripe</li>
               <li>Monthly subscriptions renew automatically until canceled</li>
@@ -108,12 +94,9 @@ export default function TermsPage() {
               <li>Summer Pass is a one-time payment for seasonal access (typically May through August)</li>
             </ul>
 
-            <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200 mb-3">
-              4.3 Refunds
-            </h3>
+            <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200 mb-3">4.3 Refunds</h3>
             <p className="text-slate-600 dark:text-slate-400 mb-4">
-              Refund requests are handled on a case-by-case basis. To request a refund, contact us
-              at{' '}
+              Refund requests are handled on a case-by-case basis. To request a refund, contact us at{' '}
               <a href="mailto:support@pdxcamps.com" className="text-primary hover:text-primary-dark">
                 support@pdxcamps.com
               </a>{' '}
@@ -122,9 +105,7 @@ export default function TermsPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
-              5. Acceptable Use
-            </h2>
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">5. Acceptable Use</h2>
             <p className="text-slate-600 dark:text-slate-400 mb-4">
               You agree to use the Service only for lawful purposes. You may not:
             </p>
@@ -141,42 +122,34 @@ export default function TermsPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
-              6. Intellectual Property
-            </h2>
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">6. Intellectual Property</h2>
             <p className="text-slate-600 dark:text-slate-400 mb-4">
-              The Service and its original content (excluding user-provided content and third-party
-              camp information) are owned by PDX Camps and are protected by copyright, trademark,
-              and other intellectual property laws.
+              The Service and its original content (excluding user-provided content and third-party camp information)
+              are owned by PDX Camps and are protected by copyright, trademark, and other intellectual property laws.
             </p>
             <p className="text-slate-600 dark:text-slate-400 mb-4">
-              Camp listings include information from third-party camp providers. This information
-              is used for informational purposes to help families plan their summer.
+              Camp listings include information from third-party camp providers. This information is used for
+              informational purposes to help families plan their summer.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
-              7. User Content
-            </h2>
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">7. User Content</h2>
             <p className="text-slate-600 dark:text-slate-400 mb-4">
-              You retain ownership of content you create on the Service (such as your summer plans
-              and child profiles). By using the Service, you grant us a limited license to store
-              and display this content as necessary to provide the Service.
+              You retain ownership of content you create on the Service (such as your summer plans and child profiles).
+              By using the Service, you grant us a limited license to store and display this content as necessary to
+              provide the Service.
             </p>
             <p className="text-slate-600 dark:text-slate-400 mb-4">
-              When you share your plan with other users, you authorize us to display that content
-              to those users.
+              When you share your plan with other users, you authorize us to display that content to those users.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
-              8. Disclaimer of Warranties
-            </h2>
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">8. Disclaimer of Warranties</h2>
             <p className="text-slate-600 dark:text-slate-400 mb-4">
-              THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND,
-              EITHER EXPRESS OR IMPLIED. WE DO NOT WARRANT THAT:
+              THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR
+              IMPLIED. WE DO NOT WARRANT THAT:
             </p>
             <ul className="list-disc pl-6 text-slate-600 dark:text-slate-400 mb-4 space-y-2">
               <li>Camp information is accurate, complete, or current</li>
@@ -185,18 +158,18 @@ export default function TermsPage() {
               <li>Defects will be corrected</li>
             </ul>
             <p className="text-slate-600 dark:text-slate-400 mb-4">
-              <strong>Always verify camp details, including dates, prices, ages, and availability,
-              directly with the camp provider before registering.</strong>
+              <strong>
+                Always verify camp details, including dates, prices, ages, and availability, directly with the camp
+                provider before registering.
+              </strong>
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
-              9. Limitation of Liability
-            </h2>
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">9. Limitation of Liability</h2>
             <p className="text-slate-600 dark:text-slate-400 mb-4">
-              TO THE MAXIMUM EXTENT PERMITTED BY LAW, PDX CAMPS SHALL NOT BE LIABLE FOR ANY INDIRECT,
-              INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO:
+              TO THE MAXIMUM EXTENT PERMITTED BY LAW, PDX CAMPS SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL,
+              SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO:
             </p>
             <ul className="list-disc pl-6 text-slate-600 dark:text-slate-400 mb-4 space-y-2">
               <li>Loss of profits, data, or goodwill</li>
@@ -205,82 +178,70 @@ export default function TermsPage() {
               <li>Reliance on information provided through the Service</li>
             </ul>
             <p className="text-slate-600 dark:text-slate-400 mb-4">
-              Our total liability shall not exceed the amount you paid us in the twelve (12) months
-              preceding the claim.
+              Our total liability shall not exceed the amount you paid us in the twelve (12) months preceding the claim.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
-              10. Indemnification
-            </h2>
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">10. Indemnification</h2>
             <p className="text-slate-600 dark:text-slate-400 mb-4">
-              You agree to indemnify and hold harmless PDX Camps and its officers, directors, employees,
-              and agents from any claims, damages, losses, or expenses arising from your use of the
-              Service or violation of these Terms.
+              You agree to indemnify and hold harmless PDX Camps and its officers, directors, employees, and agents from
+              any claims, damages, losses, or expenses arising from your use of the Service or violation of these Terms.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
-              11. Termination
-            </h2>
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">11. Termination</h2>
             <p className="text-slate-600 dark:text-slate-400 mb-4">
-              We may terminate or suspend your account at any time, with or without cause, with or
-              without notice. You may delete your account at any time from your account settings.
+              We may terminate or suspend your account at any time, with or without cause, with or without notice. You
+              may delete your account at any time from your account settings.
             </p>
             <p className="text-slate-600 dark:text-slate-400 mb-4">
-              Upon termination, your right to use the Service will immediately cease. Provisions of
-              these Terms that by their nature should survive termination shall survive.
+              Upon termination, your right to use the Service will immediately cease. Provisions of these Terms that by
+              their nature should survive termination shall survive.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
-              12. Changes to Terms
-            </h2>
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">12. Changes to Terms</h2>
             <p className="text-slate-600 dark:text-slate-400 mb-4">
-              We reserve the right to modify these Terms at any time. We will notify you of material
-              changes by posting the updated Terms on this page and updating the "Last Updated" date.
-              Your continued use of the Service after changes constitutes acceptance of the new Terms.
+              We reserve the right to modify these Terms at any time. We will notify you of material changes by posting
+              the updated Terms on this page and updating the "Last Updated" date. Your continued use of the Service
+              after changes constitutes acceptance of the new Terms.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
-              13. Governing Law
-            </h2>
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">13. Governing Law</h2>
             <p className="text-slate-600 dark:text-slate-400 mb-4">
-              These Terms shall be governed by and construed in accordance with the laws of the
-              State of Oregon, United States, without regard to its conflict of law provisions.
+              These Terms shall be governed by and construed in accordance with the laws of the State of Oregon, United
+              States, without regard to its conflict of law provisions.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
-              14. Dispute Resolution
-            </h2>
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">14. Dispute Resolution</h2>
             <p className="text-slate-600 dark:text-slate-400 mb-4">
-              Any disputes arising from these Terms or the Service shall first be attempted to be
-              resolved through good-faith negotiation. If resolution cannot be reached within 30 days,
-              disputes shall be resolved through binding arbitration in Portland, Oregon.
+              Any disputes arising from these Terms or the Service shall first be attempted to be resolved through
+              good-faith negotiation. If resolution cannot be reached within 30 days, disputes shall be resolved through
+              binding arbitration in Portland, Oregon.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
-              15. Contact Us
-            </h2>
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">15. Contact Us</h2>
             <p className="text-slate-600 dark:text-slate-400 mb-4">
               If you have questions about these Terms of Service, please contact us:
             </p>
             <ul className="list-none text-slate-600 dark:text-slate-400 mb-4 space-y-2">
-              <li><strong>Email:</strong>{' '}
+              <li>
+                <strong>Email:</strong>{' '}
                 <a href="mailto:support@pdxcamps.com" className="text-primary hover:text-primary-dark">
                   support@pdxcamps.com
                 </a>
               </li>
-              <li><strong>Website:</strong>{' '}
+              <li>
+                <strong>Website:</strong>{' '}
                 <a href="https://pdxcamps.com" className="text-primary hover:text-primary-dark">
                   pdxcamps.com
                 </a>

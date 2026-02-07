@@ -12,7 +12,10 @@ export default function SourceDetailPage() {
   return (
     <>
       <header className="sticky top-0 z-10 bg-background p-4 border-b-2 border-slate-200 dark:border-slate-800 flex flex-row justify-between items-center">
-        <Link href="/admin" className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+        <Link
+          href="/admin"
+          className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
           Admin Dashboard
         </Link>
         <h1 className="text-lg font-semibold">Source Detail</h1>
@@ -23,13 +26,8 @@ export default function SourceDetailPage() {
         </Authenticated>
         <Unauthenticated>
           <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-            <p className="text-slate-600 dark:text-slate-400">
-              Please sign in to access the admin dashboard.
-            </p>
-            <a
-              href="/sign-in"
-              className="bg-foreground text-background px-6 py-2 rounded-md"
-            >
+            <p className="text-slate-600 dark:text-slate-400">Please sign in to access the admin dashboard.</p>
+            <a href="/sign-in" className="bg-foreground text-background px-6 py-2 rounded-md">
               Sign in
             </a>
           </div>
@@ -54,10 +52,10 @@ function SourceDetailContent() {
 
   const isAdmin = useQuery(api.admin.queries.isAdmin);
   const source = useQuery(api.scraping.queries.getScrapeSource, {
-    sourceId: sourceId as Id<"scrapeSources">,
+    sourceId: sourceId as Id<'scrapeSources'>,
   });
   const sessionsData = useQuery(api.scraping.queries.getSessionsBySource, {
-    sourceId: sourceId as Id<"scrapeSources">,
+    sourceId: sourceId as Id<'scrapeSources'>,
     limit: 20,
   });
   const sessions = sessionsData?.sessions;
@@ -112,7 +110,7 @@ function SourceDetailContent() {
     setSavingNotes(true);
     try {
       await updateNotes({
-        sourceId: sourceId as Id<"scrapeSources">,
+        sourceId: sourceId as Id<'scrapeSources'>,
         parsingNotes,
       });
     } finally {
@@ -124,7 +122,7 @@ function SourceDetailContent() {
     setFlaggingRescan(true);
     try {
       await flagForRescan({
-        sourceId: sourceId as Id<"scrapeSources">,
+        sourceId: sourceId as Id<'scrapeSources'>,
         reason: rescanReason || undefined,
       });
       setRescanReason('');
@@ -138,7 +136,7 @@ function SourceDetailContent() {
     setAddingUrl(true);
     try {
       await addAdditionalUrl({
-        sourceId: sourceId as Id<"scrapeSources">,
+        sourceId: sourceId as Id<'scrapeSources'>,
         url: newUrlInput,
         label: newUrlLabel || undefined,
       });
@@ -151,7 +149,7 @@ function SourceDetailContent() {
 
   const handleRemoveUrl = async (url: string) => {
     await removeAdditionalUrl({
-      sourceId: sourceId as Id<"scrapeSources">,
+      sourceId: sourceId as Id<'scrapeSources'>,
       url,
     });
   };
@@ -160,9 +158,13 @@ function SourceDetailContent() {
     <div className="max-w-6xl mx-auto space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-slate-500">
-        <Link href="/admin" className="hover:underline">Dashboard</Link>
+        <Link href="/admin" className="hover:underline">
+          Dashboard
+        </Link>
         <span>/</span>
-        <Link href="/admin/sources" className="hover:underline">Sources</Link>
+        <Link href="/admin/sources" className="hover:underline">
+          Sources
+        </Link>
         <span>/</span>
         <span>{source.name}</span>
       </div>
@@ -171,9 +173,7 @@ function SourceDetailContent() {
       <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-              {source.name}
-            </h1>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{source.name}</h1>
             <a
               href={source.url}
               target="_blank"
@@ -209,9 +209,13 @@ function SourceDetailContent() {
             label="Quality"
             value={source.dataQualityScore !== undefined ? `${source.dataQualityScore}%` : '-'}
             variant={
-              source.qualityTier === 'high' ? 'success' :
-              source.qualityTier === 'medium' ? 'warning' :
-              source.qualityTier === 'low' ? 'error' : 'default'
+              source.qualityTier === 'high'
+                ? 'success'
+                : source.qualityTier === 'medium'
+                  ? 'warning'
+                  : source.qualityTier === 'low'
+                    ? 'error'
+                    : 'default'
             }
           />
           <StatItem label="Success Rate" value={`${Math.round(source.scraperHealth.successRate * 100)}%`} />
@@ -338,9 +342,7 @@ function SourceDetailContent() {
           </button>
         </div>
         {source.needsRescan && source.rescanReason && (
-          <p className="mt-2 text-sm text-orange-600">
-            Flagged: {source.rescanReason}
-          </p>
+          <p className="mt-2 text-sm text-orange-600">Flagged: {source.rescanReason}</p>
         )}
       </div>
 
@@ -389,9 +391,7 @@ function SourceDetailContent() {
         {source.scraperModule && (
           <div className="mb-4">
             <p className="text-sm text-slate-500">Scraper Module</p>
-            <p className="font-mono bg-slate-100 dark:bg-slate-900 px-3 py-2 rounded mt-1">
-              {source.scraperModule}
-            </p>
+            <p className="font-mono bg-slate-100 dark:bg-slate-900 px-3 py-2 rounded mt-1">{source.scraperModule}</p>
           </div>
         )}
 
@@ -407,18 +407,14 @@ function SourceDetailContent() {
         {!source.scraperModule && !source.scraperCode && (
           <div className="text-center py-8 text-slate-500">
             <p>No scraper configured. Using Stagehand AI extraction.</p>
-            <p className="text-sm mt-2">
-              Stagehand will use your parsing notes to guide extraction.
-            </p>
+            <p className="text-sm mt-2">Stagehand will use your parsing notes to guide extraction.</p>
           </div>
         )}
 
         {/* Scraper Config (legacy) */}
         {source.scraperConfig && (
           <details className="mt-4">
-            <summary className="cursor-pointer text-sm text-slate-500 hover:text-slate-700">
-              View Legacy Config
-            </summary>
+            <summary className="cursor-pointer text-sm text-slate-500 hover:text-slate-700">View Legacy Config</summary>
             <pre className="bg-slate-100 dark:bg-slate-900 p-4 rounded-md overflow-auto max-h-48 text-xs font-mono mt-2">
               {JSON.stringify(source.scraperConfig, null, 2)}
             </pre>
@@ -443,20 +439,13 @@ function SourceDetailContent() {
                     </span>
                   </div>
                   {job.sessionsFound !== undefined && (
-                    <p className="text-sm text-slate-500 mt-1">
-                      Found {job.sessionsFound} sessions
-                    </p>
+                    <p className="text-sm text-slate-500 mt-1">Found {job.sessionsFound} sessions</p>
                   )}
                   {job.errorMessage && (
-                    <p className="text-sm text-red-500 mt-1 truncate max-w-md">
-                      {job.errorMessage}
-                    </p>
+                    <p className="text-sm text-red-500 mt-1 truncate max-w-md">{job.errorMessage}</p>
                   )}
                 </div>
-                <Link
-                  href={`/admin/jobs/${job._id}`}
-                  className="text-sm text-primary hover:underline"
-                >
+                <Link href={`/admin/jobs/${job._id}`} className="text-sm text-primary hover:underline">
                   View Details
                 </Link>
               </li>
@@ -475,29 +464,46 @@ function SourceDetailContent() {
             <table className="w-full text-sm">
               <thead className="bg-slate-50 dark:bg-slate-900">
                 <tr>
-                  <th scope="col" className="text-left px-4 py-3 font-semibold">Name</th>
-                  <th scope="col" className="text-left px-4 py-3 font-semibold">Dates</th>
-                  <th scope="col" className="text-left px-4 py-3 font-semibold">Status</th>
-                  <th scope="col" className="text-left px-4 py-3 font-semibold">Completeness</th>
+                  <th scope="col" className="text-left px-4 py-3 font-semibold">
+                    Name
+                  </th>
+                  <th scope="col" className="text-left px-4 py-3 font-semibold">
+                    Dates
+                  </th>
+                  <th scope="col" className="text-left px-4 py-3 font-semibold">
+                    Status
+                  </th>
+                  <th scope="col" className="text-left px-4 py-3 font-semibold">
+                    Completeness
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                 {sessions.map((session) => (
                   <tr key={session._id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                     <td className="px-4 py-3 font-medium">{session.campName}</td>
-                    <td className="px-4 py-3">{session.startDate} - {session.endDate}</td>
+                    <td className="px-4 py-3">
+                      {session.startDate} - {session.endDate}
+                    </td>
                     <td className="px-4 py-3">
                       <SessionStatusBadge status={session.status} />
                     </td>
                     <td className="px-4 py-3">
                       {session.completenessScore !== undefined ? (
-                        <span className={`text-sm ${
-                          session.completenessScore === 100 ? 'text-green-600' :
-                          session.completenessScore >= 50 ? 'text-yellow-600' : 'text-red-600'
-                        }`}>
+                        <span
+                          className={`text-sm ${
+                            session.completenessScore === 100
+                              ? 'text-green-600'
+                              : session.completenessScore >= 50
+                                ? 'text-yellow-600'
+                                : 'text-red-600'
+                          }`}
+                        >
                           {session.completenessScore}%
                         </span>
-                      ) : '-'}
+                      ) : (
+                        '-'
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -543,9 +549,7 @@ function JobStatusBadge({ status }: { status: string }) {
   };
 
   return (
-    <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${styles[status] ?? styles.pending}`}>
-      {status}
-    </span>
+    <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${styles[status] ?? styles.pending}`}>{status}</span>
   );
 }
 
@@ -559,8 +563,6 @@ function SessionStatusBadge({ status }: { status: string }) {
   };
 
   return (
-    <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${styles[status] ?? styles.draft}`}>
-      {status}
-    </span>
+    <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${styles[status] ?? styles.draft}`}>{status}</span>
   );
 }

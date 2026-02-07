@@ -1,4 +1,4 @@
-"use node";
+'use node';
 
 /**
  * Populate Camp Images
@@ -6,27 +6,27 @@
  * Downloads images from camp imageUrls and stores them in Convex storage.
  */
 
-import { action } from "../_generated/server";
-import { api } from "../_generated/api";
-import { v } from "convex/values";
-import { Id } from "../_generated/dataModel";
-import { ActionCtx } from "../_generated/server";
+import { action } from '../_generated/server';
+import { api } from '../_generated/api';
+import { v } from 'convex/values';
+import { Id } from '../_generated/dataModel';
+import { ActionCtx } from '../_generated/server';
 
 /**
  * Helper function to download and store an image
  */
 async function downloadAndStoreImage(
   ctx: ActionCtx,
-  url: string
-): Promise<{ storageId: Id<"_storage"> | null; publicUrl: string | null; error?: string }> {
+  url: string,
+): Promise<{ storageId: Id<'_storage'> | null; publicUrl: string | null; error?: string }> {
   try {
     console.log(`[CampImages] Downloading: ${url}`);
 
     // Fetch the image
     const response = await fetch(url, {
       headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; PDXCampsBot/1.0)",
-        Accept: "image/*",
+        'User-Agent': 'Mozilla/5.0 (compatible; PDXCampsBot/1.0)',
+        'Accept': 'image/*',
       },
     });
 
@@ -35,8 +35,8 @@ async function downloadAndStoreImage(
     }
 
     // Get content type
-    const contentType = response.headers.get("content-type") || "image/jpeg";
-    if (!contentType.startsWith("image/") && !contentType.includes("svg")) {
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+    if (!contentType.startsWith('image/') && !contentType.includes('svg')) {
       return { storageId: null, publicUrl: null, error: `Not an image: ${contentType}` };
     }
 
@@ -50,7 +50,7 @@ async function downloadAndStoreImage(
     console.log(`[CampImages] Stored: ${url} -> ${storageId}`);
     return { storageId, publicUrl };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
+    const message = error instanceof Error ? error.message : 'Unknown error';
     console.error(`[CampImages] Failed to store ${url}: ${message}`);
     return { storageId: null, publicUrl: null, error: message };
   }
@@ -63,7 +63,10 @@ export const populateAllCampImages = action({
   args: {
     limit: v.optional(v.number()), // Max camps to process (default 10)
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     success: boolean;
     campsProcessed: number;
     imagesStored: number;
@@ -75,10 +78,7 @@ export const populateAllCampImages = action({
     let imagesStored = 0;
 
     // Get camps that need image downloads using targeted query
-    const campsNeedingImages = await ctx.runQuery(
-      api.camps.queries.listCampsNeedingImageDownload,
-      { limit }
-    );
+    const campsNeedingImages = await ctx.runQuery(api.camps.queries.listCampsNeedingImageDownload, { limit });
 
     console.log(`[CampImages] Found ${campsNeedingImages.length} camps needing images`);
 
@@ -87,7 +87,7 @@ export const populateAllCampImages = action({
       console.log(`[CampImages] Processing: ${camp.name}`);
       campsProcessed++;
 
-      const storageIds: Id<"_storage">[] = [];
+      const storageIds: Id<'_storage'>[] = [];
 
       // Download and store each image (max 3 per camp)
       for (const url of (camp.imageUrls || []).slice(0, 3)) {
@@ -123,10 +123,13 @@ export const populateAllCampImages = action({
  */
 export const populateOrgCampImages = action({
   args: {
-    organizationId: v.id("organizations"),
+    organizationId: v.id('organizations'),
     limit: v.optional(v.number()),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     success: boolean;
     campsProcessed: number;
     imagesStored: number;
@@ -145,9 +148,7 @@ export const populateOrgCampImages = action({
     // Filter to camps with imageUrls but empty imageStorageIds
     const campsNeedingImages = camps.filter(
       (camp: any) =>
-        camp.imageUrls &&
-        camp.imageUrls.length > 0 &&
-        (!camp.imageStorageIds || camp.imageStorageIds.length === 0)
+        camp.imageUrls && camp.imageUrls.length > 0 && (!camp.imageStorageIds || camp.imageStorageIds.length === 0),
     );
 
     console.log(`[CampImages] Found ${campsNeedingImages.length} camps needing images`);
@@ -156,7 +157,7 @@ export const populateOrgCampImages = action({
       console.log(`[CampImages] Processing: ${camp.name}`);
       campsProcessed++;
 
-      const storageIds: Id<"_storage">[] = [];
+      const storageIds: Id<'_storage'>[] = [];
 
       for (const url of (camp.imageUrls || []).slice(0, 3)) {
         const result = await downloadAndStoreImage(ctx, url);

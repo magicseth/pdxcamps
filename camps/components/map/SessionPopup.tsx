@@ -41,18 +41,16 @@ export function SessionPopup({ session }: SessionPopupProps) {
 
   return (
     <div className="min-w-[200px] max-w-[280px]">
-      <h3 className="font-semibold text-slate-900 text-sm mb-1 line-clamp-2">
-        {session.camp.name}
-      </h3>
+      <h3 className="font-semibold text-slate-900 text-sm mb-1 line-clamp-2">{session.camp.name}</h3>
       <p className="text-xs text-slate-500 mb-2">{session.organization.name}</p>
 
       <div className="space-y-1 text-xs text-slate-600 mb-3">
-        <p>{formatDate(session.startDate)} - {formatDate(session.endDate)}</p>
+        <p>
+          {formatDate(session.startDate)} - {formatDate(session.endDate)}
+        </p>
         <p>{session.location.name}</p>
         <div className="flex items-center gap-2">
-          <span className="font-medium text-slate-900">
-            {formatPrice(session.price, session.currency)}
-          </span>
+          <span className="font-medium text-slate-900">{formatPrice(session.price, session.currency)}</span>
           {session.distanceFromHome !== undefined && (
             <span className="text-primary">{session.distanceFromHome} mi</span>
           )}
@@ -60,9 +58,7 @@ export function SessionPopup({ session }: SessionPopupProps) {
         {session.spotsLeft !== undefined && session.spotsLeft > 0 && (
           <p className="text-green-600">{session.spotsLeft} spots left</p>
         )}
-        {session.spotsLeft === 0 && (
-          <p className="text-red-600">Sold out</p>
-        )}
+        {session.spotsLeft === 0 && <p className="text-red-600">Sold out</p>}
       </div>
 
       <Link

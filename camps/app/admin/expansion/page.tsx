@@ -6,11 +6,7 @@ import { api } from '../../../convex/_generated/api';
 import Link from 'next/link';
 import { Authenticated, Unauthenticated } from 'convex/react';
 import { StatCard, AdminTabs } from '../../../components/admin';
-import {
-  MarketCard,
-  ExpansionWizard,
-  type MarketWithStatus,
-} from '../../../components/admin/expansion';
+import { MarketCard, ExpansionWizard, type MarketWithStatus } from '../../../components/admin/expansion';
 
 export default function ExpansionPage() {
   return (
@@ -20,7 +16,10 @@ export default function ExpansionPage() {
           <Link href="/admin" className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
             <ArrowLeftIcon />
           </Link>
-          <Link href="/" className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+          <Link
+            href="/"
+            className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
             PDX Camps
           </Link>
         </div>
@@ -32,13 +31,8 @@ export default function ExpansionPage() {
         </Authenticated>
         <Unauthenticated>
           <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-            <p className="text-slate-600 dark:text-slate-400">
-              Please sign in to access market expansion.
-            </p>
-            <a
-              href="/sign-in"
-              className="bg-foreground text-background px-6 py-2 rounded-md"
-            >
+            <p className="text-slate-600 dark:text-slate-400">Please sign in to access market expansion.</p>
+            <a href="/sign-in" className="bg-foreground text-background px-6 py-2 rounded-md">
               Sign in
             </a>
           </div>
@@ -56,13 +50,14 @@ function ExpansionContent() {
   const summary = useQuery(api.expansion.queries.getExpansionSummary);
   const markets = useQuery(
     api.expansion.queries.listExpansionMarkets,
-    selectedTier === 'all' ? {} : { tier: parseInt(selectedTier) }
+    selectedTier === 'all' ? {} : { tier: parseInt(selectedTier) },
   );
 
   // Derive selectedMarket from current markets data so it stays in sync
-  const selectedMarket = selectedMarketKey && markets
-    ? (markets.find(m => m.key === selectedMarketKey) as MarketWithStatus | undefined) ?? null
-    : null;
+  const selectedMarket =
+    selectedMarketKey && markets
+      ? ((markets.find((m) => m.key === selectedMarketKey) as MarketWithStatus | undefined) ?? null)
+      : null;
 
   // Mutations and actions for the wizard
   const initializeMarket = useMutation(api.expansion.mutations.initializeMarket);
@@ -105,12 +100,8 @@ function ExpansionContent() {
     <div className="max-w-6xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-          Market Expansion
-        </h2>
-        <span className="text-xs text-slate-500">
-          30 markets from research
-        </span>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Market Expansion</h2>
+        <span className="text-xs text-slate-500">30 markets from research</span>
       </div>
 
       {/* Summary Stats */}
@@ -122,32 +113,16 @@ function ExpansionContent() {
             subtext={`of ${summary.total} markets`}
             variant="success"
           />
-          <StatCard
-            label="In Progress"
-            value={summary.inProgress}
-            subtext="domain/dns/city"
-            variant="info"
-          />
-          <StatCard
-            label="Not Started"
-            value={summary.notStarted}
-            subtext="ready to launch"
-            variant="default"
-          />
-          <StatCard
-            label="Total Markets"
-            value={summary.total}
-            subtext="Tier 1/2/3 prioritized"
-          />
+          <StatCard label="In Progress" value={summary.inProgress} subtext="domain/dns/city" variant="info" />
+          <StatCard label="Not Started" value={summary.notStarted} subtext="ready to launch" variant="default" />
+          <StatCard label="Total Markets" value={summary.total} subtext="Tier 1/2/3 prioritized" />
         </div>
       )}
 
       {/* Tier Progress */}
       {summary && (
         <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4">
-          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
-            Progress by Tier
-          </h3>
+          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Progress by Tier</h3>
           <div className="grid grid-cols-3 gap-4">
             <TierProgress
               tier={1}
@@ -193,10 +168,7 @@ function ExpansionContent() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div
-              key={i}
-              className="h-40 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse"
-            />
+            <div key={i} className="h-40 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse" />
           ))}
         </div>
       )}
@@ -356,13 +328,8 @@ function AccessDenied() {
   return (
     <div className="max-w-2xl mx-auto text-center py-16">
       <h2 className="text-xl font-semibold mb-2 text-red-600">Access Denied</h2>
-      <p className="text-slate-600 dark:text-slate-400">
-        You don't have permission to access market expansion.
-      </p>
-      <Link
-        href="/"
-        className="inline-block mt-4 text-primary hover:underline"
-      >
+      <p className="text-slate-600 dark:text-slate-400">You don't have permission to access market expansion.</p>
+      <Link href="/" className="inline-block mt-4 text-primary hover:underline">
         Return to Home
       </Link>
     </div>

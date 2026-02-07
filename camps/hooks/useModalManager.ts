@@ -10,10 +10,7 @@ type ModalState<T> = {
 type ModalActions<TModals extends Record<string, unknown>> = {
   [K in keyof TModals]: ModalState<TModals[K]>;
 } & {
-  open: <K extends keyof TModals>(
-    name: K,
-    ...args: TModals[K] extends undefined ? [] : [data: TModals[K]]
-  ) => void;
+  open: <K extends keyof TModals>(name: K, ...args: TModals[K] extends undefined ? [] : [data: TModals[K]]) => void;
   close: (name: keyof TModals) => void;
   isOpen: (name: keyof TModals) => boolean;
   getData: <K extends keyof TModals>(name: K) => TModals[K] | null;
@@ -21,7 +18,7 @@ type ModalActions<TModals extends Record<string, unknown>> = {
 };
 
 export function useModalManager<TModals extends Record<string, unknown>>(
-  modalNames: (keyof TModals)[]
+  modalNames: (keyof TModals)[],
 ): ModalActions<TModals> {
   const initialState = {} as Record<keyof TModals, ModalState<unknown>>;
   for (const name of modalNames) {
@@ -30,16 +27,16 @@ export function useModalManager<TModals extends Record<string, unknown>>(
 
   const [state, setState] = useState(initialState);
 
-  const open = useCallback(<K extends keyof TModals>(
-    name: K,
-    ...args: TModals[K] extends undefined ? [] : [data: TModals[K]]
-  ) => {
-    const data = args[0] ?? null;
-    setState((prev) => ({
-      ...prev,
-      [name]: { isOpen: true, data },
-    }));
-  }, []);
+  const open = useCallback(
+    <K extends keyof TModals>(name: K, ...args: TModals[K] extends undefined ? [] : [data: TModals[K]]) => {
+      const data = args[0] ?? null;
+      setState((prev) => ({
+        ...prev,
+        [name]: { isOpen: true, data },
+      }));
+    },
+    [],
+  );
 
   const close = useCallback((name: keyof TModals) => {
     setState((prev) => ({
@@ -48,15 +45,11 @@ export function useModalManager<TModals extends Record<string, unknown>>(
     }));
   }, []);
 
-  const isOpen = useCallback(
-    (name: keyof TModals) => state[name]?.isOpen ?? false,
-    [state]
-  );
+  const isOpen = useCallback((name: keyof TModals) => state[name]?.isOpen ?? false, [state]);
 
   const getData = useCallback(
-    <K extends keyof TModals>(name: K): TModals[K] | null =>
-      (state[name]?.data as TModals[K]) ?? null,
-    [state]
+    <K extends keyof TModals>(name: K): TModals[K] | null => (state[name]?.data as TModals[K]) ?? null,
+    [state],
   );
 
   const closeAll = useCallback(() => {

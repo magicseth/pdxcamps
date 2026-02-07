@@ -1,13 +1,21 @@
-"use node";
+'use node';
 
-import { internalAction } from "../_generated/server";
-import { internal } from "../_generated/api";
-import { v } from "convex/values";
-import Anthropic from "@anthropic-ai/sdk";
+import { internalAction } from '../_generated/server';
+import { internal } from '../_generated/api';
+import { v } from 'convex/values';
+import Anthropic from '@anthropic-ai/sdk';
 
 const VALID_CATEGORIES = [
-  "Sports", "Arts", "STEM", "Nature", "Music",
-  "Academic", "Drama", "Adventure", "Cooking", "Dance",
+  'Sports',
+  'Arts',
+  'STEM',
+  'Nature',
+  'Music',
+  'Academic',
+  'Drama',
+  'Adventure',
+  'Cooking',
+  'Dance',
 ];
 
 /**
@@ -16,7 +24,7 @@ const VALID_CATEGORIES = [
  */
 export const categorizeCampsWithAI = internalAction({
   args: {
-    cityId: v.optional(v.id("cities")),
+    cityId: v.optional(v.id('cities')),
     batchSize: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
@@ -26,12 +34,19 @@ export const categorizeCampsWithAI = internalAction({
       apiKey: process.env.MODEL_API_KEY,
     });
 
-    const result = await ctx.runMutation(
-      internal.cleanup.sessions.getUncategorizedCamps,
-      { cityId: args.cityId, limit: batchSize, offset: 0 }
-    );
+    const result = await ctx.runMutation(internal.cleanup.sessions.getUncategorizedCamps, {
+      cityId: args.cityId,
+      limit: batchSize,
+      offset: 0,
+    });
     const total: number = result.total;
-    const batch: Array<{ campId: string; name: string; orgName: string; description: string; currentCategories: string[] }> = result.batch;
+    const batch: Array<{
+      campId: string;
+      name: string;
+      orgName: string;
+      description: string;
+      currentCategories: string[];
+    }> = result.batch;
 
     if (batch.length === 0) {
       console.log(`[Categorize] All done — no more uncategorized camps.`);
@@ -44,18 +59,18 @@ export const categorizeCampsWithAI = internalAction({
     const campList = batch
       .map(
         (c: { campId: string; name: string; orgName: string; description: string }, i: number) =>
-          `${i + 1}. Name: "${c.name}"\n   Org: "${c.orgName}"\n   Description: "${c.description}"`
+          `${i + 1}. Name: "${c.name}"\n   Org: "${c.orgName}"\n   Description: "${c.description}"`,
       )
-      .join("\n\n");
+      .join('\n\n');
 
     const response = await client.messages.create({
-      model: "claude-sonnet-4-5-20250929",
+      model: 'claude-sonnet-4-5-20250929',
       max_tokens: 4096,
       messages: [
         {
-          role: "user",
+          role: 'user',
           content: `Categorize each summer camp below into one or more of these categories:
-${VALID_CATEGORIES.join(", ")}
+${VALID_CATEGORIES.join(', ')}
 
 Rules:
 - Each camp MUST have 1-3 categories (pick the most relevant)
@@ -84,25 +99,24 @@ ${campList}`,
     });
 
     // Parse response
-    const text =
-      response.content[0].type === "text" ? response.content[0].text : "";
+    const text = response.content[0].type === 'text' ? response.content[0].text : '';
     let classifications: Array<{ i: number; cats: string[] }>;
 
     try {
       const jsonMatch = text.match(/\[[\s\S]*\]/);
-      if (!jsonMatch) throw new Error("No JSON array found");
+      if (!jsonMatch) throw new Error('No JSON array found');
       classifications = JSON.parse(jsonMatch[0]);
     } catch (e) {
       console.error(`[Categorize] Failed to parse AI response, skipping batch: ${text.slice(0, 300)}`);
       // Schedule next batch anyway
       if (total > batchSize) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await ctx.scheduler.runAfter(1000, internal.cleanup.categorize.categorizeCampsWithAI as any, {
+        await ctx.scheduler.runAfter(1000, internal.cleanup.categorize.categorizeCampsWithAI as any, {
           cityId: args.cityId,
           batchSize: args.batchSize,
         });
       }
-      return { totalRemaining: total, batchProcessed: batch.length, batchUpdated: 0, error: "parse_failed" };
+      return { totalRemaining: total, batchProcessed: batch.length, batchUpdated: 0, error: 'parse_failed' };
     }
 
     // Build updates, validating categories
@@ -112,12 +126,10 @@ ${campList}`,
       const camp = batch[cls.i - 1];
       if (!camp) continue;
 
-      const validCats = cls.cats.filter((c: string) =>
-        VALID_CATEGORIES.includes(c)
-      );
+      const validCats = cls.cats.filter((c: string) => VALID_CATEGORIES.includes(c));
       if (validCats.length === 0) {
         // AI couldn't classify — default to broad multi-activity categories
-        validCats.push("Sports", "Arts", "Nature");
+        validCats.push('Sports', 'Arts', 'Nature');
         defaultedCount++;
       }
 
@@ -133,14 +145,9 @@ ${campList}`,
     // Apply updates
     let batchUpdated = 0;
     if (updates.length > 0) {
-      const result = await ctx.runMutation(
-        internal.cleanup.sessions.applyCampCategories,
-        { updates: updates as any }
-      );
+      const result = await ctx.runMutation(internal.cleanup.sessions.applyCampCategories, { updates: updates as any });
       batchUpdated = result.updatedCamps;
-      console.log(
-        `[Categorize] Batch done: ${result.updatedCamps} camps, ${result.updatedSessions} sessions updated`
-      );
+      console.log(`[Categorize] Batch done: ${result.updatedCamps} camps, ${result.updatedSessions} sessions updated`);
     }
 
     // Schedule next batch if more remain AND we made progress

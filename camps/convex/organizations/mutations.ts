@@ -1,6 +1,6 @@
-import { mutation, internalMutation } from "../_generated/server";
-import { v } from "convex/values";
-import { slugify } from "../lib/helpers";
+import { mutation, internalMutation } from '../_generated/server';
+import { v } from 'convex/values';
+import { slugify } from '../lib/helpers';
 
 /**
  * Create a new organization (admin only)
@@ -12,7 +12,7 @@ export const createOrganization = mutation({
     email: v.optional(v.string()),
     phone: v.optional(v.string()),
     description: v.optional(v.string()),
-    cityIds: v.array(v.id("cities")),
+    cityIds: v.array(v.id('cities')),
   },
   handler: async (ctx, args) => {
     // Generate slug from name
@@ -23,8 +23,8 @@ export const createOrganization = mutation({
     let counter = 1;
     while (true) {
       const existing = await ctx.db
-        .query("organizations")
-        .withIndex("by_slug", (q) => q.eq("slug", slug))
+        .query('organizations')
+        .withIndex('by_slug', (q) => q.eq('slug', slug))
         .unique();
 
       if (!existing) {
@@ -35,7 +35,7 @@ export const createOrganization = mutation({
       slug = `${baseSlug}-${counter}`;
     }
 
-    const organizationId = await ctx.db.insert("organizations", {
+    const organizationId = await ctx.db.insert('organizations', {
       name: args.name,
       slug,
       website: args.website,
@@ -57,13 +57,13 @@ export const createOrganization = mutation({
  */
 export const updateOrganization = mutation({
   args: {
-    organizationId: v.id("organizations"),
+    organizationId: v.id('organizations'),
     name: v.optional(v.string()),
     website: v.optional(v.string()),
     email: v.optional(v.string()),
     phone: v.optional(v.string()),
     description: v.optional(v.string()),
-    cityIds: v.optional(v.array(v.id("cities"))),
+    cityIds: v.optional(v.array(v.id('cities'))),
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -71,7 +71,7 @@ export const updateOrganization = mutation({
 
     const organization = await ctx.db.get(organizationId);
     if (!organization) {
-      throw new Error("Organization not found");
+      throw new Error('Organization not found');
     }
 
     // Build update object with only defined fields
@@ -85,8 +85,8 @@ export const updateOrganization = mutation({
       let counter = 1;
       while (true) {
         const existing = await ctx.db
-          .query("organizations")
-          .withIndex("by_slug", (q) => q.eq("slug", slug))
+          .query('organizations')
+          .withIndex('by_slug', (q) => q.eq('slug', slug))
           .unique();
 
         if (!existing || existing._id === organizationId) {
@@ -129,8 +129,8 @@ export const updateOrganization = mutation({
  */
 export const updateOrgLogo = internalMutation({
   args: {
-    orgId: v.id("organizations"),
-    logoStorageId: v.id("_storage"),
+    orgId: v.id('organizations'),
+    logoStorageId: v.id('_storage'),
   },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.orgId, {
@@ -144,9 +144,9 @@ export const updateOrgLogo = internalMutation({
  */
 export const updateOrgWebsiteAndLogo = internalMutation({
   args: {
-    orgId: v.id("organizations"),
+    orgId: v.id('organizations'),
     website: v.string(),
-    logoStorageId: v.id("_storage"),
+    logoStorageId: v.id('_storage'),
   },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.orgId, {
@@ -161,7 +161,7 @@ export const updateOrgWebsiteAndLogo = internalMutation({
  */
 export const clearOrgLogo = internalMutation({
   args: {
-    orgId: v.id("organizations"),
+    orgId: v.id('organizations'),
   },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.orgId, {
@@ -176,7 +176,7 @@ export const clearOrgLogo = internalMutation({
 export const clearAllOrgLogos = internalMutation({
   args: {},
   handler: async (ctx) => {
-    const orgs = await ctx.db.query("organizations").collect();
+    const orgs = await ctx.db.query('organizations').collect();
     let cleared = 0;
     for (const org of orgs) {
       if (org.logoStorageId) {
@@ -193,7 +193,7 @@ export const clearAllOrgLogos = internalMutation({
  */
 export const fixOrgWebsite = internalMutation({
   args: {
-    orgId: v.id("organizations"),
+    orgId: v.id('organizations'),
     website: v.string(),
   },
   handler: async (ctx, args) => {
@@ -208,7 +208,7 @@ export const fixOrgWebsite = internalMutation({
  */
 export const updateOrgWebsite = internalMutation({
   args: {
-    orgId: v.id("organizations"),
+    orgId: v.id('organizations'),
     website: v.string(),
   },
   handler: async (ctx, args) => {

@@ -10,9 +10,7 @@ type TestModals = {
 
 describe('useModalManager', () => {
   it('initializes all modals as closed', () => {
-    const { result } = renderHook(() =>
-      useModalManager<TestModals>(['confirm', 'edit', 'simple'])
-    );
+    const { result } = renderHook(() => useModalManager<TestModals>(['confirm', 'edit', 'simple']));
 
     expect(result.current.isOpen('confirm')).toBe(false);
     expect(result.current.isOpen('edit')).toBe(false);
@@ -20,9 +18,7 @@ describe('useModalManager', () => {
   });
 
   it('opens a modal with data', () => {
-    const { result } = renderHook(() =>
-      useModalManager<TestModals>(['confirm', 'edit', 'simple'])
-    );
+    const { result } = renderHook(() => useModalManager<TestModals>(['confirm', 'edit', 'simple']));
 
     act(() => {
       result.current.open('confirm', { message: 'Are you sure?' });
@@ -33,9 +29,7 @@ describe('useModalManager', () => {
   });
 
   it('closes a modal', () => {
-    const { result } = renderHook(() =>
-      useModalManager<TestModals>(['confirm', 'edit', 'simple'])
-    );
+    const { result } = renderHook(() => useModalManager<TestModals>(['confirm', 'edit', 'simple']));
 
     act(() => {
       result.current.open('confirm', { message: 'test' });
@@ -50,9 +44,7 @@ describe('useModalManager', () => {
   });
 
   it('closeAll closes all open modals', () => {
-    const { result } = renderHook(() =>
-      useModalManager<TestModals>(['confirm', 'edit', 'simple'])
-    );
+    const { result } = renderHook(() => useModalManager<TestModals>(['confirm', 'edit', 'simple']));
 
     act(() => {
       result.current.open('confirm', { message: 'test' });
@@ -68,9 +60,7 @@ describe('useModalManager', () => {
   });
 
   it('getData returns null for a closed modal', () => {
-    const { result } = renderHook(() =>
-      useModalManager<TestModals>(['confirm', 'edit', 'simple'])
-    );
+    const { result } = renderHook(() => useModalManager<TestModals>(['confirm', 'edit', 'simple']));
 
     expect(result.current.getData('confirm')).toBeNull();
   });

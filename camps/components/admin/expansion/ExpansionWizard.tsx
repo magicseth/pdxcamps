@@ -12,7 +12,9 @@ interface ExpansionWizardProps {
   onStartDomainCheck: (domains: string[]) => Promise<string>; // Returns workflow ID
   onSelectDomain: (domain: string) => Promise<void>;
   onPurchaseDomain: (domain: string, price?: string) => Promise<{ success: boolean; orderId?: string; error?: string }>;
-  onSetupDns: (domain: string) => Promise<{ success: boolean; zoneId?: string; nameservers?: string[]; error?: string }>;
+  onSetupDns: (
+    domain: string,
+  ) => Promise<{ success: boolean; zoneId?: string; nameservers?: string[]; error?: string }>;
   onCreateCity: (cityData: {
     name: string;
     slug: string;
@@ -61,7 +63,9 @@ export function ExpansionWizard({
 
   // City form state
   const [cityName, setCityName] = useState(market.name);
-  const [citySlug, setCitySlug] = useState(market.key.split('-').slice(0, -1).join('-') || market.name.toLowerCase().replace(/\s+/g, '-'));
+  const [citySlug, setCitySlug] = useState(
+    market.key.split('-').slice(0, -1).join('-') || market.name.toLowerCase().replace(/\s+/g, '-'),
+  );
   const [brandName, setBrandName] = useState(market.suggestedBrandName);
   const [fromEmail, setFromEmail] = useState('');
 
@@ -247,10 +251,7 @@ export function ExpansionWizard({
               Tier {market.tier} · {STATUS_LABELS[market.status]}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-          >
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
             <XIcon />
           </button>
         </div>
@@ -306,12 +307,8 @@ export function ExpansionWizard({
               {market.status === 'launched' ? (
                 <>
                   <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-center">
-                    <p className="text-green-700 dark:text-green-300 font-medium">
-                      This market is live!
-                    </p>
-                    <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-                      Domain: {market.selectedDomain}
-                    </p>
+                    <p className="text-green-700 dark:text-green-300 font-medium">This market is live!</p>
+                    <p className="text-sm text-green-600 dark:text-green-400 mt-1">Domain: {market.selectedDomain}</p>
                   </div>
 
                   {/* Icon Generation for launched markets */}
@@ -413,9 +410,7 @@ export function ExpansionWizard({
           {/* Domain Step */}
           {step === 'domain' && (
             <div className="space-y-4">
-              <h3 className="font-medium text-slate-900 dark:text-white">
-                Step 1: Manage Domains
-              </h3>
+              <h3 className="font-medium text-slate-900 dark:text-white">Step 1: Manage Domains</h3>
 
               {/* Registered Domains List */}
               {market.domains && market.domains.length > 0 && (
@@ -428,17 +423,13 @@ export function ExpansionWizard({
                       <div
                         key={d.domain}
                         className={`flex items-center justify-between p-3 rounded-md border ${
-                          d.isPrimary
-                            ? 'border-primary bg-primary/5'
-                            : 'border-slate-200 dark:border-slate-700'
+                          d.isPrimary ? 'border-primary bg-primary/5' : 'border-slate-200 dark:border-slate-700'
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           <span className="font-mono text-sm">{d.domain}</span>
                           {d.isPrimary && (
-                            <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">
-                              Primary
-                            </span>
+                            <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">Primary</span>
                           )}
                           {d.dnsConfigured && (
                             <span className="text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 px-2 py-0.5 rounded">
@@ -530,9 +521,7 @@ export function ExpansionWizard({
           {/* DNS Step */}
           {step === 'dns' && (
             <div className="space-y-4">
-              <h3 className="font-medium text-slate-900 dark:text-white">
-                Step 2: Configure DNS
-              </h3>
+              <h3 className="font-medium text-slate-900 dark:text-white">Step 2: Configure DNS</h3>
               <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4">
                 <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
                   This will create a Netlify DNS zone for{' '}
@@ -568,14 +557,10 @@ export function ExpansionWizard({
           {/* City Step */}
           {step === 'city' && (
             <div className="space-y-4">
-              <h3 className="font-medium text-slate-900 dark:text-white">
-                Step 3: Create City Record
-              </h3>
+              <h3 className="font-medium text-slate-900 dark:text-white">Step 3: Create City Record</h3>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    City Name
-                  </label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">City Name</label>
                   <input
                     type="text"
                     value={cityName}
@@ -618,9 +603,7 @@ export function ExpansionWizard({
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                      State
-                    </label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">State</label>
                     <input
                       type="text"
                       value={market.state}
@@ -662,9 +645,7 @@ export function ExpansionWizard({
           {/* Launch Step */}
           {step === 'launch' && (
             <div className="space-y-4">
-              <h3 className="font-medium text-slate-900 dark:text-white">
-                Step 4: Launch Market
-              </h3>
+              <h3 className="font-medium text-slate-900 dark:text-white">Step 4: Launch Market</h3>
               <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
                 <h4 className="font-medium text-green-800 dark:text-green-200 mb-2">Ready to Launch!</h4>
                 <ul className="text-sm text-green-700 dark:text-green-300 space-y-1">
@@ -726,9 +707,7 @@ export function ExpansionWizard({
                         {loading ? 'Generating...' : 'Regenerate icons'}
                       </button>
                       {market.selectedIconStorageId && (
-                        <p className="text-xs text-green-600 dark:text-green-400 mt-2">
-                          ✓ Icon saved to city record
-                        </p>
+                        <p className="text-xs text-green-600 dark:text-green-400 mt-2">✓ Icon saved to city record</p>
                       )}
                     </div>
                   ) : (

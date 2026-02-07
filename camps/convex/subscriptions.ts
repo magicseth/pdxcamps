@@ -15,35 +15,35 @@
  * - Calendar export
  */
 
-import { query, action, mutation } from "./_generated/server";
-import { components } from "./_generated/api";
-import { StripeSubscriptions } from "@convex-dev/stripe";
-import { v } from "convex/values";
-import Stripe from "stripe";
-import { FREE_SAVED_CAMPS_LIMIT } from "./lib/paywall";
+import { query, action, mutation } from './_generated/server';
+import { components } from './_generated/api';
+import { StripeSubscriptions } from '@convex-dev/stripe';
+import { v } from 'convex/values';
+import Stripe from 'stripe';
+import { FREE_SAVED_CAMPS_LIMIT } from './lib/paywall';
 
 // Initialize Stripe client
 const stripeClient = new StripeSubscriptions(components.stripe, {});
 
 // Price IDs from Stripe Dashboard (test vs live)
 const LIVE_PRICES = {
-  monthly: "price_1SwdYiAOaA3WFe0KMiXaSSr6", // $5/month (legacy)
-  summer: "price_1SwdZOAOaA3WFe0Kv1cQZC3O", // $29 one-time Summer Pass (legacy)
+  monthly: 'price_1SwdYiAOaA3WFe0KMiXaSSr6', // $5/month (legacy)
+  summer: 'price_1SwdZOAOaA3WFe0Kv1cQZC3O', // $29 one-time Summer Pass (legacy)
   // A/B Test prices (simplified pricing)
-  weekly: "price_1SxLcZAOaA3WFe0KSFecrZrG", // $4.99/week
-  monthlyOneshot: "price_1SxLdIAOaA3WFe0K3UYbemGZ", // $39.99 one-time
+  weekly: 'price_1SxLcZAOaA3WFe0KSFecrZrG', // $4.99/week
+  monthlyOneshot: 'price_1SxLdIAOaA3WFe0K3UYbemGZ', // $39.99 one-time
 };
 
 const TEST_PRICES = {
-  monthly: "price_1SweagA8NcUZvwFV3wqpcPLf", // $5/month test
-  summer: "price_1SweatA8NcUZvwFVu7yBk3cu", // $29 Summer Pass test
+  monthly: 'price_1SweagA8NcUZvwFV3wqpcPLf', // $5/month test
+  summer: 'price_1SweatA8NcUZvwFVu7yBk3cu', // $29 Summer Pass test
   // A/B Test prices - use live prices for now (update with test prices if needed)
-  weekly: "price_1SxLcZAOaA3WFe0KSFecrZrG", // $4.99/week
-  monthlyOneshot: "price_1SxLdIAOaA3WFe0K3UYbemGZ", // $39.99 one-time
+  weekly: 'price_1SxLcZAOaA3WFe0KSFecrZrG', // $4.99/week
+  monthlyOneshot: 'price_1SxLdIAOaA3WFe0K3UYbemGZ', // $39.99 one-time
 };
 
 // Select prices based on Stripe key
-const isTestMode = () => process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_");
+const isTestMode = () => process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_');
 const PRICES = isTestMode() ? TEST_PRICES : LIVE_PRICES;
 
 // Free tier limits (maxSavedCamps sourced from convex/lib/paywall.ts)
@@ -62,15 +62,12 @@ export const isPremium = query({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) return false;
 
-    const subscriptions = await ctx.runQuery(
-      components.stripe.public.listSubscriptionsByUserId,
-      { userId: identity.subject }
-    );
+    const subscriptions = await ctx.runQuery(components.stripe.public.listSubscriptionsByUserId, {
+      userId: identity.subject,
+    });
 
     // Check for any active subscription
-    const hasActive = subscriptions.some(
-      (sub) => sub.status === "active" || sub.status === "trialing"
-    );
+    const hasActive = subscriptions.some((sub) => sub.status === 'active' || sub.status === 'trialing');
 
     return hasActive;
   },
@@ -91,14 +88,11 @@ export const getSubscription = query({
       };
     }
 
-    const subscriptions = await ctx.runQuery(
-      components.stripe.public.listSubscriptionsByUserId,
-      { userId: identity.subject }
-    );
+    const subscriptions = await ctx.runQuery(components.stripe.public.listSubscriptionsByUserId, {
+      userId: identity.subject,
+    });
 
-    const activeSubscription = subscriptions.find(
-      (sub) => sub.status === "active" || sub.status === "trialing"
-    );
+    const activeSubscription = subscriptions.find((sub) => sub.status === 'active' || sub.status === 'trialing');
 
     // Check if subscription is set to cancel at period end
     const cancelAtPeriodEnd = activeSubscription?.cancelAtPeriodEnd ?? false;
@@ -107,9 +101,7 @@ export const getSubscription = query({
       isPremium: !!activeSubscription,
       cancelAtPeriodEnd,
       subscription: activeSubscription || null,
-      limits: activeSubscription
-        ? { maxChildren: Infinity, maxWeeks: 12, maxSavedCamps: Infinity }
-        : FREE_LIMITS,
+      limits: activeSubscription ? { maxChildren: Infinity, maxWeeks: 12, maxSavedCamps: Infinity } : FREE_LIMITS,
     };
   },
 });
@@ -126,17 +118,12 @@ export const getSubscription = query({
  */
 export const createCheckoutSession = action({
   args: {
-    plan: v.union(
-      v.literal("monthly"),
-      v.literal("summer"),
-      v.literal("weekly"),
-      v.literal("monthlyOneshot")
-    ),
+    plan: v.union(v.literal('monthly'), v.literal('summer'), v.literal('weekly'), v.literal('monthlyOneshot')),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new Error('Not authenticated');
     }
 
     // Get or create Stripe customer using the component
@@ -156,10 +143,10 @@ export const createCheckoutSession = action({
     const priceId = priceMap[args.plan];
 
     // One-time payments use payment mode, recurring use subscription mode
-    const oneshotPlans = ["summer", "monthlyOneshot"];
-    const mode = oneshotPlans.includes(args.plan) ? "payment" : "subscription";
+    const oneshotPlans = ['summer', 'monthlyOneshot'];
+    const mode = oneshotPlans.includes(args.plan) ? 'payment' : 'subscription';
 
-    const baseUrl = process.env.SITE_URL || "http://localhost:3000";
+    const baseUrl = process.env.SITE_URL || 'http://localhost:3000';
 
     // Use Stripe SDK directly to enable promotion codes
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -175,18 +162,24 @@ export const createCheckoutSession = action({
         userId: identity.subject,
         plan: args.plan,
       },
-      subscription_data: mode === "subscription" ? {
-        metadata: {
-          userId: identity.subject,
-          plan: args.plan,
-        },
-      } : undefined,
-      payment_intent_data: mode === "payment" ? {
-        metadata: {
-          userId: identity.subject,
-          plan: args.plan,
-        },
-      } : undefined,
+      subscription_data:
+        mode === 'subscription'
+          ? {
+              metadata: {
+                userId: identity.subject,
+                plan: args.plan,
+              },
+            }
+          : undefined,
+      payment_intent_data:
+        mode === 'payment'
+          ? {
+              metadata: {
+                userId: identity.subject,
+                plan: args.plan,
+              },
+            }
+          : undefined,
     });
 
     return {
@@ -204,7 +197,7 @@ export const createPortalSession = action({
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new Error('Not authenticated');
     }
 
     // Get customer ID first
@@ -214,7 +207,7 @@ export const createPortalSession = action({
       name: identity.name || undefined,
     });
 
-    const baseUrl = process.env.SITE_URL || "http://localhost:3000";
+    const baseUrl = process.env.SITE_URL || 'http://localhost:3000';
 
     const session = await stripeClient.createCustomerPortalSession(ctx, {
       customerId: customer.customerId,
@@ -237,7 +230,7 @@ export const cancelSubscription = action({
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new Error('Not authenticated');
     }
 
     await stripeClient.cancelSubscription(ctx, {
@@ -259,7 +252,7 @@ export const resubscribe = action({
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new Error('Not authenticated');
     }
 
     // Use Stripe SDK directly to update the subscription

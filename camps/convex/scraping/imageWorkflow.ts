@@ -5,9 +5,9 @@
  * The actual FAL API calls are in generateImages.ts (node runtime).
  */
 
-import { WorkflowManager, vWorkflowId } from "@convex-dev/workflow";
-import { components, internal } from "../_generated/api";
-import { v } from "convex/values";
+import { WorkflowManager, vWorkflowId } from '@convex-dev/workflow';
+import { components, internal } from '../_generated/api';
+import { v } from 'convex/values';
 
 // Create workflow manager with concurrency limiting
 // maxParallelism controls how many workflow steps run concurrently
@@ -22,22 +22,29 @@ export const workflow = new WorkflowManager(components.workflow, {
  */
 export const generateImagesWorkflow = workflow.define({
   args: {
-    campData: v.array(v.object({
-      campId: v.id("camps"),
-      campName: v.string(),
-      prompt: v.string(),
-    })),
+    campData: v.array(
+      v.object({
+        campId: v.id('camps'),
+        campName: v.string(),
+        prompt: v.string(),
+      }),
+    ),
   },
   returns: v.object({
     completed: v.number(),
     failed: v.number(),
-    results: v.array(v.object({
-      campName: v.string(),
-      success: v.boolean(),
-      error: v.optional(v.string()),
-    })),
+    results: v.array(
+      v.object({
+        campName: v.string(),
+        success: v.boolean(),
+        error: v.optional(v.string()),
+      }),
+    ),
   }),
-  handler: async (step, args): Promise<{
+  handler: async (
+    step,
+    args,
+  ): Promise<{
     completed: number;
     failed: number;
     results: Array<{ campName: string; success: boolean; error?: string }>;
@@ -56,7 +63,7 @@ export const generateImagesWorkflow = workflow.define({
           campName: campInfo.campName,
           prompt: campInfo.prompt,
         },
-        { retry: true }
+        { retry: true },
       );
 
       if (result.success) {

@@ -3,8 +3,8 @@
  * Internal mutations and queries for contact extraction (non-Node.js)
  */
 
-import { internalMutation, internalQuery, query, mutation } from "../_generated/server";
-import { v } from "convex/values";
+import { internalMutation, internalQuery, query, mutation } from '../_generated/server';
+import { v } from 'convex/values';
 
 /**
  * Internal mutation to update organization contact info
@@ -12,7 +12,7 @@ import { v } from "convex/values";
  */
 export const updateOrgContactInfo = internalMutation({
   args: {
-    organizationId: v.id("organizations"),
+    organizationId: v.id('organizations'),
     email: v.optional(v.string()),
     phone: v.optional(v.string()),
   },
@@ -38,7 +38,7 @@ export const updateOrgContactInfo = internalMutation({
  */
 export const saveOrgContactInfo = mutation({
   args: {
-    organizationId: v.id("organizations"),
+    organizationId: v.id('organizations'),
     email: v.optional(v.string()),
     phone: v.optional(v.string()),
   },
@@ -63,7 +63,7 @@ export const saveOrgContactInfo = mutation({
  */
 export const getOrganization = internalQuery({
   args: {
-    organizationId: v.id("organizations"),
+    organizationId: v.id('organizations'),
   },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.organizationId);
@@ -80,8 +80,8 @@ export const getOrgsNeedingContactInfo = query({
   },
   handler: async (ctx, args) => {
     const allOrgs = await ctx.db
-      .query("organizations")
-      .withIndex("by_is_active", (q) => q.eq("isActive", true))
+      .query('organizations')
+      .withIndex('by_is_active', (q) => q.eq('isActive', true))
       .collect();
 
     const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
@@ -91,7 +91,7 @@ export const getOrgsNeedingContactInfo = query({
       (org) =>
         org.website &&
         !org.email &&
-        (!org.contactExtractionAttemptedAt || org.contactExtractionAttemptedAt < sevenDaysAgo)
+        (!org.contactExtractionAttemptedAt || org.contactExtractionAttemptedAt < sevenDaysAgo),
     );
 
     return needsContact.slice(0, args.limit ?? 10);
@@ -105,8 +105,8 @@ export const getContactExtractionStats = query({
   args: {},
   handler: async (ctx) => {
     const allOrgs = await ctx.db
-      .query("organizations")
-      .withIndex("by_is_active", (q) => q.eq("isActive", true))
+      .query('organizations')
+      .withIndex('by_is_active', (q) => q.eq('isActive', true))
       .collect();
 
     const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
@@ -118,7 +118,7 @@ export const getContactExtractionStats = query({
       (org) =>
         org.website &&
         !org.email &&
-        (!org.contactExtractionAttemptedAt || org.contactExtractionAttemptedAt < sevenDaysAgo)
+        (!org.contactExtractionAttemptedAt || org.contactExtractionAttemptedAt < sevenDaysAgo),
     );
 
     return {

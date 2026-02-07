@@ -16,9 +16,7 @@ export function UpgradeModal({ isOpen, onClose, savedCount = 4 }: UpgradeModalPr
   if (!isOpen) return null;
 
   // Format price display for button
-  const priceDisplay = pricing
-    ? `${pricing.price}${pricing.period}`
-    : '$4.99/week';
+  const priceDisplay = pricing ? `${pricing.price}${pricing.period}` : '$4.99/week';
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -26,12 +24,8 @@ export function UpgradeModal({ isOpen, onClose, savedCount = 4 }: UpgradeModalPr
         {/* Header */}
         <div className="bg-gradient-to-r from-primary to-indigo-600 p-6 text-white text-center">
           <div className="text-4xl mb-2">🎉</div>
-          <h2 className="text-xl font-bold">
-            You've saved {savedCount} camps!
-          </h2>
-          <p className="text-white/80 text-sm mt-1">
-            Nice planning! You're on a roll.
-          </p>
+          <h2 className="text-xl font-bold">You've saved {savedCount} camps!</h2>
+          <p className="text-white/80 text-sm mt-1">Nice planning! You're on a roll.</p>
         </div>
 
         {/* Body */}
@@ -58,9 +52,7 @@ export function UpgradeModal({ isOpen, onClose, savedCount = 4 }: UpgradeModalPr
 
           {/* Features list */}
           <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
-            <p className="text-xs text-slate-500 dark:text-slate-400 text-center mb-3">
-              Premium includes:
-            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 text-center mb-3">Premium includes:</p>
             <div className="flex flex-wrap justify-center gap-2 text-xs">
               <span className="px-2 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded">
                 Unlimited camps

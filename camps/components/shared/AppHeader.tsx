@@ -108,7 +108,10 @@ export function AppHeader({ user, onSignOut, isPremium, yearSelector, onShare }:
             </Link>
           )}
           {isAdmin && (
-            <Link href="/admin" className="text-sm text-orange-600 hover:underline font-medium rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">
+            <Link
+              href="/admin"
+              className="text-sm text-orange-600 hover:underline font-medium rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+            >
               Admin
             </Link>
           )}

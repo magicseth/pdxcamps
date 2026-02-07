@@ -1,6 +1,6 @@
-import { mutation } from "../_generated/server";
-import { v } from "convex/values";
-import { requireFamily } from "../lib/auth";
+import { mutation } from '../_generated/server';
+import { v } from 'convex/values';
+import { requireFamily } from '../lib/auth';
 
 /**
  * Add a new child to the current family.
@@ -23,32 +23,32 @@ export const addChild = mutation({
     // Validate birthdate format
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(args.birthdate)) {
-      throw new Error("Birthdate must be in YYYY-MM-DD format");
+      throw new Error('Birthdate must be in YYYY-MM-DD format');
     }
 
     // Validate the date is valid and not in the future
     const birthDate = new Date(args.birthdate);
     if (isNaN(birthDate.getTime())) {
-      throw new Error("Invalid birthdate");
+      throw new Error('Invalid birthdate');
     }
     if (birthDate > new Date()) {
-      throw new Error("Birthdate cannot be in the future");
+      throw new Error('Birthdate cannot be in the future');
     }
 
     // Validate summer dates if provided
     if (args.summerStartDate && !dateRegex.test(args.summerStartDate)) {
-      throw new Error("Summer start date must be in YYYY-MM-DD format");
+      throw new Error('Summer start date must be in YYYY-MM-DD format');
     }
     if (args.summerEndDate && !dateRegex.test(args.summerEndDate)) {
-      throw new Error("Summer end date must be in YYYY-MM-DD format");
+      throw new Error('Summer end date must be in YYYY-MM-DD format');
     }
     if (args.summerStartDate && args.summerEndDate) {
       if (new Date(args.summerStartDate) > new Date(args.summerEndDate)) {
-        throw new Error("Summer start date must be before end date");
+        throw new Error('Summer start date must be before end date');
       }
     }
 
-    const childId = await ctx.db.insert("children", {
+    const childId = await ctx.db.insert('children', {
       familyId: family._id,
       firstName: args.firstName,
       lastName: args.lastName,
@@ -72,7 +72,7 @@ export const addChild = mutation({
  */
 export const updateChild = mutation({
   args: {
-    childId: v.id("children"),
+    childId: v.id('children'),
     firstName: v.optional(v.string()),
     lastName: v.optional(v.string()),
     birthdate: v.optional(v.string()),
@@ -89,12 +89,12 @@ export const updateChild = mutation({
 
     const child = await ctx.db.get(args.childId);
     if (!child) {
-      throw new Error("Child not found");
+      throw new Error('Child not found');
     }
 
     // Verify the child belongs to the current family
     if (child.familyId !== family._id) {
-      throw new Error("Child does not belong to this family");
+      throw new Error('Child does not belong to this family');
     }
 
     // Build update object with only provided fields
@@ -112,15 +112,15 @@ export const updateChild = mutation({
     if (args.birthdate !== undefined) {
       // Validate birthdate format
       if (!dateRegex.test(args.birthdate)) {
-        throw new Error("Birthdate must be in YYYY-MM-DD format");
+        throw new Error('Birthdate must be in YYYY-MM-DD format');
       }
 
       const birthDate = new Date(args.birthdate);
       if (isNaN(birthDate.getTime())) {
-        throw new Error("Invalid birthdate");
+        throw new Error('Invalid birthdate');
       }
       if (birthDate > new Date()) {
-        throw new Error("Birthdate cannot be in the future");
+        throw new Error('Birthdate cannot be in the future');
       }
 
       updates.birthdate = args.birthdate;
@@ -148,14 +148,14 @@ export const updateChild = mutation({
 
     if (args.summerStartDate !== undefined) {
       if (args.summerStartDate && !dateRegex.test(args.summerStartDate)) {
-        throw new Error("Summer start date must be in YYYY-MM-DD format");
+        throw new Error('Summer start date must be in YYYY-MM-DD format');
       }
       updates.summerStartDate = args.summerStartDate || undefined;
     }
 
     if (args.summerEndDate !== undefined) {
       if (args.summerEndDate && !dateRegex.test(args.summerEndDate)) {
-        throw new Error("Summer end date must be in YYYY-MM-DD format");
+        throw new Error('Summer end date must be in YYYY-MM-DD format');
       }
       updates.summerEndDate = args.summerEndDate || undefined;
     }
@@ -164,7 +164,7 @@ export const updateChild = mutation({
     const finalStart = args.summerStartDate ?? child.summerStartDate;
     const finalEnd = args.summerEndDate ?? child.summerEndDate;
     if (finalStart && finalEnd && new Date(finalStart) > new Date(finalEnd)) {
-      throw new Error("Summer start date must be before end date");
+      throw new Error('Summer start date must be before end date');
     }
 
     // Only update if there are changes
@@ -182,24 +182,24 @@ export const updateChild = mutation({
  */
 export const generateShareToken = mutation({
   args: {
-    childId: v.id("children"),
+    childId: v.id('children'),
   },
   handler: async (ctx, args) => {
     const family = await requireFamily(ctx);
 
     const child = await ctx.db.get(args.childId);
     if (!child) {
-      throw new Error("Child not found");
+      throw new Error('Child not found');
     }
 
     if (child.familyId !== family._id) {
-      throw new Error("Child does not belong to this family");
+      throw new Error('Child does not belong to this family');
     }
 
     // Generate a random token
     const token = Array.from(crypto.getRandomValues(new Uint8Array(16)))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
 
     await ctx.db.patch(args.childId, { shareToken: token });
 
@@ -212,18 +212,18 @@ export const generateShareToken = mutation({
  */
 export const removeShareToken = mutation({
   args: {
-    childId: v.id("children"),
+    childId: v.id('children'),
   },
   handler: async (ctx, args) => {
     const family = await requireFamily(ctx);
 
     const child = await ctx.db.get(args.childId);
     if (!child) {
-      throw new Error("Child not found");
+      throw new Error('Child not found');
     }
 
     if (child.familyId !== family._id) {
-      throw new Error("Child does not belong to this family");
+      throw new Error('Child does not belong to this family');
     }
 
     await ctx.db.patch(args.childId, { shareToken: undefined });
@@ -238,33 +238,33 @@ export const removeShareToken = mutation({
  */
 export const generateFamilyShareToken = mutation({
   args: {
-    childIds: v.array(v.id("children")),
+    childIds: v.array(v.id('children')),
   },
   handler: async (ctx, args) => {
     const family = await requireFamily(ctx);
 
     if (args.childIds.length === 0) {
-      throw new Error("At least one child must be selected");
+      throw new Error('At least one child must be selected');
     }
 
     // Verify all children belong to this family
     for (const childId of args.childIds) {
       const child = await ctx.db.get(childId);
       if (!child) {
-        throw new Error("Child not found");
+        throw new Error('Child not found');
       }
       if (child.familyId !== family._id) {
-        throw new Error("Child does not belong to this family");
+        throw new Error('Child does not belong to this family');
       }
     }
 
     // Generate a random token
     const token = Array.from(crypto.getRandomValues(new Uint8Array(16)))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
 
     // Create the family share record
-    await ctx.db.insert("familyShares", {
+    await ctx.db.insert('familyShares', {
       familyId: family._id,
       shareToken: token,
       childIds: args.childIds,
@@ -281,19 +281,19 @@ export const generateFamilyShareToken = mutation({
  */
 export const deactivateChild = mutation({
   args: {
-    childId: v.id("children"),
+    childId: v.id('children'),
   },
   handler: async (ctx, args) => {
     const family = await requireFamily(ctx);
 
     const child = await ctx.db.get(args.childId);
     if (!child) {
-      throw new Error("Child not found");
+      throw new Error('Child not found');
     }
 
     // Verify the child belongs to the current family
     if (child.familyId !== family._id) {
-      throw new Error("Child does not belong to this family");
+      throw new Error('Child does not belong to this family');
     }
 
     // Soft delete by marking as inactive

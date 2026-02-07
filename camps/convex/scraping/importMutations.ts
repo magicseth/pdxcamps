@@ -5,9 +5,9 @@
  * Separated from import.ts because mutations can't be in "use node" files.
  */
 
-import { mutation, internalMutation } from "../_generated/server";
-import { v } from "convex/values";
-import { sessionsBySourceAggregate } from "../lib/sessionAggregate";
+import { mutation, internalMutation } from '../_generated/server';
+import { v } from 'convex/values';
+import { sessionsBySourceAggregate } from '../lib/sessionAggregate';
 
 /**
  * Create an organization
@@ -18,15 +18,15 @@ export const createOrganization = mutation({
     description: v.optional(v.string()),
     website: v.optional(v.string()),
     logoUrl: v.optional(v.string()),
-    cityId: v.id("cities"),
+    cityId: v.id('cities'),
   },
   handler: async (ctx, args) => {
     const slug = args.name
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "");
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
 
-    return ctx.db.insert("organizations", {
+    return ctx.db.insert('organizations', {
       name: args.name,
       slug,
       description: args.description,
@@ -44,7 +44,7 @@ export const createOrganization = mutation({
  */
 export const createCamp = mutation({
   args: {
-    organizationId: v.id("organizations"),
+    organizationId: v.id('organizations'),
     name: v.string(),
     description: v.string(),
     categories: v.array(v.string()),
@@ -58,10 +58,10 @@ export const createCamp = mutation({
   handler: async (ctx, args) => {
     const slug = args.name
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "");
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
 
-    return ctx.db.insert("camps", {
+    return ctx.db.insert('camps', {
       organizationId: args.organizationId,
       name: args.name,
       slug,
@@ -86,9 +86,9 @@ export const createCamp = mutation({
  */
 export const createLocation = mutation({
   args: {
-    organizationId: v.id("organizations"),
+    organizationId: v.id('organizations'),
     name: v.string(),
-    cityId: v.id("cities"),
+    cityId: v.id('cities'),
     // Optional structured address
     street: v.optional(v.string()),
     city: v.optional(v.string()),
@@ -99,14 +99,14 @@ export const createLocation = mutation({
     longitude: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    return ctx.db.insert("locations", {
+    return ctx.db.insert('locations', {
       organizationId: args.organizationId,
       name: args.name,
       address: {
-        street: args.street || "TBD",
-        city: args.city || "Portland",
-        state: args.state || "OR",
-        zip: args.zip || "97201",
+        street: args.street || 'TBD',
+        city: args.city || 'Portland',
+        state: args.state || 'OR',
+        zip: args.zip || '97201',
       },
       cityId: args.cityId,
       // Use provided coordinates or fall back to Portland city center
@@ -122,10 +122,10 @@ export const createLocation = mutation({
  */
 export const createSession = mutation({
   args: {
-    campId: v.id("camps"),
-    locationId: v.id("locations"),
-    organizationId: v.id("organizations"),
-    cityId: v.id("cities"),
+    campId: v.id('camps'),
+    locationId: v.id('locations'),
+    organizationId: v.id('organizations'),
+    cityId: v.id('cities'),
     startDate: v.string(),
     endDate: v.string(),
     dropOffHour: v.number(),
@@ -138,10 +138,10 @@ export const createSession = mutation({
     minGrade: v.optional(v.number()),
     maxGrade: v.optional(v.number()),
     registrationUrl: v.optional(v.string()),
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
   },
   handler: async (ctx, args) => {
-    const sessionId = await ctx.db.insert("sessions", {
+    const sessionId = await ctx.db.insert('sessions', {
       campId: args.campId,
       locationId: args.locationId,
       organizationId: args.organizationId,
@@ -152,7 +152,7 @@ export const createSession = mutation({
       pickUpTime: { hour: args.pickUpHour, minute: args.pickUpMinute },
       extendedCareAvailable: false,
       price: args.price,
-      currency: "USD",
+      currency: 'USD',
       capacity: 20,
       enrolledCount: 0,
       waitlistCount: 0,
@@ -162,7 +162,7 @@ export const createSession = mutation({
         minGrade: args.minGrade,
         maxGrade: args.maxGrade,
       },
-      status: "active",
+      status: 'active',
       waitlistEnabled: true,
       externalRegistrationUrl: args.registrationUrl,
       sourceId: args.sourceId,
@@ -189,10 +189,10 @@ export const createSession = mutation({
  */
 export const createSessionWithCompleteness = internalMutation({
   args: {
-    campId: v.id("camps"),
-    locationId: v.id("locations"),
-    organizationId: v.id("organizations"),
-    cityId: v.id("cities"),
+    campId: v.id('camps'),
+    locationId: v.id('locations'),
+    organizationId: v.id('organizations'),
+    cityId: v.id('cities'),
     startDate: v.string(),
     endDate: v.string(),
     dropOffHour: v.number(),
@@ -205,16 +205,12 @@ export const createSessionWithCompleteness = internalMutation({
     minGrade: v.optional(v.number()),
     maxGrade: v.optional(v.number()),
     registrationUrl: v.optional(v.string()),
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
     // Completeness fields
-    status: v.union(v.literal("draft"), v.literal("active")),
+    status: v.union(v.literal('draft'), v.literal('active')),
     completenessScore: v.number(),
     missingFields: v.array(v.string()),
-    dataSource: v.union(
-      v.literal("scraped"),
-      v.literal("manual"),
-      v.literal("enhanced")
-    ),
+    dataSource: v.union(v.literal('scraped'), v.literal('manual'), v.literal('enhanced')),
     // Capacity fields
     capacity: v.optional(v.number()),
     enrolledCount: v.optional(v.number()),
@@ -222,7 +218,7 @@ export const createSessionWithCompleteness = internalMutation({
     isOvernight: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const sessionId = await ctx.db.insert("sessions", {
+    const sessionId = await ctx.db.insert('sessions', {
       campId: args.campId,
       locationId: args.locationId,
       organizationId: args.organizationId,
@@ -234,7 +230,7 @@ export const createSessionWithCompleteness = internalMutation({
       isOvernight: args.isOvernight,
       extendedCareAvailable: false,
       price: args.price,
-      currency: "USD",
+      currency: 'USD',
       capacity: args.capacity ?? 20,
       enrolledCount: args.enrolledCount ?? 0,
       waitlistCount: 0,
@@ -275,8 +271,8 @@ export const createSessionWithCompleteness = internalMutation({
  */
 export const createPendingSession = internalMutation({
   args: {
-    jobId: v.id("scrapeJobs"),
-    sourceId: v.id("scrapeSources"),
+    jobId: v.id('scrapeJobs'),
+    sourceId: v.id('scrapeSources'),
     rawData: v.string(),
     partialData: v.object({
       name: v.optional(v.string()),
@@ -295,19 +291,19 @@ export const createPendingSession = internalMutation({
         field: v.string(),
         error: v.string(),
         attemptedValue: v.optional(v.string()),
-      })
+      }),
     ),
     completenessScore: v.number(),
   },
   handler: async (ctx, args) => {
-    return ctx.db.insert("pendingSessions", {
+    return ctx.db.insert('pendingSessions', {
       jobId: args.jobId,
       sourceId: args.sourceId,
       rawData: args.rawData,
       partialData: args.partialData,
       validationErrors: args.validationErrors,
       completenessScore: args.completenessScore,
-      status: "pending_review",
+      status: 'pending_review',
       createdAt: Date.now(),
     });
   },
@@ -318,7 +314,7 @@ export const createPendingSession = internalMutation({
  */
 export const updateSessionPrice = internalMutation({
   args: {
-    sessionId: v.id("sessions"),
+    sessionId: v.id('sessions'),
     price: v.number(),
   },
   handler: async (ctx, args) => {
@@ -335,10 +331,10 @@ export const updateSessionPrice = internalMutation({
  */
 export const updateSessionPriceAndCapacity = internalMutation({
   args: {
-    sessionId: v.id("sessions"),
+    sessionId: v.id('sessions'),
     price: v.optional(v.number()),
     capacity: v.optional(v.number()),
-    sourceId: v.optional(v.id("scrapeSources")),
+    sourceId: v.optional(v.id('scrapeSources')),
   },
   handler: async (ctx, args) => {
     const updates: Record<string, unknown> = {
@@ -372,15 +368,11 @@ export const updateSessionPriceAndCapacity = internalMutation({
  */
 export const updateSourceSessionCounts = internalMutation({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
     sessionCount: v.number(),
     activeSessionCount: v.number(),
     dataQualityScore: v.number(),
-    qualityTier: v.union(
-      v.literal("high"),
-      v.literal("medium"),
-      v.literal("low")
-    ),
+    qualityTier: v.union(v.literal('high'), v.literal('medium'), v.literal('low')),
   },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.sourceId, {
@@ -398,12 +390,12 @@ export const updateSourceSessionCounts = internalMutation({
  */
 export const updatePendingSessionStatus = mutation({
   args: {
-    pendingSessionId: v.id("pendingSessions"),
+    pendingSessionId: v.id('pendingSessions'),
     status: v.union(
-      v.literal("pending_review"),
-      v.literal("manually_fixed"),
-      v.literal("imported"),
-      v.literal("discarded")
+      v.literal('pending_review'),
+      v.literal('manually_fixed'),
+      v.literal('imported'),
+      v.literal('discarded'),
     ),
     reviewedBy: v.optional(v.string()),
   },
@@ -423,7 +415,7 @@ export const updatePendingSessionStatus = mutation({
  */
 export const recordUrlCheck = internalMutation({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
     url: v.string(),
     status: v.string(),
   },
@@ -452,7 +444,7 @@ export const recordUrlCheck = internalMutation({
  */
 export const suggestUrlUpdate = internalMutation({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
     suggestedUrl: v.string(),
   },
   handler: async (ctx, args) => {
@@ -467,7 +459,7 @@ export const suggestUrlUpdate = internalMutation({
  */
 export const applyUrlUpdate = internalMutation({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
   },
   handler: async (ctx, args) => {
     const source = await ctx.db.get(args.sourceId);
@@ -488,7 +480,7 @@ export const applyUrlUpdate = internalMutation({
  */
 export const getSourceSessionCount = internalMutation({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
   },
   handler: async (ctx, args) => {
     const count = await sessionsBySourceAggregate.count(ctx, {
@@ -504,7 +496,7 @@ export const getSourceSessionCount = internalMutation({
  */
 export const deleteSessionWithAggregate = internalMutation({
   args: {
-    sessionId: v.id("sessions"),
+    sessionId: v.id('sessions'),
   },
   handler: async (ctx, args) => {
     const session = await ctx.db.get(args.sessionId);
@@ -534,7 +526,7 @@ export const backfillSessionAggregate = internalMutation({
     const batchSize = args.batchSize ?? 100;
 
     // Query sessions with pagination
-    const query = ctx.db.query("sessions");
+    const query = ctx.db.query('sessions');
 
     const sessions = await query.take(batchSize + 1);
     const hasMore = sessions.length > batchSize;
@@ -565,7 +557,7 @@ export const backfillSessionAggregate = internalMutation({
  */
 export const rebuildSessionAggregate = internalMutation({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
   },
   handler: async (ctx, args) => {
     // Clear existing entries for this source
@@ -575,8 +567,8 @@ export const rebuildSessionAggregate = internalMutation({
 
     // Re-add all sessions for this source
     const sessions = await ctx.db
-      .query("sessions")
-      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .query('sessions')
+      .withIndex('by_source', (q) => q.eq('sourceId', args.sourceId))
       .collect();
 
     for (const session of sessions) {
@@ -604,8 +596,8 @@ export const migrateOvernightCamps = internalMutation({
 
     // Get sessions that haven't been checked yet (isOvernight is undefined)
     const sessions = await ctx.db
-      .query("sessions")
-      .filter((q) => q.eq(q.field("isOvernight"), undefined))
+      .query('sessions')
+      .filter((q) => q.eq(q.field('isOvernight'), undefined))
       .take(batchSize + 1);
 
     const hasMore = sessions.length > batchSize;
@@ -622,7 +614,7 @@ export const migrateOvernightCamps = internalMutation({
       if (!camp) continue;
 
       const textToSearch = `${camp.name || ''} ${camp.description || ''} ${session.campName || ''}`.toLowerCase();
-      const isOvernight = overnightKeywords.some(keyword => textToSearch.includes(keyword));
+      const isOvernight = overnightKeywords.some((keyword) => textToSearch.includes(keyword));
 
       // Only update if it's an overnight camp (saves write operations)
       if (isOvernight) {
@@ -650,7 +642,7 @@ export const migrateOvernightCamps = internalMutation({
  */
 export const createZeroPriceAlert = internalMutation({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
     sourceName: v.string(),
     zeroPricePercent: v.number(),
     zeroPriceCount: v.number(),
@@ -659,27 +651,27 @@ export const createZeroPriceAlert = internalMutation({
   handler: async (ctx, args) => {
     // Check for existing unacknowledged alert for this source (within last 24 hours)
     const existingAlerts = await ctx.db
-      .query("scraperAlerts")
-      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .query('scraperAlerts')
+      .withIndex('by_source', (q) => q.eq('sourceId', args.sourceId))
       .collect();
 
     const recentDuplicate = existingAlerts.some(
       (alert) =>
-        alert.alertType === "scraper_degraded" &&
+        alert.alertType === 'scraper_degraded' &&
         alert.acknowledgedAt === undefined &&
-        alert.message.includes("zero-price") &&
-        alert.createdAt > Date.now() - 24 * 60 * 60 * 1000
+        alert.message.includes('zero-price') &&
+        alert.createdAt > Date.now() - 24 * 60 * 60 * 1000,
     );
 
     if (recentDuplicate) {
-      return { created: false, reason: "Duplicate alert exists" };
+      return { created: false, reason: 'Duplicate alert exists' };
     }
 
-    await ctx.db.insert("scraperAlerts", {
+    await ctx.db.insert('scraperAlerts', {
       sourceId: args.sourceId,
-      alertType: "scraper_degraded",
+      alertType: 'scraper_degraded',
       message: `Scraper "${args.sourceName}" has suspicious zero-price pattern: ${args.zeroPricePercent}% of sessions (${args.zeroPriceCount}/${args.totalCount}) have $0 price. Price extraction may be broken.`,
-      severity: "warning",
+      severity: 'warning',
       createdAt: Date.now(),
       acknowledgedAt: undefined,
       acknowledgedBy: undefined,

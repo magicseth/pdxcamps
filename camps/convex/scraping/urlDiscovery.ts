@@ -1,4 +1,4 @@
-"use node";
+'use node';
 
 /**
  * URL Discovery
@@ -7,23 +7,23 @@
  * by crawling the organization's main website and looking for camp-related pages.
  */
 
-import { internalAction } from "../_generated/server";
-import { api, internal } from "../_generated/api";
-import { v } from "convex/values";
+import { internalAction } from '../_generated/server';
+import { api, internal } from '../_generated/api';
+import { v } from 'convex/values';
 
 // Keywords that indicate a camp registration page
 const CAMP_KEYWORDS = [
-  "camp",
-  "summer",
-  "registration",
-  "register",
-  "enroll",
-  "sign up",
-  "programs",
-  "classes",
-  "youth",
-  "kids",
-  "children",
+  'camp',
+  'summer',
+  'registration',
+  'register',
+  'enroll',
+  'sign up',
+  'programs',
+  'classes',
+  'youth',
+  'kids',
+  'children',
 ];
 
 // Current year and next year for seasonal pages
@@ -74,21 +74,21 @@ function scoreUrl(url: string, linkText: string): { score: number; keywords: str
   }
 
   // Bonus for registration-specific terms
-  if (combined.includes("register") || combined.includes("registration")) {
+  if (combined.includes('register') || combined.includes('registration')) {
     score += 20;
   }
-  if (combined.includes("summer camp")) {
+  if (combined.includes('summer camp')) {
     score += 25;
   }
 
   // Penalty for clearly wrong pages
-  if (combined.includes("staff") || combined.includes("careers") || combined.includes("jobs")) {
+  if (combined.includes('staff') || combined.includes('careers') || combined.includes('jobs')) {
     score -= 30;
   }
-  if (combined.includes("donate") || combined.includes("volunteer")) {
+  if (combined.includes('donate') || combined.includes('volunteer')) {
     score -= 20;
   }
-  if (combined.includes("about") || combined.includes("contact") || combined.includes("history")) {
+  if (combined.includes('about') || combined.includes('contact') || combined.includes('history')) {
     score -= 15;
   }
 
@@ -100,9 +100,12 @@ function scoreUrl(url: string, linkText: string): { score: number; keywords: str
  */
 export const discoverCampUrls = internalAction({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     success: boolean;
     discoveredUrls: DiscoveredUrl[];
     suggestedUrl?: string;
@@ -114,7 +117,7 @@ export const discoverCampUrls = internalAction({
     });
 
     if (!source) {
-      return { success: false, discoveredUrls: [], error: "Source not found" };
+      return { success: false, discoveredUrls: [], error: 'Source not found' };
     }
 
     // Get the organization's website
@@ -123,7 +126,7 @@ export const discoverCampUrls = internalAction({
       return {
         success: false,
         discoveredUrls: [],
-        error: "Organization has no website configured",
+        error: 'Organization has no website configured',
       };
     }
 
@@ -133,8 +136,7 @@ export const discoverCampUrls = internalAction({
       // Fetch the organization's main page
       const response = await fetch(orgWebsite, {
         headers: {
-          "User-Agent":
-            "Mozilla/5.0 (compatible; PDXCamps/1.0; +https://pdxcamps.com)",
+          'User-Agent': 'Mozilla/5.0 (compatible; PDXCamps/1.0; +https://pdxcamps.com)',
         },
       });
 
@@ -159,15 +161,15 @@ export const discoverCampUrls = internalAction({
         const linkText = match[2].trim();
 
         // Skip empty, anchor, or javascript links
-        if (!href || href.startsWith("#") || href.startsWith("javascript:")) {
+        if (!href || href.startsWith('#') || href.startsWith('javascript:')) {
           continue;
         }
 
         // Convert relative URLs to absolute
-        if (href.startsWith("/")) {
+        if (href.startsWith('/')) {
           href = baseDomain + href;
-        } else if (!href.startsWith("http")) {
-          href = baseDomain + "/" + href;
+        } else if (!href.startsWith('http')) {
+          href = baseDomain + '/' + href;
         }
 
         // Skip external links
@@ -202,10 +204,7 @@ export const discoverCampUrls = internalAction({
       const topUrls = discoveredUrls.slice(0, 10);
 
       // Suggest the top URL if it scores high enough
-      const suggestedUrl =
-        topUrls.length > 0 && topUrls[0].score >= 30
-          ? topUrls[0].url
-          : undefined;
+      const suggestedUrl = topUrls.length > 0 && topUrls[0].score >= 30 ? topUrls[0].url : undefined;
 
       // If we found a good suggestion, save it
       if (suggestedUrl) {
@@ -224,7 +223,7 @@ export const discoverCampUrls = internalAction({
       return {
         success: false,
         discoveredUrls: [],
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   },
@@ -237,7 +236,10 @@ export const discoverUrlsForBrokenSources = internalAction({
   args: {
     limit: v.optional(v.number()),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     processed: number;
     suggestionsFound: number;
     results: Array<{
@@ -249,9 +251,7 @@ export const discoverUrlsForBrokenSources = internalAction({
     const limit = args.limit ?? 10;
 
     // Find sources that were auto-disabled due to 404s
-    const brokenSources = await ctx.runQuery(
-      internal.scraping.dataQualityChecks.findBrokenUrlSources
-    );
+    const brokenSources = await ctx.runQuery(internal.scraping.dataQualityChecks.findBrokenUrlSources);
 
     const results: Array<{
       sourceName: string;
@@ -261,10 +261,9 @@ export const discoverUrlsForBrokenSources = internalAction({
     let suggestionsFound = 0;
 
     for (const source of brokenSources.slice(0, limit)) {
-      const result = await ctx.runAction(
-        internal.scraping.urlDiscovery.discoverCampUrls,
-        { sourceId: source.sourceId }
-      );
+      const result = await ctx.runAction(internal.scraping.urlDiscovery.discoverCampUrls, {
+        sourceId: source.sourceId,
+      });
 
       results.push({
         sourceName: source.sourceName,

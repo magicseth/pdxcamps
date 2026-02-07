@@ -59,15 +59,11 @@ function CampsContent() {
   const initialImageFilter = (searchParams.get('images') as ImageFilter) || 'all';
   const initialAvailabilityFilter = (searchParams.get('availability') as AvailabilityFilter) || 'all';
 
-  const [selectedCampId, setSelectedCampId] = useState<Id<'camps'> | null>(
-    initialCampId as Id<'camps'> | null
-  );
+  const [selectedCampId, setSelectedCampId] = useState<Id<'camps'> | null>(initialCampId as Id<'camps'> | null);
   const [searchQuery, setSearchQuery] = useState(initialSearch);
-  const [selectedCityId, setSelectedCityId] = useState<Id<'cities'> | null>(
-    initialCityId as Id<'cities'> | null
-  );
+  const [selectedCityId, setSelectedCityId] = useState<Id<'cities'> | null>(initialCityId as Id<'cities'> | null);
   const [selectedOrgId, setSelectedOrgId] = useState<Id<'organizations'> | null>(
-    initialOrgId as Id<'organizations'> | null
+    initialOrgId as Id<'organizations'> | null,
   );
   const [imageFilter, setImageFilter] = useState<ImageFilter>(initialImageFilter);
   const [availabilityFilter, setAvailabilityFilter] = useState<AvailabilityFilter>(initialAvailabilityFilter);
@@ -88,7 +84,7 @@ function CampsContent() {
   // Query selected camp details
   const selectedCamp = useQuery(
     api.camps.queries.getCampWithSessions,
-    selectedCampId ? { campId: selectedCampId } : 'skip'
+    selectedCampId ? { campId: selectedCampId } : 'skip',
   );
 
   // Update URL when state changes
@@ -98,7 +94,7 @@ function CampsContent() {
     cityId: string | null,
     orgId: string | null,
     images: ImageFilter,
-    availability: AvailabilityFilter
+    availability: AvailabilityFilter,
   ) => {
     const params = new URLSearchParams();
     if (campId) params.set('camp', campId);
@@ -314,9 +310,7 @@ function CampsContent() {
                         }
                       }}
                       className={`w-full text-left px-4 py-3 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer ${
-                        isSelected
-                          ? 'bg-primary/10 dark:bg-primary-dark/20 border-l-4 border-l-primary'
-                          : ''
+                        isSelected ? 'bg-primary/10 dark:bg-primary-dark/20 border-l-4 border-l-primary' : ''
                       }`}
                     >
                       <div className="flex items-start gap-3">
@@ -327,12 +321,8 @@ function CampsContent() {
                           className="flex-shrink-0"
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-slate-900 dark:text-white truncate">
-                            {camp.name}
-                          </p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                            {camp.organizationName}
-                          </p>
+                          <p className="font-medium text-slate-900 dark:text-white truncate">{camp.name}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{camp.organizationName}</p>
                           <div className="flex items-center gap-3 mt-1 flex-wrap">
                             <span className="text-xs text-slate-500">
                               {camp.activeSessions} active / {camp.totalSessions} total
@@ -372,11 +362,7 @@ function CampsContent() {
                 </div>
               </div>
             ) : selectedCamp === undefined ? (
-              <div
-                role="status"
-                aria-live="polite"
-                className="p-6 animate-pulse motion-reduce:animate-none space-y-4"
-              >
+              <div role="status" aria-live="polite" className="p-6 animate-pulse motion-reduce:animate-none space-y-4">
                 <div className="h-48 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
                 <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded w-1/3"></div>
                 <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-2/3"></div>
@@ -490,9 +476,7 @@ function CampDetailPanel({ camp }: CampDetailProps) {
                 className="w-5 h-5 rounded object-contain"
               />
             )}
-            <span className="text-sm font-medium text-primary hover:text-primary-dark">
-              {camp.organizationName}
-            </span>
+            <span className="text-sm font-medium text-primary hover:text-primary-dark">{camp.organizationName}</span>
           </div>
         </div>
 
@@ -590,8 +574,8 @@ function CampDetailPanel({ camp }: CampDetailProps) {
                             spotsLeft <= 5 && spotsLeft > 0
                               ? 'text-orange-600 dark:text-orange-400'
                               : spotsLeft === 0
-                              ? 'text-red-600 dark:text-red-400'
-                              : 'text-slate-600 dark:text-slate-400'
+                                ? 'text-red-600 dark:text-red-400'
+                                : 'text-slate-600 dark:text-slate-400'
                           }`}
                         >
                           {spotsLeft}/{session.capacity} spots
@@ -603,9 +587,7 @@ function CampDetailPanel({ camp }: CampDetailProps) {
                       {session.locationName && (
                         <div className="flex items-center gap-1.5 col-span-2">
                           <MapPinIcon className="w-3.5 h-3.5 text-slate-400" />
-                          <span className="text-slate-600 dark:text-slate-400 truncate">
-                            {session.locationName}
-                          </span>
+                          <span className="text-slate-600 dark:text-slate-400 truncate">{session.locationName}</span>
                         </div>
                       )}
 
@@ -657,12 +639,7 @@ function SearchIcon({ className }: { className?: string }) {
 function CampIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={1.5}
-        d="M3 21l9-9 9 9M12 3v9"
-      />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 21l9-9 9 9M12 3v9" />
     </svg>
   );
 }
@@ -715,12 +692,7 @@ function MapPinIcon({ className }: { className?: string }) {
         strokeWidth={2}
         d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
       />
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-      />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
     </svg>
   );
 }

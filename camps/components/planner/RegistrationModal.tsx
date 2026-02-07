@@ -6,6 +6,7 @@ import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
 import Link from 'next/link';
 import confetti from 'canvas-confetti';
+import posthog from 'posthog-js';
 
 interface RegistrationModalProps {
   isOpen: boolean;
@@ -51,9 +52,18 @@ export function RegistrationModal({ isOpen, onClose, registration, citySlug }: R
         childId: registration.childId,
         sessionId: registration.sessionId,
       });
+
+      // Track camp registration (high-value conversion)
+      posthog.capture('camp_registered', {
+        camp_name: registration.campName,
+        organization_name: registration.organizationName,
+        week_label: registration.weekLabel,
+      });
+
       fireConfetti();
       onClose();
     } catch (error) {
+      posthog.captureException(error);
       console.error('Failed to update registration:', error);
     } finally {
       setIsUpdating(false);
@@ -66,8 +76,18 @@ export function RegistrationModal({ isOpen, onClose, registration, citySlug }: R
       await cancelMutation({
         registrationId: registration.registrationId,
       });
+
+      // Track camp removal (potential churn indicator)
+      posthog.capture('camp_removed', {
+        camp_name: registration.campName,
+        organization_name: registration.organizationName,
+        week_label: registration.weekLabel,
+        previous_status: registration.status,
+      });
+
       onClose();
     } catch (error) {
+      posthog.captureException(error);
       console.error('Failed to remove registration:', error);
     } finally {
       setIsUpdating(false);
@@ -113,10 +133,7 @@ export function RegistrationModal({ isOpen, onClose, registration, citySlug }: R
               )}
               <p className="text-white/80 text-sm mt-1">{registration.weekLabel}</p>
             </div>
-            <button
-              onClick={onClose}
-              className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
-            >
+            <button onClick={onClose} className="p-1.5 hover:bg-white/20 rounded-lg transition-colors">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -147,7 +164,12 @@ export function RegistrationModal({ isOpen, onClose, registration, citySlug }: R
               className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
               View Session Details
             </Link>
@@ -161,7 +183,12 @@ export function RegistrationModal({ isOpen, onClose, registration, citySlug }: R
                 className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-primary text-white font-medium rounded-xl hover:bg-primary-dark transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                  />
                 </svg>
                 Register for {registration.campName}
               </a>
@@ -189,7 +216,12 @@ export function RegistrationModal({ isOpen, onClose, registration, citySlug }: R
             {registration.status === 'registered' && (
               <div className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium rounded-xl">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
                 You're Registered!
               </div>
@@ -202,7 +234,12 @@ export function RegistrationModal({ isOpen, onClose, registration, citySlug }: R
                 className="flex items-center justify-center gap-2 w-full py-3 px-4 text-red-600 border border-red-200 dark:border-red-800 font-medium rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
                 </svg>
                 Remove from Schedule
               </button>

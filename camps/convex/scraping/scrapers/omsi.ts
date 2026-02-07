@@ -8,13 +8,7 @@
  * API endpoint: https://secure.omsi.edu/apexremote
  */
 
-import {
-  ScraperConfig,
-  ScraperLogger,
-  ScrapeResult,
-  ScrapedSession,
-  ScraperRegistryEntry,
-} from "./types";
+import { ScraperConfig, ScraperLogger, ScrapeResult, ScrapedSession, ScraperRegistryEntry } from './types';
 
 // OMSI API response types
 interface OmsiSession {
@@ -46,25 +40,21 @@ interface OmsiApiResponse {
 /**
  * Main scraper function for OMSI
  */
-async function scrape(
-  config: ScraperConfig,
-  log: ScraperLogger
-): Promise<ScrapeResult> {
+async function scrape(config: ScraperConfig, log: ScraperLogger): Promise<ScrapeResult> {
   const startTime = Date.now();
   const sessions: ScrapedSession[] = [];
 
   try {
-    log("INFO", "Starting OMSI scrape", { url: config.url });
+    log('INFO', 'Starting OMSI scrape', { url: config.url });
 
     // Step 1: Fetch the catalog page to get CSRF token
-    const catalogUrl = "https://secure.omsi.edu/camps-and-classes";
-    log("DEBUG", "Fetching catalog page for CSRF token", { url: catalogUrl });
+    const catalogUrl = 'https://secure.omsi.edu/camps-and-classes';
+    log('DEBUG', 'Fetching catalog page for CSRF token', { url: catalogUrl });
 
     const pageResponse = await fetch(catalogUrl, {
       headers: {
-        Accept: "text/html,application/xhtml+xml",
-        "User-Agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+        'Accept': 'text/html,application/xhtml+xml',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
       },
     });
 
@@ -73,32 +63,32 @@ async function scrape(
     }
 
     const pageHtml = await pageResponse.text();
-    log("DEBUG", "Got catalog page", { length: pageHtml.length });
+    log('DEBUG', 'Got catalog page', { length: pageHtml.length });
 
     // Extract CSRF token and context from page
     const csrfMatch = pageHtml.match(/"csrf":"([^"]+)"/);
     const vidMatch = pageHtml.match(/"vid":"([^"]+)"/);
     const verMatch = pageHtml.match(/"ver":(\d+)/);
 
-    const csrf = csrfMatch?.[1] || "";
-    const vid = vidMatch?.[1] || "066f40000026br6";
+    const csrf = csrfMatch?.[1] || '';
+    const vid = vidMatch?.[1] || '066f40000026br6';
     const ver = verMatch?.[1] ? parseInt(verMatch[1]) : 65;
 
     if (!csrf) {
-      log("WARN", "Could not extract CSRF token, proceeding anyway");
+      log('WARN', 'Could not extract CSRF token, proceeding anyway');
     }
 
-    log("DEBUG", "Extracted context", {
-      csrf: csrf.substring(0, 20) + "...",
+    log('DEBUG', 'Extracted context', {
+      csrf: csrf.substring(0, 20) + '...',
       vid,
       ver,
     });
 
     // Step 2: Call the Visualforce Remoting API
-    const apiUrl = "https://secure.omsi.edu/apexremote";
+    const apiUrl = 'https://secure.omsi.edu/apexremote';
     const requestBody = {
-      action: "ecomm_CampsClassesCatalogController",
-      method: "getCampsClasses",
+      action: 'ecomm_CampsClassesCatalogController',
+      method: 'getCampsClasses',
       data: [
         JSON.stringify({
           typeFormatList: [],
@@ -108,30 +98,29 @@ async function scrape(
           siteList: [],
           showSoldOutProducts: false,
         }),
-        "",
+        '',
       ],
-      type: "rpc",
+      type: 'rpc',
       tid: 2,
-      ctx: { csrf, vid, ns: "", ver },
+      ctx: { csrf, vid, ns: '', ver },
     };
 
-    log("DEBUG", "Calling Visualforce API", { url: apiUrl });
+    log('DEBUG', 'Calling Visualforce API', { url: apiUrl });
 
     const apiResponse = await fetch(apiUrl, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        Accept: "*/*",
-        "Content-Type": "application/json",
-        "X-Requested-With": "XMLHttpRequest",
-        "X-User-Agent": "Visualforce-Remoting",
-        "User-Agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-        Referer: "https://secure.omsi.edu/camps-and-classes",
+        'Accept': '*/*',
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-User-Agent': 'Visualforce-Remoting',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+        'Referer': 'https://secure.omsi.edu/camps-and-classes',
       },
       body: JSON.stringify(requestBody),
     });
 
-    log("DEBUG", "API Response", {
+    log('DEBUG', 'API Response', {
       status: apiResponse.status,
       statusText: apiResponse.statusText,
     });
@@ -141,26 +130,25 @@ async function scrape(
     }
 
     const data = await apiResponse.json();
-    log("DEBUG", "Got API response", {
+    log('DEBUG', 'Got API response', {
       isArray: Array.isArray(data),
       length: Array.isArray(data) ? data.length : undefined,
     });
 
     // Step 3: Parse the response
     if (!Array.isArray(data) || data.length === 0 || !data[0].result) {
-      throw new Error("Unexpected API response format");
+      throw new Error('Unexpected API response format');
     }
 
     const resultStr = data[0].result;
-    const parsed =
-      typeof resultStr === "string" ? JSON.parse(resultStr) : resultStr;
+    const parsed = typeof resultStr === 'string' ? JSON.parse(resultStr) : resultStr;
 
     if (!parsed.dateResults || !Array.isArray(parsed.dateResults)) {
-      throw new Error("No dateResults in API response");
+      throw new Error('No dateResults in API response');
     }
 
     const omsiData = parsed as OmsiApiResponse;
-    log("INFO", "Found camp products", { count: omsiData.dateResults.length });
+    log('INFO', 'Found camp products', { count: omsiData.dateResults.length });
 
     // Step 4: Extract sessions from each product
     for (const product of omsiData.dateResults) {
@@ -180,17 +168,16 @@ async function scrape(
       }
     }
 
-    log("INFO", "Scrape complete", { sessionsFound: sessions.length });
+    log('INFO', 'Scrape complete', { sessionsFound: sessions.length });
 
     return {
       success: true,
       sessions,
       organization: {
-        name: "OMSI Science Camps",
-        description:
-          "Oregon Museum of Science and Industry offering hands-on STEM camps",
-        website: "https://omsi.edu",
-        logoUrl: "https://omsi.edu/wp-content/uploads/2023/07/OMSI-Logo.svg",
+        name: 'OMSI Science Camps',
+        description: 'Oregon Museum of Science and Industry offering hands-on STEM camps',
+        website: 'https://omsi.edu',
+        logoUrl: 'https://omsi.edu/wp-content/uploads/2023/07/OMSI-Logo.svg',
       },
       scrapedAt: Date.now(),
       durationMs: Date.now() - startTime,
@@ -198,9 +185,8 @@ async function scrape(
       rawDataSummary: `${omsiData.dateResults.length} products, ${sessions.length} sessions`,
     };
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
-    log("ERROR", "Scrape failed", { error: errorMessage });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    log('ERROR', 'Scrape failed', { error: errorMessage });
 
     return {
       success: false,
@@ -219,31 +205,33 @@ async function scrape(
 function extractSession(
   product: OmsiCampProduct,
   session: OmsiSession | null,
-  log: ScraperLogger
+  log: ScraperLogger,
 ): ScrapedSession | null {
   if (!product.name) return null;
 
   // OMSI location with actual address
-  const locationName = session?.location || "OMSI";
-  const isMainOmsi = locationName === "OMSI" || locationName.toLowerCase().includes("omsi");
+  const locationName = session?.location || 'OMSI';
+  const isMainOmsi = locationName === 'OMSI' || locationName.toLowerCase().includes('omsi');
 
   const scraped: ScrapedSession = {
     name: product.name,
     description: product.shortDescription || undefined,
-    category: product.subject || "STEM",
+    category: product.subject || 'STEM',
     ageGradeRaw: product.gradeLevel || undefined,
     location: locationName,
     // Include actual OMSI address and coordinates for the main location
-    locationAddress: isMainOmsi ? {
-      street: "1945 SE Water Ave",
-      city: "Portland",
-      state: "OR",
-      zip: "97214",
-    } : undefined,
+    locationAddress: isMainOmsi
+      ? {
+          street: '1945 SE Water Ave',
+          city: 'Portland',
+          state: 'OR',
+          zip: '97214',
+        }
+      : undefined,
     locationLatitude: isMainOmsi ? 45.5084 : undefined,
     locationLongitude: isMainOmsi ? -122.6655 : undefined,
     isAvailable: session?.available ?? true,
-    availabilityRaw: session?.available ? "Available" : "Sold Out",
+    availabilityRaw: session?.available ? 'Available' : 'Sold Out',
     registrationUrl: `https://secure.omsi.edu/camps-and-classes/${product.safeURL}`,
     sourceProductId: product.productId,
     sourceSessionId: session?.campClassProductId,
@@ -256,10 +244,10 @@ function extractSession(
   if (session?.pricing) {
     const prices = session.pricing.match(/\$?([\d,]+(?:\.\d{2})?)/g);
     if (prices && prices.length >= 1) {
-      const memberPrice = parseFloat(prices[0].replace(/[$,]/g, ""));
+      const memberPrice = parseFloat(prices[0].replace(/[$,]/g, ''));
       scraped.memberPriceInCents = Math.round(memberPrice * 100);
       if (prices.length >= 2) {
-        const regularPrice = parseFloat(prices[1].replace(/[$,]/g, ""));
+        const regularPrice = parseFloat(prices[1].replace(/[$,]/g, ''));
         scraped.priceInCents = Math.round(regularPrice * 100);
       } else {
         scraped.priceInCents = scraped.memberPriceInCents;
@@ -269,9 +257,7 @@ function extractSession(
 
   // Parse dates - OMSI format: "Mar 23, 2026" or "Jun 16 - 20, 2026"
   if (session?.startDate) {
-    const dateRange = session.startDate.match(
-      /(\w+\s+\d+)(?:\s*-\s*(\d+))?,?\s*(\d{4})/
-    );
+    const dateRange = session.startDate.match(/(\w+\s+\d+)(?:\s*-\s*(\d+))?,?\s*(\d{4})/);
     if (dateRange) {
       const year = dateRange[3];
       const monthDay = dateRange[1];
@@ -279,20 +265,18 @@ function extractSession(
 
       const startDate = new Date(`${monthDay}, ${year}`);
       if (!isNaN(startDate.getTime())) {
-        scraped.startDate = startDate.toISOString().split("T")[0];
+        scraped.startDate = startDate.toISOString().split('T')[0];
 
         if (endDay) {
-          const endDate = new Date(
-            `${monthDay.split(" ")[0]} ${endDay}, ${year}`
-          );
+          const endDate = new Date(`${monthDay.split(' ')[0]} ${endDay}, ${year}`);
           if (!isNaN(endDate.getTime())) {
-            scraped.endDate = endDate.toISOString().split("T")[0];
+            scraped.endDate = endDate.toISOString().split('T')[0];
           }
         } else {
           // Assume 5-day camp (Mon-Fri)
           const endDate = new Date(startDate);
           endDate.setDate(endDate.getDate() + 4);
-          scraped.endDate = endDate.toISOString().split("T")[0];
+          scraped.endDate = endDate.toISOString().split('T')[0];
         }
       }
     }
@@ -300,21 +284,15 @@ function extractSession(
 
   // Parse times - OMSI format: "9am-4pm Mon-Fri"
   if (session?.activityTime) {
-    const timeMatch = session.activityTime.match(
-      /(\d+)(am|pm)\s*-\s*(\d+)(am|pm)/i
-    );
+    const timeMatch = session.activityTime.match(/(\d+)(am|pm)\s*-\s*(\d+)(am|pm)/i);
     if (timeMatch) {
       let dropOffHour = parseInt(timeMatch[1]);
-      if (timeMatch[2].toLowerCase() === "pm" && dropOffHour !== 12)
-        dropOffHour += 12;
-      if (timeMatch[2].toLowerCase() === "am" && dropOffHour === 12)
-        dropOffHour = 0;
+      if (timeMatch[2].toLowerCase() === 'pm' && dropOffHour !== 12) dropOffHour += 12;
+      if (timeMatch[2].toLowerCase() === 'am' && dropOffHour === 12) dropOffHour = 0;
 
       let pickUpHour = parseInt(timeMatch[3]);
-      if (timeMatch[4].toLowerCase() === "pm" && pickUpHour !== 12)
-        pickUpHour += 12;
-      if (timeMatch[4].toLowerCase() === "am" && pickUpHour === 12)
-        pickUpHour = 0;
+      if (timeMatch[4].toLowerCase() === 'pm' && pickUpHour !== 12) pickUpHour += 12;
+      if (timeMatch[4].toLowerCase() === 'am' && pickUpHour === 12) pickUpHour = 0;
 
       scraped.dropOffHour = dropOffHour;
       scraped.dropOffMinute = 0;
@@ -339,7 +317,7 @@ function extractSession(
     scraped.imageUrls = [imageUrl];
   }
 
-  log("DEBUG", "Extracted session", {
+  log('DEBUG', 'Extracted session', {
     name: scraped.name,
     startDate: scraped.startDate,
     price: scraped.priceInCents,
@@ -350,10 +328,10 @@ function extractSession(
 
 // Export as registry entry
 export const omsiScraper: ScraperRegistryEntry = {
-  name: "omsi",
-  description: "OMSI Science Camps - Salesforce Visualforce API scraper",
+  name: 'omsi',
+  description: 'OMSI Science Camps - Salesforce Visualforce API scraper',
   scrape,
-  domains: ["omsi.edu", "secure.omsi.edu"],
+  domains: ['omsi.edu', 'secure.omsi.edu'],
 };
 
 export default omsiScraper;

@@ -1,6 +1,6 @@
-import { QueryCtx, MutationCtx } from "../_generated/server";
-import { getFamily } from "./auth";
-import { ADMIN_EMAILS } from "./constants";
+import { QueryCtx, MutationCtx } from '../_generated/server';
+import { getFamily } from './auth';
+import { ADMIN_EMAILS } from './constants';
 
 /**
  * Check if the current user is an admin by looking up their family record.

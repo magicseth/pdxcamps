@@ -5,9 +5,9 @@
  * Uses source ID, start date, and name similarity to detect duplicates.
  */
 
-import { internalQuery, internalMutation } from "../_generated/server";
-import { v } from "convex/values";
-import { Doc } from "../_generated/dataModel";
+import { internalQuery, internalMutation } from '../_generated/server';
+import { v } from 'convex/values';
+import { Doc } from '../_generated/dataModel';
 
 /**
  * Find an existing session that matches the given criteria
@@ -15,22 +15,22 @@ import { Doc } from "../_generated/dataModel";
  */
 export const findExistingSession = internalQuery({
   args: {
-    sourceId: v.id("scrapeSources"),
-    organizationId: v.optional(v.id("organizations")),
+    sourceId: v.id('scrapeSources'),
+    organizationId: v.optional(v.id('organizations')),
     name: v.string(),
     startDate: v.string(),
   },
-  handler: async (ctx, args): Promise<Doc<"sessions"> | null> => {
+  handler: async (ctx, args): Promise<Doc<'sessions'> | null> => {
     // Find sessions from the same source with the same start date
     const candidates = await ctx.db
-      .query("sessions")
-      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
-      .filter((q) => q.eq(q.field("startDate"), args.startDate))
+      .query('sessions')
+      .withIndex('by_source', (q) => q.eq('sourceId', args.sourceId))
+      .filter((q) => q.eq(q.field('startDate'), args.startDate))
       .collect();
 
     // Check name similarity for each candidate
     for (const session of candidates) {
-      const sessionName = session.campName || "";
+      const sessionName = session.campName || '';
       if (similarity(sessionName, args.name) > 0.8) {
         return session;
       }
@@ -40,13 +40,13 @@ export const findExistingSession = internalQuery({
     // This handles sessions imported before sourceId tracking was added
     if (args.organizationId) {
       const orgCandidates = await ctx.db
-        .query("sessions")
-        .withIndex("by_organization_and_status", (q) => q.eq("organizationId", args.organizationId!))
-        .filter((q) => q.eq(q.field("startDate"), args.startDate))
+        .query('sessions')
+        .withIndex('by_organization_and_status', (q) => q.eq('organizationId', args.organizationId!))
+        .filter((q) => q.eq(q.field('startDate'), args.startDate))
         .collect();
 
       for (const session of orgCandidates) {
-        const sessionName = session.campName || "";
+        const sessionName = session.campName || '';
         if (similarity(sessionName, args.name) > 0.8) {
           return session;
         }
@@ -63,34 +63,28 @@ export const findExistingSession = internalQuery({
  */
 export const findExistingSessions = internalQuery({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
     sessions: v.array(
       v.object({
         name: v.string(),
         startDate: v.string(),
-      })
+      }),
     ),
   },
-  handler: async (
-    ctx,
-    args
-  ): Promise<Map<string, Doc<"sessions">>> => {
+  handler: async (ctx, args): Promise<Map<string, Doc<'sessions'>>> => {
     // Get all sessions from this source
     const existingSessions = await ctx.db
-      .query("sessions")
-      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .query('sessions')
+      .withIndex('by_source', (q) => q.eq('sourceId', args.sourceId))
       .collect();
 
-    const matches = new Map<string, Doc<"sessions">>();
+    const matches = new Map<string, Doc<'sessions'>>();
 
     for (const candidate of args.sessions) {
       const key = `${candidate.name}|${candidate.startDate}`;
 
       for (const existing of existingSessions) {
-        if (
-          existing.startDate === candidate.startDate &&
-          similarity(existing.campName || "", candidate.name) > 0.8
-        ) {
+        if (existing.startDate === candidate.startDate && similarity(existing.campName || '', candidate.name) > 0.8) {
           matches.set(key, existing);
           break;
         }
@@ -107,13 +101,13 @@ export const findExistingSessions = internalQuery({
  */
 export const findExistingCamp = internalQuery({
   args: {
-    organizationId: v.id("organizations"),
+    organizationId: v.id('organizations'),
     name: v.string(),
   },
   handler: async (ctx, args) => {
     const camps = await ctx.db
-      .query("camps")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .query('camps')
+      .withIndex('by_organization', (q) => q.eq('organizationId', args.organizationId))
       .collect();
 
     for (const camp of camps) {
@@ -130,7 +124,7 @@ export const findExistingCamp = internalQuery({
  */
 export const updateExistingSession = internalMutation({
   args: {
-    sessionId: v.id("sessions"),
+    sessionId: v.id('sessions'),
     updates: v.object({
       price: v.optional(v.number()),
       endDate: v.optional(v.string()),
@@ -148,7 +142,7 @@ export const updateExistingSession = internalMutation({
   handler: async (ctx, args) => {
     const session = await ctx.db.get(args.sessionId);
     if (!session) {
-      throw new Error("Session not found");
+      throw new Error('Session not found');
     }
 
     const patchData: Record<string, unknown> = {
@@ -200,10 +194,10 @@ export const updateExistingSession = internalMutation({
  * e.g. "Pottery Studio (Grades 3-5)" → "pottery studio"
  */
 export function normalizeName(name: string): string {
-  return (name || "")
+  return (name || '')
     .toLowerCase()
-    .replace(/\s*\(grades?\s*[\d\-kK]+\s*(?:-\s*[\d\-kK]+)?\)\s*$/i, "")
-    .replace(/\s*\(ages?\s*\d+\s*(?:-\s*\d+)?\)\s*$/i, "")
+    .replace(/\s*\(grades?\s*[\d\-kK]+\s*(?:-\s*[\d\-kK]+)?\)\s*$/i, '')
+    .replace(/\s*\(ages?\s*\d+\s*(?:-\s*\d+)?\)\s*$/i, '')
     .trim();
 }
 
@@ -248,7 +242,7 @@ function levenshtein(a: string, b: string): number {
         matrix[i][j] = Math.min(
           matrix[i - 1][j - 1] + 1, // substitution
           matrix[i][j - 1] + 1, // insertion
-          matrix[i - 1][j] + 1 // deletion
+          matrix[i - 1][j] + 1, // deletion
         );
       }
     }
@@ -261,12 +255,8 @@ function levenshtein(a: string, b: string): number {
  * Generate a hash key for deduplication
  * Uses source + normalized name + start date
  */
-export function generateDedupeKey(
-  sourceId: string,
-  name: string,
-  startDate: string
-): string {
-  const normalizedName = name.toLowerCase().trim().replace(/\s+/g, " ");
+export function generateDedupeKey(sourceId: string, name: string, startDate: string): string {
+  const normalizedName = name.toLowerCase().trim().replace(/\s+/g, ' ');
   return `${sourceId}:${normalizedName}:${startDate}`;
 }
 
@@ -305,8 +295,8 @@ export const findCrossSourceDuplicates = internalQuery({
 
     // Get all active sessions that have a sourceId
     const sessions = await ctx.db
-      .query("sessions")
-      .withIndex("by_status", (q) => q.eq("status", "active"))
+      .query('sessions')
+      .withIndex('by_status', (q) => q.eq('status', 'active'))
       .collect();
 
     // Group sessions by organizationId + startDate
@@ -331,7 +321,7 @@ export const findCrossSourceDuplicates = internalQuery({
       groups.get(key)!.push({
         sessionId: session._id,
         sourceId: session.sourceId,
-        campName: session.campName || "",
+        campName: session.campName || '',
         organizationId: session.organizationId,
         startDate: session.startDate,
       });
@@ -358,10 +348,7 @@ export const findCrossSourceDuplicates = internalQuery({
           // Must be from different sources
           if (groupSessions[i].sourceId === groupSessions[j].sourceId) continue;
 
-          const sim = similarity(
-            groupSessions[i].campName,
-            groupSessions[j].campName
-          );
+          const sim = similarity(groupSessions[i].campName, groupSessions[j].campName);
 
           if (sim > 0.8) {
             if (!matchedIndices.has(i)) {
@@ -410,8 +397,8 @@ export const detectAndAlertCrossSourceDuplicates = internalMutation({
   handler: async (ctx) => {
     // Inline the cross-source detection logic (can't call internalQuery from mutation)
     const sessions = await ctx.db
-      .query("sessions")
-      .withIndex("by_status", (q) => q.eq("status", "active"))
+      .query('sessions')
+      .withIndex('by_status', (q) => q.eq('status', 'active'))
       .collect();
 
     // Group sessions by organizationId + startDate
@@ -436,7 +423,7 @@ export const detectAndAlertCrossSourceDuplicates = internalMutation({
       groups.get(key)!.push({
         sessionId: session._id,
         sourceId: session.sourceId,
-        campName: session.campName || "",
+        campName: session.campName || '',
         organizationId: session.organizationId,
         startDate: session.startDate,
       });
@@ -451,10 +438,7 @@ export const detectAndAlertCrossSourceDuplicates = internalMutation({
       for (let i = 0; i < groupSessions.length && !hasCrossSourceDupe; i++) {
         for (let j = i + 1; j < groupSessions.length && !hasCrossSourceDupe; j++) {
           if (groupSessions[i].sourceId === groupSessions[j].sourceId) continue;
-          const sim = similarity(
-            groupSessions[i].campName,
-            groupSessions[j].campName
-          );
+          const sim = similarity(groupSessions[i].campName, groupSessions[j].campName);
           if (sim > 0.8) {
             hasCrossSourceDupe = true;
           }
@@ -467,16 +451,14 @@ export const detectAndAlertCrossSourceDuplicates = internalMutation({
     }
 
     if (totalDuplicateGroups > 0) {
-      console.log(
-        `[CrossSourceDedup] Found ${totalDuplicateGroups} cross-source duplicate groups`
-      );
+      console.log(`[CrossSourceDedup] Found ${totalDuplicateGroups} cross-source duplicate groups`);
 
       // Create a single summary alert (not one per group)
-      await ctx.db.insert("scraperAlerts", {
+      await ctx.db.insert('scraperAlerts', {
         sourceId: undefined,
-        alertType: "cross_source_duplicates",
+        alertType: 'cross_source_duplicates',
         message: `Found ${totalDuplicateGroups} potential cross-source duplicate session groups. Use findCrossSourceDuplicates query to review.`,
-        severity: "info",
+        severity: 'info',
         createdAt: Date.now(),
         acknowledgedAt: undefined,
         acknowledgedBy: undefined,

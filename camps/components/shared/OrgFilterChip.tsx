@@ -19,9 +19,7 @@ function LetterFallback({ name, isSelected, size }: { name: string; isSelected: 
   return (
     <span
       className={`${sizeClasses} rounded-full flex items-center justify-center font-bold flex-shrink-0 ${
-        isSelected
-          ? 'bg-white/20 text-white'
-          : 'bg-slate-300 dark:bg-slate-500 text-white'
+        isSelected ? 'bg-white/20 text-white' : 'bg-slate-300 dark:bg-slate-500 text-white'
       }`}
     >
       {name[0]?.toUpperCase()}
@@ -38,9 +36,7 @@ export function OrgFilterChip({
   showCount = true,
   size = 'md',
 }: OrgFilterChipProps) {
-  const sizeClasses = size === 'sm'
-    ? 'px-2 py-1 text-xs gap-1.5'
-    : 'px-3 py-1.5 text-sm gap-2';
+  const sizeClasses = size === 'sm' ? 'px-2 py-1 text-xs gap-1.5' : 'px-3 py-1.5 text-sm gap-2';
 
   const hasLogo = logoUrl && logoUrl.startsWith('http');
 
@@ -60,17 +56,11 @@ export function OrgFilterChip({
       )}
       <span className="truncate max-w-[120px]">{name}</span>
       {showCount && count !== undefined && (
-        <span className={`tabular-nums ${
-          isSelected
-            ? 'text-white/70'
-            : 'text-slate-400 dark:text-slate-500'
-        }`}>
+        <span className={`tabular-nums ${isSelected ? 'text-white/70' : 'text-slate-400 dark:text-slate-500'}`}>
           {count}
         </span>
       )}
-      {isSelected && (
-        <span className="ml-0.5 opacity-70">✕</span>
-      )}
+      {isSelected && <span className="ml-0.5 opacity-70">✕</span>}
     </button>
   );
 }

@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useMarket } from '../../hooks/useMarket';
 import { usePricingVariant } from '../../hooks/usePricingVariant';
+import posthog from 'posthog-js';
 
 export default function UpgradePage() {
   const searchParams = useSearchParams();
@@ -22,12 +23,21 @@ export default function UpgradePage() {
   const handleUpgrade = async () => {
     if (!pricing) return;
     setLoading(true);
+
+    // Track upgrade started event
+    posthog.capture('upgrade_started', {
+      pricing_variant: pricing.variant,
+      price: pricing.price,
+      plan: pricing.stripePlan,
+    });
+
     try {
       const result = await createCheckout({ plan: pricing.stripePlan });
       if (result.url) {
         window.location.href = result.url;
       }
     } catch (error) {
+      posthog.captureException(error);
       console.error('Failed to create checkout:', error);
       alert('Failed to start checkout. Please try again.');
     } finally {
@@ -43,9 +53,7 @@ export default function UpgradePage() {
           <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckIcon className="w-8 h-8 text-green-600 dark:text-green-400" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
-            You're a Premium Member!
-          </h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">You're a Premium Member!</h1>
           <p className="text-slate-600 dark:text-slate-400 mb-8">
             You have full access to all features. Thank you for supporting {market.tagline}!
           </p>
@@ -82,9 +90,7 @@ export default function UpgradePage() {
           <Link href="/" className="text-primary hover:text-primary-dark text-sm mb-4 inline-block">
             &larr; Back to Planner
           </Link>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
-            Unlock Your Summer
-          </h1>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">Unlock Your Summer</h1>
           <p className="text-lg text-slate-600 dark:text-slate-400">
             Plan your entire summer with unlimited camps and deadline reminders.
           </p>
@@ -101,13 +107,9 @@ export default function UpgradePage() {
           <div className="text-center mb-6">
             <div className="flex items-baseline justify-center gap-1">
               <span className="text-5xl font-bold">{pricing.price}</span>
-              {pricing.period && (
-                <span className="text-white/70 text-xl">{pricing.period}</span>
-              )}
+              {pricing.period && <span className="text-white/70 text-xl">{pricing.period}</span>}
             </div>
-            <p className="text-white/70 mt-2">
-              {pricing.description}
-            </p>
+            <p className="text-white/70 mt-2">{pricing.description}</p>
           </div>
 
           <ul className="space-y-3 mb-8">
@@ -129,9 +131,7 @@ export default function UpgradePage() {
 
         {/* Free tier comparison */}
         <div className="mt-8 text-center">
-          <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
-            Free plan includes:
-          </p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">Free plan includes:</p>
           <div className="flex flex-wrap justify-center gap-2 text-xs">
             <span className="px-2 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded">
               Browse all camps
@@ -147,24 +147,21 @@ export default function UpgradePage() {
 
         {/* FAQ */}
         <div className="mt-12">
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 text-center">
-            Questions?
-          </h3>
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 text-center">Questions?</h3>
           <div className="space-y-3">
             {pricing.variant === 'weekly' ? (
               <FAQItem question="Can I cancel anytime?">
-                Yes! You can cancel your subscription anytime from your account settings.
-                You'll retain access until the end of your current billing period.
+                Yes! You can cancel your subscription anytime from your account settings. You'll retain access until the
+                end of your current billing period.
               </FAQItem>
             ) : (
               <FAQItem question="How long does my access last?">
-                Your Summer Pass gives you full access for the entire summer season,
-                from now through August.
+                Your Summer Pass gives you full access for the entire summer season, from now through August.
               </FAQItem>
             )}
             <FAQItem question="Do I need Premium to browse camps?">
-              No! Browsing and searching camps is completely free. Premium unlocks unlimited
-              planning features and deadline alerts.
+              No! Browsing and searching camps is completely free. Premium unlocks unlimited planning features and
+              deadline alerts.
             </FAQItem>
           </div>
         </div>
@@ -172,8 +169,12 @@ export default function UpgradePage() {
         {/* Footer */}
         <div className="mt-12 text-center text-slate-500 text-sm">
           <div className="flex justify-center gap-4">
-            <Link href="/terms" className="hover:text-slate-700 dark:hover:text-slate-300">Terms</Link>
-            <Link href="/privacy" className="hover:text-slate-700 dark:hover:text-slate-300">Privacy</Link>
+            <Link href="/terms" className="hover:text-slate-700 dark:hover:text-slate-300">
+              Terms
+            </Link>
+            <Link href="/privacy" className="hover:text-slate-700 dark:hover:text-slate-300">
+              Privacy
+            </Link>
           </div>
         </div>
       </div>

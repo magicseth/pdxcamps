@@ -1,7 +1,7 @@
-"use node";
+'use node';
 
-import { action } from "../_generated/server";
-import { v } from "convex/values";
+import { action } from '../_generated/server';
+import { v } from 'convex/values';
 
 /**
  * Geocode any query string (address, place name, etc.) to coordinates
@@ -13,7 +13,10 @@ export const geocodeQuery = action({
     // Optionally bias results toward a city
     nearCity: v.optional(v.string()),
   },
-  handler: async (_, args): Promise<{
+  handler: async (
+    _,
+    args,
+  ): Promise<{
     latitude: number;
     longitude: number;
     formattedAddress?: string;
@@ -24,7 +27,7 @@ export const geocodeQuery = action({
   } | null> => {
     const apiKey = process.env.OPENCAGE_API_KEY;
     if (!apiKey) {
-      console.warn("OPENCAGE_API_KEY not set, skipping geocoding");
+      console.warn('OPENCAGE_API_KEY not set, skipping geocoding');
       return null;
     }
 
@@ -51,9 +54,9 @@ export const geocodeQuery = action({
         const components = result.components;
 
         // Build street address from components
-        const houseNumber = components.house_number || "";
-        const road = components.road || components.street || "";
-        const street = houseNumber && road ? `${houseNumber} ${road}` : road || "";
+        const houseNumber = components.house_number || '';
+        const road = components.road || components.street || '';
+        const street = houseNumber && road ? `${houseNumber} ${road}` : road || '';
 
         return {
           latitude: result.geometry.lat,
@@ -68,7 +71,7 @@ export const geocodeQuery = action({
 
       return null;
     } catch (error) {
-      console.warn("Geocoding error:", error);
+      console.warn('Geocoding error:', error);
       return null;
     }
   },
@@ -87,7 +90,7 @@ export const geocodeAddress = action({
   handler: async (_, args): Promise<{ latitude: number; longitude: number } | null> => {
     const apiKey = process.env.OPENCAGE_API_KEY;
     if (!apiKey) {
-      throw new Error("OPENCAGE_API_KEY environment variable is not set");
+      throw new Error('OPENCAGE_API_KEY environment variable is not set');
     }
 
     const address = `${args.street}, ${args.city}, ${args.state} ${args.zip}, USA`;
@@ -121,7 +124,10 @@ export const reverseGeocode = action({
     latitude: v.number(),
     longitude: v.number(),
   },
-  handler: async (_, args): Promise<{
+  handler: async (
+    _,
+    args,
+  ): Promise<{
     street: string;
     city: string;
     state: string;
@@ -129,7 +135,7 @@ export const reverseGeocode = action({
   } | null> => {
     const apiKey = process.env.OPENCAGE_API_KEY;
     if (!apiKey) {
-      throw new Error("OPENCAGE_API_KEY environment variable is not set");
+      throw new Error('OPENCAGE_API_KEY environment variable is not set');
     }
 
     const url = `https://api.opencagedata.com/geocode/v1/json?q=${args.latitude}+${args.longitude}&key=${apiKey}&countrycode=us&limit=1`;
@@ -146,15 +152,15 @@ export const reverseGeocode = action({
       const components = result.components;
 
       // Build street address from components
-      const houseNumber = components.house_number || "";
-      const road = components.road || components.street || "";
-      const street = houseNumber && road ? `${houseNumber} ${road}` : road || "";
+      const houseNumber = components.house_number || '';
+      const road = components.road || components.street || '';
+      const street = houseNumber && road ? `${houseNumber} ${road}` : road || '';
 
       return {
         street,
-        city: components.city || components.town || components.village || components.suburb || "",
-        state: components.state_code || components.state || "",
-        zip: components.postcode || "",
+        city: components.city || components.town || components.village || components.suburb || '',
+        state: components.state_code || components.state || '',
+        zip: components.postcode || '',
       };
     }
 

@@ -9,12 +9,8 @@ export default function NotFound() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-900">
       <div className="max-w-md w-full text-center">
-        <div className="text-8xl font-bold text-slate-200 dark:text-slate-700 mb-4">
-          404
-        </div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-4 text-balance">
-          Page not found
-        </h1>
+        <div className="text-8xl font-bold text-slate-200 dark:text-slate-700 mb-4">404</div>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-4 text-balance">Page not found</h1>
         <p className="text-slate-600 dark:text-slate-400 mb-8 text-pretty">
           Sorry, we couldn&apos;t find the page you&apos;re looking for. It may have been moved or deleted.
         </p>

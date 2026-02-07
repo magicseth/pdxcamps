@@ -21,20 +21,35 @@ import { OrgFilterChip } from '../shared/OrgFilterChip';
 import { useMarket } from '../../hooks/useMarket';
 import { QueryErrorBoundary } from '../shared/QueryErrorBoundary';
 import { PlusIcon, SearchIcon } from '../shared/icons';
-import { generateSummerWeeks, type SummerWeek, isAgeInRange, isGradeInRange, calculateAge } from '../../convex/lib/helpers';
+import {
+  generateSummerWeeks,
+  type SummerWeek,
+  isAgeInRange,
+  isGradeInRange,
+  calculateAge,
+} from '../../convex/lib/helpers';
 import { RegistrationProgressBanner } from './RegistrationProgressBanner';
 import { RegistrationChecklist, ChecklistFAB } from './RegistrationChecklist';
 import { CampSelectorDrawer } from './CampSelectorDrawer';
+import { ReferralCallout } from './ReferralCallout';
 
 export function PlannerHub({
   user,
   onSignOut,
   children,
-  cities
+  cities,
 }: {
   user: User | null;
   onSignOut: () => void;
-  children: { _id: Id<'children'>; firstName: string; lastName?: string; birthdate?: string; currentGrade?: number; color?: string; shareToken?: string }[];
+  children: {
+    _id: Id<'children'>;
+    firstName: string;
+    lastName?: string;
+    birthdate?: string;
+    currentGrade?: number;
+    color?: string;
+    shareToken?: string;
+  }[];
   cities: { _id: Id<'cities'>; slug: string; name: string }[];
 }) {
   const market = useMarket();
@@ -99,29 +114,24 @@ export function PlannerHub({
   });
 
   // Get primary city for org filter
-  const primaryCity = cities.find(c => c.slug === market.slug) || cities[0];
+  const primaryCity = cities.find((c) => c.slug === market.slug) || cities[0];
 
   // Fetch organizations with logos for filter chips
   const allOrganizations = useQuery(
     api.organizations.queries.listOrganizationsWithSessionCounts,
-    primaryCity ? { cityId: primaryCity._id } : 'skip'
+    primaryCity ? { cityId: primaryCity._id } : 'skip',
   );
-
 
   // Category and org filters for planner grid counts
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedOrgs, setSelectedOrgs] = useState<string[]>([]);
 
   const toggleCategory = useCallback((cat: string) => {
-    setSelectedCategories(prev =>
-      prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
-    );
+    setSelectedCategories((prev) => (prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]));
   }, []);
 
   const toggleOrg = useCallback((orgId: string) => {
-    setSelectedOrgs(prev =>
-      prev.includes(orgId) ? prev.filter(o => o !== orgId) : [...prev, orgId]
-    );
+    setSelectedOrgs((prev) => (prev.includes(orgId) ? prev.filter((o) => o !== orgId) : [...prev, orgId]));
   }, []);
 
   // Animation key for swoosh effect when filters change
@@ -135,7 +145,7 @@ export function PlannerHub({
       JSON.stringify(prevFilters.orgs) !== JSON.stringify(selectedOrgs);
 
     if (filtersChanged) {
-      setFilterAnimationKey(k => k + 1);
+      setFilterAnimationKey((k) => k + 1);
       prevFiltersRef.current = { categories: selectedCategories, orgs: selectedOrgs };
     }
   }, [selectedCategories, selectedOrgs]);
@@ -147,9 +157,10 @@ export function PlannerHub({
     const freq: Record<string, number> = {};
     for (const summaries of Object.values(availability.weeks)) {
       for (const s of summaries) {
+        const n = (s as { n?: number }).n ?? 1;
         for (const cat of s.cats) {
           if (cat !== 'General' && cat !== 'camp') {
-            freq[cat] = (freq[cat] || 0) + 1;
+            freq[cat] = (freq[cat] || 0) + n;
           }
         }
       }
@@ -168,14 +179,15 @@ export function PlannerHub({
     for (const summaries of Object.values(availability.weeks)) {
       for (const s of summaries) {
         if (!s.orgId) continue;
-        orgCounts[s.orgId] = (orgCounts[s.orgId] || 0) + 1;
+        const n = (s as { n?: number }).n ?? 1;
+        orgCounts[s.orgId] = (orgCounts[s.orgId] || 0) + n;
       }
     }
 
     // Map org data with logos, filtered to those with sessions
     return allOrganizations
-      .filter(org => orgCounts[org._id] > 0)
-      .map(org => ({
+      .filter((org) => orgCounts[org._id] > 0)
+      .map((org) => ({
         id: org._id,
         name: org.name,
         logoUrl: org.logoUrl ?? undefined,
@@ -204,12 +216,13 @@ export function PlannerHub({
             child.currentGrade !== undefined &&
             child.currentGrade !== null &&
             !isGradeInRange(child.currentGrade, { minGrade: s.minGrade, maxGrade: s.maxGrade })
-          ) continue;
+          )
+            continue;
           // Apply category filter
-          if (selectedCategories.length > 0 && !selectedCategories.some(cat => s.cats.includes(cat))) continue;
+          if (selectedCategories.length > 0 && !selectedCategories.some((cat) => s.cats.includes(cat))) continue;
           // Apply org filter
           if (selectedOrgs.length > 0 && !selectedOrgs.includes(s.orgId)) continue;
-          count++;
+          count += (s as { n?: number }).n ?? 1;
         }
 
         if (count > 0) weekCounts[child._id] = count;
@@ -261,8 +274,8 @@ export function PlannerHub({
     if (!coverage) return null;
     const totalWeeks = coverage.length;
     const weeksWithGaps = coverage.filter((w) => w.hasGap).length;
-    const fullyPlannedWeeks = coverage.filter(
-      (w) => w.childCoverage.every((c) => c.status === 'full' || c.status === 'event')
+    const fullyPlannedWeeks = coverage.filter((w) =>
+      w.childCoverage.every((c) => c.status === 'full' || c.status === 'event'),
     ).length;
 
     const registeredSessionIds = new Set<string>();
@@ -304,35 +317,38 @@ export function PlannerHub({
     };
   }, [savedCamps]);
 
-  const defaultCity = cities.find(c => c.slug === market.slug) || cities[0];
+  const defaultCity = cities.find((c) => c.slug === market.slug) || cities[0];
 
-  const handleGapClick = useCallback((weekStart: string, weekEnd: string, childId: Id<'children'>) => {
-    const child = children.find(c => c._id === childId);
-    if (!child) return;
+  const handleGapClick = useCallback(
+    (weekStart: string, weekEnd: string, childId: Id<'children'>) => {
+      const child = children.find((c) => c._id === childId);
+      if (!child) return;
 
-    // Calculate child's age at the time of the camp
-    let age: number | undefined;
-    if (child.birthdate) {
-      const birthDate = new Date(child.birthdate);
-      const weekStartDate = new Date(weekStart);
-      age = weekStartDate.getFullYear() - birthDate.getFullYear();
-      const monthDiff = weekStartDate.getMonth() - birthDate.getMonth();
-      if (monthDiff < 0 || (monthDiff === 0 && weekStartDate.getDate() < birthDate.getDate())) {
-        age--;
+      // Calculate child's age at the time of the camp
+      let age: number | undefined;
+      if (child.birthdate) {
+        const birthDate = new Date(child.birthdate);
+        const weekStartDate = new Date(weekStart);
+        age = weekStartDate.getFullYear() - birthDate.getFullYear();
+        const monthDiff = weekStartDate.getMonth() - birthDate.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && weekStartDate.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        if (age <= 0) age = undefined;
       }
-      if (age <= 0) age = undefined;
-    }
 
-    setSelectedGap({
-      weekStart,
-      weekEnd,
-      childId,
-      childName: child.firstName,
-      childColor: child.color,
-      childAge: age,
-      childGrade: child.currentGrade,
-    });
-  }, [children]);
+      setSelectedGap({
+        weekStart,
+        weekEnd,
+        childId,
+        childName: child.firstName,
+        childColor: child.color,
+        childAge: age,
+        childGrade: child.currentGrade,
+      });
+    },
+    [children],
+  );
 
   const handleRegistrationClick = useCallback((data: RegistrationClickData) => {
     setSelectedRegistration(data);
@@ -377,20 +393,19 @@ export function PlannerHub({
                 <div className="flex items-center gap-3">
                   <span className="text-lg">📅</span>
                   <div>
-                    <p className="text-sm font-medium text-slate-900 dark:text-white">
-                      Sync to Google Calendar
-                    </p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">Sync to Google Calendar</p>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
                       Plus: share with co-parents, registration reminders, waitlist alerts
                     </p>
                   </div>
                 </div>
-                <span className="text-sm font-medium text-accent group-hover:text-accent-dark">
-                  Upgrade →
-                </span>
+                <span className="text-sm font-medium text-accent group-hover:text-accent-dark">Upgrade →</span>
               </div>
             </Link>
           )}
+
+          {/* Referral Callout */}
+          <ReferralCallout />
 
           {/* Registration Progress Banner */}
           {stats && (
@@ -410,7 +425,7 @@ export function PlannerHub({
           {/* Category filter chips */}
           {availableCategories.length > 0 && (
             <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide">
-              {availableCategories.map(cat => (
+              {availableCategories.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => toggleCategory(cat)}
@@ -437,7 +452,7 @@ export function PlannerHub({
           {/* Organization filter chips */}
           {availableOrgs.length > 0 && (
             <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide">
-              {availableOrgs.map(org => (
+              {availableOrgs.map((org) => (
                 <OrgFilterChip
                   key={org.id}
                   id={org.id}
@@ -461,7 +476,12 @@ export function PlannerHub({
           )}
 
           {coverage === undefined ? (
-            <div role="status" aria-live="polite" className="animate-in fade-in duration-300" style={{ animationDelay: '300ms', animationFillMode: 'backwards' }}>
+            <div
+              role="status"
+              aria-live="polite"
+              className="animate-in fade-in duration-300"
+              style={{ animationDelay: '300ms', animationFillMode: 'backwards' }}
+            >
               <span className="sr-only">Loading coverage data...</span>
               <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
                 <div className="hidden md:block overflow-x-auto">
@@ -489,7 +509,9 @@ export function PlannerHub({
                             <th
                               key={week.startDate}
                               className={`px-1 py-1.5 text-center text-xs border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 ${
-                                isMonthStart ? 'border-l border-l-slate-300 dark:border-l-slate-600' : 'border-l border-l-slate-200 dark:border-l-slate-700'
+                                isMonthStart
+                                  ? 'border-l border-l-slate-300 dark:border-l-slate-600'
+                                  : 'border-l border-l-slate-200 dark:border-l-slate-700'
                               }`}
                             >
                               <div className="font-medium">{week.label.split(' ')[0]}</div>
@@ -501,7 +523,10 @@ export function PlannerHub({
                     </thead>
                     <tbody>
                       {children.map((child, i) => (
-                        <tr key={child._id} className={i % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50/50 dark:bg-slate-800/50'}>
+                        <tr
+                          key={child._id}
+                          className={i % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50/50 dark:bg-slate-800/50'}
+                        >
                           <td className="sticky left-0 z-10 px-4 py-3 text-sm font-medium text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-700/50 bg-inherit">
                             <div className="flex items-center gap-2">
                               <span className="w-7 h-7 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center text-white text-xs font-bold">
@@ -513,9 +538,14 @@ export function PlannerHub({
                           {skeletonWeeks.map((week, j) => {
                             const isMonthStart = j > 0 && skeletonWeeks[j - 1].monthName !== week.monthName;
                             return (
-                              <td key={week.startDate} className={`border-b border-slate-100 dark:border-slate-700/50 p-0 ${
-                                isMonthStart ? 'border-l border-l-slate-300 dark:border-l-slate-600' : 'border-l border-l-slate-100 dark:border-l-slate-700/50'
-                              }`}>
+                              <td
+                                key={week.startDate}
+                                className={`border-b border-slate-100 dark:border-slate-700/50 p-0 ${
+                                  isMonthStart
+                                    ? 'border-l border-l-slate-300 dark:border-l-slate-600'
+                                    : 'border-l border-l-slate-100 dark:border-l-slate-700/50'
+                                }`}
+                              >
                                 <div className="w-full min-h-[48px] bg-slate-100/50 dark:bg-slate-700/30 animate-pulse" />
                               </td>
                             );
@@ -537,7 +567,10 @@ export function PlannerHub({
                           <tr className="bg-slate-50 dark:bg-slate-800/50">
                             <th className="sticky left-0 z-10 bg-slate-50 dark:bg-slate-800/50 px-3 py-1.5 text-left text-xs font-medium text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700 min-w-[90px]" />
                             {weeks.map((week) => (
-                              <th key={week.startDate} className="px-1 py-1.5 text-center text-xs border-b border-l border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400">
+                              <th
+                                key={week.startDate}
+                                className="px-1 py-1.5 text-center text-xs border-b border-l border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400"
+                              >
                                 <div className="font-medium">{week.label.split(' ')[0]}</div>
                                 <div className="text-[10px] opacity-70">{week.label.split(' ').slice(1).join(' ')}</div>
                               </th>
@@ -546,7 +579,12 @@ export function PlannerHub({
                         </thead>
                         <tbody>
                           {children.map((child, i) => (
-                            <tr key={child._id} className={i % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50/50 dark:bg-slate-800/50'}>
+                            <tr
+                              key={child._id}
+                              className={
+                                i % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50/50 dark:bg-slate-800/50'
+                              }
+                            >
                               <td className="sticky left-0 z-10 px-3 py-2 text-sm font-medium text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-700/50 bg-inherit">
                                 <div className="flex items-center gap-1.5">
                                   <span className="w-6 h-6 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
@@ -556,7 +594,10 @@ export function PlannerHub({
                                 </div>
                               </td>
                               {weeks.map((week) => (
-                                <td key={week.startDate} className="px-1 py-2 border-b border-l border-slate-100 dark:border-slate-700/50">
+                                <td
+                                  key={week.startDate}
+                                  className="px-1 py-2 border-b border-l border-slate-100 dark:border-slate-700/50"
+                                >
                                   <div className="h-8 bg-slate-100/50 dark:bg-slate-700/30 rounded animate-pulse" />
                                 </td>
                               ))}
@@ -571,16 +612,11 @@ export function PlannerHub({
             </div>
           ) : filteredCoverage.length === 0 ? (
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-8 text-center">
-              <p className="text-slate-500 dark:text-slate-400">
-                No weeks found for summer {selectedYear}.
-              </p>
+              <p className="text-slate-500 dark:text-slate-400">No weeks found for summer {selectedYear}.</p>
             </div>
           ) : (
             <QueryErrorBoundary section="planner">
-              <div
-                key={filterAnimationKey}
-                className={filterAnimationKey > 0 ? 'animate-filter-swoosh' : ''}
-              >
+              <div key={filterAnimationKey} className={filterAnimationKey > 0 ? 'animate-filter-swoosh' : ''}>
                 <PlannerGrid
                   coverage={filteredCoverage}
                   children={children}
@@ -601,9 +637,7 @@ export function PlannerHub({
           <section className="bg-slate-900 py-12 overflow-hidden mt-8">
             <div className="max-w-4xl mx-auto px-4 mb-6">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-white">
-                  Featured camps in {market.name}
-                </h2>
+                <h2 className="text-xl font-bold text-white">Featured camps in {market.name}</h2>
                 <button
                   onClick={() => setShowRequestCampModal(true)}
                   className="text-sm text-slate-400 hover:text-white flex items-center gap-1"
@@ -629,8 +663,12 @@ export function PlannerHub({
 
             <style jsx global>{`
               @keyframes scroll-planner {
-                0% { transform: translateX(0); }
-                100% { transform: translateX(-50%); }
+                0% {
+                  transform: translateX(0);
+                }
+                100% {
+                  transform: translateX(-50%);
+                }
               }
               .animate-scroll-planner {
                 animation: scroll-planner 60s linear infinite;
@@ -676,37 +714,31 @@ export function PlannerHub({
         defaultChildIds={children.map((c) => c._id)}
       />
 
-      <AddChildModal
-        isOpen={showAddChildModal}
-        onClose={() => setShowAddChildModal(false)}
-      />
+      <AddChildModal isOpen={showAddChildModal} onClose={() => setShowAddChildModal(false)} />
 
-      <RequestCampModal
-        isOpen={showRequestCampModal}
-        onClose={() => setShowRequestCampModal(false)}
-      />
+      <RequestCampModal isOpen={showRequestCampModal} onClose={() => setShowRequestCampModal(false)} />
 
-      <SharePlanModal
-        isOpen={showShareModal}
-        onClose={() => setShowShareModal(false)}
-        children={children}
-      />
+      <SharePlanModal isOpen={showShareModal} onClose={() => setShowShareModal(false)} children={children} />
 
       <RegistrationModal
         isOpen={selectedRegistration !== null}
         onClose={() => setSelectedRegistration(null)}
-        registration={selectedRegistration ? {
-          registrationId: selectedRegistration.registrationId as Id<'registrations'>,
-          sessionId: selectedRegistration.sessionId as Id<'sessions'>,
-          childId: selectedRegistration.childId,
-          childName: selectedRegistration.childName,
-          campName: selectedRegistration.campName,
-          organizationName: selectedRegistration.organizationName,
-          organizationLogoUrl: selectedRegistration.organizationLogoUrl,
-          status: selectedRegistration.status as 'interested' | 'waitlisted' | 'registered' | 'cancelled',
-          weekLabel: selectedRegistration.weekLabel,
-          registrationUrl: selectedRegistration.registrationUrl,
-        } : null}
+        registration={
+          selectedRegistration
+            ? {
+                registrationId: selectedRegistration.registrationId as Id<'registrations'>,
+                sessionId: selectedRegistration.sessionId as Id<'sessions'>,
+                childId: selectedRegistration.childId,
+                childName: selectedRegistration.childName,
+                campName: selectedRegistration.campName,
+                organizationName: selectedRegistration.organizationName,
+                organizationLogoUrl: selectedRegistration.organizationLogoUrl,
+                status: selectedRegistration.status as 'interested' | 'waitlisted' | 'registered' | 'cancelled',
+                weekLabel: selectedRegistration.weekLabel,
+                registrationUrl: selectedRegistration.registrationUrl,
+              }
+            : null
+        }
         citySlug={defaultCity?.slug}
       />
 
@@ -730,11 +762,7 @@ export function PlannerHub({
       )}
 
       {/* Registration Checklist Drawer */}
-      <RegistrationChecklist
-        isOpen={showChecklist}
-        onClose={() => setShowChecklist(false)}
-        children={children}
-      />
+      <RegistrationChecklist isOpen={showChecklist} onClose={() => setShowChecklist(false)} children={children} />
 
       {/* Camp Selector Drawer (for gap clicks) */}
       {selectedGap && defaultCity && (
@@ -755,17 +783,16 @@ export function PlannerHub({
       )}
 
       {/* Floating Action Button for quick access to checklist */}
-      <ChecklistFAB
-        pendingCount={registrationStats.todo}
-        onClick={() => setShowChecklist(true)}
-      />
+      <ChecklistFAB pendingCount={registrationStats.todo} onClick={() => setShowChecklist(true)} />
     </div>
   );
 }
 
-
 // Session showcase card for scrolling display (used in PlannerHub)
-function SessionShowcaseCard({ session, citySlug }: {
+function SessionShowcaseCard({
+  session,
+  citySlug,
+}: {
   session: {
     _id: string;
     campName: string;
@@ -859,9 +886,7 @@ function SessionShowcaseCard({ session, citySlug }: {
           {session.campName}
         </h3>
         {session.organizationName && (
-          <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">
-            {session.organizationName}
-          </p>
+          <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{session.organizationName}</p>
         )}
 
         <div className="flex items-center justify-between mt-3">

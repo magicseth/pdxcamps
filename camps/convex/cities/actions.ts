@@ -1,22 +1,25 @@
-"use node";
+'use node';
 
 /**
  * City asset management actions
  */
 
-import { action } from "../_generated/server";
-import { api } from "../_generated/api";
-import { v } from "convex/values";
+import { action } from '../_generated/server';
+import { api } from '../_generated/api';
+import { v } from 'convex/values';
 
 /**
  * Upload an icon from URL and set it for a city
  */
 export const uploadCityIconFromUrl = action({
   args: {
-    cityId: v.id("cities"),
+    cityId: v.id('cities'),
     imageUrl: v.string(),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     success: boolean;
     storageId?: string;
     error?: string;
@@ -43,7 +46,7 @@ export const uploadCityIconFromUrl = action({
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   },
@@ -54,10 +57,13 @@ export const uploadCityIconFromUrl = action({
  */
 export const uploadCityHeaderFromUrl = action({
   args: {
-    cityId: v.id("cities"),
+    cityId: v.id('cities'),
     imageUrl: v.string(),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     success: boolean;
     storageId?: string;
     error?: string;
@@ -84,7 +90,7 @@ export const uploadCityHeaderFromUrl = action({
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   },
@@ -98,25 +104,28 @@ export const copyIconFromExpansionMarket = action({
   args: {
     marketKey: v.string(),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     success: boolean;
     error?: string;
   }> => {
     // Get expansion market list which includes icon fields
     const markets = await ctx.runQuery(api.expansion.queries.listExpansionMarkets, {});
 
-    const market = markets.find(m => m.key === args.marketKey);
+    const market = markets.find((m) => m.key === args.marketKey);
 
     if (!market) {
-      return { success: false, error: "Expansion market not found" };
+      return { success: false, error: 'Expansion market not found' };
     }
 
     if (!market.cityId) {
-      return { success: false, error: "Market has no linked city" };
+      return { success: false, error: 'Market has no linked city' };
     }
 
     if (!market.selectedIconStorageId) {
-      return { success: false, error: "Market has no icon selected" };
+      return { success: false, error: 'Market has no icon selected' };
     }
 
     // Copy the storage ID to the city

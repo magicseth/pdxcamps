@@ -10,7 +10,7 @@ function getProductionHost(host: string): string {
   if (host.includes('localhost')) return host;
 
   // If it's already a production domain, use it
-  if (PRODUCTION_DOMAINS.some(d => host === d || host === `www.${d}`)) {
+  if (PRODUCTION_DOMAINS.some((d) => host === d || host === `www.${d}`)) {
     return host;
   }
 

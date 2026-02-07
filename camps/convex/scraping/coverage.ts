@@ -5,9 +5,9 @@
  * to identify gaps in coverage.
  */
 
-import { query, mutation } from "../_generated/server";
-import { v } from "convex/values";
-import { similarity } from "./deduplication";
+import { query, mutation } from '../_generated/server';
+import { v } from 'convex/values';
+import { similarity } from './deduplication';
 
 interface ReferenceCamp {
   name: string;
@@ -35,14 +35,14 @@ export const compareCoverage = query({
       v.object({
         name: v.string(),
         url: v.optional(v.string()),
-      })
+      }),
     ),
   },
   handler: async (ctx, args): Promise<CoverageResult> => {
-    const ourSources = await ctx.db.query("scrapeSources").collect();
+    const ourSources = await ctx.db.query('scrapeSources').collect();
 
     const missing: ReferenceCamp[] = [];
-    const matches: CoverageResult["matches"] = [];
+    const matches: CoverageResult['matches'] = [];
 
     for (const ref of args.referenceCamps) {
       let bestMatch: { source: (typeof ourSources)[0]; score: number } | null = null;
@@ -67,9 +67,7 @@ export const compareCoverage = query({
 
     const inOurSystem = args.referenceCamps.length - missing.length;
     const coveragePercent =
-      args.referenceCamps.length > 0
-        ? ((inOurSystem / args.referenceCamps.length) * 100).toFixed(1)
-        : "0";
+      args.referenceCamps.length > 0 ? ((inOurSystem / args.referenceCamps.length) * 100).toFixed(1) : '0';
 
     return {
       totalReference: args.referenceCamps.length,
@@ -87,18 +85,16 @@ export const compareCoverage = query({
 export const getCoverageStats = query({
   args: {},
   handler: async (ctx) => {
-    const sources = await ctx.db.query("scrapeSources").collect();
+    const sources = await ctx.db.query('scrapeSources').collect();
     const activeSources = sources.filter((s) => s.isActive);
 
     // Count sources with data
-    const sourcesWithData = sources.filter(
-      (s) => (s.sessionCount ?? 0) > 0
-    );
+    const sourcesWithData = sources.filter((s) => (s.sessionCount ?? 0) > 0);
 
     // Count by quality tier
-    const highQuality = sources.filter((s) => s.qualityTier === "high");
-    const mediumQuality = sources.filter((s) => s.qualityTier === "medium");
-    const lowQuality = sources.filter((s) => s.qualityTier === "low");
+    const highQuality = sources.filter((s) => s.qualityTier === 'high');
+    const mediumQuality = sources.filter((s) => s.qualityTier === 'medium');
+    const lowQuality = sources.filter((s) => s.qualityTier === 'low');
 
     return {
       totalSources: sources.length,
@@ -110,10 +106,7 @@ export const getCoverageStats = query({
         low: lowQuality.length,
         unrated: sources.length - highQuality.length - mediumQuality.length - lowQuality.length,
       },
-      dataSuccessRate:
-        activeSources.length > 0
-          ? Math.round((sourcesWithData.length / activeSources.length) * 100)
-          : 0,
+      dataSuccessRate: activeSources.length > 0 ? Math.round((sourcesWithData.length / activeSources.length) * 100) : 0,
     };
   },
 });
@@ -125,34 +118,34 @@ export const addSourceFromReference = mutation({
   args: {
     name: v.string(),
     url: v.string(),
-    cityId: v.id("cities"), // Required: market this source belongs to
+    cityId: v.id('cities'), // Required: market this source belongs to
   },
   handler: async (ctx, args) => {
     // Check if source already exists
     const existing = await ctx.db
-      .query("scrapeSources")
-      .withIndex("by_url", (q) => q.eq("url", args.url))
+      .query('scrapeSources')
+      .withIndex('by_url', (q) => q.eq('url', args.url))
       .first();
 
     if (existing) {
-      throw new Error("A source with this URL already exists");
+      throw new Error('A source with this URL already exists');
     }
 
     // Create new source
-    const sourceId = await ctx.db.insert("scrapeSources", {
+    const sourceId = await ctx.db.insert('scrapeSources', {
       name: args.name,
       url: args.url,
       cityId: args.cityId,
       scraperConfig: {
         version: 1,
         generatedAt: Date.now(),
-        generatedBy: "manual",
-        entryPoints: [{ url: args.url, type: "session_list" }],
+        generatedBy: 'manual',
+        entryPoints: [{ url: args.url, type: 'session_list' }],
         sessionExtraction: {
-          containerSelector: "",
+          containerSelector: '',
           fields: {
-            name: { selector: "" },
-            dates: { selector: "", format: "" },
+            name: { selector: '' },
+            dates: { selector: '', format: '' },
           },
         },
         requiresJavaScript: true,
@@ -177,22 +170,16 @@ export const addSourceFromReference = mutation({
 export const getSourcesNeedingAttention = query({
   args: {},
   handler: async (ctx) => {
-    const sources = await ctx.db.query("scrapeSources").collect();
+    const sources = await ctx.db.query('scrapeSources').collect();
 
     // Sources that are active but have no sessions
-    const noDataSources = sources.filter(
-      (s) => s.isActive && (s.sessionCount ?? 0) === 0
-    );
+    const noDataSources = sources.filter((s) => s.isActive && (s.sessionCount ?? 0) === 0);
 
     // Sources with failing scrapers
-    const failingSources = sources.filter(
-      (s) => s.isActive && s.scraperHealth.consecutiveFailures > 0
-    );
+    const failingSources = sources.filter((s) => s.isActive && s.scraperHealth.consecutiveFailures > 0);
 
     // Sources that need regeneration
-    const needsRegenSources = sources.filter(
-      (s) => s.isActive && s.scraperHealth.needsRegeneration
-    );
+    const needsRegenSources = sources.filter((s) => s.isActive && s.scraperHealth.needsRegeneration);
 
     // Sources with suggested URL updates
     const urlUpdateSources = sources.filter((s) => s.suggestedUrl);

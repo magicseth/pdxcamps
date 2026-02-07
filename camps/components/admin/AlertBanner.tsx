@@ -24,8 +24,8 @@ export function AlertBanner({ criticalCount, errorCount, warningCount }: AlertBa
         isCritical
           ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
           : isError
-          ? 'bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800'
-          : 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800'
+            ? 'bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800'
+            : 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800'
       }`}
     >
       <div className="flex items-center gap-3">
@@ -34,8 +34,8 @@ export function AlertBanner({ criticalCount, errorCount, warningCount }: AlertBa
             isCritical
               ? 'text-red-600 dark:text-red-400'
               : isError
-              ? 'text-orange-600 dark:text-orange-400'
-              : 'text-yellow-600 dark:text-yellow-400'
+                ? 'text-orange-600 dark:text-orange-400'
+                : 'text-yellow-600 dark:text-yellow-400'
           }`}
         >
           <AlertIcon />
@@ -46,13 +46,11 @@ export function AlertBanner({ criticalCount, errorCount, warningCount }: AlertBa
               isCritical
                 ? 'text-red-800 dark:text-red-200'
                 : isError
-                ? 'text-orange-800 dark:text-orange-200'
-                : 'text-yellow-800 dark:text-yellow-200'
+                  ? 'text-orange-800 dark:text-orange-200'
+                  : 'text-yellow-800 dark:text-yellow-200'
             }`}
           >
-            {criticalCount > 0 && (
-              <span className="mr-3">{criticalCount} Critical</span>
-            )}
+            {criticalCount > 0 && <span className="mr-3">{criticalCount} Critical</span>}
             {errorCount > 0 && <span className="mr-3">{errorCount} Error</span>}
             {warningCount > 0 && <span>{warningCount} Warning</span>}
           </p>
@@ -61,8 +59,8 @@ export function AlertBanner({ criticalCount, errorCount, warningCount }: AlertBa
               isCritical
                 ? 'text-red-600 dark:text-red-300'
                 : isError
-                ? 'text-orange-600 dark:text-orange-300'
-                : 'text-yellow-600 dark:text-yellow-300'
+                  ? 'text-orange-600 dark:text-orange-300'
+                  : 'text-yellow-600 dark:text-yellow-300'
             }`}
           >
             System alerts require attention
@@ -75,8 +73,8 @@ export function AlertBanner({ criticalCount, errorCount, warningCount }: AlertBa
           isCritical
             ? 'bg-red-600 text-white hover:bg-red-700'
             : isError
-            ? 'bg-orange-600 text-white hover:bg-orange-700'
-            : 'bg-yellow-600 text-white hover:bg-yellow-700'
+              ? 'bg-orange-600 text-white hover:bg-orange-700'
+              : 'bg-yellow-600 text-white hover:bg-yellow-700'
         }`}
       >
         View Alerts
@@ -87,13 +85,7 @@ export function AlertBanner({ criticalCount, errorCount, warningCount }: AlertBa
 
 function AlertIcon() {
   return (
-    <svg
-      className="w-6 h-6"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      aria-hidden="true"
-    >
+    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
       <path
         strokeLinecap="round"
         strokeLinejoin="round"

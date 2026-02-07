@@ -5,10 +5,6 @@ export const metadata: Metadata = {
   description: 'Connect with other families and share camp plans',
 };
 
-export default function FriendsLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function FriendsLayout({ children }: { children: React.ReactNode }) {
   return children;
 }

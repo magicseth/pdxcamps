@@ -13,7 +13,10 @@ export default function DevelopmentPage() {
   return (
     <>
       <header className="sticky top-0 z-10 bg-background p-4 border-b-2 border-slate-200 dark:border-slate-800 flex flex-row justify-between items-center">
-        <Link href="/admin" className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+        <Link
+          href="/admin"
+          className="font-semibold hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
           Admin Dashboard
         </Link>
         <h1 className="text-lg font-semibold">Scraper Development</h1>
@@ -26,13 +29,8 @@ export default function DevelopmentPage() {
         </Authenticated>
         <Unauthenticated>
           <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-            <p className="text-slate-600 dark:text-slate-400">
-              Please sign in to access the admin dashboard.
-            </p>
-            <a
-              href="/sign-in"
-              className="bg-foreground text-background px-6 py-2 rounded-md"
-            >
+            <p className="text-slate-600 dark:text-slate-400">Please sign in to access the admin dashboard.</p>
+            <a href="/sign-in" className="bg-foreground text-background px-6 py-2 rounded-md">
               Sign in
             </a>
           </div>
@@ -72,8 +70,8 @@ function DevelopmentContent() {
   const requests = useQuery(api.scraping.development.listRequests, {
     limit,
     sortOrder,
-    status: statusFilter === 'all' ? undefined : statusFilter as any,
-    cityId: cityFilter as any || undefined,
+    status: statusFilter === 'all' ? undefined : (statusFilter as any),
+    cityId: (cityFilter as any) || undefined,
   });
 
   // Pre-fill from query params (when coming from "Improve Scraper" link)
@@ -146,8 +144,8 @@ function DevelopmentContent() {
       await requestDevelopment({
         sourceName: newSourceName,
         sourceUrl: newSourceUrl,
-        cityId: newCityId as Id<"cities">,
-        sourceId: newSourceId ? (newSourceId as Id<"scrapeSources">) : undefined,
+        cityId: newCityId as Id<'cities'>,
+        sourceId: newSourceId ? (newSourceId as Id<'scrapeSources'>) : undefined,
         notes: newNotes || undefined,
       });
       setNewSourceName('');
@@ -167,12 +165,12 @@ function DevelopmentContent() {
   const allRequests = requests;
   const counts = {
     all: allRequests.length,
-    pending: allRequests.filter(r => r.status === 'pending').length,
-    in_progress: allRequests.filter(r => r.status === 'in_progress').length,
-    testing: allRequests.filter(r => r.status === 'testing').length,
-    needs_feedback: allRequests.filter(r => r.status === 'needs_feedback').length,
-    completed: allRequests.filter(r => r.status === 'completed').length,
-    failed: allRequests.filter(r => r.status === 'failed').length,
+    pending: allRequests.filter((r) => r.status === 'pending').length,
+    in_progress: allRequests.filter((r) => r.status === 'in_progress').length,
+    testing: allRequests.filter((r) => r.status === 'testing').length,
+    needs_feedback: allRequests.filter((r) => r.status === 'needs_feedback').length,
+    completed: allRequests.filter((r) => r.status === 'completed').length,
+    failed: allRequests.filter((r) => r.status === 'failed').length,
   };
 
   const tabs = [
@@ -189,12 +187,8 @@ function DevelopmentContent() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Scraper Development
-          </h2>
-          <p className="text-slate-500 mt-1">
-            Queue sites for Claude Code to develop custom scrapers
-          </p>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Scraper Development</h2>
+          <p className="text-slate-500 mt-1">Queue sites for Claude Code to develop custom scrapers</p>
         </div>
         <button
           onClick={() => setShowNewForm(!showNewForm)}
@@ -242,9 +236,7 @@ function DevelopmentContent() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Market *
-                </label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Market *</label>
                 <select
                   value={newCityId}
                   onChange={(e) => setNewCityId(e.target.value)}
@@ -349,9 +341,7 @@ function DevelopmentContent() {
               <option value="500">Show All</option>
             </select>
 
-            <span className="text-sm text-slate-500">
-              {requests.length} shown
-            </span>
+            <span className="text-sm text-slate-500">{requests.length} shown</span>
           </div>
         </div>
 
@@ -469,13 +459,15 @@ function RequestRow({ request }: { request: any }) {
   };
 
   // Parse sample data if available
-  const parsedSessions = request.lastTestSampleData ? (() => {
-    try {
-      return JSON.parse(request.lastTestSampleData);
-    } catch {
-      return null;
-    }
-  })() : null;
+  const parsedSessions = request.lastTestSampleData
+    ? (() => {
+        try {
+          return JSON.parse(request.lastTestSampleData);
+        } catch {
+          return null;
+        }
+      })()
+    : null;
 
   const needsReview = request.status === 'needs_feedback' || request.status === 'testing';
   const hasTestResults = request.lastTestRun && (request.lastTestSessionsFound ?? 0) > 0;
@@ -520,10 +512,7 @@ function RequestRow({ request }: { request: any }) {
             >
               ✕
             </button>
-            <button
-              onClick={() => setExpanded(!expanded)}
-              className="px-2 py-1.5 text-slate-500 hover:text-slate-700"
-            >
+            <button onClick={() => setExpanded(!expanded)} className="px-2 py-1.5 text-slate-500 hover:text-slate-700">
               {expanded ? '▲' : '▼'}
             </button>
           </div>
@@ -531,7 +520,9 @@ function RequestRow({ request }: { request: any }) {
 
         {/* Contact info result */}
         {contactResult && (
-          <div className={`mb-3 px-3 py-2 rounded text-sm ${contactResult.success ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'}`}>
+          <div
+            className={`mb-3 px-3 py-2 rounded text-sm ${contactResult.success ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'}`}
+          >
             {contactResult.success ? (
               <div className="flex flex-wrap items-center gap-3">
                 {contactResult.email && (
@@ -609,11 +600,7 @@ function RequestRow({ request }: { request: any }) {
                     )}
                   </td>
                   <td className="px-2 py-1.5 whitespace-nowrap">
-                    {session.price ? (
-                      `$${(session.price / 100).toFixed(0)}`
-                    ) : (
-                      <span className="text-slate-400">-</span>
-                    )}
+                    {session.price ? `$${(session.price / 100).toFixed(0)}` : <span className="text-slate-400">-</span>}
                   </td>
                   <td className="px-2 py-1.5 max-w-[150px] truncate" title={session.locationName}>
                     {session.locationName || <span className="text-slate-400">-</span>}
@@ -731,10 +718,7 @@ function RequestRow({ request }: { request: any }) {
             {request.testRetryCount > 0 && ` • Retries: ${request.testRetryCount}/${request.maxTestRetries ?? 3}`}
           </p>
         </div>
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="ml-4 text-slate-500 hover:text-slate-700"
-        >
+        <button onClick={() => setExpanded(!expanded)} className="ml-4 text-slate-500 hover:text-slate-700">
           {expanded ? '▲' : '▼'}
         </button>
       </div>
@@ -753,12 +737,8 @@ function RequestRow({ request }: { request: any }) {
           {request.lastTestRun && (
             <div className="bg-slate-50 dark:bg-slate-900 rounded p-4">
               <p className="text-sm font-medium">Last Test: {new Date(request.lastTestRun).toLocaleString()}</p>
-              <p className="text-sm text-slate-500">
-                Sessions found: {request.lastTestSessionsFound ?? 0}
-              </p>
-              {request.lastTestError && (
-                <p className="text-sm text-red-500 mt-1">{request.lastTestError}</p>
-              )}
+              <p className="text-sm text-slate-500">Sessions found: {request.lastTestSessionsFound ?? 0}</p>
+              {request.lastTestError && <p className="text-sm text-red-500 mt-1">{request.lastTestError}</p>}
               {request.lastTestSampleData && (
                 <details className="mt-2">
                   <summary className="text-sm text-primary cursor-pointer">View Sample Data</summary>
@@ -800,9 +780,7 @@ function RequestRow({ request }: { request: any }) {
           {/* Force Restart - available for stuck or completed requests */}
           {(request.status === 'in_progress' || request.status === 'testing') && (
             <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
-              <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Request appears stuck?
-              </p>
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Request appears stuck?</p>
               <div className="flex gap-2">
                 <button
                   onClick={() => handleForceRestart(false)}
@@ -875,7 +853,9 @@ function RequestRow({ request }: { request: any }) {
                           )}
                           {contactResult.phone && <span>📞 {contactResult.phone}</span>}
                           {contactResult.contactName && <span>👤 {contactResult.contactName}</span>}
-                          {!contactResult.email && !contactResult.phone && <span className="text-slate-500">No contact info found</span>}
+                          {!contactResult.email && !contactResult.phone && (
+                            <span className="text-slate-500">No contact info found</span>
+                          )}
                         </span>
                       ) : (
                         <span>Error: {contactResult.error}</span>

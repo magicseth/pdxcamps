@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
+import posthog from 'posthog-js';
 
 interface AddChildModalProps {
   isOpen: boolean;
@@ -47,6 +48,13 @@ export function AddChildModal({ isOpen, onClose, onSuccess }: AddChildModalProps
         interests: [],
       });
 
+      // Track child added event
+      const childAge = currentYear - parseInt(birthYear);
+      posthog.capture('child_added', {
+        child_age: childAge,
+        source: 'add_child_modal',
+      });
+
       // Reset form
       setFirstName('');
       setBirthYear('');
@@ -54,6 +62,7 @@ export function AddChildModal({ isOpen, onClose, onSuccess }: AddChildModalProps
       onSuccess?.();
       onClose();
     } catch (err) {
+      posthog.captureException(err);
       setError(err instanceof Error ? err.message : 'Failed to add child');
     } finally {
       setIsSubmitting(false);
@@ -65,10 +74,7 @@ export function AddChildModal({ isOpen, onClose, onSuccess }: AddChildModalProps
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
       <div className="relative bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-md w-full p-6">
@@ -83,20 +89,13 @@ export function AddChildModal({ isOpen, onClose, onSuccess }: AddChildModalProps
 
         <div className="text-center mb-6">
           <div className="text-4xl mb-3">👶</div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-            Add a Child
-          </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Add another child to your summer planner
-          </p>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Add a Child</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Add another child to your summer planner</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label
-              htmlFor="firstName"
-              className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
-            >
+            <label htmlFor="firstName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               First Name
             </label>
             <input
@@ -111,10 +110,7 @@ export function AddChildModal({ isOpen, onClose, onSuccess }: AddChildModalProps
           </div>
 
           <div>
-            <label
-              htmlFor="birthYear"
-              className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
-            >
+            <label htmlFor="birthYear" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Birth Year
             </label>
             <select

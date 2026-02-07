@@ -5,10 +5,6 @@ export const metadata: Metadata = {
   description: 'Set up your family profile to start planning summer camps',
 };
 
-export default function OnboardingLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function OnboardingLayout({ children }: { children: React.ReactNode }) {
   return children;
 }

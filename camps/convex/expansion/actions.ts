@@ -1,8 +1,8 @@
-"use node";
+'use node';
 
-import { action } from "../_generated/server";
-import { api } from "../_generated/api";
-import { v } from "convex/values";
+import { action } from '../_generated/server';
+import { api } from '../_generated/api';
+import { v } from 'convex/values';
 
 // Porkbun API types
 interface PorkbunPricingResponse {
@@ -43,7 +43,7 @@ interface NetlifyDnsRecord {
  * Sleep helper for rate limiting
  */
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -53,18 +53,18 @@ function sleep(ms: number): Promise<void> {
  */
 async function checkDomainFastly(
   domain: string,
-  apiKey: string
+  apiKey: string,
 ): Promise<{ available: boolean; status?: string; error?: string }> {
   try {
     const response = await fetch(
       `https://api.fastly.com/domain-management/v1/tools/status?domain=${encodeURIComponent(domain)}`,
       {
-        method: "GET",
+        method: 'GET',
         headers: {
-          "Fastly-Key": apiKey,
-          "Accept": "application/json",
+          'Fastly-Key': apiKey,
+          'Accept': 'application/json',
         },
-      }
+      },
     );
 
     if (!response.ok) {
@@ -80,8 +80,8 @@ async function checkDomainFastly(
     // Fastly returns status like "undelegated inactive" for available domains
     // "undelegated" or "inactive" = available
     // "active", "marketed", "parked" = taken
-    const statusStr = data.status || "";
-    const isAvailable = statusStr.includes("undelegated") || statusStr.includes("inactive");
+    const statusStr = data.status || '';
+    const isAvailable = statusStr.includes('undelegated') || statusStr.includes('inactive');
 
     return {
       available: isAvailable,
@@ -90,7 +90,7 @@ async function checkDomainFastly(
   } catch (error) {
     return {
       available: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
 }
@@ -101,7 +101,7 @@ async function checkDomainFastly(
  */
 async function checkDomainsWithFastly(
   domains: string[],
-  apiKey: string
+  apiKey: string,
 ): Promise<Array<{ domain: string; available: boolean; price?: string; error?: string }>> {
   // Check all domains in parallel - Fastly doesn't have strict rate limits
   const results = await Promise.all(
@@ -114,7 +114,7 @@ async function checkDomainsWithFastly(
         price: result.available ? undefined : undefined,
         error: result.error,
       };
-    })
+    }),
   );
 
   return results;
@@ -128,7 +128,10 @@ export const checkDomainsQuick = action({
   args: {
     domains: v.array(v.string()),
   },
-  handler: async (_, args): Promise<
+  handler: async (
+    _,
+    args,
+  ): Promise<
     Array<{
       domain: string;
       available: boolean;
@@ -142,7 +145,7 @@ export const checkDomainsQuick = action({
       return args.domains.map((domain) => ({
         domain,
         available: false,
-        error: "Fastly API key not configured",
+        error: 'Fastly API key not configured',
       }));
     }
 
@@ -158,7 +161,10 @@ export const getDomainPrice = action({
   args: {
     domain: v.string(),
   },
-  handler: async (_, args): Promise<{
+  handler: async (
+    _,
+    args,
+  ): Promise<{
     available: boolean;
     price?: string;
     error?: string;
@@ -167,32 +173,29 @@ export const getDomainPrice = action({
     const secretKey = process.env.PORKBUN_SECRET_KEY;
 
     if (!apiKey || !secretKey) {
-      return { available: false, error: "Porkbun API credentials not configured" };
+      return { available: false, error: 'Porkbun API credentials not configured' };
     }
 
     try {
-      const response = await fetch(
-        `https://api.porkbun.com/api/json/v3/domain/checkDomain/${args.domain}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            apikey: apiKey,
-            secretapikey: secretKey,
-          }),
-        }
-      );
+      const response = await fetch(`https://api.porkbun.com/api/json/v3/domain/checkDomain/${args.domain}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apikey: apiKey,
+          secretapikey: secretKey,
+        }),
+      });
 
       const data = await response.json();
 
-      if (!response.ok || data.status === "ERROR") {
+      if (!response.ok || data.status === 'ERROR') {
         return {
           available: false,
           error: data.message || `API error: ${response.status}`,
         };
       }
 
-      const isAvailable = data.status === "SUCCESS" && data.response?.avail === "yes";
+      const isAvailable = data.status === 'SUCCESS' && data.response?.avail === 'yes';
       return {
         available: isAvailable,
         price: data.response?.price,
@@ -200,7 +203,7 @@ export const getDomainPrice = action({
     } catch (error) {
       return {
         available: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   },
@@ -213,7 +216,10 @@ export const checkDomainAvailability = action({
   args: {
     domain: v.string(),
   },
-  handler: async (_, args): Promise<{
+  handler: async (
+    _,
+    args,
+  ): Promise<{
     available: boolean;
     price?: string;
     renewalPrice?: string;
@@ -225,15 +231,15 @@ export const checkDomainAvailability = action({
     if (!apiKey || !secretKey) {
       return {
         available: false,
-        error: "Porkbun API credentials not configured",
+        error: 'Porkbun API credentials not configured',
       };
     }
 
     try {
       // Porkbun pricing endpoint checks availability
-      const response = await fetch("https://api.porkbun.com/api/json/v3/pricing/get", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('https://api.porkbun.com/api/json/v3/pricing/get', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           apikey: apiKey,
           secretapikey: secretKey,
@@ -249,15 +255,15 @@ export const checkDomainAvailability = action({
 
       const data: PorkbunPricingResponse = await response.json();
 
-      if (data.status !== "SUCCESS" || !data.pricing) {
+      if (data.status !== 'SUCCESS' || !data.pricing) {
         return {
           available: false,
-          error: data.message || "Failed to get pricing",
+          error: data.message || 'Failed to get pricing',
         };
       }
 
       // Extract TLD from domain
-      const tld = args.domain.split(".").pop() || "com";
+      const tld = args.domain.split('.').pop() || 'com';
       const pricing = data.pricing[tld];
 
       if (!pricing) {
@@ -268,17 +274,14 @@ export const checkDomainAvailability = action({
       }
 
       // Check specific domain availability
-      const checkResponse = await fetch(
-        `https://api.porkbun.com/api/json/v3/domain/checkDomain/${args.domain}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            apikey: apiKey,
-            secretapikey: secretKey,
-          }),
-        }
-      );
+      const checkResponse = await fetch(`https://api.porkbun.com/api/json/v3/domain/checkDomain/${args.domain}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apikey: apiKey,
+          secretapikey: secretKey,
+        }),
+      });
 
       if (!checkResponse.ok) {
         return {
@@ -290,7 +293,7 @@ export const checkDomainAvailability = action({
       const checkData = await checkResponse.json();
 
       // New API returns { status: "SUCCESS", response: { avail: "yes"|"no", price: "..." } }
-      const isAvailable = checkData.status === "SUCCESS" && checkData.response?.avail === "yes";
+      const isAvailable = checkData.status === 'SUCCESS' && checkData.response?.avail === 'yes';
       return {
         available: isAvailable,
         price: checkData.response?.price,
@@ -299,7 +302,7 @@ export const checkDomainAvailability = action({
     } catch (error) {
       return {
         available: false,
-        error: `API error: ${error instanceof Error ? error.message : "Unknown error"}`,
+        error: `API error: ${error instanceof Error ? error.message : 'Unknown error'}`,
       };
     }
   },
@@ -312,7 +315,10 @@ export const checkMultipleDomains = action({
   args: {
     domains: v.array(v.string()),
   },
-  handler: async (_, args): Promise<
+  handler: async (
+    _,
+    args,
+  ): Promise<
     Array<{
       domain: string;
       available: boolean;
@@ -327,7 +333,7 @@ export const checkMultipleDomains = action({
       return args.domains.map((domain) => ({
         domain,
         available: false,
-        error: "Porkbun API credentials not configured",
+        error: 'Porkbun API credentials not configured',
       }));
     }
 
@@ -335,21 +341,18 @@ export const checkMultipleDomains = action({
 
     for (const domain of args.domains) {
       try {
-        const response = await fetch(
-          `https://api.porkbun.com/api/json/v3/domain/checkDomain/${domain}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              apikey: apiKey,
-              secretapikey: secretKey,
-            }),
-          }
-        );
+        const response = await fetch(`https://api.porkbun.com/api/json/v3/domain/checkDomain/${domain}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            apikey: apiKey,
+            secretapikey: secretKey,
+          }),
+        });
 
         const data = await response.json();
 
-        if (!response.ok || data.status === "ERROR") {
+        if (!response.ok || data.status === 'ERROR') {
           results.push({
             domain,
             available: false,
@@ -359,7 +362,7 @@ export const checkMultipleDomains = action({
         }
 
         // New API returns { status: "SUCCESS", response: { avail: "yes"|"no", price: "..." } }
-        const isAvailable = data.status === "SUCCESS" && data.response?.avail === "yes";
+        const isAvailable = data.status === 'SUCCESS' && data.response?.avail === 'yes';
         results.push({
           domain,
           available: isAvailable,
@@ -372,7 +375,7 @@ export const checkMultipleDomains = action({
         results.push({
           domain,
           available: false,
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     }
@@ -391,7 +394,10 @@ export const purchaseDomain = action({
     // Price from domain check (e.g., "9.73" for $9.73) - optional, will fetch if not provided
     price: v.optional(v.string()),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     success: boolean;
     orderId?: string;
     actualPrice?: string;
@@ -403,7 +409,7 @@ export const purchaseDomain = action({
     if (!apiKey || !secretKey) {
       return {
         success: false,
-        error: "Porkbun API credentials not configured",
+        error: 'Porkbun API credentials not configured',
       };
     }
 
@@ -411,22 +417,19 @@ export const purchaseDomain = action({
     let priceToUse = args.price;
     if (!priceToUse || priceToUse.trim() === '' || isNaN(parseFloat(priceToUse))) {
       console.log(`No valid price provided for ${args.domain}, fetching from Porkbun...`);
-      const priceResult = await ctx.runAction(
-        api.expansion.actions.getDomainPrice,
-        { domain: args.domain }
-      );
+      const priceResult = await ctx.runAction(api.expansion.actions.getDomainPrice, { domain: args.domain });
 
       if (!priceResult.available) {
         return {
           success: false,
-          error: priceResult.error || "Domain is not available",
+          error: priceResult.error || 'Domain is not available',
         };
       }
 
       if (!priceResult.price) {
         return {
           success: false,
-          error: "Could not get price from Porkbun",
+          error: 'Could not get price from Porkbun',
         };
       }
 
@@ -447,26 +450,23 @@ export const purchaseDomain = action({
       }
       const costInPennies = Math.round(priceFloat * 100);
 
-      const response = await fetch(
-        `https://api.porkbun.com/api/json/v3/domain/create/${args.domain}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            apikey: apiKey,
-            secretapikey: secretKey,
-            cost: costInPennies,
-            agreeToTerms: "yes",
-          }),
-        }
-      );
+      const response = await fetch(`https://api.porkbun.com/api/json/v3/domain/create/${args.domain}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apikey: apiKey,
+          secretapikey: secretKey,
+          cost: costInPennies,
+          agreeToTerms: 'yes',
+        }),
+      });
 
       const data: PorkbunRegisterResponse = await response.json();
 
-      if (!response.ok || data.status !== "SUCCESS") {
+      if (!response.ok || data.status !== 'SUCCESS') {
         const errorMsg = data.message || `Registration failed: ${response.status}`;
         // Check if error is about wrong price
-        if (errorMsg.toLowerCase().includes("price") || errorMsg.toLowerCase().includes("cost")) {
+        if (errorMsg.toLowerCase().includes('price') || errorMsg.toLowerCase().includes('cost')) {
           return { success: false, error: errorMsg, needsPriceCheck: true };
         }
         return { success: false, error: errorMsg };
@@ -494,15 +494,12 @@ export const purchaseDomain = action({
       if (firstAttempt.needsPriceCheck) {
         console.log(`Price mismatch for ${args.domain}, fetching actual price from Porkbun...`);
 
-        const priceResult = await ctx.runAction(
-          api.expansion.actions.getDomainPrice,
-          { domain: args.domain }
-        );
+        const priceResult = await ctx.runAction(api.expansion.actions.getDomainPrice, { domain: args.domain });
 
         if (!priceResult.available || !priceResult.price) {
           return {
             success: false,
-            error: priceResult.error || "Domain no longer available",
+            error: priceResult.error || 'Domain no longer available',
           };
         }
 
@@ -531,7 +528,7 @@ export const purchaseDomain = action({
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   },
@@ -544,7 +541,10 @@ export const getNameservers = action({
   args: {
     domain: v.string(),
   },
-  handler: async (_, args): Promise<{
+  handler: async (
+    _,
+    args,
+  ): Promise<{
     nameservers?: string[];
     error?: string;
   }> => {
@@ -552,21 +552,18 @@ export const getNameservers = action({
     const secretKey = process.env.PORKBUN_SECRET_KEY;
 
     if (!apiKey || !secretKey) {
-      return { error: "Porkbun API credentials not configured" };
+      return { error: 'Porkbun API credentials not configured' };
     }
 
     try {
-      const response = await fetch(
-        `https://api.porkbun.com/api/json/v3/domain/getNs/${args.domain}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            apikey: apiKey,
-            secretapikey: secretKey,
-          }),
-        }
-      );
+      const response = await fetch(`https://api.porkbun.com/api/json/v3/domain/getNs/${args.domain}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apikey: apiKey,
+          secretapikey: secretKey,
+        }),
+      });
 
       if (!response.ok) {
         return { error: `API error: ${response.status}` };
@@ -574,14 +571,14 @@ export const getNameservers = action({
 
       const data = await response.json();
 
-      if (data.status !== "SUCCESS") {
-        return { error: data.message || "Failed to get nameservers" };
+      if (data.status !== 'SUCCESS') {
+        return { error: data.message || 'Failed to get nameservers' };
       }
 
       return { nameservers: data.ns || [] };
     } catch (error) {
       return {
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   },
@@ -595,7 +592,10 @@ export const updateNameservers = action({
     domain: v.string(),
     nameservers: v.array(v.string()),
   },
-  handler: async (_, args): Promise<{
+  handler: async (
+    _,
+    args,
+  ): Promise<{
     success: boolean;
     error?: string;
   }> => {
@@ -603,22 +603,19 @@ export const updateNameservers = action({
     const secretKey = process.env.PORKBUN_SECRET_KEY;
 
     if (!apiKey || !secretKey) {
-      return { success: false, error: "Porkbun API credentials not configured" };
+      return { success: false, error: 'Porkbun API credentials not configured' };
     }
 
     try {
-      const response = await fetch(
-        `https://api.porkbun.com/api/json/v3/domain/updateNs/${args.domain}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            apikey: apiKey,
-            secretapikey: secretKey,
-            ns: args.nameservers,
-          }),
-        }
-      );
+      const response = await fetch(`https://api.porkbun.com/api/json/v3/domain/updateNs/${args.domain}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apikey: apiKey,
+          secretapikey: secretKey,
+          ns: args.nameservers,
+        }),
+      });
 
       if (!response.ok) {
         return { success: false, error: `API error: ${response.status}` };
@@ -626,15 +623,15 @@ export const updateNameservers = action({
 
       const data = await response.json();
 
-      if (data.status !== "SUCCESS") {
-        return { success: false, error: data.message || "Failed to update nameservers" };
+      if (data.status !== 'SUCCESS') {
+        return { success: false, error: data.message || 'Failed to update nameservers' };
       }
 
       return { success: true };
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   },
@@ -647,7 +644,10 @@ export const createNetlifyDnsZone = action({
   args: {
     domain: v.string(),
   },
-  handler: async (_, args): Promise<{
+  handler: async (
+    _,
+    args,
+  ): Promise<{
     success: boolean;
     zoneId?: string;
     nameservers?: string[];
@@ -656,16 +656,16 @@ export const createNetlifyDnsZone = action({
     const token = process.env.NETLIFY_ACCESS_TOKEN;
 
     if (!token) {
-      return { success: false, error: "Netlify access token not configured" };
+      return { success: false, error: 'Netlify access token not configured' };
     }
 
     try {
       // Create DNS zone
-      const response = await fetch("https://api.netlify.com/api/v1/dns_zones", {
-        method: "POST",
+      const response = await fetch('https://api.netlify.com/api/v1/dns_zones', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           name: args.domain,
@@ -690,7 +690,7 @@ export const createNetlifyDnsZone = action({
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   },
@@ -704,7 +704,10 @@ export const addDomainToNetlifySite = action({
   args: {
     domain: v.string(),
   },
-  handler: async (_, args): Promise<{
+  handler: async (
+    _,
+    args,
+  ): Promise<{
     success: boolean;
     error?: string;
   }> => {
@@ -712,22 +715,19 @@ export const addDomainToNetlifySite = action({
     const siteId = process.env.NETLIFY_SITE_ID;
 
     if (!token) {
-      return { success: false, error: "Netlify access token not configured" };
+      return { success: false, error: 'Netlify access token not configured' };
     }
     if (!siteId) {
-      return { success: false, error: "Netlify site ID not configured" };
+      return { success: false, error: 'Netlify site ID not configured' };
     }
 
     try {
       // First, get current domain aliases
-      const getResponse = await fetch(
-        `https://api.netlify.com/api/v1/sites/${siteId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const getResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (!getResponse.ok) {
         return {
@@ -740,24 +740,17 @@ export const addDomainToNetlifySite = action({
       const currentAliases: string[] = site.domain_aliases || [];
 
       // Add new domain and www if not already present
-      const newAliases = [...new Set([
-        ...currentAliases,
-        args.domain,
-        `www.${args.domain}`,
-      ])];
+      const newAliases = [...new Set([...currentAliases, args.domain, `www.${args.domain}`])];
 
       // PATCH the site with updated domain_aliases
-      const patchResponse = await fetch(
-        `https://api.netlify.com/api/v1/sites/${siteId}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ domain_aliases: newAliases }),
-        }
-      );
+      const patchResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ domain_aliases: newAliases }),
+      });
 
       if (!patchResponse.ok) {
         const errorText = await patchResponse.text();
@@ -771,7 +764,7 @@ export const addDomainToNetlifySite = action({
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   },
@@ -793,16 +786,13 @@ export const getNetlifySiteConfig = action({
     const siteId = process.env.NETLIFY_SITE_ID;
 
     if (!token || !siteId) {
-      return { error: "Netlify credentials not configured" };
+      return { error: 'Netlify credentials not configured' };
     }
 
     try {
-      const response = await fetch(
-        `https://api.netlify.com/api/v1/sites/${siteId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const response = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (!response.ok) {
         return { error: `Netlify API error: ${response.status}` };
@@ -816,7 +806,7 @@ export const getNetlifySiteConfig = action({
         sslUrl: site.ssl_url,
       };
     } catch (error) {
-      return { error: error instanceof Error ? error.message : "Unknown error" };
+      return { error: error instanceof Error ? error.message : 'Unknown error' };
     }
   },
 });
@@ -833,16 +823,13 @@ export const listNetlifyDnsZones = action({
     const token = process.env.NETLIFY_ACCESS_TOKEN;
 
     if (!token) {
-      return { error: "Netlify credentials not configured" };
+      return { error: 'Netlify credentials not configured' };
     }
 
     try {
-      const response = await fetch(
-        "https://api.netlify.com/api/v1/dns_zones",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const response = await fetch('https://api.netlify.com/api/v1/dns_zones', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (!response.ok) {
         return { error: `Netlify API error: ${response.status}` };
@@ -856,7 +843,7 @@ export const listNetlifyDnsZones = action({
         })),
       };
     } catch (error) {
-      return { error: error instanceof Error ? error.message : "Unknown error" };
+      return { error: error instanceof Error ? error.message : 'Unknown error' };
     }
   },
 });
@@ -875,16 +862,13 @@ export const getSslStatus = action({
     const siteId = process.env.NETLIFY_SITE_ID;
 
     if (!token || !siteId) {
-      return { success: false, error: "Netlify credentials not configured" };
+      return { success: false, error: 'Netlify credentials not configured' };
     }
 
     try {
-      const response = await fetch(
-        `https://api.netlify.com/api/v1/sites/${siteId}/ssl`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const response = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/ssl`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -899,7 +883,7 @@ export const getSslStatus = action({
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   },
@@ -918,22 +902,19 @@ export const provisionSsl = action({
     const siteId = process.env.NETLIFY_SITE_ID;
 
     if (!token || !siteId) {
-      return { success: false, error: "Netlify credentials not configured" };
+      return { success: false, error: 'Netlify credentials not configured' };
     }
 
     try {
       // Netlify provisions SSL automatically when domain is added
       // but we can trigger it explicitly via the certificates endpoint
-      const response = await fetch(
-        `https://api.netlify.com/api/v1/sites/${siteId}/ssl`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/ssl`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -947,7 +928,7 @@ export const provisionSsl = action({
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   },
@@ -960,44 +941,41 @@ export const setupDnsForDomain = action({
   args: {
     domain: v.string(),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     success: boolean;
     zoneId?: string;
     nameservers?: string[];
     error?: string;
   }> => {
     // Step 1: Add domain to Netlify site (connects domain to project)
-    const siteResult = await ctx.runAction(
-      api.expansion.actions.addDomainToNetlifySite,
-      { domain: args.domain }
-    );
+    const siteResult = await ctx.runAction(api.expansion.actions.addDomainToNetlifySite, { domain: args.domain });
 
     if (!siteResult.success) {
       return {
         success: false,
-        error: siteResult.error || "Failed to add domain to Netlify site",
+        error: siteResult.error || 'Failed to add domain to Netlify site',
       };
     }
 
     // Step 2: Create Netlify DNS zone
-    const zoneResult = await ctx.runAction(
-      api.expansion.actions.createNetlifyDnsZone,
-      { domain: args.domain }
-    );
+    const zoneResult = await ctx.runAction(api.expansion.actions.createNetlifyDnsZone, { domain: args.domain });
 
     if (!zoneResult.success || !zoneResult.zoneId) {
       return {
         success: false,
-        error: zoneResult.error || "Failed to create DNS zone",
+        error: zoneResult.error || 'Failed to create DNS zone',
       };
     }
 
     // Step 3: Update nameservers at Porkbun (if we have Netlify nameservers)
     if (zoneResult.nameservers && zoneResult.nameservers.length > 0) {
-      const nsResult = await ctx.runAction(
-        api.expansion.actions.updateNameservers,
-        { domain: args.domain, nameservers: zoneResult.nameservers }
-      );
+      const nsResult = await ctx.runAction(api.expansion.actions.updateNameservers, {
+        domain: args.domain,
+        nameservers: zoneResult.nameservers,
+      });
 
       if (!nsResult.success) {
         return {
@@ -1025,7 +1003,10 @@ export const ensureDomainConfigured = action({
   args: {
     domain: v.string(),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     success: boolean;
     addedToSite: boolean;
     createdDnsZone: boolean;
@@ -1040,7 +1021,7 @@ export const ensureDomainConfigured = action({
         success: false,
         addedToSite: false,
         createdDnsZone: false,
-        error: "Netlify credentials not configured",
+        error: 'Netlify credentials not configured',
       };
     }
 
@@ -1050,10 +1031,9 @@ export const ensureDomainConfigured = action({
 
     try {
       // Step 1: Check if domain is already in site aliases
-      const siteResponse = await fetch(
-        `https://api.netlify.com/api/v1/sites/${siteId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const siteResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (!siteResponse.ok) {
         return {
@@ -1066,32 +1046,27 @@ export const ensureDomainConfigured = action({
 
       const site = await siteResponse.json();
       const currentAliases: string[] = site.domain_aliases || [];
-      const domainInAliases = currentAliases.includes(args.domain) ||
-                             currentAliases.includes(`www.${args.domain}`);
+      const domainInAliases = currentAliases.includes(args.domain) || currentAliases.includes(`www.${args.domain}`);
 
       // Add domain to site if not present
       if (!domainInAliases) {
-        const addResult = await ctx.runAction(
-          api.expansion.actions.addDomainToNetlifySite,
-          { domain: args.domain }
-        );
+        const addResult = await ctx.runAction(api.expansion.actions.addDomainToNetlifySite, { domain: args.domain });
 
         if (!addResult.success) {
           return {
             success: false,
             addedToSite: false,
             createdDnsZone: false,
-            error: addResult.error || "Failed to add domain to site",
+            error: addResult.error || 'Failed to add domain to site',
           };
         }
         addedToSite = true;
       }
 
       // Step 2: Check if DNS zone exists
-      const zonesResponse = await fetch(
-        "https://api.netlify.com/api/v1/dns_zones",
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const zonesResponse = await fetch('https://api.netlify.com/api/v1/dns_zones', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (!zonesResponse.ok) {
         return {
@@ -1103,18 +1078,13 @@ export const ensureDomainConfigured = action({
       }
 
       const zones = await zonesResponse.json();
-      const existingZone = zones.find((z: { name: string; id: string }) =>
-        z.name === args.domain
-      );
+      const existingZone = zones.find((z: { name: string; id: string }) => z.name === args.domain);
 
       if (existingZone) {
         zoneId = existingZone.id;
       } else {
         // Create DNS zone
-        const zoneResult = await ctx.runAction(
-          api.expansion.actions.createNetlifyDnsZone,
-          { domain: args.domain }
-        );
+        const zoneResult = await ctx.runAction(api.expansion.actions.createNetlifyDnsZone, { domain: args.domain });
 
         if (zoneResult.success && zoneResult.zoneId) {
           createdDnsZone = true;
@@ -1122,10 +1092,10 @@ export const ensureDomainConfigured = action({
 
           // Update nameservers at registrar if possible
           if (zoneResult.nameservers && zoneResult.nameservers.length > 0) {
-            await ctx.runAction(
-              api.expansion.actions.updateNameservers,
-              { domain: args.domain, nameservers: zoneResult.nameservers }
-            );
+            await ctx.runAction(api.expansion.actions.updateNameservers, {
+              domain: args.domain,
+              nameservers: zoneResult.nameservers,
+            });
           }
         }
       }
@@ -1141,7 +1111,7 @@ export const ensureDomainConfigured = action({
         success: false,
         addedToSite,
         createdDnsZone,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   },
@@ -1164,7 +1134,10 @@ export const createCityWithDomainSetup = action({
     domain: v.string(),
     fromEmail: v.string(),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     success: boolean;
     cityId?: string;
     domainConfigured: boolean;
@@ -1173,24 +1146,18 @@ export const createCityWithDomainSetup = action({
     // Step 1: Create the city in the database
     let cityId: string;
     try {
-      const result = await ctx.runMutation(
-        api.expansion.mutations.createCityForMarket,
-        args
-      );
+      const result = await ctx.runMutation(api.expansion.mutations.createCityForMarket, args);
       cityId = result.cityId;
     } catch (error) {
       return {
         success: false,
         domainConfigured: false,
-        error: `City creation failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        error: `City creation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       };
     }
 
     // Step 2: Configure domain in Netlify
-    const domainResult = await ctx.runAction(
-      api.expansion.actions.ensureDomainConfigured,
-      { domain: args.domain }
-    );
+    const domainResult = await ctx.runAction(api.expansion.actions.ensureDomainConfigured, { domain: args.domain });
 
     if (!domainResult.success) {
       // City was created but domain setup failed - log but don't fail
@@ -1217,7 +1184,9 @@ export const createCityWithDomainSetup = action({
  */
 export const ensureAllCityDomainsConfigured = action({
   args: {},
-  handler: async (ctx): Promise<{
+  handler: async (
+    ctx,
+  ): Promise<{
     processed: Array<{
       city: string;
       domain: string;
@@ -1235,10 +1204,7 @@ export const ensureAllCityDomainsConfigured = action({
     for (const city of cities) {
       if (!city.domain || !city.isActive) continue;
 
-      const result = await ctx.runAction(
-        api.expansion.actions.ensureDomainConfigured,
-        { domain: city.domain }
-      );
+      const result = await ctx.runAction(api.expansion.actions.ensureDomainConfigured, { domain: city.domain });
 
       results.push({
         city: city.name,

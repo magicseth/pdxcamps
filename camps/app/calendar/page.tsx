@@ -118,7 +118,10 @@ export default function CalendarPage() {
       <header className="sticky top-0 z-20 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+            <Link
+              href="/"
+              className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
               <BackIcon />
               <span className="text-sm font-medium hidden sm:inline">Planner</span>
             </Link>
@@ -148,10 +151,7 @@ export default function CalendarPage() {
         <Unauthenticated>
           <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
             <p className="text-slate-600 dark:text-slate-400">Please sign in to view your calendar.</p>
-            <a
-              href="/sign-in"
-              className="bg-foreground text-background px-6 py-2 rounded-md"
-            >
+            <a href="/sign-in" className="bg-foreground text-background px-6 py-2 rounded-md">
               Sign in
             </a>
           </div>
@@ -163,12 +163,11 @@ export default function CalendarPage() {
   );
 }
 
-
 function CalendarContent() {
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedChildId, setSelectedChildId] = useState<Id<'children'> | 'all'>('all');
   const [selectedStatuses, setSelectedStatuses] = useState<Set<RegistrationStatus>>(
-    new Set(['interested', 'registered', 'waitlisted'])
+    new Set(['interested', 'registered', 'waitlisted']),
   );
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [editingNotesId, setEditingNotesId] = useState<Id<'registrations'> | null>(null);
@@ -239,7 +238,7 @@ function CalendarContent() {
         }
         // Avoid duplicates
         const existing = map.get(dateKey)!;
-        if (!existing.some(r => r._id === reg._id)) {
+        if (!existing.some((r) => r._id === reg._id)) {
           existing.push(reg);
         }
       }
@@ -411,7 +410,9 @@ function CalendarContent() {
         {/* Child Filter */}
         {children.length > 1 && (
           <div className="flex items-center gap-2">
-            <label htmlFor="calendar-child-filter" className="text-sm font-medium text-slate-600 dark:text-slate-400">Child:</label>
+            <label htmlFor="calendar-child-filter" className="text-sm font-medium text-slate-600 dark:text-slate-400">
+              Child:
+            </label>
             <select
               id="calendar-child-filter"
               value={selectedChildId}
@@ -455,7 +456,7 @@ function CalendarContent() {
           <p className="text-slate-600 dark:text-slate-400 mb-6 max-w-md mx-auto">
             {selectedStatuses.size === 0
               ? 'Select at least one status filter to see registrations.'
-              : 'You haven\'t registered for any camps yet. Discover amazing summer camps for your kids!'}
+              : "You haven't registered for any camps yet. Discover amazing summer camps for your kids!"}
           </p>
           <Link
             href="/discover/portland"
@@ -493,13 +494,15 @@ function CalendarContent() {
                     isCurrentMonth ? 'bg-white dark:bg-slate-900' : 'bg-slate-50 dark:bg-slate-800/50'
                   }`}
                 >
-                  <div className={`text-sm mb-1 ${
-                    isToday
-                      ? 'bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center'
-                      : isCurrentMonth
-                        ? 'text-slate-900 dark:text-slate-100'
-                        : 'text-slate-400'
-                  }`}>
+                  <div
+                    className={`text-sm mb-1 ${
+                      isToday
+                        ? 'bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center'
+                        : isCurrentMonth
+                          ? 'text-slate-900 dark:text-slate-100'
+                          : 'text-slate-400'
+                    }`}
+                  >
                     {date.getDate()}
                   </div>
                   <div className="space-y-1">
@@ -513,9 +516,7 @@ function CalendarContent() {
                       </div>
                     ))}
                     {dayRegistrations.length > 3 && (
-                      <div className="text-xs text-slate-500 px-1">
-                        +{dayRegistrations.length - 3} more
-                      </div>
+                      <div className="text-xs text-slate-500 px-1">+{dayRegistrations.length - 3} more</div>
                     )}
                   </div>
                 </div>
@@ -530,9 +531,7 @@ function CalendarContent() {
         <div className="space-y-8">
           {groupedByWeek.map(([weekNum, regs]) => (
             <div key={weekNum}>
-              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-4">
-                Week {weekNum}
-              </h3>
+              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-4">Week {weekNum}</h3>
               <div className="space-y-4">
                 {regs.map((reg) => (
                   <RegistrationCard
@@ -631,20 +630,42 @@ function RegistrationCard({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
               </svg>
               <span>{formatDateRange(session.startDate, session.endDate)}</span>
             </div>
             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
-              <span>{formatTime(session.dropOffTime)} - {formatTime(session.pickUpTime)}</span>
+              <span>
+                {formatTime(session.dropOffTime)} - {formatTime(session.pickUpTime)}
+              </span>
             </div>
             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                />
               </svg>
               <span>
                 {session.location?.name || 'Unknown Location'}
@@ -653,7 +674,12 @@ function RegistrationCard({
             </div>
             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
               </svg>
               <span>{child?.firstName || 'Unknown Child'}</span>
             </div>
@@ -685,9 +711,7 @@ function RegistrationCard({
               </div>
             </div>
           ) : notes ? (
-            <p className="text-sm text-slate-500 dark:text-slate-400 italic mt-2">
-              Note: {notes}
-            </p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 italic mt-2">Note: {notes}</p>
           ) : null}
         </div>
 

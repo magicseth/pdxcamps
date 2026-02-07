@@ -12,10 +12,7 @@ interface CoverageIndicatorProps {
   size?: 'sm' | 'md';
 }
 
-const STATUS_CONFIG: Record<
-  CoverageStatus,
-  { bg: string; icon: string; label: string; title: string }
-> = {
+const STATUS_CONFIG: Record<CoverageStatus, { bg: string; icon: string; label: string; title: string }> = {
   full: {
     bg: 'bg-green-500',
     icon: '●',
@@ -54,12 +51,7 @@ const STATUS_CONFIG: Record<
   },
 };
 
-export function CoverageIndicator({
-  status,
-  childName,
-  showLabel = false,
-  size = 'md',
-}: CoverageIndicatorProps) {
+export function CoverageIndicator({ status, childName, showLabel = false, size = 'md' }: CoverageIndicatorProps) {
   const config = STATUS_CONFIG[status];
   const sizeClasses = size === 'sm' ? 'text-xs px-1.5 py-0.5' : 'text-sm px-2 py-1';
 
@@ -93,9 +85,7 @@ export function CoverageChip({ status, childName, eventTitle, campName, organiza
       >
         <span>✈</span>
         <span className="font-medium">{childName}</span>
-        <span className="text-primary-light dark:text-surface-light truncate max-w-[100px]">
-          {eventTitle}
-        </span>
+        <span className="text-primary-light dark:text-surface-light truncate max-w-[100px]">{eventTitle}</span>
       </span>
     );
   }
@@ -114,11 +104,7 @@ export function CoverageChip({ status, childName, eventTitle, campName, organiza
       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm ${bgColors[status]} ${status === 'gap' ? 'animate-pulse motion-reduce:animate-none' : ''}`}
       title={campName ? `${childName}: ${campName}` : `${childName}: ${config.title}`}
     >
-      <OrgLogo
-        url={organizationLogoUrl}
-        size="xs"
-        fallback={<span>{config.icon}</span>}
-      />
+      <OrgLogo url={organizationLogoUrl} size="xs" fallback={<span>{config.icon}</span>} />
       <span className="font-medium">{childName}</span>
     </span>
   );
@@ -126,21 +112,47 @@ export function CoverageChip({ status, childName, eventTitle, campName, organiza
 
 export function CoverageLegend() {
   const legendItems = [
-    { bg: 'bg-green-100 dark:bg-green-900/40', icon: '✓', iconColor: 'text-green-600 dark:text-green-400', label: 'Covered', tooltip: 'Registered for camp all week' },
-    { bg: 'bg-accent/20 dark:bg-accent/30', icon: '◐', iconColor: 'text-accent-dark dark:text-accent', label: 'Partial', tooltip: 'Some days covered, some gaps' },
-    { bg: 'bg-accent/10 dark:bg-accent/20', icon: '•', iconColor: 'text-accent/60 dark:text-accent', label: 'Gap', tooltip: 'No coverage - click to find camps!' },
-    { bg: 'bg-surface/30 dark:bg-surface-dark/40', icon: '✈️', iconColor: '', label: 'Event', tooltip: 'Family vacation or trip' },
-    { bg: 'bg-slate-100 dark:bg-slate-800', icon: '📚', iconColor: '', label: 'School', tooltip: 'Still in school - no camp needed' },
+    {
+      bg: 'bg-green-100 dark:bg-green-900/40',
+      icon: '✓',
+      iconColor: 'text-green-600 dark:text-green-400',
+      label: 'Covered',
+      tooltip: 'Registered for camp all week',
+    },
+    {
+      bg: 'bg-accent/20 dark:bg-accent/30',
+      icon: '◐',
+      iconColor: 'text-accent-dark dark:text-accent',
+      label: 'Partial',
+      tooltip: 'Some days covered, some gaps',
+    },
+    {
+      bg: 'bg-accent/10 dark:bg-accent/20',
+      icon: '•',
+      iconColor: 'text-accent/60 dark:text-accent',
+      label: 'Gap',
+      tooltip: 'No coverage - click to find camps!',
+    },
+    {
+      bg: 'bg-surface/30 dark:bg-surface-dark/40',
+      icon: '✈️',
+      iconColor: '',
+      label: 'Event',
+      tooltip: 'Family vacation or trip',
+    },
+    {
+      bg: 'bg-slate-100 dark:bg-slate-800',
+      icon: '📚',
+      iconColor: '',
+      label: 'School',
+      tooltip: 'Still in school - no camp needed',
+    },
   ];
 
   return (
     <div className="flex flex-wrap gap-2 text-xs">
       {legendItems.map((item) => (
-        <div
-          key={item.label}
-          className="flex items-center gap-1.5 cursor-help"
-          title={item.tooltip}
-        >
+        <div key={item.label} className="flex items-center gap-1.5 cursor-help" title={item.tooltip}>
           <span className={`w-6 h-6 rounded flex items-center justify-center ${item.bg}`}>
             <span className={item.iconColor}>{item.icon}</span>
           </span>

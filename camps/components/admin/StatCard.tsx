@@ -11,14 +11,7 @@ interface StatCardProps {
   small?: boolean;
 }
 
-export function StatCard({
-  label,
-  value,
-  subtext,
-  variant = 'default',
-  href,
-  small = false,
-}: StatCardProps) {
+export function StatCard({ label, value, subtext, variant = 'default', href, small = false }: StatCardProps) {
   const variantStyles = {
     default: 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700',
     success: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800',
@@ -38,12 +31,8 @@ export function StatCard({
   const content = (
     <>
       <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
-      <p className={`${small ? 'text-2xl' : 'text-3xl'} font-bold tabular-nums ${valueStyles[variant]}`}>
-        {value}
-      </p>
-      {subtext && (
-        <p className="text-xs text-slate-500 dark:text-slate-400">{subtext}</p>
-      )}
+      <p className={`${small ? 'text-2xl' : 'text-3xl'} font-bold tabular-nums ${valueStyles[variant]}`}>{value}</p>
+      {subtext && <p className="text-xs text-slate-500 dark:text-slate-400">{subtext}</p>}
     </>
   );
 
@@ -58,9 +47,5 @@ export function StatCard({
     );
   }
 
-  return (
-    <div className={`rounded-lg border ${small ? 'p-3' : 'p-4'} ${variantStyles[variant]}`}>
-      {content}
-    </div>
-  );
+  return <div className={`rounded-lg border ${small ? 'p-3' : 'p-4'} ${variantStyles[variant]}`}>{content}</div>;
 }

@@ -1,17 +1,17 @@
-import { mutation } from "../_generated/server";
-import { v } from "convex/values";
-import { addressValidator } from "../lib/validators";
+import { mutation } from '../_generated/server';
+import { v } from 'convex/values';
+import { addressValidator } from '../lib/validators';
 
 /**
  * Create a new location
  */
 export const createLocation = mutation({
   args: {
-    organizationId: v.optional(v.id("organizations")),
+    organizationId: v.optional(v.id('organizations')),
     name: v.string(),
     address: addressValidator,
-    cityId: v.id("cities"),
-    neighborhoodId: v.optional(v.id("neighborhoods")),
+    cityId: v.id('cities'),
+    neighborhoodId: v.optional(v.id('neighborhoods')),
     latitude: v.number(),
     longitude: v.number(),
   },
@@ -19,17 +19,17 @@ export const createLocation = mutation({
     // Verify city exists
     const city = await ctx.db.get(args.cityId);
     if (!city) {
-      throw new Error("City not found");
+      throw new Error('City not found');
     }
 
     // Verify neighborhood exists if provided
     if (args.neighborhoodId) {
       const neighborhood = await ctx.db.get(args.neighborhoodId);
       if (!neighborhood) {
-        throw new Error("Neighborhood not found");
+        throw new Error('Neighborhood not found');
       }
       if (neighborhood.cityId !== args.cityId) {
-        throw new Error("Neighborhood does not belong to the specified city");
+        throw new Error('Neighborhood does not belong to the specified city');
       }
     }
 
@@ -37,11 +37,11 @@ export const createLocation = mutation({
     if (args.organizationId) {
       const organization = await ctx.db.get(args.organizationId);
       if (!organization) {
-        throw new Error("Organization not found");
+        throw new Error('Organization not found');
       }
     }
 
-    const locationId = await ctx.db.insert("locations", {
+    const locationId = await ctx.db.insert('locations', {
       organizationId: args.organizationId,
       name: args.name,
       address: args.address,
@@ -63,10 +63,10 @@ export const createLocation = mutation({
  */
 export const updateLocation = mutation({
   args: {
-    locationId: v.id("locations"),
+    locationId: v.id('locations'),
     name: v.optional(v.string()),
     address: v.optional(addressValidator),
-    neighborhoodId: v.optional(v.id("neighborhoods")),
+    neighborhoodId: v.optional(v.id('neighborhoods')),
     parkingNotes: v.optional(v.string()),
     accessibilityNotes: v.optional(v.string()),
     isActive: v.optional(v.boolean()),
@@ -76,14 +76,14 @@ export const updateLocation = mutation({
 
     const location = await ctx.db.get(locationId);
     if (!location) {
-      throw new Error("Location not found");
+      throw new Error('Location not found');
     }
 
     // Verify neighborhood exists and belongs to the location's city if provided
     if (updates.neighborhoodId) {
       const neighborhood = await ctx.db.get(updates.neighborhoodId);
       if (!neighborhood) {
-        throw new Error("Neighborhood not found");
+        throw new Error('Neighborhood not found');
       }
       if (neighborhood.cityId !== location.cityId) {
         throw new Error("Neighborhood does not belong to the location's city");

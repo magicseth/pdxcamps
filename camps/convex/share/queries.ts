@@ -1,11 +1,7 @@
-import { query } from "../_generated/server";
-import { v } from "convex/values";
-import { Doc, Id } from "../_generated/dataModel";
-import {
-  generateSummerWeeks,
-  doDateRangesOverlap,
-  countOverlappingWeekdays,
-} from "../lib/helpers";
+import { query } from '../_generated/server';
+import { v } from 'convex/values';
+import { Doc, Id } from '../_generated/dataModel';
+import { generateSummerWeeks, doDateRangesOverlap, countOverlappingWeekdays } from '../lib/helpers';
 
 /**
  * Get a family's shared summer plan by share token (public - no auth required)
@@ -22,8 +18,8 @@ export const getFamilySharedPlan = query({
 
     // Find family share by token
     const familyShare = await ctx.db
-      .query("familyShares")
-      .withIndex("by_token", (q) => q.eq("shareToken", args.shareToken))
+      .query('familyShares')
+      .withIndex('by_token', (q) => q.eq('shareToken', args.shareToken))
       .first();
 
     if (!familyShare) {
@@ -36,13 +32,16 @@ export const getFamilySharedPlan = query({
       return null;
     }
 
+    // Get family's referral code for attribution
+    const referral = await ctx.db
+      .query('referrals')
+      .withIndex('by_referrer', (q) => q.eq('referrerFamilyId', family._id))
+      .first();
+    const referralCode = referral?.referralCode || null;
+
     // Get all shared children
-    const childrenRaw = await Promise.all(
-      familyShare.childIds.map((id) => ctx.db.get(id))
-    );
-    const children = childrenRaw.filter(
-      (c): c is Doc<"children"> => c !== null && c.isActive
-    );
+    const childrenRaw = await Promise.all(familyShare.childIds.map((id) => ctx.db.get(id)));
+    const children = childrenRaw.filter((c): c is Doc<'children'> => c !== null && c.isActive);
 
     if (children.length === 0) {
       return null;
@@ -62,32 +61,22 @@ export const getFamilySharedPlan = query({
       children.map(async (child) => {
         // Get registrations for this child
         const registrations = await ctx.db
-          .query("registrations")
-          .withIndex("by_child", (q) => q.eq("childId", child._id))
+          .query('registrations')
+          .withIndex('by_child', (q) => q.eq('childId', child._id))
           .collect();
 
-        const confirmedRegistrations = registrations.filter(
-          (r) => r.status === "registered"
-        );
+        const confirmedRegistrations = registrations.filter((r) => r.status === 'registered');
 
         // Fetch sessions
-        const sessionIds = [
-          ...new Set(confirmedRegistrations.map((r) => r.sessionId)),
-        ];
-        const sessionsRaw = await Promise.all(
-          sessionIds.map((id) => ctx.db.get(id))
-        );
-        const sessions = sessionsRaw.filter(
-          (s): s is Doc<"sessions"> => s !== null
-        );
+        const sessionIds = [...new Set(confirmedRegistrations.map((r) => r.sessionId))];
+        const sessionsRaw = await Promise.all(sessionIds.map((id) => ctx.db.get(id)));
+        const sessions = sessionsRaw.filter((s): s is Doc<'sessions'> => s !== null);
         const sessionMap = new Map(sessions.map((s) => [s._id, s]));
 
         // Fetch organizations for camp names
         const orgIds = [...new Set(sessions.map((s) => s.organizationId))];
         const orgsRaw = await Promise.all(orgIds.map((id) => ctx.db.get(id)));
-        const orgs = orgsRaw.filter(
-          (o): o is Doc<"organizations"> => o !== null
-        );
+        const orgs = orgsRaw.filter((o): o is Doc<'organizations'> => o !== null);
         const orgMap = new Map(orgs.map((o) => [o._id, o]));
 
         // Resolve org logos
@@ -102,27 +91,21 @@ export const getFamilySharedPlan = query({
         // Fetch camps to get slugs
         const campIds = [...new Set(sessions.map((s) => s.campId))];
         const campsRaw = await Promise.all(campIds.map((id) => ctx.db.get(id)));
-        const camps = campsRaw.filter(
-          (c): c is Doc<"camps"> => c !== null
-        );
+        const camps = campsRaw.filter((c): c is Doc<'camps'> => c !== null);
         const campMap = new Map(camps.map((c) => [c._id, c]));
 
         // Get city for URL building
         const city = await ctx.db.get(family.primaryCityId);
-        const citySlug = city?.slug ?? "portland";
+        const citySlug = city?.slug ?? 'portland';
 
         // Get family events for this child
         const familyEvents = await ctx.db
-          .query("familyEvents")
-          .withIndex("by_family_and_active", (q) =>
-            q.eq("familyId", family._id).eq("isActive", true)
-          )
+          .query('familyEvents')
+          .withIndex('by_family_and_active', (q) => q.eq('familyId', family._id).eq('isActive', true))
           .collect();
 
         const childEvents = familyEvents.filter(
-          (e) =>
-            e.childIds.includes(child._id) &&
-            doDateRangesOverlap(e.startDate, e.endDate, summerStart, summerEnd)
+          (e) => e.childIds.includes(child._id) && doDateRangesOverlap(e.startDate, e.endDate, summerStart, summerEnd),
         );
 
         // Build week-by-week coverage with camp details
@@ -147,7 +130,7 @@ export const getFamilySharedPlan = query({
               session.startDate,
               session.endDate,
               week.startDate,
-              week.endDate
+              week.endDate,
             );
 
             if (overlappingDays > 0) {
@@ -155,9 +138,9 @@ export const getFamilySharedPlan = query({
               const camp = campMap.get(session.campId);
               camps.push({
                 sessionId: session._id,
-                campName: session.campName ?? "Camp",
-                campSlug: camp?.slug ?? "camp",
-                organizationName: org?.name ?? "Unknown",
+                campName: session.campName ?? 'Camp',
+                campSlug: camp?.slug ?? 'camp',
+                organizationName: org?.name ?? 'Unknown',
                 organizationLogoUrl: orgLogoUrls.get(session.organizationId) ?? null,
                 startDate: session.startDate,
                 endDate: session.endDate,
@@ -173,7 +156,7 @@ export const getFamilySharedPlan = query({
               event.startDate,
               event.endDate,
               week.startDate,
-              week.endDate
+              week.endDate,
             );
             eventDays += overlappingDays;
           }
@@ -188,20 +171,15 @@ export const getFamilySharedPlan = query({
             coveredDays,
             camps, // Actual camp details
             hasEvent: eventDays > 0,
-            status:
-              coveredDays >= 5
-                ? ("full" as const)
-                : coveredDays > 0
-                ? ("partial" as const)
-                : ("gap" as const),
+            status: coveredDays >= 5 ? ('full' as const) : coveredDays > 0 ? ('partial' as const) : ('gap' as const),
           };
         });
 
         const stats = {
           totalWeeks: weeks.length,
-          coveredWeeks: weeklyPlan.filter((w) => w.status === "full").length,
-          partialWeeks: weeklyPlan.filter((w) => w.status === "partial").length,
-          gapWeeks: weeklyPlan.filter((w) => w.status === "gap").length,
+          coveredWeeks: weeklyPlan.filter((w) => w.status === 'full').length,
+          partialWeeks: weeklyPlan.filter((w) => w.status === 'partial').length,
+          gapWeeks: weeklyPlan.filter((w) => w.status === 'gap').length,
           totalCamps: confirmedRegistrations.length,
         };
 
@@ -211,22 +189,13 @@ export const getFamilySharedPlan = query({
           weeks: weeklyPlan,
           stats,
         };
-      })
+      }),
     );
 
     // Aggregate family stats
-    const totalCoveredWeeks = childPlans.reduce(
-      (sum, p) => sum + p.stats.coveredWeeks,
-      0
-    );
-    const totalGapWeeks = childPlans.reduce(
-      (sum, p) => sum + p.stats.gapWeeks,
-      0
-    );
-    const totalCamps = childPlans.reduce(
-      (sum, p) => sum + p.stats.totalCamps,
-      0
-    );
+    const totalCoveredWeeks = childPlans.reduce((sum, p) => sum + p.stats.coveredWeeks, 0);
+    const totalGapWeeks = childPlans.reduce((sum, p) => sum + p.stats.gapWeeks, 0);
+    const totalCamps = childPlans.reduce((sum, p) => sum + p.stats.totalCamps, 0);
 
     return {
       familyName: family.displayName,
@@ -239,6 +208,7 @@ export const getFamilySharedPlan = query({
         totalCamps,
         weeksPerChild: weeks.length,
       },
+      referralCode, // For attribution when viewer signs up
     };
   },
 });
@@ -257,8 +227,8 @@ export const getSharedPlan = query({
 
     // Find child by share token
     const child = await ctx.db
-      .query("children")
-      .withIndex("by_share_token", (q) => q.eq("shareToken", args.shareToken))
+      .query('children')
+      .withIndex('by_share_token', (q) => q.eq('shareToken', args.shareToken))
       .first();
 
     if (!child || !child.isActive) {
@@ -271,6 +241,13 @@ export const getSharedPlan = query({
       return null;
     }
 
+    // Get family's referral code for attribution
+    const referral = await ctx.db
+      .query('referrals')
+      .withIndex('by_referrer', (q) => q.eq('referrerFamilyId', family._id))
+      .first();
+    const referralCode = referral?.referralCode || null;
+
     // Generate summer weeks
     const weeks = generateSummerWeeks(year);
     const summerStart = weeks[0]?.startDate;
@@ -282,25 +259,23 @@ export const getSharedPlan = query({
 
     // Get registrations for this child
     const registrations = await ctx.db
-      .query("registrations")
-      .withIndex("by_child", (q) => q.eq("childId", child._id))
+      .query('registrations')
+      .withIndex('by_child', (q) => q.eq('childId', child._id))
       .collect();
 
     // Filter to registered only (not interested/waitlisted for privacy)
-    const confirmedRegistrations = registrations.filter(
-      (r) => r.status === "registered"
-    );
+    const confirmedRegistrations = registrations.filter((r) => r.status === 'registered');
 
     // Fetch sessions
     const sessionIds = [...new Set(confirmedRegistrations.map((r) => r.sessionId))];
     const sessionsRaw = await Promise.all(sessionIds.map((id) => ctx.db.get(id)));
-    const sessions = sessionsRaw.filter((s): s is Doc<"sessions"> => s !== null);
+    const sessions = sessionsRaw.filter((s): s is Doc<'sessions'> => s !== null);
     const sessionMap = new Map(sessions.map((s) => [s._id, s]));
 
     // Fetch organizations for logos
     const orgIds = [...new Set(sessions.map((s) => s.organizationId))];
     const orgsRaw = await Promise.all(orgIds.map((id) => ctx.db.get(id)));
-    const orgs = orgsRaw.filter((o): o is Doc<"organizations"> => o !== null);
+    const orgs = orgsRaw.filter((o): o is Doc<'organizations'> => o !== null);
     const orgMap = new Map(orgs.map((o) => [o._id, o]));
 
     // Resolve org logos
@@ -314,16 +289,12 @@ export const getSharedPlan = query({
 
     // Get family events for this child
     const familyEvents = await ctx.db
-      .query("familyEvents")
-      .withIndex("by_family_and_active", (q) =>
-        q.eq("familyId", family._id).eq("isActive", true)
-      )
+      .query('familyEvents')
+      .withIndex('by_family_and_active', (q) => q.eq('familyId', family._id).eq('isActive', true))
       .collect();
 
     const childEvents = familyEvents.filter(
-      (e) =>
-        e.childIds.includes(child._id) &&
-        doDateRangesOverlap(e.startDate, e.endDate, summerStart, summerEnd)
+      (e) => e.childIds.includes(child._id) && doDateRangesOverlap(e.startDate, e.endDate, summerStart, summerEnd),
     );
 
     // Build week-by-week coverage
@@ -337,15 +308,15 @@ export const getSharedPlan = query({
             session.startDate,
             session.endDate,
             week.startDate,
-            week.endDate
+            week.endDate,
           );
 
           if (overlappingDays === 0) return null;
 
           const org = orgMap.get(session.organizationId);
           return {
-            campName: session.campName ?? "Camp",
-            organizationName: org?.name ?? "Unknown",
+            campName: session.campName ?? 'Camp',
+            organizationName: org?.name ?? 'Unknown',
             organizationLogoUrl: orgLogoUrls.get(session.organizationId) ?? null,
             overlappingDays,
           };
@@ -354,12 +325,7 @@ export const getSharedPlan = query({
 
       const weekEvents = childEvents
         .map((e) => {
-          const overlappingDays = countOverlappingWeekdays(
-            e.startDate,
-            e.endDate,
-            week.startDate,
-            week.endDate
-          );
+          const overlappingDays = countOverlappingWeekdays(e.startDate, e.endDate, week.startDate, week.endDate);
 
           if (overlappingDays === 0) return null;
 
@@ -401,6 +367,7 @@ export const getSharedPlan = query({
         partialWeeks: weeklyPlan.filter((w) => w.coveredDays > 0 && w.coveredDays < 5).length,
         gapWeeks: weeklyPlan.filter((w) => w.coveredDays === 0).length,
       },
+      referralCode, // For attribution when viewer signs up
     };
   },
 });
@@ -416,8 +383,8 @@ export const getChildCalendar = query({
   handler: async (ctx, args) => {
     // Find child by share token
     const child = await ctx.db
-      .query("children")
-      .withIndex("by_share_token", (q) => q.eq("shareToken", args.shareToken))
+      .query('children')
+      .withIndex('by_share_token', (q) => q.eq('shareToken', args.shareToken))
       .first();
 
     if (!child || !child.isActive) {
@@ -432,65 +399,65 @@ export const getChildCalendar = query({
 
     // Get registrations for this child (registered and interested/waitlisted)
     const registrations = await ctx.db
-      .query("registrations")
-      .withIndex("by_child", (q) => q.eq("childId", child._id))
-      .filter((q) => q.neq(q.field("status"), "cancelled"))
+      .query('registrations')
+      .withIndex('by_child', (q) => q.eq('childId', child._id))
+      .filter((q) => q.neq(q.field('status'), 'cancelled'))
       .collect();
 
     // Fetch sessions with all details
     const sessionIds = [...new Set(registrations.map((r) => r.sessionId))];
     const sessionsRaw = await Promise.all(sessionIds.map((id) => ctx.db.get(id)));
-    const sessions = sessionsRaw.filter((s): s is Doc<"sessions"> => s !== null);
+    const sessions = sessionsRaw.filter((s): s is Doc<'sessions'> => s !== null);
 
     // Fetch camps for names
     const campIds = [...new Set(sessions.map((s) => s.campId))];
     const campsRaw = await Promise.all(campIds.map((id) => ctx.db.get(id)));
-    const camps = campsRaw.filter((c): c is Doc<"camps"> => c !== null);
+    const camps = campsRaw.filter((c): c is Doc<'camps'> => c !== null);
     const campMap = new Map(camps.map((c) => [c._id, c]));
 
     // Fetch organizations
     const orgIds = [...new Set(sessions.map((s) => s.organizationId))];
     const orgsRaw = await Promise.all(orgIds.map((id) => ctx.db.get(id)));
-    const orgs = orgsRaw.filter((o): o is Doc<"organizations"> => o !== null);
+    const orgs = orgsRaw.filter((o): o is Doc<'organizations'> => o !== null);
     const orgMap = new Map(orgs.map((o) => [o._id, o]));
 
     // Fetch locations
     const locationIds = [...new Set(sessions.map((s) => s.locationId))];
     const locationsRaw = await Promise.all(locationIds.map((id) => ctx.db.get(id)));
-    const locations = locationsRaw.filter((l): l is Doc<"locations"> => l !== null);
+    const locations = locationsRaw.filter((l): l is Doc<'locations'> => l !== null);
     const locationMap = new Map(locations.map((l) => [l._id, l]));
 
     // Build calendar events
-    const events = registrations.map((reg) => {
-      const session = sessions.find((s) => s._id === reg.sessionId);
-      if (!session) return null;
+    const events = registrations
+      .map((reg) => {
+        const session = sessions.find((s) => s._id === reg.sessionId);
+        if (!session) return null;
 
-      const camp = campMap.get(session.campId);
-      const org = orgMap.get(session.organizationId);
-      const location = locationMap.get(session.locationId);
+        const camp = campMap.get(session.campId);
+        const org = orgMap.get(session.organizationId);
+        const location = locationMap.get(session.locationId);
 
-      return {
-        id: reg._id,
-        status: reg.status,
-        campName: camp?.name || "Camp",
-        organizationName: org?.name || "",
-        startDate: session.startDate,
-        endDate: session.endDate,
-        dropOffTime: session.dropOffTime,
-        pickUpTime: session.pickUpTime,
-        locationName: location?.name || "",
-        locationAddress: location?.address
-          ? `${location.address.street}, ${location.address.city}, ${location.address.state} ${location.address.zip}`
-          : "",
-      };
-    }).filter((e): e is NonNullable<typeof e> => e !== null);
+        return {
+          id: reg._id,
+          status: reg.status,
+          campName: camp?.name || 'Camp',
+          organizationName: org?.name || '',
+          startDate: session.startDate,
+          endDate: session.endDate,
+          dropOffTime: session.dropOffTime,
+          pickUpTime: session.pickUpTime,
+          locationName: location?.name || '',
+          locationAddress: location?.address
+            ? `${location.address.street}, ${location.address.city}, ${location.address.state} ${location.address.zip}`
+            : '',
+        };
+      })
+      .filter((e): e is NonNullable<typeof e> => e !== null);
 
     // Get family events
     const familyEvents = await ctx.db
-      .query("familyEvents")
-      .withIndex("by_family_and_active", (q) =>
-        q.eq("familyId", family._id).eq("isActive", true)
-      )
+      .query('familyEvents')
+      .withIndex('by_family_and_active', (q) => q.eq('familyId', family._id).eq('isActive', true))
       .collect();
 
     const childFamilyEvents = familyEvents

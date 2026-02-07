@@ -1,15 +1,15 @@
-import { mutation } from "../_generated/server";
-import { internal } from "../_generated/api";
-import { v } from "convex/values";
-import { ageRangeValidator, timeValidator, sessionStatusValidator } from "../lib/validators";
+import { mutation } from '../_generated/server';
+import { internal } from '../_generated/api';
+import { v } from 'convex/values';
+import { ageRangeValidator, timeValidator, sessionStatusValidator } from '../lib/validators';
 
 /**
  * Create a new session
  */
 export const createSession = mutation({
   args: {
-    campId: v.id("camps"),
-    locationId: v.id("locations"),
+    campId: v.id('camps'),
+    locationId: v.id('locations'),
     startDate: v.string(),
     endDate: v.string(),
     dropOffTime: timeValidator,
@@ -26,21 +26,21 @@ export const createSession = mutation({
     // Verify camp exists and get organization ID
     const camp = await ctx.db.get(args.campId);
     if (!camp) {
-      throw new Error("Camp not found");
+      throw new Error('Camp not found');
     }
 
     // Verify location exists and get city ID
     const location = await ctx.db.get(args.locationId);
     if (!location) {
-      throw new Error("Location not found");
+      throw new Error('Location not found');
     }
 
     // Validate dates
     if (args.startDate > args.endDate) {
-      throw new Error("Start date must be before or equal to end date");
+      throw new Error('Start date must be before or equal to end date');
     }
 
-    const sessionId = await ctx.db.insert("sessions", {
+    const sessionId = await ctx.db.insert('sessions', {
       campId: args.campId,
       locationId: args.locationId,
       // Denormalized fields for query efficiency
@@ -64,7 +64,7 @@ export const createSession = mutation({
 
       ageRequirements: args.ageRequirements,
 
-      status: "active", // Default to active so sessions show immediately
+      status: 'active', // Default to active so sessions show immediately
 
       waitlistEnabled: args.waitlistEnabled,
       waitlistCapacity: undefined,
@@ -84,7 +84,7 @@ export const createSession = mutation({
  */
 export const updateSession = mutation({
   args: {
-    sessionId: v.id("sessions"),
+    sessionId: v.id('sessions'),
     startDate: v.optional(v.string()),
     endDate: v.optional(v.string()),
     dropOffTime: v.optional(timeValidator),
@@ -99,7 +99,7 @@ export const updateSession = mutation({
         earlyDropOffTime: v.optional(timeValidator),
         latePickUpTime: v.optional(timeValidator),
         additionalCost: v.optional(v.number()),
-      })
+      }),
     ),
     waitlistEnabled: v.optional(v.boolean()),
     waitlistCapacity: v.optional(v.number()),
@@ -110,7 +110,7 @@ export const updateSession = mutation({
 
     const session = await ctx.db.get(sessionId);
     if (!session) {
-      throw new Error("Session not found");
+      throw new Error('Session not found');
     }
 
     // Build update object with only defined fields
@@ -127,7 +127,7 @@ export const updateSession = mutation({
     const newStartDate = updates.startDate ?? session.startDate;
     const newEndDate = updates.endDate ?? session.endDate;
     if (newStartDate > newEndDate) {
-      throw new Error("Start date must be before or equal to end date");
+      throw new Error('Start date must be before or equal to end date');
     }
 
     if (updates.dropOffTime !== undefined) {
@@ -175,29 +175,27 @@ export const updateSession = mutation({
  */
 export const updateSessionStatus = mutation({
   args: {
-    sessionId: v.id("sessions"),
+    sessionId: v.id('sessions'),
     status: sessionStatusValidator,
   },
   handler: async (ctx, args) => {
     const session = await ctx.db.get(args.sessionId);
     if (!session) {
-      throw new Error("Session not found");
+      throw new Error('Session not found');
     }
 
     // Validate status transitions
     const validTransitions: Record<string, string[]> = {
-      draft: ["active", "cancelled"],
-      active: ["sold_out", "cancelled", "completed"],
-      sold_out: ["active", "cancelled", "completed"],
+      draft: ['active', 'cancelled'],
+      active: ['sold_out', 'cancelled', 'completed'],
+      sold_out: ['active', 'cancelled', 'completed'],
       cancelled: [], // Terminal state
       completed: [], // Terminal state
     };
 
     const allowedNextStatuses = validTransitions[session.status] || [];
     if (!allowedNextStatuses.includes(args.status)) {
-      throw new Error(
-        `Cannot transition from "${session.status}" to "${args.status}"`
-      );
+      throw new Error(`Cannot transition from "${session.status}" to "${args.status}"`);
     }
 
     await ctx.db.patch(args.sessionId, {
@@ -205,8 +203,8 @@ export const updateSessionStatus = mutation({
     });
 
     // Refresh planner availability when status changes affect availability
-    const wasAvailable = session.status === "active";
-    const nowAvailable = args.status === "active";
+    const wasAvailable = session.status === 'active';
+    const nowAvailable = args.status === 'active';
     if (wasAvailable !== nowAvailable) {
       const currentYear = new Date().getFullYear();
       await ctx.scheduler.runAfter(0, internal.planner.aggregates.recomputeForCity, {
@@ -224,27 +222,27 @@ export const updateSessionStatus = mutation({
  */
 export const updateCapacityCounts = mutation({
   args: {
-    sessionId: v.id("sessions"),
+    sessionId: v.id('sessions'),
     enrolledCount: v.number(),
     waitlistCount: v.number(),
   },
   handler: async (ctx, args) => {
     const session = await ctx.db.get(args.sessionId);
     if (!session) {
-      throw new Error("Session not found");
+      throw new Error('Session not found');
     }
 
     // Validate counts are non-negative
     if (args.enrolledCount < 0) {
-      throw new Error("Enrolled count cannot be negative");
+      throw new Error('Enrolled count cannot be negative');
     }
     if (args.waitlistCount < 0) {
-      throw new Error("Waitlist count cannot be negative");
+      throw new Error('Waitlist count cannot be negative');
     }
 
     // Determine if session should be marked as sold out
     const isSoldOut = args.enrolledCount >= session.capacity;
-    const currentlySoldOut = session.status === "sold_out";
+    const currentlySoldOut = session.status === 'sold_out';
 
     await ctx.db.patch(args.sessionId, {
       enrolledCount: args.enrolledCount,
@@ -252,18 +250,14 @@ export const updateCapacityCounts = mutation({
     });
 
     // Auto-update status if capacity threshold crossed (only for active sessions)
-    if (session.status === "active" && isSoldOut && !currentlySoldOut) {
+    if (session.status === 'active' && isSoldOut && !currentlySoldOut) {
       await ctx.db.patch(args.sessionId, {
-        status: "sold_out",
+        status: 'sold_out',
       });
-    } else if (
-      session.status === "sold_out" &&
-      !isSoldOut &&
-      currentlySoldOut
-    ) {
+    } else if (session.status === 'sold_out' && !isSoldOut && currentlySoldOut) {
       // Capacity became available again
       await ctx.db.patch(args.sessionId, {
-        status: "active",
+        status: 'active',
       });
     }
 

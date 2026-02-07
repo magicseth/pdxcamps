@@ -5,10 +5,6 @@ export const metadata: Metadata = {
   description: 'Manage camps, sources, and scraping jobs',
 };
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return children;
 }

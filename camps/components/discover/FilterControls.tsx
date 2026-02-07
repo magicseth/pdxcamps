@@ -26,13 +26,7 @@ export function QuickDateButton({
 }
 
 // Filter chip component for active filters display
-export function FilterChip({
-  label,
-  onRemove,
-}: {
-  label: string;
-  onRemove: () => void;
-}) {
+export function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
     <span className="inline-flex items-center gap-1 px-2 py-1 bg-primary/20 dark:bg-primary-dark/30 text-primary-dark dark:text-white/60 rounded-full text-xs font-medium transition-transform hover:scale-105">
       {label}

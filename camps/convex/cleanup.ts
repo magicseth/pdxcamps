@@ -1,5 +1,5 @@
-import { mutation } from "./_generated/server";
-import { v } from "convex/values";
+import { mutation } from './_generated/server';
+import { v } from 'convex/values';
 
 /**
  * Remove fake seeded data from the database
@@ -17,27 +17,25 @@ export const removeFakeSeededData = mutation({
     };
 
     // List of fake organization slugs from seed.ts
-    const fakeOrgSlugs = ["portland-parks", "portland-parks-recreation", "portland-art-museum"];
+    const fakeOrgSlugs = ['portland-parks', 'portland-parks-recreation', 'portland-art-museum'];
     // Note: We keep "omsi" if it has real scraped data
 
     // Find and delete fake organizations and their related data
-    const organizations = await ctx.db.query("organizations").collect();
+    const organizations = await ctx.db.query('organizations').collect();
 
     for (const org of organizations) {
       // Skip organizations with real scrape sources
       const hasScrapeSource = await ctx.db
-        .query("scrapeSources")
-        .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
+        .query('scrapeSources')
+        .withIndex('by_organization', (q) => q.eq('organizationId', org._id))
         .first();
 
       // If it's a fake org without scrape sources, delete it and its data
       if (fakeOrgSlugs.includes(org.slug) && !hasScrapeSource) {
         // Delete sessions
         const sessions = await ctx.db
-          .query("sessions")
-          .withIndex("by_organization_and_status", (q) =>
-            q.eq("organizationId", org._id)
-          )
+          .query('sessions')
+          .withIndex('by_organization_and_status', (q) => q.eq('organizationId', org._id))
           .collect();
         for (const session of sessions) {
           await ctx.db.delete(session._id);
@@ -46,8 +44,8 @@ export const removeFakeSeededData = mutation({
 
         // Delete camps
         const camps = await ctx.db
-          .query("camps")
-          .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
+          .query('camps')
+          .withIndex('by_organization', (q) => q.eq('organizationId', org._id))
           .collect();
         for (const camp of camps) {
           await ctx.db.delete(camp._id);
@@ -56,8 +54,8 @@ export const removeFakeSeededData = mutation({
 
         // Delete locations
         const locations = await ctx.db
-          .query("locations")
-          .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
+          .query('locations')
+          .withIndex('by_organization', (q) => q.eq('organizationId', org._id))
           .collect();
         for (const location of locations) {
           await ctx.db.delete(location._id);
@@ -71,7 +69,7 @@ export const removeFakeSeededData = mutation({
     }
 
     // Also check for sessions/camps/locations without a valid organization
-    const allSessions = await ctx.db.query("sessions").collect();
+    const allSessions = await ctx.db.query('sessions').collect();
     for (const session of allSessions) {
       const org = await ctx.db.get(session.organizationId);
       if (!org) {
@@ -80,7 +78,7 @@ export const removeFakeSeededData = mutation({
       }
     }
 
-    const allCamps = await ctx.db.query("camps").collect();
+    const allCamps = await ctx.db.query('camps').collect();
     for (const camp of allCamps) {
       const org = await ctx.db.get(camp.organizationId);
       if (!org) {
@@ -89,7 +87,7 @@ export const removeFakeSeededData = mutation({
       }
     }
 
-    const allLocations = await ctx.db.query("locations").collect();
+    const allLocations = await ctx.db.query('locations').collect();
     for (const location of allLocations) {
       if (location.organizationId) {
         const org = await ctx.db.get(location.organizationId);
@@ -101,7 +99,7 @@ export const removeFakeSeededData = mutation({
     }
 
     return {
-      message: "Fake seeded data removed",
+      message: 'Fake seeded data removed',
       deleted,
     };
   },
@@ -113,7 +111,7 @@ export const removeFakeSeededData = mutation({
 export const listOrganizations = mutation({
   args: {},
   handler: async (ctx) => {
-    const orgs = await ctx.db.query("organizations").collect();
+    const orgs = await ctx.db.query('organizations').collect();
     return orgs.map((org) => ({
       id: org._id,
       name: org.name,
@@ -129,7 +127,7 @@ export const listOrganizations = mutation({
 export const listCamps = mutation({
   args: {},
   handler: async (ctx) => {
-    const camps = await ctx.db.query("camps").collect();
+    const camps = await ctx.db.query('camps').collect();
     return camps.map((c) => ({
       id: c._id,
       name: c.name,
@@ -148,34 +146,34 @@ export const resetCampData = mutation({
     const deleted = { sessions: 0, camps: 0, locations: 0, organizations: 0 };
 
     // Delete all sessions
-    const sessions = await ctx.db.query("sessions").collect();
+    const sessions = await ctx.db.query('sessions').collect();
     for (const s of sessions) {
       await ctx.db.delete(s._id);
       deleted.sessions++;
     }
 
     // Delete all camps
-    const camps = await ctx.db.query("camps").collect();
+    const camps = await ctx.db.query('camps').collect();
     for (const c of camps) {
       await ctx.db.delete(c._id);
       deleted.camps++;
     }
 
     // Delete all locations
-    const locations = await ctx.db.query("locations").collect();
+    const locations = await ctx.db.query('locations').collect();
     for (const l of locations) {
       await ctx.db.delete(l._id);
       deleted.locations++;
     }
 
     // Delete all organizations
-    const orgs = await ctx.db.query("organizations").collect();
+    const orgs = await ctx.db.query('organizations').collect();
     for (const o of orgs) {
       await ctx.db.delete(o._id);
       deleted.organizations++;
     }
 
-    return { message: "All camp data reset", deleted };
+    return { message: 'All camp data reset', deleted };
   },
 });
 
@@ -184,13 +182,13 @@ export const resetCampData = mutation({
  */
 export const fixOrganizationLogo = mutation({
   args: {
-    organizationId: v.id("organizations"),
+    organizationId: v.id('organizations'),
     logoUrl: v.string(),
   },
   handler: async (ctx, args) => {
     const org = await ctx.db.get(args.organizationId);
     if (!org) {
-      throw new Error("Organization not found");
+      throw new Error('Organization not found');
     }
     await ctx.db.patch(args.organizationId, {
       logoUrl: args.logoUrl,
@@ -204,12 +202,12 @@ export const fixOrganizationLogo = mutation({
  */
 export const deleteSessionsBySource = mutation({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
   },
   handler: async (ctx, args) => {
     const sessions = await ctx.db
-      .query("sessions")
-      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .query('sessions')
+      .withIndex('by_source', (q) => q.eq('sourceId', args.sourceId))
       .collect();
 
     let deleted = 0;
@@ -228,16 +226,16 @@ export const deleteSessionsBySource = mutation({
 export const deleteInvalidSessions = mutation({
   args: {},
   handler: async (ctx) => {
-    const sessions = await ctx.db.query("sessions").collect();
+    const sessions = await ctx.db.query('sessions').collect();
     let deleted = 0;
 
     for (const session of sessions) {
       // Check for placeholder values
       const hasInvalidDate =
-        session.startDate?.includes("<UNKNOWN>") ||
-        session.endDate?.includes("<UNKNOWN>") ||
-        session.startDate?.includes("UNKNOWN") ||
-        session.endDate?.includes("UNKNOWN");
+        session.startDate?.includes('<UNKNOWN>') ||
+        session.endDate?.includes('<UNKNOWN>') ||
+        session.startDate?.includes('UNKNOWN') ||
+        session.endDate?.includes('UNKNOWN');
 
       if (hasInvalidDate) {
         await ctx.db.delete(session._id);
@@ -255,15 +253,14 @@ export const deleteInvalidSessions = mutation({
 export const countRecords = mutation({
   args: {},
   handler: async (ctx) => {
-    const [cities, neighborhoods, organizations, camps, locations, sessions] =
-      await Promise.all([
-        ctx.db.query("cities").collect(),
-        ctx.db.query("neighborhoods").collect(),
-        ctx.db.query("organizations").collect(),
-        ctx.db.query("camps").collect(),
-        ctx.db.query("locations").collect(),
-        ctx.db.query("sessions").collect(),
-      ]);
+    const [cities, neighborhoods, organizations, camps, locations, sessions] = await Promise.all([
+      ctx.db.query('cities').collect(),
+      ctx.db.query('neighborhoods').collect(),
+      ctx.db.query('organizations').collect(),
+      ctx.db.query('camps').collect(),
+      ctx.db.query('locations').collect(),
+      ctx.db.query('sessions').collect(),
+    ]);
 
     return {
       cities: cities.length,
@@ -283,8 +280,8 @@ export const countRecords = mutation({
 export const syncOrgWebsitesFromSources = mutation({
   args: {},
   handler: async (ctx) => {
-    const scrapeSources = await ctx.db.query("scrapeSources").collect();
-    const organizations = await ctx.db.query("organizations").collect();
+    const scrapeSources = await ctx.db.query('scrapeSources').collect();
+    const organizations = await ctx.db.query('organizations').collect();
 
     let updated = 0;
     const updates: Array<{ orgName: string; website: string }> = [];
@@ -297,10 +294,7 @@ export const syncOrgWebsitesFromSources = mutation({
 
       // Check if org needs website update
       const needsUpdate =
-        !org.website ||
-        org.website === "<UNKNOWN>" ||
-        org.website === "UNKNOWN" ||
-        !org.website.startsWith("http");
+        !org.website || org.website === '<UNKNOWN>' || org.website === 'UNKNOWN' || !org.website.startsWith('http');
 
       if (needsUpdate) {
         // Extract base domain from source URL

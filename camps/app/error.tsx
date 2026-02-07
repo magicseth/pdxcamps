@@ -2,13 +2,7 @@
 
 import { useEffect } from 'react';
 
-export default function Error({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
+export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
     // Log the error to an error reporting service
     console.error('Application error:', error);
@@ -18,11 +12,11 @@ export default function Error({
     <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-900">
       <div className="max-w-md w-full text-center">
         <div className="text-6xl mb-6" aria-hidden="true">
-          <span role="img" aria-label="Warning">⚠️</span>
+          <span role="img" aria-label="Warning">
+            ⚠️
+          </span>
         </div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-4 text-balance">
-          Something went wrong
-        </h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-4 text-balance">Something went wrong</h1>
         <p className="text-slate-600 dark:text-slate-400 mb-8 text-pretty">
           We encountered an unexpected error. Please try again, or contact support if the problem persists.
         </p>
@@ -41,11 +35,7 @@ export default function Error({
             Go Home
           </a>
         </div>
-        {error.digest && (
-          <p className="mt-8 text-xs text-slate-400 dark:text-slate-500">
-            Error ID: {error.digest}
-          </p>
-        )}
+        {error.digest && <p className="mt-8 text-xs text-slate-400 dark:text-slate-500">Error ID: {error.digest}</p>}
       </div>
     </div>
   );

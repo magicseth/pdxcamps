@@ -3,7 +3,7 @@
  * Every scraper must export a function matching this signature
  */
 
-import { Id } from "../../_generated/dataModel";
+import { Id } from '../../_generated/dataModel';
 
 // Scraped camp session data - normalized format
 export interface ScrapedSession {
@@ -100,27 +100,20 @@ export interface ScrapeResult {
 
 // Configuration passed to scrapers
 export interface ScraperConfig {
-  sourceId: Id<"scrapeSources">;
+  sourceId: Id<'scrapeSources'>;
   url: string;
   name: string;
-  organizationId?: Id<"organizations">;
+  organizationId?: Id<'organizations'>;
 
   // Custom config per scraper (stored in DB)
   customConfig?: Record<string, unknown>;
 }
 
 // Logger function type for scrapers to use
-export type ScraperLogger = (
-  level: "INFO" | "DEBUG" | "WARN" | "ERROR",
-  message: string,
-  data?: unknown
-) => void;
+export type ScraperLogger = (level: 'INFO' | 'DEBUG' | 'WARN' | 'ERROR', message: string, data?: unknown) => void;
 
 // Standard scraper function signature
-export type ScraperFunction = (
-  config: ScraperConfig,
-  log: ScraperLogger
-) => Promise<ScrapeResult>;
+export type ScraperFunction = (config: ScraperConfig, log: ScraperLogger) => Promise<ScrapeResult>;
 
 // Registry entry for a scraper
 export interface ScraperRegistryEntry {

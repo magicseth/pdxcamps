@@ -1,5 +1,5 @@
-import { cronJobs } from "convex/server";
-import { internal } from "./_generated/api";
+import { cronJobs } from 'convex/server';
+import { internal } from './_generated/api';
 
 const crons = cronJobs();
 
@@ -10,10 +10,10 @@ const crons = cronJobs();
 // Hourly notification digest - sends availability alerts to families
 // Notifies when camps they saved open for registration or have low availability
 crons.interval(
-  "availability notification digest",
+  'availability notification digest',
   { hours: 1 },
   internal.notifications.actions.processHourlyDigest,
-  {}
+  {},
 );
 
 // ============================================
@@ -22,12 +22,7 @@ crons.interval(
 
 // Run scheduled scrapes every 15 minutes
 // This action queries all sources due for scraping and executes them
-crons.interval(
-  "scrape scheduler",
-  { minutes: 15 },
-  internal.scraping.actions.runScheduledScrapes,
-  {}
-);
+crons.interval('scrape scheduler', { minutes: 15 }, internal.scraping.actions.runScheduledScrapes, {});
 
 // Directory queue is processed by local daemon (Claude Code)
 // Not using cron - call api.scraping.directoryDaemon.processDirectoryQueue manually
@@ -64,12 +59,7 @@ crons.interval(
 
 // Recompute weekly availability counts every 30 minutes
 // Keeps planner grid session counts fresh without per-request computation
-crons.interval(
-  "recompute weekly availability",
-  { minutes: 30 },
-  internal.planner.aggregates.recomputeAll,
-  {}
-);
+crons.interval('recompute weekly availability', { minutes: 30 }, internal.planner.aggregates.recomputeAll, {});
 
 // ============================================
 // MAINTENANCE CRONS
@@ -79,54 +69,54 @@ crons.interval(
 // Detects sources with no scrapers, high zero-price ratios, low quality scores,
 // and stale scrapes. Creates alerts for issues found.
 crons.daily(
-  "data quality checks",
+  'data quality checks',
   { hourUTC: 14, minuteUTC: 0 },
   internal.scraping.dataQualityActions.runDataQualityChecks,
-  {}
+  {},
 );
 
 // Auto-queue scraper development every 6 hours
 // Finds sources needing regeneration or missing scrapers and creates dev requests
 crons.interval(
-  "auto queue scraper development",
+  'auto queue scraper development',
   { hours: 6 },
   internal.scraping.scraperAutomation.autoQueueScraperDevelopment,
-  { maxToQueue: 5 }
+  { maxToQueue: 5 },
 );
 
 // Clean up stale dev requests weekly (Sunday 3 AM PST / 11 AM UTC)
 crons.weekly(
-  "cleanup stale dev requests",
-  { dayOfWeek: "sunday", hourUTC: 11, minuteUTC: 0 },
+  'cleanup stale dev requests',
+  { dayOfWeek: 'sunday', hourUTC: 11, minuteUTC: 0 },
   internal.scraping.scraperAutomation.cleanupStaleDevRequests,
-  { maxAgeDays: 7 }
+  { maxAgeDays: 7 },
 );
 
 // URL discovery for broken sources - runs daily at 7 AM PST (3 PM UTC)
 // Finds sources with 404 errors and tries to discover new URLs
 crons.daily(
-  "url discovery for broken sources",
+  'url discovery for broken sources',
   { hourUTC: 15, minuteUTC: 0 },
   internal.scraping.urlDiscovery.discoverUrlsForBrokenSources,
-  { limit: 10 }
+  { limit: 10 },
 );
 
 // Daily scraper report email - runs at 8 AM PST (4 PM UTC)
 // Sends summary of scraping activity to seth@magicseth.com
 crons.daily(
-  "daily scraper report email",
+  'daily scraper report email',
   { hourUTC: 16, minuteUTC: 0 },
   internal.scraping.dailyReport.sendDailyReport,
-  {}
+  {},
 );
 
 // Source recovery - check disabled 404 sources weekly (Saturday 5 AM PST / 1 PM UTC)
 // Re-enables sources whose URLs have come back online
 crons.weekly(
-  "source recovery check",
-  { dayOfWeek: "saturday", hourUTC: 13, minuteUTC: 0 },
+  'source recovery check',
+  { dayOfWeek: 'saturday', hourUTC: 13, minuteUTC: 0 },
   internal.scraping.sourceRecovery.checkDisabledSources,
-  {}
+  {},
 );
 
 // Clean up old scrape data weekly (keep 30 days)
@@ -143,19 +133,19 @@ crons.weekly(
 // Session deduplication - runs daily at 4 AM PST (12 PM UTC)
 // Merges duplicate sessions (same camp, location, start/end dates)
 crons.daily(
-  "deduplicate sessions",
+  'deduplicate sessions',
   { hourUTC: 12, minuteUTC: 0 },
   internal.cleanup.sessions.autoDeduplicateSessions,
-  {}
+  {},
 );
 
 // Cross-source duplicate detection - runs daily at 4:30 AM PST (12:30 PM UTC)
 // Detects sessions from different sources that appear to be duplicates (alert-only, no auto-merge)
 crons.daily(
-  "cross-source duplicate detection",
+  'cross-source duplicate detection',
   { hourUTC: 12, minuteUTC: 30 },
   internal.scraping.deduplication.detectAndAlertCrossSourceDuplicates,
-  {}
+  {},
 );
 
 export default crons;

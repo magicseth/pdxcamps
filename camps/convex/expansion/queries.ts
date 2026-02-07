@@ -1,6 +1,6 @@
-import { query } from "../_generated/server";
-import { v } from "convex/values";
-import { EXPANSION_MARKETS, getExpansionMarketByKey } from "../../lib/expansionMarkets";
+import { query } from '../_generated/server';
+import { v } from 'convex/values';
+import { EXPANSION_MARKETS, getExpansionMarketByKey } from '../../lib/expansionMarkets';
 
 /**
  * List all expansion markets with their DB status merged
@@ -11,7 +11,7 @@ export const listExpansionMarkets = query({
   },
   handler: async (ctx, args) => {
     // Get all expansion market records from DB
-    const dbRecords = await ctx.db.query("expansionMarkets").collect();
+    const dbRecords = await ctx.db.query('expansionMarkets').collect();
     const recordsByKey = new Map(dbRecords.map((r) => [r.marketKey, r]));
 
     // Merge with static market data
@@ -21,23 +21,21 @@ export const listExpansionMarkets = query({
     }
 
     // Get stats for all cities that have been created
-    const cityIds = dbRecords
-      .filter((r) => r.cityId)
-      .map((r) => r.cityId!);
+    const cityIds = dbRecords.filter((r) => r.cityId).map((r) => r.cityId!);
 
     // Fetch all orgs once (they have cityIds array, no index)
-    const allOrgs = await ctx.db.query("organizations").collect();
+    const allOrgs = await ctx.db.query('organizations').collect();
 
     // Batch fetch counts for each city
     const statsPromises = cityIds.map(async (cityId) => {
       const [sources, sessions] = await Promise.all([
         ctx.db
-          .query("scrapeSources")
-          .withIndex("by_city", (q) => q.eq("cityId", cityId))
+          .query('scrapeSources')
+          .withIndex('by_city', (q) => q.eq('cityId', cityId))
           .collect(),
         ctx.db
-          .query("sessions")
-          .withIndex("by_city_and_status", (q) => q.eq("cityId", cityId))
+          .query('sessions')
+          .withIndex('by_city_and_status', (q) => q.eq('cityId', cityId))
           .collect(),
       ]);
       // Filter orgs that include this cityId
@@ -67,17 +65,19 @@ export const listExpansionMarkets = query({
         dnsConfigured: dbRecord?.dnsConfigured ?? false,
         netlifyZoneId: dbRecord?.netlifyZoneId,
         cityId: dbRecord?.cityId,
-        status: dbRecord?.status ?? "not_started",
+        status: dbRecord?.status ?? 'not_started',
         createdAt: dbRecord?.createdAt,
         updatedAt: dbRecord?.updatedAt,
         // Multiple domains
         domains: dbRecord?.domains,
         // Stats
-        stats: stats ? {
-          sources: stats.sources,
-          orgs: stats.orgs,
-          sessions: stats.sessions,
-        } : null,
+        stats: stats
+          ? {
+              sources: stats.sources,
+              orgs: stats.orgs,
+              sessions: stats.sessions,
+            }
+          : null,
         // Icons
         iconOptions: dbRecord?.iconOptions,
         iconPrompt: dbRecord?.iconPrompt,
@@ -102,8 +102,8 @@ export const getExpansionMarket = query({
     }
 
     const dbRecord = await ctx.db
-      .query("expansionMarkets")
-      .withIndex("by_market_key", (q) => q.eq("marketKey", args.marketKey))
+      .query('expansionMarkets')
+      .withIndex('by_market_key', (q) => q.eq('marketKey', args.marketKey))
       .unique();
 
     // If we have a city, fetch its details
@@ -124,7 +124,7 @@ export const getExpansionMarket = query({
       cityId: dbRecord?.cityId,
       city,
       domains: dbRecord?.domains,
-      status: dbRecord?.status ?? "not_started",
+      status: dbRecord?.status ?? 'not_started',
       createdAt: dbRecord?.createdAt,
       updatedAt: dbRecord?.updatedAt,
     };
@@ -137,14 +137,12 @@ export const getExpansionMarket = query({
 export const getExpansionSummary = query({
   args: {},
   handler: async (ctx) => {
-    const dbRecords = await ctx.db.query("expansionMarkets").collect();
+    const dbRecords = await ctx.db.query('expansionMarkets').collect();
 
-    const launched = dbRecords.filter((r) => r.status === "launched").length;
-    const inProgress = dbRecords.filter(
-      (r) => r.status !== "not_started" && r.status !== "launched"
-    ).length;
-    const notStarted = EXPANSION_MARKETS.length - dbRecords.length +
-      dbRecords.filter((r) => r.status === "not_started").length;
+    const launched = dbRecords.filter((r) => r.status === 'launched').length;
+    const inProgress = dbRecords.filter((r) => r.status !== 'not_started' && r.status !== 'launched').length;
+    const notStarted =
+      EXPANSION_MARKETS.length - dbRecords.length + dbRecords.filter((r) => r.status === 'not_started').length;
 
     // Count by tier
     const tier1Total = EXPANSION_MARKETS.filter((m) => m.tier === 1).length;
@@ -153,15 +151,15 @@ export const getExpansionSummary = query({
 
     const tier1Launched = dbRecords.filter((r) => {
       const market = getExpansionMarketByKey(r.marketKey);
-      return market?.tier === 1 && r.status === "launched";
+      return market?.tier === 1 && r.status === 'launched';
     }).length;
     const tier2Launched = dbRecords.filter((r) => {
       const market = getExpansionMarketByKey(r.marketKey);
-      return market?.tier === 2 && r.status === "launched";
+      return market?.tier === 2 && r.status === 'launched';
     }).length;
     const tier3Launched = dbRecords.filter((r) => {
       const market = getExpansionMarketByKey(r.marketKey);
-      return market?.tier === 3 && r.status === "launched";
+      return market?.tier === 3 && r.status === 'launched';
     }).length;
 
     return {

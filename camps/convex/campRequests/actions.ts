@@ -1,8 +1,8 @@
-"use node";
+'use node';
 
-import { internalAction } from "../_generated/server";
-import { internal, api } from "../_generated/api";
-import { v } from "convex/values";
+import { internalAction } from '../_generated/server';
+import { internal, api } from '../_generated/api';
+import { v } from 'convex/values';
 
 /**
  * Process a camp request:
@@ -12,7 +12,7 @@ import { v } from "convex/values";
  */
 export const processCampRequest = internalAction({
   args: {
-    requestId: v.id("campRequests"),
+    requestId: v.id('campRequests'),
   },
   handler: async (ctx, args) => {
     // Get the request
@@ -33,8 +33,8 @@ export const processCampRequest = internalAction({
     if (!city) {
       await ctx.runMutation(internal.campRequests.mutations.updateRequestStatus, {
         requestId: args.requestId,
-        status: "failed",
-        errorMessage: "City not found",
+        status: 'failed',
+        errorMessage: 'City not found',
       });
       return;
     }
@@ -45,7 +45,7 @@ export const processCampRequest = internalAction({
     if (!websiteUrl) {
       await ctx.runMutation(internal.campRequests.mutations.updateRequestStatus, {
         requestId: args.requestId,
-        status: "failed",
+        status: 'failed',
         errorMessage: "Please provide the camp's website URL so we can add it.",
       });
       return;
@@ -53,14 +53,14 @@ export const processCampRequest = internalAction({
 
     await ctx.runMutation(internal.campRequests.mutations.updateRequestStatus, {
       requestId: args.requestId,
-      status: "scraping",
+      status: 'scraping',
     });
 
     // Now we have a URL - create org, source, and queue scraper development
     try {
-      const domain = new URL(websiteUrl).hostname.replace(/^www\./, "");
+      const domain = new URL(websiteUrl).hostname.replace(/^www\./, '');
       const orgName = request.organizationName || request.campName;
-      const slug = domain.replace(/\./g, "-");
+      const slug = domain.replace(/\./g, '-');
 
       // Check if source already exists
       const existingSource = await ctx.runQuery(internal.campRequests.queries.findSourceByDomain, {
@@ -70,7 +70,7 @@ export const processCampRequest = internalAction({
       if (existingSource) {
         await ctx.runMutation(internal.campRequests.mutations.updateRequestStatus, {
           requestId: args.requestId,
-          status: "duplicate",
+          status: 'duplicate',
           scrapeSourceId: existingSource._id,
         });
         return;
@@ -82,23 +82,25 @@ export const processCampRequest = internalAction({
         slug,
         website: websiteUrl,
         cityId: request.cityId,
-        requestedBy: "user-request",
+        requestedBy: 'user-request',
         notes: request.notes,
       });
 
       await ctx.runMutation(internal.campRequests.mutations.updateRequestStatus, {
         requestId: args.requestId,
-        status: "completed",
+        status: 'completed',
         scrapeSourceId: result.sourceId,
         organizationId: result.organizationId,
       });
 
-      console.log(`Camp request ${args.requestId} completed - created org ${result.organizationId}, source ${result.sourceId}`);
+      console.log(
+        `Camp request ${args.requestId} completed - created org ${result.organizationId}, source ${result.sourceId}`,
+      );
     } catch (error) {
       await ctx.runMutation(internal.campRequests.mutations.updateRequestStatus, {
         requestId: args.requestId,
-        status: "failed",
-        errorMessage: `Failed to create source: ${error instanceof Error ? error.message : "Unknown error"}`,
+        status: 'failed',
+        errorMessage: `Failed to create source: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
     }
   },

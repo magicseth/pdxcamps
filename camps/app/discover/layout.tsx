@@ -5,10 +5,6 @@ export const metadata: Metadata = {
   description: 'Browse and find summer camps in your area',
 };
 
-export default function DiscoverLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function DiscoverLayout({ children }: { children: React.ReactNode }) {
   return children;
 }

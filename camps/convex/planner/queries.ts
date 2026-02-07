@@ -1,7 +1,7 @@
-import { query } from "../_generated/server";
-import { v } from "convex/values";
-import { Doc, Id } from "../_generated/dataModel";
-import { getFamily } from "../lib/auth";
+import { query } from '../_generated/server';
+import { v } from 'convex/values';
+import { Doc, Id } from '../_generated/dataModel';
+import { getFamily } from '../lib/auth';
 import {
   generateSummerWeeks,
   generateWeeksForRange,
@@ -13,39 +13,39 @@ import {
   isGradeInRange,
   resolveCampName,
   SummerWeek,
-} from "../lib/helpers";
+} from '../lib/helpers';
 
 /**
  * Coverage status for a child in a given week
  */
 export type CoverageStatus =
-  | "full" // 5 days covered by camps or events
-  | "partial" // 1-4 days covered
-  | "gap" // No coverage
-  | "tentative" // Interested/waitlisted only
-  | "event" // Covered by family event
-  | "school"; // Week is outside child's summer (still in school)
+  | 'full' // 5 days covered by camps or events
+  | 'partial' // 1-4 days covered
+  | 'gap' // No coverage
+  | 'tentative' // Interested/waitlisted only
+  | 'event' // Covered by family event
+  | 'school'; // Week is outside child's summer (still in school)
 
 /**
  * Coverage info for a single child in a single week
  */
 export interface ChildWeekCoverage {
-  childId: Id<"children">;
+  childId: Id<'children'>;
   childName: string;
   status: CoverageStatus;
   coveredDays: number;
   registrations: {
-    registrationId: Id<"registrations">;
-    sessionId: Id<"sessions">;
+    registrationId: Id<'registrations'>;
+    sessionId: Id<'sessions'>;
     campName: string;
     organizationName: string;
     organizationLogoUrl: string | null;
-    status: "interested" | "waitlisted" | "registered" | "cancelled";
+    status: 'interested' | 'waitlisted' | 'registered' | 'cancelled';
     overlappingDays: number;
     registrationUrl: string | null;
   }[];
   events: {
-    eventId: Id<"familyEvents">;
+    eventId: Id<'familyEvents'>;
     title: string;
     eventType: string;
     overlappingDays: number;
@@ -78,10 +78,8 @@ export const getSummerCoverage = query({
 
     // Get all active children for the family
     const children = await ctx.db
-      .query("children")
-      .withIndex("by_family_and_active", (q) =>
-        q.eq("familyId", family._id).eq("isActive", true)
-      )
+      .query('children')
+      .withIndex('by_family_and_active', (q) => q.eq('familyId', family._id).eq('isActive', true))
       .collect();
     if (children.length === 0) {
       return [];
@@ -93,10 +91,7 @@ export const getSummerCoverage = query({
     const defaultEnd = `${args.year}-08-31`;
 
     // Build a map of child ID to their summer date range
-    const childSummerRanges = new Map<
-      string,
-      { start: string; end: string }
-    >();
+    const childSummerRanges = new Map<string, { start: string; end: string }>();
 
     let overallStart = defaultStart;
     let overallEnd = defaultEnd;
@@ -122,50 +117,46 @@ export const getSummerCoverage = query({
 
     // Get all registrations for the family
     const registrations = await ctx.db
-      .query("registrations")
-      .withIndex("by_family", (q) => q.eq("familyId", family._id))
+      .query('registrations')
+      .withIndex('by_family', (q) => q.eq('familyId', family._id))
       .collect();
 
     // Filter out cancelled registrations
-    const activeRegistrations = registrations.filter(
-      (r) => r.status !== "cancelled"
-    );
+    const activeRegistrations = registrations.filter((r) => r.status !== 'cancelled');
     // Fetch all sessions for the registrations
     const sessionIds = [...new Set(activeRegistrations.map((r) => r.sessionId))];
     const sessionsRaw = await Promise.all(sessionIds.map((id) => ctx.db.get(id)));
-    const sessions = sessionsRaw.filter((s): s is Doc<"sessions"> => s !== null);
+    const sessions = sessionsRaw.filter((s): s is Doc<'sessions'> => s !== null);
     const sessionMap = new Map(sessions.map((s) => [s._id, s]));
     // Fetch camp names only for sessions that don't have denormalized data
     const sessionsNeedingCamps = sessions.filter((s) => !s.campName);
     const campIds = [...new Set(sessionsNeedingCamps.map((s) => s.campId))];
     const campsRaw = await Promise.all(campIds.map((id) => ctx.db.get(id)));
-    const camps = campsRaw.filter((c): c is Doc<"camps"> => c !== null);
+    const camps = campsRaw.filter((c): c is Doc<'camps'> => c !== null);
     const campMap = new Map(camps.map((c) => [c._id, c]));
     // Fetch organization logos for sessions
     const orgIds = [...new Set(sessions.map((s) => s.organizationId))];
     const orgsRaw = await Promise.all(orgIds.map((id) => ctx.db.get(id)));
-    const orgs = orgsRaw.filter((o): o is Doc<"organizations"> => o !== null);
+    const orgs = orgsRaw.filter((o): o is Doc<'organizations'> => o !== null);
     const orgMap = new Map(orgs.map((o) => [o._id, o]));
     // Resolve org logos in parallel
     const orgLogoUrls = new Map<string, string | null>();
     const orgsWithLogos = orgs.filter((org) => org.logoStorageId);
     await Promise.all(
       orgsWithLogos.map(async (org) => {
-          const url = await ctx.storage.getUrl(org.logoStorageId!);
-          orgLogoUrls.set(org._id, url);
-        })
+        const url = await ctx.storage.getUrl(org.logoStorageId!);
+        orgLogoUrls.set(org._id, url);
+      }),
     );
     // Get all active family events
     const familyEvents = await ctx.db
-      .query("familyEvents")
-      .withIndex("by_family_and_active", (q) =>
-        q.eq("familyId", family._id).eq("isActive", true)
-      )
+      .query('familyEvents')
+      .withIndex('by_family_and_active', (q) => q.eq('familyId', family._id).eq('isActive', true))
       .collect();
 
     // Filter events that overlap with summer
     const summerEvents = familyEvents.filter((e) =>
-      doDateRangesOverlap(e.startDate, e.endDate, summerStart, summerEnd)
+      doDateRangesOverlap(e.startDate, e.endDate, summerStart, summerEnd),
     );
     // Build coverage for each week (session counts loaded separately for speed)
     const result = weeks.map((week) => {
@@ -173,20 +164,14 @@ export const getSummerCoverage = query({
         // Check if this week is within the child's summer range
         const childRange = childSummerRanges.get(child._id);
         const isInChildSummer =
-          childRange &&
-          doDateRangesOverlap(
-            week.startDate,
-            week.endDate,
-            childRange.start,
-            childRange.end
-          );
+          childRange && doDateRangesOverlap(week.startDate, week.endDate, childRange.start, childRange.end);
 
         // If this week is outside the child's summer, mark as "school"
         if (!isInChildSummer) {
           return {
             childId: child._id,
             childName: child.firstName,
-            status: "school" as CoverageStatus,
+            status: 'school' as CoverageStatus,
             coveredDays: 0,
             registrations: [],
             events: [],
@@ -204,7 +189,7 @@ export const getSummerCoverage = query({
               session.startDate,
               session.endDate,
               week.startDate,
-              week.endDate
+              week.endDate,
             );
 
             if (overlappingDays === 0) return null;
@@ -217,7 +202,7 @@ export const getSummerCoverage = query({
               registrationId: r._id,
               sessionId: r.sessionId,
               campName,
-              organizationName: org?.name ?? "Unknown",
+              organizationName: org?.name ?? 'Unknown',
               organizationLogoUrl: orgLogoUrl,
               status: r.status,
               overlappingDays,
@@ -230,12 +215,7 @@ export const getSummerCoverage = query({
         const childEvents = summerEvents
           .filter((e) => e.childIds.includes(child._id))
           .map((e) => {
-            const overlappingDays = countOverlappingWeekdays(
-              e.startDate,
-              e.endDate,
-              week.startDate,
-              week.endDate
-            );
+            const overlappingDays = countOverlappingWeekdays(e.startDate, e.endDate, week.startDate, week.endDate);
 
             if (overlappingDays === 0) return null;
 
@@ -250,16 +230,13 @@ export const getSummerCoverage = query({
 
         // Calculate coverage status
         const registeredDays = childRegistrations
-          .filter((r) => r.status === "registered")
+          .filter((r) => r.status === 'registered')
           .reduce((sum, r) => sum + r.overlappingDays, 0);
 
-        const eventDays = childEvents.reduce(
-          (sum, e) => sum + e.overlappingDays,
-          0
-        );
+        const eventDays = childEvents.reduce((sum, e) => sum + e.overlappingDays, 0);
 
         const tentativeDays = childRegistrations
-          .filter((r) => r.status === "interested" || r.status === "waitlisted")
+          .filter((r) => r.status === 'interested' || r.status === 'waitlisted')
           .reduce((sum, r) => sum + r.overlappingDays, 0);
 
         // Total covered (camps + events, avoiding double-counting)
@@ -267,15 +244,15 @@ export const getSummerCoverage = query({
 
         let status: CoverageStatus;
         if (childEvents.length > 0 && eventDays >= 5) {
-          status = "event";
+          status = 'event';
         } else if (coveredDays >= 5) {
-          status = "full";
+          status = 'full';
         } else if (coveredDays > 0) {
-          status = "partial";
+          status = 'partial';
         } else if (tentativeDays > 0) {
-          status = "tentative";
+          status = 'tentative';
         } else {
-          status = "gap";
+          status = 'gap';
         }
 
         return {
@@ -291,10 +268,8 @@ export const getSummerCoverage = query({
       return {
         week,
         childCoverage,
-        hasGap: childCoverage.some((c) => c.status === "gap"),
-        hasFamilyEvent: childCoverage.some(
-          (c) => c.events.length > 0
-        ),
+        hasGap: childCoverage.some((c) => c.status === 'gap'),
+        hasFamilyEvent: childCoverage.some((c) => c.events.length > 0),
       };
     });
     return result;
@@ -308,7 +283,7 @@ export const getSummerCoverage = query({
 export const getWeekDetail = query({
   args: {
     weekStartDate: v.string(),
-    cityId: v.id("cities"),
+    cityId: v.id('cities'),
   },
   handler: async (ctx, args) => {
     const family = await getFamily(ctx);
@@ -318,10 +293,8 @@ export const getWeekDetail = query({
 
     // Get children
     const children = await ctx.db
-      .query("children")
-      .withIndex("by_family_and_active", (q) =>
-        q.eq("familyId", family._id).eq("isActive", true)
-      )
+      .query('children')
+      .withIndex('by_family_and_active', (q) => q.eq('familyId', family._id).eq('isActive', true))
       .collect();
 
     if (children.length === 0) {
@@ -329,31 +302,27 @@ export const getWeekDetail = query({
     }
 
     // Calculate week end (Friday = Monday + 4 days)
-    const weekStart = new Date(args.weekStartDate + "T00:00:00");
+    const weekStart = new Date(args.weekStartDate + 'T00:00:00');
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 4);
-    const weekEndDate = weekEnd.toISOString().split("T")[0];
+    const weekEndDate = weekEnd.toISOString().split('T')[0];
 
     // Get registrations
     const registrations = await ctx.db
-      .query("registrations")
-      .withIndex("by_family", (q) => q.eq("familyId", family._id))
+      .query('registrations')
+      .withIndex('by_family', (q) => q.eq('familyId', family._id))
       .collect();
 
-    const activeRegistrations = registrations.filter(
-      (r) => r.status !== "cancelled"
-    );
+    const activeRegistrations = registrations.filter((r) => r.status !== 'cancelled');
 
     // Fetch sessions
     const sessionIds = [...new Set(activeRegistrations.map((r) => r.sessionId))];
     const sessionsRaw = await Promise.all(sessionIds.map((id) => ctx.db.get(id)));
-    const sessions = sessionsRaw.filter((s): s is Doc<"sessions"> => s !== null);
+    const sessions = sessionsRaw.filter((s): s is Doc<'sessions'> => s !== null);
     const sessionMap = new Map(sessions.map((s) => [s._id, s]));
 
     // Only fetch related data for sessions missing denormalized fields
-    const sessionsNeedingData = sessions.filter(
-      (s) => !s.campName || !s.locationName || !s.organizationName
-    );
+    const sessionsNeedingData = sessions.filter((s) => !s.campName || !s.locationName || !s.organizationName);
     const campIds = [...new Set(sessionsNeedingData.filter((s) => !s.campName).map((s) => s.campId))];
     const locationIds = [...new Set(sessionsNeedingData.filter((s) => !s.locationName).map((s) => s.locationId))];
     // Fetch all org IDs for logo resolution
@@ -365,15 +334,9 @@ export const getWeekDetail = query({
       Promise.all(allOrgIds.map((id) => ctx.db.get(id))),
     ]);
 
-    const campMap = new Map(
-      campsRaw.filter((c): c is Doc<"camps"> => c !== null).map((c) => [c._id, c])
-    );
-    const locationMap = new Map(
-      locationsRaw
-        .filter((l): l is Doc<"locations"> => l !== null)
-        .map((l) => [l._id, l])
-    );
-    const allOrgs = allOrgsRaw.filter((o): o is Doc<"organizations"> => o !== null);
+    const campMap = new Map(campsRaw.filter((c): c is Doc<'camps'> => c !== null).map((c) => [c._id, c]));
+    const locationMap = new Map(locationsRaw.filter((l): l is Doc<'locations'> => l !== null).map((l) => [l._id, l]));
+    const allOrgs = allOrgsRaw.filter((o): o is Doc<'organizations'> => o !== null);
     const orgMap = new Map(allOrgs.map((o) => [o._id, o]));
 
     // Resolve organization logo URLs in parallel
@@ -384,20 +347,18 @@ export const getWeekDetail = query({
         .map(async (org) => {
           const url = await ctx.storage.getUrl(org.logoStorageId!);
           orgLogoUrls.set(org._id, url);
-        })
+        }),
     );
 
     // Get family events
     const familyEvents = await ctx.db
-      .query("familyEvents")
-      .withIndex("by_family_and_active", (q) =>
-        q.eq("familyId", family._id).eq("isActive", true)
-      )
+      .query('familyEvents')
+      .withIndex('by_family_and_active', (q) => q.eq('familyId', family._id).eq('isActive', true))
       .collect();
 
     // Filter events that overlap this week
     const weekEvents = familyEvents.filter((e) =>
-      doDateRangesOverlap(e.startDate, e.endDate, args.weekStartDate, weekEndDate)
+      doDateRangesOverlap(e.startDate, e.endDate, args.weekStartDate, weekEndDate),
     );
 
     // Build per-child detail
@@ -413,14 +374,7 @@ export const getWeekDetail = query({
             const session = sessionMap.get(r.sessionId);
             if (!session) return null;
 
-            if (
-              !doDateRangesOverlap(
-                session.startDate,
-                session.endDate,
-                args.weekStartDate,
-                weekEndDate
-              )
-            ) {
+            if (!doDateRangesOverlap(session.startDate, session.endDate, args.weekStartDate, weekEndDate)) {
               return null;
             }
 
@@ -445,19 +399,21 @@ export const getWeekDetail = query({
                 name: resolveCampName(session, campMap),
                 categories: session.campCategories ?? camp?.categories ?? [],
               },
-              location: session.locationName || location
-                ? {
-                    name: session.locationName ?? location?.name ?? "Unknown Location",
-                    address: session.locationAddress ?? location?.address ?? {
-                      street: "",
-                      city: "",
-                      state: "",
-                      zip: "",
-                    },
-                  }
-                : null,
+              location:
+                session.locationName || location
+                  ? {
+                      name: session.locationName ?? location?.name ?? 'Unknown Location',
+                      address: session.locationAddress ??
+                        location?.address ?? {
+                          street: '',
+                          city: '',
+                          state: '',
+                          zip: '',
+                        },
+                    }
+                  : null,
               organization: {
-                name: session.organizationName ?? org?.name ?? "Unknown",
+                name: session.organizationName ?? org?.name ?? 'Unknown',
                 logoUrl: orgLogoUrls.get(session.organizationId) ?? null,
               },
             };
@@ -480,29 +436,15 @@ export const getWeekDetail = query({
 
         // Calculate coverage
         const registeredDays = childRegistrations
-          .filter((r) => r.status === "registered")
+          .filter((r) => r.status === 'registered')
           .reduce((sum, r) => {
             return (
-              sum +
-              countOverlappingWeekdays(
-                r.session.startDate,
-                r.session.endDate,
-                args.weekStartDate,
-                weekEndDate
-              )
+              sum + countOverlappingWeekdays(r.session.startDate, r.session.endDate, args.weekStartDate, weekEndDate)
             );
           }, 0);
 
         const eventDays = childEvents.reduce((sum, e) => {
-          return (
-            sum +
-            countOverlappingWeekdays(
-              e.startDate,
-              e.endDate,
-              args.weekStartDate,
-              weekEndDate
-            )
-          );
+          return sum + countOverlappingWeekdays(e.startDate, e.endDate, args.weekStartDate, weekEndDate);
         }, 0);
 
         const coveredDays = Math.min(5, registeredDays + eventDays);
@@ -510,7 +452,7 @@ export const getWeekDetail = query({
 
         // Get available camps if there's a gap
         let availableCamps: {
-          sessionId: Id<"sessions">;
+          sessionId: Id<'sessions'>;
           campName: string;
           organizationName: string;
           startDate: string;
@@ -526,46 +468,37 @@ export const getWeekDetail = query({
         if (hasGap) {
           // Find sessions that overlap this week and are suitable for this child
           const allSessions = await ctx.db
-            .query("sessions")
-            .withIndex("by_city_and_status", (q) =>
-              q.eq("cityId", args.cityId).eq("status", "active")
-            )
+            .query('sessions')
+            .withIndex('by_city_and_status', (q) => q.eq('cityId', args.cityId).eq('status', 'active'))
             .collect();
 
           const overlappingSessions = allSessions.filter((s) =>
-            doDateRangesOverlap(
-              s.startDate,
-              s.endDate,
-              args.weekStartDate,
-              weekEndDate
-            )
+            doDateRangesOverlap(s.startDate, s.endDate, args.weekStartDate, weekEndDate),
           );
 
           // Filter by age/grade requirements
           const eligibleSessions = overlappingSessions.filter((s) => {
             const ageOk = isAgeInRange(childAge, s.ageRequirements);
             const gradeOk =
-              childGrade === undefined ||
-              childGrade === null ||
-              isGradeInRange(childGrade, s.ageRequirements);
+              childGrade === undefined || childGrade === null || isGradeInRange(childGrade, s.ageRequirements);
             return ageOk && gradeOk;
           });
 
           // Exclude sessions the child is already registered for
-          const registeredSessionIds = new Set(
-            childRegistrations.map((r) => r.session._id)
-          );
-          const newSessions = eligibleSessions.filter(
-            (s) => !registeredSessionIds.has(s._id)
-          );
+          const registeredSessionIds = new Set(childRegistrations.map((r) => r.session._id));
+          const newSessions = eligibleSessions.filter((s) => !registeredSessionIds.has(s._id));
 
           // Fetch camp and location info only for sessions missing denormalized data
           const sessionsNeedingAvailData = newSessions.filter(
-            (s) => !s.campName || !s.locationName || !s.organizationName
+            (s) => !s.campName || !s.locationName || !s.organizationName,
           );
           const availCampIds = [...new Set(sessionsNeedingAvailData.filter((s) => !s.campName).map((s) => s.campId))];
-          const availLocIds = [...new Set(sessionsNeedingAvailData.filter((s) => !s.locationName).map((s) => s.locationId))];
-          const availOrgIds = [...new Set(sessionsNeedingAvailData.filter((s) => !s.organizationName).map((s) => s.organizationId))];
+          const availLocIds = [
+            ...new Set(sessionsNeedingAvailData.filter((s) => !s.locationName).map((s) => s.locationId)),
+          ];
+          const availOrgIds = [
+            ...new Set(sessionsNeedingAvailData.filter((s) => !s.organizationName).map((s) => s.organizationId)),
+          ];
 
           const [availCampsRaw, availLocsRaw, availOrgsRaw] = await Promise.all([
             Promise.all(availCampIds.map((id) => ctx.db.get(id))),
@@ -574,19 +507,13 @@ export const getWeekDetail = query({
           ]);
 
           const availCampMap = new Map(
-            availCampsRaw
-              .filter((c): c is Doc<"camps"> => c !== null)
-              .map((c) => [c._id, c])
+            availCampsRaw.filter((c): c is Doc<'camps'> => c !== null).map((c) => [c._id, c]),
           );
           const availLocMap = new Map(
-            availLocsRaw
-              .filter((l): l is Doc<"locations"> => l !== null)
-              .map((l) => [l._id, l])
+            availLocsRaw.filter((l): l is Doc<'locations'> => l !== null).map((l) => [l._id, l]),
           );
           const availOrgMap = new Map(
-            availOrgsRaw
-              .filter((o): o is Doc<"organizations"> => o !== null)
-              .map((o) => [o._id, o])
+            availOrgsRaw.filter((o): o is Doc<'organizations'> => o !== null).map((o) => [o._id, o]),
           );
 
           availableCamps = newSessions
@@ -595,7 +522,7 @@ export const getWeekDetail = query({
               return {
                 sessionId: s._id,
                 campName: resolveCampName(s, availCampMap),
-                organizationName: s.organizationName ?? availOrgMap.get(s.organizationId)?.name ?? "Unknown",
+                organizationName: s.organizationName ?? availOrgMap.get(s.organizationId)?.name ?? 'Unknown',
                 startDate: s.startDate,
                 endDate: s.endDate,
                 dropOffTime: s.dropOffTime,
@@ -603,7 +530,7 @@ export const getWeekDetail = query({
                 price: s.price,
                 currency: s.currency,
                 spotsLeft: Math.max(0, s.capacity - s.enrolledCount),
-                locationName: s.locationName ?? availLocMap.get(s.locationId)?.name ?? "Unknown Location",
+                locationName: s.locationName ?? availLocMap.get(s.locationId)?.name ?? 'Unknown Location',
               };
             })
             .filter((s) => s.spotsLeft > 0)
@@ -626,7 +553,7 @@ export const getWeekDetail = query({
           hasGap,
           availableCamps,
         };
-      })
+      }),
     );
 
     return {
@@ -643,7 +570,7 @@ export const getWeekDetail = query({
  */
 export const searchSessionsByWeek = query({
   args: {
-    cityId: v.id("cities"),
+    cityId: v.id('cities'),
     weekStartDate: v.string(),
     weekEndDate: v.string(),
     childAge: v.optional(v.number()),
@@ -657,34 +584,23 @@ export const searchSessionsByWeek = query({
   handler: async (ctx, args) => {
     // Get active sessions in the city
     let sessions = await ctx.db
-      .query("sessions")
-      .withIndex("by_city_and_status", (q) =>
-        q.eq("cityId", args.cityId).eq("status", "active")
-      )
+      .query('sessions')
+      .withIndex('by_city_and_status', (q) => q.eq('cityId', args.cityId).eq('status', 'active'))
       .collect();
 
     // Filter to sessions that overlap the week
     sessions = sessions.filter((s) =>
-      doDateRangesOverlap(
-        s.startDate,
-        s.endDate,
-        args.weekStartDate,
-        args.weekEndDate
-      )
+      doDateRangesOverlap(s.startDate, s.endDate, args.weekStartDate, args.weekEndDate),
     );
 
     // Filter by age if provided
     if (args.childAge !== undefined) {
-      sessions = sessions.filter((s) =>
-        isAgeInRange(args.childAge!, s.ageRequirements)
-      );
+      sessions = sessions.filter((s) => isAgeInRange(args.childAge!, s.ageRequirements));
     }
 
     // Filter by grade if provided
     if (args.childGrade !== undefined) {
-      sessions = sessions.filter((s) =>
-        isGradeInRange(args.childGrade!, s.ageRequirements)
-      );
+      sessions = sessions.filter((s) => isGradeInRange(args.childGrade!, s.ageRequirements));
     }
 
     // Filter by categories - use denormalized campCategories when available
@@ -696,15 +612,11 @@ export const searchSessionsByWeek = query({
       // Fetch camps only for sessions missing denormalized categories
       const campIds = [...new Set(sessionsNeedingCategories.map((s) => s.campId))];
       const campsRaw = await Promise.all(campIds.map((id) => ctx.db.get(id)));
-      const campMap = new Map(
-        campsRaw
-          .filter((c): c is Doc<"camps"> => c !== null)
-          .map((c) => [c._id, c])
-      );
+      const campMap = new Map(campsRaw.filter((c): c is Doc<'camps'> => c !== null).map((c) => [c._id, c]));
 
       // Filter sessions with denormalized data
       const filteredWithDenorm = sessionsWithCategories.filter((s) =>
-        args.categories!.some((cat) => s.campCategories!.includes(cat))
+        args.categories!.some((cat) => s.campCategories!.includes(cat)),
       );
 
       // Filter sessions needing lookup
@@ -718,9 +630,7 @@ export const searchSessionsByWeek = query({
     }
 
     // Only fetch related data for sessions missing denormalized fields
-    const sessionsNeedingData = sessions.filter(
-      (s) => !s.campName || !s.locationName || !s.organizationName
-    );
+    const sessionsNeedingData = sessions.filter((s) => !s.campName || !s.locationName || !s.organizationName);
     const campIds = [...new Set(sessionsNeedingData.filter((s) => !s.campName).map((s) => s.campId))];
     const locationIds = [...new Set(sessionsNeedingData.filter((s) => !s.locationName).map((s) => s.locationId))];
     const orgIds = [...new Set(sessionsNeedingData.filter((s) => !s.organizationName).map((s) => s.organizationId))];
@@ -731,21 +641,9 @@ export const searchSessionsByWeek = query({
       Promise.all(orgIds.map((id) => ctx.db.get(id))),
     ]);
 
-    const campMap = new Map(
-      campsRaw
-        .filter((c): c is Doc<"camps"> => c !== null)
-        .map((c) => [c._id, c])
-    );
-    const locationMap = new Map(
-      locationsRaw
-        .filter((l): l is Doc<"locations"> => l !== null)
-        .map((l) => [l._id, l])
-    );
-    const orgMap = new Map(
-      orgsRaw
-        .filter((o): o is Doc<"organizations"> => o !== null)
-        .map((o) => [o._id, o])
-    );
+    const campMap = new Map(campsRaw.filter((c): c is Doc<'camps'> => c !== null).map((c) => [c._id, c]));
+    const locationMap = new Map(locationsRaw.filter((l): l is Doc<'locations'> => l !== null).map((l) => [l._id, l]));
+    const orgMap = new Map(orgsRaw.filter((o): o is Doc<'organizations'> => o !== null).map((o) => [o._id, o]));
 
     // Check if we need to calculate distances
     const hasHomeCoords = args.homeLatitude !== undefined && args.homeLongitude !== undefined;
@@ -774,14 +672,10 @@ export const searchSessionsByWeek = query({
       // Calculate distance if home coords provided
       let distanceFromHome: number | undefined;
       if (hasHomeCoords && location) {
-        distanceFromHome = Math.round(
-          calculateDistance(
-            args.homeLatitude!,
-            args.homeLongitude!,
-            location.latitude,
-            location.longitude
-          ) * 10
-        ) / 10;
+        distanceFromHome =
+          Math.round(
+            calculateDistance(args.homeLatitude!, args.homeLongitude!, location.latitude, location.longitude) * 10,
+          ) / 10;
       }
 
       return {
@@ -805,28 +699,27 @@ export const searchSessionsByWeek = query({
         },
         location: {
           _id: s.locationId,
-          name: s.locationName ?? location?.name ?? "Unknown Location",
-          address: s.locationAddress ?? location?.address ?? {
-            street: "",
-            city: "",
-            state: "",
-            zip: "",
-          },
+          name: s.locationName ?? location?.name ?? 'Unknown Location',
+          address: s.locationAddress ??
+            location?.address ?? {
+              street: '',
+              city: '',
+              state: '',
+              zip: '',
+            },
           latitude: location?.latitude,
           longitude: location?.longitude,
         },
         organization: {
           _id: s.organizationId,
-          name: s.organizationName ?? org?.name ?? "Unknown",
+          name: s.organizationName ?? org?.name ?? 'Unknown',
         },
       };
     });
 
     // Apply distance filter if specified
     if (args.maxDistanceMiles !== undefined && hasHomeCoords) {
-      results = results.filter(
-        (s) => s.distanceFromHome !== undefined && s.distanceFromHome <= args.maxDistanceMiles!
-      );
+      results = results.filter((s) => s.distanceFromHome !== undefined && s.distanceFromHome <= args.maxDistanceMiles!);
     }
 
     return results;
@@ -847,35 +740,27 @@ export const getFamilyEvents = query({
     }
 
     let events = await ctx.db
-      .query("familyEvents")
-      .withIndex("by_family_and_active", (q) =>
-        q.eq("familyId", family._id).eq("isActive", true)
-      )
+      .query('familyEvents')
+      .withIndex('by_family_and_active', (q) => q.eq('familyId', family._id).eq('isActive', true))
       .collect();
 
     // Filter by year if provided
     if (args.year !== undefined) {
       const yearStart = `${args.year}-01-01`;
       const yearEnd = `${args.year}-12-31`;
-      events = events.filter((e) =>
-        doDateRangesOverlap(e.startDate, e.endDate, yearStart, yearEnd)
-      );
+      events = events.filter((e) => doDateRangesOverlap(e.startDate, e.endDate, yearStart, yearEnd));
     }
 
     // Get children info
     const childIds = [...new Set(events.flatMap((e) => e.childIds))];
     const childrenRaw = await Promise.all(childIds.map((id) => ctx.db.get(id)));
-    const childMap = new Map(
-      childrenRaw
-        .filter((c): c is Doc<"children"> => c !== null)
-        .map((c) => [c._id, c])
-    );
+    const childMap = new Map(childrenRaw.filter((c): c is Doc<'children'> => c !== null).map((c) => [c._id, c]));
 
     return events.map((e) => ({
       ...e,
       children: e.childIds
         .map((id) => childMap.get(id))
-        .filter((c): c is Doc<"children"> => c !== null)
+        .filter((c): c is Doc<'children'> => c !== null)
         .map((c) => ({ _id: c._id, firstName: c.firstName })),
     }));
   },

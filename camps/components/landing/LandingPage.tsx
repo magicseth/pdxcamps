@@ -88,13 +88,17 @@ export function LandingPage() {
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm border border-slate-200 mb-8">
                 <div className="flex -space-x-2">
                   {organizationsWithLogos?.slice(0, 4).map((org, i) => (
-                    <div key={org._id} className="w-6 h-6 rounded-full bg-white border-2 border-white overflow-hidden shadow-sm">
+                    <div
+                      key={org._id}
+                      className="w-6 h-6 rounded-full bg-white border-2 border-white overflow-hidden shadow-sm"
+                    >
                       {org.logoUrl && <img src={org.logoUrl} alt="" className="w-full h-full object-contain" />}
                     </div>
                   ))}
                 </div>
                 <span className="text-sm text-slate-600">
-                  <span className="font-semibold text-slate-900">{campCount}+ camps</span> from trusted {market.name} organizations
+                  <span className="font-semibold text-slate-900">{campCount}+ camps</span> from trusted {market.name}{' '}
+                  organizations
                 </span>
               </div>
 
@@ -170,11 +174,7 @@ export function LandingPage() {
                     className="flex-shrink-0 flex flex-col items-center gap-2 grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition-all duration-300 group"
                   >
                     <div className="h-12 w-28 flex items-center justify-center">
-                      <img
-                        src={org.logoUrl!}
-                        alt={org.name}
-                        className="max-h-full max-w-full object-contain"
-                      />
+                      <img src={org.logoUrl!} alt={org.name} className="max-h-full max-w-full object-contain" />
                     </div>
                     <span className="text-xs text-slate-500 group-hover:text-slate-700 transition-colors text-center whitespace-nowrap max-w-[112px] truncate">
                       {org.name}
@@ -188,11 +188,7 @@ export function LandingPage() {
                     className="flex-shrink-0 flex flex-col items-center gap-2 grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition-all duration-300 group"
                   >
                     <div className="h-12 w-28 flex items-center justify-center">
-                      <img
-                        src={org.logoUrl!}
-                        alt={org.name}
-                        className="max-h-full max-w-full object-contain"
-                      />
+                      <img src={org.logoUrl!} alt={org.name} className="max-h-full max-w-full object-contain" />
                     </div>
                     <span className="text-xs text-slate-500 group-hover:text-slate-700 transition-colors text-center whitespace-nowrap max-w-[112px] truncate">
                       {org.name}
@@ -203,8 +199,12 @@ export function LandingPage() {
             </div>
             <style jsx>{`
               @keyframes scroll-slow {
-                0% { transform: translateX(0); }
-                100% { transform: translateX(-50%); }
+                0% {
+                  transform: translateX(0);
+                }
+                100% {
+                  transform: translateX(-50%);
+                }
               }
               .animate-scroll-slow {
                 animation: scroll-slow 40s linear infinite;
@@ -221,13 +221,13 @@ export function LandingPage() {
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-                Summer should be<br />
-                fun for everyone.<br />
+                Summer should be
+                <br />
+                fun for everyone.
+                <br />
                 <span className="text-slate-500">Including you.</span>
               </h2>
-              <p className="text-xl text-slate-600">
-                Sound familiar?
-              </p>
+              <p className="text-xl text-slate-600">Sound familiar?</p>
             </div>
 
             <div className="grid md:grid-cols-2 gap-6 mb-16">
@@ -243,7 +243,8 @@ export function LandingPage() {
                 <div className="text-3xl mb-4">😢</div>
                 <h3 className="font-semibold text-slate-900 mb-2">"But none of my friends are going!"</h3>
                 <p className="text-slate-600">
-                  You finally found a camp, but your kid doesn't know anyone there. Coordinating with other parents is a nightmare.
+                  You finally found a camp, but your kid doesn't know anyone there. Coordinating with other parents is a
+                  nightmare.
                 </p>
               </div>
               <div className="bg-surface/15 rounded-2xl p-6 border border-surface/30">
@@ -284,8 +285,8 @@ export function LandingPage() {
                 Plan smarter. Drive less. Enjoy more.
               </h2>
               <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-                {campCount}+ camps from every provider in {market.name}.
-                Filter by neighborhood, coordinate with friends, and see your whole summer in one view.
+                {campCount}+ camps from every provider in {market.name}. Filter by neighborhood, coordinate with
+                friends, and see your whole summer in one view.
               </p>
             </div>
 
@@ -341,21 +342,31 @@ export function LandingPage() {
                 </p>
                 <ul className="space-y-4">
                   <li className="flex items-start gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 bg-surface/30 rounded-full flex items-center justify-center text-primary font-bold text-sm">1</span>
+                    <span className="flex-shrink-0 w-6 h-6 bg-surface/30 rounded-full flex items-center justify-center text-primary font-bold text-sm">
+                      1
+                    </span>
                     <div>
                       <span className="font-medium text-slate-900">Share your planning link</span>
-                      <p className="text-slate-600 text-sm">Send it to other parents from school or the neighborhood.</p>
+                      <p className="text-slate-600 text-sm">
+                        Send it to other parents from school or the neighborhood.
+                      </p>
                     </div>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 bg-surface/30 rounded-full flex items-center justify-center text-primary font-bold text-sm">2</span>
+                    <span className="flex-shrink-0 w-6 h-6 bg-surface/30 rounded-full flex items-center justify-center text-primary font-bold text-sm">
+                      2
+                    </span>
                     <div>
                       <span className="font-medium text-slate-900">See where friends are going</span>
-                      <p className="text-slate-600 text-sm">Camps show how many friends are registered for each week.</p>
+                      <p className="text-slate-600 text-sm">
+                        Camps show how many friends are registered for each week.
+                      </p>
                     </div>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 bg-surface/30 rounded-full flex items-center justify-center text-primary font-bold text-sm">3</span>
+                    <span className="flex-shrink-0 w-6 h-6 bg-surface/30 rounded-full flex items-center justify-center text-primary font-bold text-sm">
+                      3
+                    </span>
                     <div>
                       <span className="font-medium text-slate-900">Coordinate carpools</span>
                       <p className="text-slate-600 text-sm">Same camp + same neighborhood = easy carpooling.</p>
@@ -413,12 +424,8 @@ export function LandingPage() {
         <section className="py-20 px-4">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-                From chaos to planned in minutes
-              </h2>
-              <p className="text-xl text-slate-600">
-                No spreadsheets. No 20 browser tabs. Just clarity.
-              </p>
+              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">From chaos to planned in minutes</h2>
+              <p className="text-xl text-slate-600">No spreadsheets. No 20 browser tabs. Just clarity.</p>
             </div>
 
             <div className="space-y-12">
@@ -443,7 +450,8 @@ export function LandingPage() {
               {/* Testimonial-style quote */}
               <div className="bg-surface/20 rounded-2xl p-8 mb-8 max-w-2xl mx-auto">
                 <p className="text-lg text-slate-700 italic mb-4">
-                  "I used to spend entire weekends planning summer camps. Now I can see everything in one place and actually coordinate with other parents. Game changer."
+                  "I used to spend entire weekends planning summer camps. Now I can see everything in one place and
+                  actually coordinate with other parents. Game changer."
                 </p>
                 <p className="text-sm text-slate-500">— {market.testimonialAttribution}</p>
               </div>
@@ -464,9 +472,7 @@ export function LandingPage() {
         {featuredSessions && featuredSessions.length > 0 && (
           <section className="bg-slate-900 py-16 overflow-hidden">
             <div className="max-w-6xl mx-auto px-4 mb-8">
-              <h2 className="text-2xl font-bold text-white">
-                Real camps, real spots available
-              </h2>
+              <h2 className="text-2xl font-bold text-white">Real camps, real spots available</h2>
               <p className="text-slate-400 mt-1">Browse camps happening this summer in {market.name}</p>
             </div>
 
@@ -483,8 +489,12 @@ export function LandingPage() {
 
             <style jsx>{`
               @keyframes scroll {
-                0% { transform: translateX(0); }
-                100% { transform: translateX(-50%); }
+                0% {
+                  transform: translateX(0);
+                }
+                100% {
+                  transform: translateX(-50%);
+                }
               }
               .animate-scroll {
                 animation: scroll 60s linear infinite;
@@ -500,12 +510,8 @@ export function LandingPage() {
         <section className="py-20 px-4 bg-white">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-                Simple pricing. Start free.
-              </h2>
-              <p className="text-xl text-slate-600">
-                Try everything with our free plan. Upgrade when you need more.
-              </p>
+              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Simple pricing. Start free.</h2>
+              <p className="text-xl text-slate-600">Try everything with our free plan. Upgrade when you need more.</p>
             </div>
 
             <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
@@ -545,13 +551,27 @@ export function LandingPage() {
                   <p className="text-white/70 mt-1">Plan your entire summer</p>
                 </div>
                 <ul className="space-y-3 mb-8">
-                  <PricingFeature included light>Browse all {market.name} camps</PricingFeature>
-                  <PricingFeature included light>Plan for all your kids</PricingFeature>
-                  <PricingFeature included light>All 12 weeks of summer</PricingFeature>
-                  <PricingFeature included light>Unlimited saved camps</PricingFeature>
-                  <PricingFeature included light>Export to Google/Apple Calendar</PricingFeature>
-                  <PricingFeature included light>Share calendar with co-parent</PricingFeature>
-                  <PricingFeature included light>Priority support</PricingFeature>
+                  <PricingFeature included light>
+                    Browse all {market.name} camps
+                  </PricingFeature>
+                  <PricingFeature included light>
+                    Plan for all your kids
+                  </PricingFeature>
+                  <PricingFeature included light>
+                    All 12 weeks of summer
+                  </PricingFeature>
+                  <PricingFeature included light>
+                    Unlimited saved camps
+                  </PricingFeature>
+                  <PricingFeature included light>
+                    Export to Google/Apple Calendar
+                  </PricingFeature>
+                  <PricingFeature included light>
+                    Share calendar with co-parent
+                  </PricingFeature>
+                  <PricingFeature included light>
+                    Priority support
+                  </PricingFeature>
                 </ul>
                 <a
                   href="/sign-up"
@@ -572,9 +592,7 @@ export function LandingPage() {
         <section className="py-20 px-4 bg-slate-50">
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-slate-900 mb-4">
-                Frequently asked questions
-              </h2>
+              <h2 className="text-3xl font-bold text-slate-900 mb-4">Frequently asked questions</h2>
             </div>
 
             <div className="space-y-4">
@@ -609,11 +627,10 @@ export function LandingPage() {
         {/* Final CTA Section - Emotional close */}
         <section className="py-20 px-4 bg-gradient-to-br from-primary via-primary-dark to-surface-dark text-white">
           <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              This summer, be the parent with the plan.
-            </h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">This summer, be the parent with the plan.</h2>
             <p className="text-xl text-white/80 mb-8">
-              While other families scramble, you'll have camps booked, carpools arranged, and weekends free to actually enjoy summer with your kids.
+              While other families scramble, you'll have camps booked, carpools arranged, and weekends free to actually
+              enjoy summer with your kids.
             </p>
             <a
               href="/sign-up"
@@ -621,9 +638,7 @@ export function LandingPage() {
             >
               Start Planning — It's Free
             </a>
-            <p className="text-white/70 text-sm mt-4">
-              Takes 2 minutes. No credit card. Just less stress.
-            </p>
+            <p className="text-white/70 text-sm mt-4">Takes 2 minutes. No credit card. Just less stress.</p>
           </div>
         </section>
       </main>
@@ -641,19 +656,27 @@ export function LandingPage() {
                 className="h-8 w-auto brightness-0 invert"
                 unoptimized={!!market.iconStorageId}
               />
-              <p className="text-xs text-slate-500">By {market.name} parents, for {market.name} parents</p>
+              <p className="text-xs text-slate-500">
+                By {market.name} parents, for {market.name} parents
+              </p>
             </div>
             <div className="flex items-center gap-6 text-sm">
-              <a href={`/discover/${market.slug}`} className="hover:text-white transition-colors">Browse Camps</a>
-              <a href="/sign-in" className="hover:text-white transition-colors">Sign In</a>
-              <a href="/sign-up" className="hover:text-white transition-colors">Get Started</a>
+              <a href={`/discover/${market.slug}`} className="hover:text-white transition-colors">
+                Browse Camps
+              </a>
+              <a href="/sign-in" className="hover:text-white transition-colors">
+                Sign In
+              </a>
+              <a href="/sign-up" className="hover:text-white transition-colors">
+                Get Started
+              </a>
             </div>
           </div>
           <div className="border-t border-slate-800 mt-8 pt-8 text-center text-sm">
-            <p>© {new Date().getFullYear()} {market.tagline}. Made with ☀️ in {market.name}.</p>
-            <p className="text-slate-500 mt-1">
-              We built this because we needed it too.
+            <p>
+              © {new Date().getFullYear()} {market.tagline}. Made with ☀️ in {market.name}.
             </p>
+            <p className="text-slate-500 mt-1">We built this because we needed it too.</p>
           </div>
         </div>
       </footer>
@@ -675,7 +698,15 @@ function FeatureCard({ icon, title, description }: { icon: string; title: string
   );
 }
 
-function PricingFeature({ children, included = false, light = false }: { children: React.ReactNode; included?: boolean; light?: boolean }) {
+function PricingFeature({
+  children,
+  included = false,
+  light = false,
+}: {
+  children: React.ReactNode;
+  included?: boolean;
+  light?: boolean;
+}) {
   return (
     <li className={`flex items-center gap-3 ${light ? 'text-white' : included ? 'text-slate-900' : 'text-slate-400'}`}>
       {included ? (
@@ -718,11 +749,7 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
           <ChevronDownIcon />
         </span>
       </button>
-      {isOpen && (
-        <div className="px-6 pb-4 text-slate-600">
-          {answer}
-        </div>
-      )}
+      {isOpen && <div className="px-6 pb-4 text-slate-600">{answer}</div>}
     </div>
   );
 }
@@ -730,7 +757,11 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
 function CheckCircleIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="currentColor" viewBox="0 0 20 20">
-      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+      <path
+        fillRule="evenodd"
+        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+        clipRule="evenodd"
+      />
     </svg>
   );
 }
@@ -744,7 +775,10 @@ function ChevronDownIcon() {
 }
 
 // Session showcase card for scrolling display
-function SessionShowcaseCard({ session, citySlug }: {
+function SessionShowcaseCard({
+  session,
+  citySlug,
+}: {
   session: {
     _id: string;
     campName: string;
@@ -838,9 +872,7 @@ function SessionShowcaseCard({ session, citySlug }: {
           {session.campName}
         </h3>
         {session.organizationName && (
-          <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">
-            {session.organizationName}
-          </p>
+          <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{session.organizationName}</p>
         )}
 
         <div className="flex items-center justify-between mt-3">

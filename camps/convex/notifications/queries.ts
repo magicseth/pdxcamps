@@ -5,9 +5,9 @@
  * families that are interested in those sessions.
  */
 
-import { internalQuery } from "../_generated/server";
-import { v } from "convex/values";
-import { Id } from "../_generated/dataModel";
+import { internalQuery } from '../_generated/server';
+import { v } from 'convex/values';
+import { Id } from '../_generated/dataModel';
 
 /**
  * Get families with "interested" registrations for a specific session.
@@ -15,15 +15,13 @@ import { Id } from "../_generated/dataModel";
  */
 export const getFamiliesWithInterestedRegistrations = internalQuery({
   args: {
-    sessionId: v.id("sessions"),
+    sessionId: v.id('sessions'),
   },
   handler: async (ctx, args) => {
     // Get all interested registrations for this session
     const registrations = await ctx.db
-      .query("registrations")
-      .withIndex("by_session_and_status", (q) =>
-        q.eq("sessionId", args.sessionId).eq("status", "interested")
-      )
+      .query('registrations')
+      .withIndex('by_session_and_status', (q) => q.eq('sessionId', args.sessionId).eq('status', 'interested'))
       .collect();
 
     if (registrations.length === 0) {
@@ -35,10 +33,10 @@ export const getFamiliesWithInterestedRegistrations = internalQuery({
 
     // Get family and child details
     const results: {
-      familyId: Id<"families">;
+      familyId: Id<'families'>;
       email: string;
       displayName: string;
-      childId: Id<"children">;
+      childId: Id<'children'>;
       childName: string;
     }[] = [];
 
@@ -72,28 +70,21 @@ export const getRecentRegistrationOpens = internalQuery({
   handler: async (ctx, args) => {
     // Get status changes where newValue is "active"
     const changes = await ctx.db
-      .query("scrapeChanges")
-      .withIndex("by_notified_and_change_type", (q) =>
-        q.eq("notified", false).eq("changeType", "status_changed")
-      )
-      .filter((q) =>
-        q.and(
-          q.eq(q.field("newValue"), "active"),
-          q.gte(q.field("detectedAt"), args.sinceTime)
-        )
-      )
+      .query('scrapeChanges')
+      .withIndex('by_notified_and_change_type', (q) => q.eq('notified', false).eq('changeType', 'status_changed'))
+      .filter((q) => q.and(q.eq(q.field('newValue'), 'active'), q.gte(q.field('detectedAt'), args.sinceTime)))
       .collect();
 
     // Filter to changes where previousValue was sold_out or draft
     const relevantChanges = changes.filter((c) => {
       const prev = c.previousValue;
-      return prev === "sold_out" || prev === "draft";
+      return prev === 'sold_out' || prev === 'draft';
     });
 
     // Get session details for each change
     const results: {
-      changeId: Id<"scrapeChanges">;
-      sessionId: Id<"sessions">;
+      changeId: Id<'scrapeChanges'>;
+      sessionId: Id<'sessions'>;
       session: {
         campName: string;
         organizationName: string;
@@ -127,7 +118,7 @@ export const getRecentRegistrationOpens = internalQuery({
         ? `${session.locationAddress.street}, ${session.locationAddress.city}, ${session.locationAddress.state} ${session.locationAddress.zip}`
         : location?.address
           ? `${location.address.street}, ${location.address.city}, ${location.address.state} ${location.address.zip}`
-          : "";
+          : '';
 
       results.push({
         changeId: change._id,
@@ -139,7 +130,7 @@ export const getRecentRegistrationOpens = internalQuery({
           endDate: session.endDate,
           dropOffTime: session.dropOffTime,
           pickUpTime: session.pickUpTime,
-          locationName: session.locationName || location?.name || "TBD",
+          locationName: session.locationName || location?.name || 'TBD',
           locationAddress,
           price: session.price,
           externalRegistrationUrl: session.externalRegistrationUrl || null,
@@ -163,12 +154,12 @@ export const getSessionsWithLowAvailability = internalQuery({
   handler: async (ctx, args) => {
     // Get active sessions with low availability
     const sessions = await ctx.db
-      .query("sessions")
-      .withIndex("by_status", (q) => q.eq("status", "active"))
+      .query('sessions')
+      .withIndex('by_status', (q) => q.eq('status', 'active'))
       .collect();
 
     const results: {
-      sessionId: Id<"sessions">;
+      sessionId: Id<'sessions'>;
       spotsRemaining: number;
       isNewlyLow: boolean;
       session: {
@@ -195,14 +186,13 @@ export const getSessionsWithLowAvailability = internalQuery({
 
       // Check if this is newly low by looking at the last snapshot
       const lastSnapshot = await ctx.db
-        .query("sessionAvailabilitySnapshots")
-        .withIndex("by_session", (q) => q.eq("sessionId", session._id))
-        .order("desc")
+        .query('sessionAvailabilitySnapshots')
+        .withIndex('by_session', (q) => q.eq('sessionId', session._id))
+        .order('desc')
         .first();
 
       // It's "newly low" if there's no previous snapshot OR the previous snapshot had >= threshold
-      const isNewlyLow =
-        !lastSnapshot || lastSnapshot.spotsRemaining >= args.threshold;
+      const isNewlyLow = !lastSnapshot || lastSnapshot.spotsRemaining >= args.threshold;
 
       if (!isNewlyLow) {
         // Already notified about this session being low
@@ -220,7 +210,7 @@ export const getSessionsWithLowAvailability = internalQuery({
         ? `${session.locationAddress.street}, ${session.locationAddress.city}, ${session.locationAddress.state} ${session.locationAddress.zip}`
         : location?.address
           ? `${location.address.street}, ${location.address.city}, ${location.address.state} ${location.address.zip}`
-          : "";
+          : '';
 
       results.push({
         sessionId: session._id,
@@ -233,7 +223,7 @@ export const getSessionsWithLowAvailability = internalQuery({
           endDate: session.endDate,
           dropOffTime: session.dropOffTime,
           pickUpTime: session.pickUpTime,
-          locationName: session.locationName || location?.name || "TBD",
+          locationName: session.locationName || location?.name || 'TBD',
           locationAddress,
           price: session.price,
           externalRegistrationUrl: session.externalRegistrationUrl || null,
@@ -250,21 +240,15 @@ export const getSessionsWithLowAvailability = internalQuery({
  */
 export const hasNotificationBeenSent = internalQuery({
   args: {
-    familyId: v.id("families"),
-    sessionId: v.id("sessions"),
-    changeType: v.union(
-      v.literal("registration_opened"),
-      v.literal("low_availability")
-    ),
+    familyId: v.id('families'),
+    sessionId: v.id('sessions'),
+    changeType: v.union(v.literal('registration_opened'), v.literal('low_availability')),
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db
-      .query("notificationsSent")
-      .withIndex("by_family_session_type", (q) =>
-        q
-          .eq("familyId", args.familyId)
-          .eq("sessionId", args.sessionId)
-          .eq("changeType", args.changeType)
+      .query('notificationsSent')
+      .withIndex('by_family_session_type', (q) =>
+        q.eq('familyId', args.familyId).eq('sessionId', args.sessionId).eq('changeType', args.changeType),
       )
       .first();
 
@@ -277,7 +261,7 @@ export const hasNotificationBeenSent = internalQuery({
  */
 export const getFamilyCityBrand = internalQuery({
   args: {
-    familyId: v.id("families"),
+    familyId: v.id('families'),
   },
   handler: async (ctx, args) => {
     const family = await ctx.db.get(args.familyId);
@@ -287,9 +271,9 @@ export const getFamilyCityBrand = internalQuery({
     if (!city) return null;
 
     return {
-      brandName: city.brandName || "PDX Camps",
-      domain: city.domain || "pdxcamps.com",
-      fromEmail: city.fromEmail || "hello@pdxcamps.com",
+      brandName: city.brandName || 'PDX Camps',
+      domain: city.domain || 'pdxcamps.com',
+      fromEmail: city.fromEmail || 'hello@pdxcamps.com',
     };
   },
 });

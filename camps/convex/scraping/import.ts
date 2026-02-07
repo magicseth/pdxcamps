@@ -1,4 +1,4 @@
-"use node";
+'use node';
 
 /**
  * Import Pipeline
@@ -12,10 +12,10 @@
  * - Incomplete sessions (<50%) → store in pendingSessions for review
  */
 
-import { action } from "../_generated/server";
-import { api, internal } from "../_generated/api";
-import { v } from "convex/values";
-import { Id } from "../_generated/dataModel";
+import { action } from '../_generated/server';
+import { api, internal } from '../_generated/api';
+import { v } from 'convex/values';
+import { Id } from '../_generated/dataModel';
 import {
   validateSession,
   determineSessionStatus,
@@ -24,7 +24,7 @@ import {
   parseTimeRange,
   parsePrice,
   parseAgeRange,
-} from "./validation";
+} from './validation';
 
 // ============ ADDRESS PARSING ============
 
@@ -49,16 +49,19 @@ function parseLocationString(location: string): {
 
   // State pattern - look for OR, Oregon
   const stateMatch = location.match(/\b(OR|Oregon)\b/i);
-  const state = stateMatch ? "OR" : undefined;
+  const state = stateMatch ? 'OR' : undefined;
 
   // City pattern - look for Portland or common PDX cities
-  const cityPattern = /\b(Portland|Beaverton|Lake Oswego|Tigard|Tualatin|Gresham|Hillsboro|Vancouver|Milwaukie|Clackamas|Oregon City|West Linn|Wilsonville)\b/i;
+  const cityPattern =
+    /\b(Portland|Beaverton|Lake Oswego|Tigard|Tualatin|Gresham|Hillsboro|Vancouver|Milwaukie|Clackamas|Oregon City|West Linn|Wilsonville)\b/i;
   const cityMatch = location.match(cityPattern);
   const city = cityMatch?.[1];
 
   // Street pattern - look for street number followed by street name
   // Common patterns: "123 Main St", "8911 SE Stark"
-  const streetMatch = location.match(/\b(\d+\s+(?:[NSEW]\s+)?[A-Za-z]+(?:\s+[A-Za-z]+)*(?:\s+(?:St|Street|Ave|Avenue|Rd|Road|Blvd|Boulevard|Way|Dr|Drive|Ln|Lane|Ct|Court|Pl|Place))?)\b/i);
+  const streetMatch = location.match(
+    /\b(\d+\s+(?:[NSEW]\s+)?[A-Za-z]+(?:\s+[A-Za-z]+)*(?:\s+(?:St|Street|Ave|Avenue|Rd|Road|Blvd|Boulevard|Way|Dr|Drive|Ln|Lane|Ct|Court|Pl|Place))?)\b/i,
+  );
   let street = streetMatch?.[1];
 
   // Clean up street if it accidentally captured city/state
@@ -132,7 +135,7 @@ interface ScrapeResult {
 
 interface ImportResult {
   success: boolean;
-  organizationId?: Id<"organizations">;
+  organizationId?: Id<'organizations'>;
   campsCreated: number;
   sessionsCreated: number;
   sessionsAsDraft: number;
@@ -193,11 +196,7 @@ function enrichSessionWithParsedData(session: ScrapedSession): ScrapedSession {
   }
 
   // Try to parse age/grade from ageGradeRaw if missing
-  if (
-    enriched.minAge === undefined &&
-    enriched.minGrade === undefined &&
-    enriched.ageGradeRaw
-  ) {
+  if (enriched.minAge === undefined && enriched.minGrade === undefined && enriched.ageGradeRaw) {
     const parsed = parseAgeRange(enriched.ageGradeRaw);
     if (parsed) {
       enriched.minAge = parsed.minAge;
@@ -211,7 +210,7 @@ function enrichSessionWithParsedData(session: ScrapedSession): ScrapedSession {
   if (enriched.isOvernight === undefined) {
     const textToSearch = `${enriched.name || ''} ${enriched.description || ''}`.toLowerCase();
     const overnightKeywords = ['overnight', 'sleepaway', 'residential', 'sleep-away'];
-    enriched.isOvernight = overnightKeywords.some(keyword => textToSearch.includes(keyword));
+    enriched.isOvernight = overnightKeywords.some((keyword) => textToSearch.includes(keyword));
   }
 
   return enriched;
@@ -249,7 +248,7 @@ function expandFlexibleSessions(sessions: ScrapedSession[]): ScrapedSession[] {
     const dayOfWeek = currentDate.getDay();
     if (dayOfWeek !== 1) {
       // Move to next Monday (or current day if already Monday)
-      const daysUntilMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek);
+      const daysUntilMonday = dayOfWeek === 0 ? 1 : 8 - dayOfWeek;
       currentDate.setDate(currentDate.getDate() + daysUntilMonday);
     }
 
@@ -290,7 +289,7 @@ function expandFlexibleSessions(sessions: ScrapedSession[]): ScrapedSession[] {
  */
 export const importFromJob = action({
   args: {
-    jobId: v.id("scrapeJobs"),
+    jobId: v.id('scrapeJobs'),
   },
   handler: async (ctx, args): Promise<ImportResult> => {
     const errors: string[] = [];
@@ -316,7 +315,7 @@ export const importFromJob = action({
           sessionsPending: 0,
           locationsCreated: 0,
           duplicatesSkipped: 0,
-          errors: ["No raw data found"],
+          errors: ['No raw data found'],
         };
       }
 
@@ -332,7 +331,7 @@ export const importFromJob = action({
           sessionsPending: 0,
           locationsCreated: 0,
           duplicatesSkipped: 0,
-          errors: ["No sessions in scrape result"],
+          errors: ['No sessions in scrape result'],
         };
       }
 
@@ -350,7 +349,7 @@ export const importFromJob = action({
           sessionsPending: 0,
           locationsCreated: 0,
           duplicatesSkipped: 0,
-          errors: ["Source not found"],
+          errors: ['Source not found'],
         };
       }
 
@@ -365,12 +364,12 @@ export const importFromJob = action({
           sessionsPending: 0,
           locationsCreated: 0,
           duplicatesSkipped: 0,
-          errors: ["Source has no cityId"],
+          errors: ['Source has no cityId'],
         };
       }
 
       // Create or get organization
-      let organizationId: Id<"organizations">;
+      let organizationId: Id<'organizations'>;
 
       if (source.organizationId) {
         organizationId = source.organizationId;
@@ -381,16 +380,13 @@ export const importFromJob = action({
           website: source.url,
         };
 
-        organizationId = await ctx.runMutation(
-          api.scraping.importMutations.createOrganization,
-          {
-            name: orgData.name,
-            description: "description" in orgData ? orgData.description : undefined,
-            website: orgData.website,
-            logoUrl: "logoUrl" in orgData ? orgData.logoUrl : undefined,
-            cityId: cityId,
-          }
-        );
+        organizationId = await ctx.runMutation(api.scraping.importMutations.createOrganization, {
+          name: orgData.name,
+          description: 'description' in orgData ? orgData.description : undefined,
+          website: orgData.website,
+          logoUrl: 'logoUrl' in orgData ? orgData.logoUrl : undefined,
+          cityId: cityId,
+        });
 
         // Link organization to source
         await ctx.runMutation(api.scraping.mutations.linkOrganizationToSource, {
@@ -402,7 +398,7 @@ export const importFromJob = action({
       // Pre-process sessions:
       // 1. Enrich with parsed data (to detect flexible dates like "Summer 2026")
       // 2. Expand flexible date sessions into weekly sessions
-      const enrichedSessions = result.sessions.map(s => enrichSessionWithParsedData(s));
+      const enrichedSessions = result.sessions.map((s) => enrichSessionWithParsedData(s));
       const expandedSessions = expandFlexibleSessions(enrichedSessions);
 
       // Group sessions by camp name (theme)
@@ -419,7 +415,7 @@ export const importFromJob = action({
       }
 
       // Track locations we've created
-      const locationCache = new Map<string, Id<"locations">>();
+      const locationCache = new Map<string, Id<'locations'>>();
 
       // Track completeness scores for quality calculation
       const allCompletenessScores: number[] = [];
@@ -435,41 +431,38 @@ export const importFromJob = action({
         // Strip grade/age suffixes for the camp-level name
         // e.g. "Archery Rangers (Grades 3-5)" → "Archery Rangers"
         const campBaseName = firstSession.name
-          .replace(/\s*\(grades?\s*[\d\-kK]+\s*(?:-\s*[\d\-kK]+)?\)\s*$/i, "")
-          .replace(/\s*\(ages?\s*\d+\s*(?:-\s*\d+)?\)\s*$/i, "")
+          .replace(/\s*\(grades?\s*[\d\-kK]+\s*(?:-\s*[\d\-kK]+)?\)\s*$/i, '')
+          .replace(/\s*\(ages?\s*\d+\s*(?:-\s*\d+)?\)\s*$/i, '')
           .trim();
 
         // Check if this camp already exists for this org
-        const existingCamp = await ctx.runQuery(
-          internal.scraping.deduplication.findExistingCamp,
-          { organizationId, name: campBaseName }
-        );
+        const existingCamp = await ctx.runQuery(internal.scraping.deduplication.findExistingCamp, {
+          organizationId,
+          name: campBaseName,
+        });
 
-        let campId: Id<"camps">;
+        let campId: Id<'camps'>;
         if (existingCamp) {
           campId = existingCamp._id;
         } else {
           // Compute widest age/grade range across all sessions in this theme group
-          const allMinAges = sessions.map(s => s.minAge).filter((v): v is number => v !== undefined);
-          const allMaxAges = sessions.map(s => s.maxAge).filter((v): v is number => v !== undefined);
-          const allMinGrades = sessions.map(s => s.minGrade).filter((v): v is number => v !== undefined);
-          const allMaxGrades = sessions.map(s => s.maxGrade).filter((v): v is number => v !== undefined);
+          const allMinAges = sessions.map((s) => s.minAge).filter((v): v is number => v !== undefined);
+          const allMaxAges = sessions.map((s) => s.maxAge).filter((v): v is number => v !== undefined);
+          const allMinGrades = sessions.map((s) => s.minGrade).filter((v): v is number => v !== undefined);
+          const allMaxGrades = sessions.map((s) => s.maxGrade).filter((v): v is number => v !== undefined);
 
-          campId = await ctx.runMutation(
-            api.scraping.importMutations.createCamp,
-            {
-              organizationId,
-              name: campBaseName,
-              description: firstSession.description || `${campBaseName} camp`,
-              categories: firstSession.category ? [firstSession.category] : ["General"],
-              minAge: allMinAges.length > 0 ? Math.min(...allMinAges) : undefined,
-              maxAge: allMaxAges.length > 0 ? Math.max(...allMaxAges) : undefined,
-              minGrade: allMinGrades.length > 0 ? Math.min(...allMinGrades) : undefined,
-              maxGrade: allMaxGrades.length > 0 ? Math.max(...allMaxGrades) : undefined,
-              website: firstSession.registrationUrl,
-              imageUrls: firstSession.imageUrls,
-            }
-          );
+          campId = await ctx.runMutation(api.scraping.importMutations.createCamp, {
+            organizationId,
+            name: campBaseName,
+            description: firstSession.description || `${campBaseName} camp`,
+            categories: firstSession.category ? [firstSession.category] : ['General'],
+            minAge: allMinAges.length > 0 ? Math.min(...allMinAges) : undefined,
+            maxAge: allMaxAges.length > 0 ? Math.max(...allMaxAges) : undefined,
+            minGrade: allMinGrades.length > 0 ? Math.min(...allMinGrades) : undefined,
+            maxGrade: allMaxGrades.length > 0 ? Math.max(...allMaxGrades) : undefined,
+            website: firstSession.registrationUrl,
+            imageUrls: firstSession.imageUrls,
+          });
           campsCreated++;
         }
 
@@ -494,17 +487,17 @@ export const importFromJob = action({
           });
 
           // Get or create location
-          const locationName = session.location || "Main Location";
-          let locationId: Id<"locations">;
+          const locationName = session.location || 'Main Location';
+          let locationId: Id<'locations'>;
 
           if (locationCache.has(locationName)) {
             locationId = locationCache.get(locationName)!;
           } else {
             // Build location data from session
             let locationData: {
-              organizationId: Id<"organizations">;
+              organizationId: Id<'organizations'>;
               name: string;
-              cityId: Id<"cities">;
+              cityId: Id<'cities'>;
               street?: string;
               city?: string;
               state?: string;
@@ -526,7 +519,7 @@ export const importFromJob = action({
             }
 
             // If no structured address, try to parse from location string
-            if (!locationData.street && locationName && locationName !== "Main Location") {
+            if (!locationData.street && locationName && locationName !== 'Main Location') {
               const parsed = parseLocationString(locationName);
               if (parsed.street) locationData.street = parsed.street;
               if (parsed.city) locationData.city = parsed.city;
@@ -544,21 +537,18 @@ export const importFromJob = action({
             if (!locationData.latitude || !locationData.longitude) {
               try {
                 // Build a geocode query from available data
-                let geocodeQuery = "";
+                let geocodeQuery = '';
                 if (session.locationAddress?.street) {
-                  geocodeQuery = `${session.locationAddress.street}, ${session.locationAddress.city || "Portland"}, ${session.locationAddress.state || "OR"} ${session.locationAddress.zip || ""}`;
-                } else if (session.location && session.location !== "Main Location") {
+                  geocodeQuery = `${session.locationAddress.street}, ${session.locationAddress.city || 'Portland'}, ${session.locationAddress.state || 'OR'} ${session.locationAddress.zip || ''}`;
+                } else if (session.location && session.location !== 'Main Location') {
                   geocodeQuery = session.location;
                 }
 
                 if (geocodeQuery) {
-                  const geocodeResult = await ctx.runAction(
-                    api.lib.geocoding.geocodeQuery,
-                    {
-                      query: geocodeQuery,
-                      nearCity: "Portland, OR",
-                    }
-                  );
+                  const geocodeResult = await ctx.runAction(api.lib.geocoding.geocodeQuery, {
+                    query: geocodeQuery,
+                    nearCity: 'Portland, OR',
+                  });
 
                   if (geocodeResult) {
                     locationData.latitude = geocodeResult.latitude;
@@ -584,61 +574,50 @@ export const importFromJob = action({
               }
             }
 
-            locationId = await ctx.runMutation(
-              api.scraping.importMutations.createLocation,
-              locationData
-            );
+            locationId = await ctx.runMutation(api.scraping.importMutations.createLocation, locationData);
             locationCache.set(locationName, locationId);
             locationsCreated++;
           }
 
           // Handle based on session status
-          if (sessionStatus === "pending_review") {
+          if (sessionStatus === 'pending_review') {
             // Store in pendingSessions for manual review
-            await ctx.runMutation(
-              internal.scraping.importMutations.createPendingSession,
-              {
-                jobId: args.jobId,
-                sourceId: rawData.sourceId,
-                rawData: JSON.stringify(session),
-                partialData: {
-                  name: session.name,
-                  dateRaw: session.dateRaw,
-                  priceRaw: session.priceRaw,
-                  ageGradeRaw: session.ageGradeRaw,
-                  timeRaw: session.timeRaw,
-                  location: session.location,
-                  description: session.description,
-                  startDate: session.startDate,
-                  endDate: session.endDate,
-                  registrationUrl: session.registrationUrl,
-                },
-                validationErrors: validation.errors,
-                completenessScore: validation.completenessScore,
-              }
-            );
+            await ctx.runMutation(internal.scraping.importMutations.createPendingSession, {
+              jobId: args.jobId,
+              sourceId: rawData.sourceId,
+              rawData: JSON.stringify(session),
+              partialData: {
+                name: session.name,
+                dateRaw: session.dateRaw,
+                priceRaw: session.priceRaw,
+                ageGradeRaw: session.ageGradeRaw,
+                timeRaw: session.timeRaw,
+                location: session.location,
+                description: session.description,
+                startDate: session.startDate,
+                endDate: session.endDate,
+                registrationUrl: session.registrationUrl,
+              },
+              validationErrors: validation.errors,
+              completenessScore: validation.completenessScore,
+            });
             sessionsPending++;
             continue;
           }
 
           // Sessions without dates still can't be created in our system
           if (!session.startDate) {
-            errors.push(
-              `Session "${session.name}": Missing start date even after parsing`
-            );
+            errors.push(`Session "${session.name}": Missing start date even after parsing`);
             continue;
           }
 
           // Check for duplicates
-          const existingSession = await ctx.runQuery(
-            internal.scraping.deduplication.findExistingSession,
-            {
-              sourceId: rawData.sourceId,
-              organizationId,
-              name: session.name,
-              startDate: session.startDate,
-            }
-          );
+          const existingSession = await ctx.runQuery(internal.scraping.deduplication.findExistingSession, {
+            sourceId: rawData.sourceId,
+            organizationId,
+            name: session.name,
+            startDate: session.startDate,
+          });
 
           if (existingSession) {
             // Update price if we have better data and existing is missing
@@ -647,19 +626,15 @@ export const importFromJob = action({
               session.priceInCents > 0 &&
               (!existingSession.price || existingSession.price === 0);
             // Always update availability when we have fresh spotsLeft data
-            const shouldUpdateCapacity =
-              session.spotsLeft !== undefined && session.spotsLeft >= 0;
+            const shouldUpdateCapacity = session.spotsLeft !== undefined && session.spotsLeft >= 0;
 
             if (shouldUpdatePrice || shouldUpdateCapacity) {
-              await ctx.runMutation(
-                internal.scraping.importMutations.updateSessionPriceAndCapacity,
-                {
-                  sessionId: existingSession._id,
-                  price: shouldUpdatePrice ? session.priceInCents : undefined,
-                  capacity: shouldUpdateCapacity ? session.spotsLeft : undefined,
-                  sourceId: rawData.sourceId,
-                }
-              );
+              await ctx.runMutation(internal.scraping.importMutations.updateSessionPriceAndCapacity, {
+                sessionId: existingSession._id,
+                price: shouldUpdatePrice ? session.priceInCents : undefined,
+                capacity: shouldUpdateCapacity ? session.spotsLeft : undefined,
+                sourceId: rawData.sourceId,
+              });
             }
             duplicatesSkipped++;
             continue;
@@ -667,71 +642,61 @@ export const importFromJob = action({
 
           // Create session
           try {
-            await ctx.runMutation(
-              internal.scraping.importMutations.createSessionWithCompleteness,
-              {
-                campId,
-                locationId,
-                organizationId,
-                cityId: cityId,
-                startDate: session.startDate,
-                endDate: session.endDate || session.startDate,
-                dropOffHour: session.dropOffHour ?? 9,
-                dropOffMinute: session.dropOffMinute ?? 0,
-                pickUpHour: session.pickUpHour ?? 15,
-                pickUpMinute: session.pickUpMinute ?? 0,
-                price: session.priceInCents ?? 0,
-                minAge: session.minAge,
-                maxAge: session.maxAge,
-                minGrade: session.minGrade,
-                maxGrade: session.maxGrade,
-                registrationUrl: session.registrationUrl,
-                sourceId: rawData.sourceId,
-                // New completeness fields
-                status: sessionStatus,
-                completenessScore: validation.completenessScore,
-                missingFields: validation.missingFields,
-                dataSource: "scraped" as const,
-                // Capacity fields - use spotsLeft as capacity if capacity not provided
-                capacity: session.capacity ?? session.spotsLeft,
-                enrolledCount: session.enrolledCount,
-                // Overnight camp detection
-                isOvernight: session.isOvernight,
-              }
-            );
+            await ctx.runMutation(internal.scraping.importMutations.createSessionWithCompleteness, {
+              campId,
+              locationId,
+              organizationId,
+              cityId: cityId,
+              startDate: session.startDate,
+              endDate: session.endDate || session.startDate,
+              dropOffHour: session.dropOffHour ?? 9,
+              dropOffMinute: session.dropOffMinute ?? 0,
+              pickUpHour: session.pickUpHour ?? 15,
+              pickUpMinute: session.pickUpMinute ?? 0,
+              price: session.priceInCents ?? 0,
+              minAge: session.minAge,
+              maxAge: session.maxAge,
+              minGrade: session.minGrade,
+              maxGrade: session.maxGrade,
+              registrationUrl: session.registrationUrl,
+              sourceId: rawData.sourceId,
+              // New completeness fields
+              status: sessionStatus,
+              completenessScore: validation.completenessScore,
+              missingFields: validation.missingFields,
+              dataSource: 'scraped' as const,
+              // Capacity fields - use spotsLeft as capacity if capacity not provided
+              capacity: session.capacity ?? session.spotsLeft,
+              enrolledCount: session.enrolledCount,
+              // Overnight camp detection
+              isOvernight: session.isOvernight,
+            });
 
-            if (sessionStatus === "active") {
+            if (sessionStatus === 'active') {
               sessionsCreated++;
             } else {
               sessionsAsDraft++;
             }
           } catch (e) {
-            errors.push(
-              `Session ${session.name}: ${e instanceof Error ? e.message : "Unknown error"}`
-            );
+            errors.push(`Session ${session.name}: ${e instanceof Error ? e.message : 'Unknown error'}`);
           }
         }
       }
 
       // Update source session counts and quality
       // Session counts are passed as arguments to avoid read-write conflicts
-      const quality = calculateSourceQuality(
-        allCompletenessScores.map((score) => ({ completenessScore: score }))
-      );
+      const quality = calculateSourceQuality(allCompletenessScores.map((score) => ({ completenessScore: score })));
 
       // Total sessions created (both active and draft)
       const totalSessionCount = sessionsCreated + sessionsAsDraft;
 
-      await ctx.runMutation(
-        internal.scraping.importMutations.updateSourceSessionCounts,
-        {
-          sourceId: rawData.sourceId,
-          sessionCount: totalSessionCount,
-          activeSessionCount: sessionsCreated, // Only fully complete sessions are "active"
-          dataQualityScore: quality.score,
-          qualityTier: quality.tier,
-        }
-      );
+      await ctx.runMutation(internal.scraping.importMutations.updateSourceSessionCounts, {
+        sourceId: rawData.sourceId,
+        sessionCount: totalSessionCount,
+        activeSessionCount: sessionsCreated, // Only fully complete sessions are "active"
+        dataQualityScore: quality.score,
+        qualityTier: quality.tier,
+      });
 
       // Check for suspicious zero-price pattern and create alert
       // Alert if >80% of sessions have $0 price - indicates price extraction may be broken
@@ -740,9 +705,7 @@ export const importFromJob = action({
         totalSessionsProcessed >= 3 && // Need at least 3 sessions to be meaningful
         zeroPriceSessions / totalSessionsProcessed > zeroPriceThreshold
       ) {
-        const zeroPricePercent = Math.round(
-          (zeroPriceSessions / totalSessionsProcessed) * 100
-        );
+        const zeroPricePercent = Math.round((zeroPriceSessions / totalSessionsProcessed) * 100);
         await ctx.runMutation(internal.scraping.importMutations.createZeroPriceAlert, {
           sourceId: rawData.sourceId,
           sourceName: source.name,
@@ -772,10 +735,7 @@ export const importFromJob = action({
         sessionsPending,
         locationsCreated,
         duplicatesSkipped,
-        errors: [
-          ...errors,
-          error instanceof Error ? error.message : "Unknown error",
-        ],
+        errors: [...errors, error instanceof Error ? error.message : 'Unknown error'],
       };
     }
   },
@@ -786,14 +746,14 @@ export const importFromJob = action({
  */
 export const importFromSource = action({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
   },
   handler: async (
     ctx,
-    args
+    args,
   ): Promise<{
     success: boolean;
-    organizationId?: Id<"organizations">;
+    organizationId?: Id<'organizations'>;
     campsCreated?: number;
     sessionsCreated?: number;
     sessionsAsDraft?: number;
@@ -806,12 +766,12 @@ export const importFromSource = action({
     // Get the most recent completed job
     const jobs = await ctx.runQuery(api.scraping.queries.listScrapeJobs, {
       sourceId: args.sourceId,
-      status: "completed" as const,
+      status: 'completed' as const,
       limit: 1,
     });
 
     if (!jobs.length) {
-      return { success: false, error: "No completed jobs found for this source" };
+      return { success: false, error: 'No completed jobs found for this source' };
     }
 
     // Import from that job

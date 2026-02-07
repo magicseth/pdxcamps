@@ -19,21 +19,24 @@
  * 3. Report all JSON APIs found (or filter by search term if provided)
  */
 
-import { chromium } from "playwright";
-import Browserbase from "@browserbasehq/sdk";
-import * as path from "path";
-import * as fs from "fs";
+import { chromium } from 'playwright';
+import Browserbase from '@browserbasehq/sdk';
+import * as path from 'path';
+import * as fs from 'fs';
 
 // Load environment from .env.local
-const envPath = path.join(process.cwd(), ".env.local");
+const envPath = path.join(process.cwd(), '.env.local');
 if (fs.existsSync(envPath)) {
-  const envContent = fs.readFileSync(envPath, "utf-8");
-  for (const line of envContent.split("\n")) {
-    const [key, ...valueParts] = line.split("=");
+  const envContent = fs.readFileSync(envPath, 'utf-8');
+  for (const line of envContent.split('\n')) {
+    const [key, ...valueParts] = line.split('=');
     if (key && valueParts.length > 0) {
       const trimmedKey = key.trim();
       if (!process.env[trimmedKey]) {
-        process.env[trimmedKey] = valueParts.join("=").trim().replace(/^["']|["']$/g, "");
+        process.env[trimmedKey] = valueParts
+          .join('=')
+          .trim()
+          .replace(/^["']|["']$/g, '');
       }
     }
   }
@@ -70,7 +73,7 @@ async function discoverApis(targetUrl: string, searchTerm?: string) {
   let browser: any = null;
 
   try {
-    console.log("🌐 Creating Browserbase session...");
+    console.log('🌐 Creating Browserbase session...');
     const session = await bb.sessions.create({
       projectId: process.env.BROWSERBASE_PROJECT_ID!,
     });
@@ -81,11 +84,11 @@ async function discoverApis(targetUrl: string, searchTerm?: string) {
     const page = context.pages()[0];
 
     // Set up network monitoring
-    page.on("request", (request: any) => {
+    page.on('request', (request: any) => {
       const url = request.url();
       const resourceType = request.resourceType();
       // Capture XHR, fetch, and anything that looks like an API
-      if (["xhr", "fetch"].includes(resourceType) || url.includes("/api/") || url.includes("graphql")) {
+      if (['xhr', 'fetch'].includes(resourceType) || url.includes('/api/') || url.includes('graphql')) {
         capturedRequests.push({
           url,
           method: request.method(),
@@ -94,17 +97,17 @@ async function discoverApis(targetUrl: string, searchTerm?: string) {
       }
     });
 
-    page.on("response", async (response: any) => {
+    page.on('response', async (response: any) => {
       const url = response.url();
-      const trackedRequest = capturedRequests.find(r => r.url === url && !r.responseStatus);
+      const trackedRequest = capturedRequests.find((r) => r.url === url && !r.responseStatus);
 
       if (trackedRequest) {
         trackedRequest.responseStatus = response.status();
-        trackedRequest.contentType = response.headers()["content-type"] || "";
+        trackedRequest.contentType = response.headers()['content-type'] || '';
 
         try {
           // Capture JSON responses
-          if (response.status() === 200 && trackedRequest.contentType.includes("application/json")) {
+          if (response.status() === 200 && trackedRequest.contentType.includes('application/json')) {
             const body = await response.text();
             trackedRequest.responseBody = body;
             trackedRequest.responseSize = body.length;
@@ -114,22 +117,22 @@ async function discoverApis(targetUrl: string, searchTerm?: string) {
               const json = JSON.parse(body);
               if (Array.isArray(json)) {
                 trackedRequest.jsonStructure = `Array[${json.length}]`;
-                if (json.length > 0 && typeof json[0] === "object") {
+                if (json.length > 0 && typeof json[0] === 'object') {
                   const keys = Object.keys(json[0]).slice(0, 5);
-                  trackedRequest.jsonStructure += ` { ${keys.join(", ")}${Object.keys(json[0]).length > 5 ? ", ..." : ""} }`;
+                  trackedRequest.jsonStructure += ` { ${keys.join(', ')}${Object.keys(json[0]).length > 5 ? ', ...' : ''} }`;
                 }
-              } else if (typeof json === "object" && json !== null) {
+              } else if (typeof json === 'object' && json !== null) {
                 const keys = Object.keys(json).slice(0, 5);
-                trackedRequest.jsonStructure = `Object { ${keys.join(", ")}${Object.keys(json).length > 5 ? ", ..." : ""} }`;
+                trackedRequest.jsonStructure = `Object { ${keys.join(', ')}${Object.keys(json).length > 5 ? ', ...' : ''} }`;
               }
             } catch {
-              trackedRequest.jsonStructure = "(parse error)";
+              trackedRequest.jsonStructure = '(parse error)';
             }
 
             // Check for search term if provided
             if (searchTerm && body.toLowerCase().includes(searchTerm.toLowerCase())) {
               trackedRequest.containsSearchTerm = true;
-              const regex = new RegExp(searchTerm, "gi");
+              const regex = new RegExp(searchTerm, 'gi');
               trackedRequest.matchCount = (body.match(regex) || []).length;
             }
           }
@@ -139,13 +142,13 @@ async function discoverApis(targetUrl: string, searchTerm?: string) {
       }
     });
 
-    console.log("📡 Loading page and capturing network requests...\n");
+    console.log('📡 Loading page and capturing network requests...\n');
 
     // Use domcontentloaded to avoid timeout, then wait for XHR
-    await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
     // Wait for dynamic content to load
-    console.log("   Waiting for dynamic content...");
+    console.log('   Waiting for dynamic content...');
     await page.waitForTimeout(5000);
 
     // Scroll down to trigger lazy loading
@@ -159,8 +162,8 @@ async function discoverApis(targetUrl: string, searchTerm?: string) {
     console.log(`   Total requests captured: ${capturedRequests.length}`);
 
     // Filter to JSON responses only
-    const jsonRequests = capturedRequests.filter(r =>
-      r.responseStatus === 200 && r.responseBody && r.responseSize && r.responseSize > 100
+    const jsonRequests = capturedRequests.filter(
+      (r) => r.responseStatus === 200 && r.responseBody && r.responseSize && r.responseSize > 100,
     );
 
     console.log(`   JSON responses: ${jsonRequests.length}\n`);
@@ -171,14 +174,14 @@ async function discoverApis(targetUrl: string, searchTerm?: string) {
       // Show all captured requests for debugging
       console.log(`📋 All captured requests:`);
       for (const req of capturedRequests.slice(0, 20)) {
-        console.log(`   ${req.method} ${req.responseStatus || "?"} ${req.url.slice(0, 80)}`);
+        console.log(`   ${req.method} ${req.responseStatus || '?'} ${req.url.slice(0, 80)}`);
       }
       return;
     }
 
     // If search term provided, filter and show matching
     if (searchTerm) {
-      const matchingRequests = jsonRequests.filter(r => r.containsSearchTerm);
+      const matchingRequests = jsonRequests.filter((r) => r.containsSearchTerm);
 
       if (matchingRequests.length === 0) {
         console.log(`❌ No API responses found containing "${searchTerm}"\n`);
@@ -210,8 +213,8 @@ async function discoverApis(targetUrl: string, searchTerm?: string) {
 
     for (const req of jsonRequests.slice(0, 15)) {
       const sizeKB = ((req.responseSize || 0) / 1024).toFixed(1);
-      console.log(`   ${req.method} ${req.url.length > 70 ? req.url.slice(0, 70) + "..." : req.url}`);
-      console.log(`      Size: ${sizeKB} KB | ${req.jsonStructure || "unknown structure"}`);
+      console.log(`   ${req.method} ${req.url.length > 70 ? req.url.slice(0, 70) + '...' : req.url}`);
+      console.log(`      Size: ${sizeKB} KB | ${req.jsonStructure || 'unknown structure'}`);
       console.log();
     }
 
@@ -231,14 +234,13 @@ async function discoverApis(targetUrl: string, searchTerm?: string) {
         const json = JSON.parse(largest.responseBody);
         console.log(`\n📝 Sample data preview:`);
         const preview = JSON.stringify(json, null, 2).slice(0, 1500);
-        console.log(preview + (preview.length >= 1500 ? "\n   ..." : ""));
+        console.log(preview + (preview.length >= 1500 ? '\n   ...' : ''));
       } catch {
         // Skip preview
       }
     }
-
   } catch (error) {
-    console.error("Error during API discovery:", error);
+    console.error('Error during API discovery:', error);
   } finally {
     if (browser) {
       await browser.close();
@@ -249,13 +251,15 @@ async function discoverApis(targetUrl: string, searchTerm?: string) {
 function extractUrlPattern(url: string): string | null {
   try {
     const parsed = new URL(url);
-    const pathParts = parsed.pathname.split("/").filter(Boolean);
+    const pathParts = parsed.pathname.split('/').filter(Boolean);
 
-    const pattern = pathParts.map(part => {
-      if (/^\d+$/.test(part)) return "{id}";
-      if (/^[a-f0-9-]{36}$/i.test(part)) return "{uuid}";
-      return part;
-    }).join("/");
+    const pattern = pathParts
+      .map((part) => {
+        if (/^\d+$/.test(part)) return '{id}';
+        if (/^[a-f0-9-]{36}$/i.test(part)) return '{uuid}';
+        return part;
+      })
+      .join('/');
 
     return `${parsed.origin}/${pattern}`;
   } catch {

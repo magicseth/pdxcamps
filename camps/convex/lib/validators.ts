@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { v } from 'convex/values';
 
 // Reusable validators matching schema.ts definitions
 
@@ -37,29 +37,29 @@ export const dateRangeValidator = v.object({
 
 // Status validators
 export const sessionStatusValidator = v.union(
-  v.literal("draft"),
-  v.literal("active"),
-  v.literal("sold_out"),
-  v.literal("cancelled"),
-  v.literal("completed")
+  v.literal('draft'),
+  v.literal('active'),
+  v.literal('sold_out'),
+  v.literal('cancelled'),
+  v.literal('completed'),
 );
 
 export const registrationStatusValidator = v.union(
-  v.literal("interested"),
-  v.literal("waitlisted"),
-  v.literal("registered"),
-  v.literal("cancelled")
+  v.literal('interested'),
+  v.literal('waitlisted'),
+  v.literal('registered'),
+  v.literal('cancelled'),
 );
 
 export const friendshipStatusValidator = v.union(
-  v.literal("pending"),
-  v.literal("accepted"),
-  v.literal("declined"),
-  v.literal("blocked")
+  v.literal('pending'),
+  v.literal('accepted'),
+  v.literal('declined'),
+  v.literal('blocked'),
 );
 
 export const calendarSharingDefaultValidator = v.union(
-  v.literal("private"),
-  v.literal("friends_only"),
-  v.literal("public")
+  v.literal('private'),
+  v.literal('friends_only'),
+  v.literal('public'),
 );

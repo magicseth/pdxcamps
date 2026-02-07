@@ -1,13 +1,13 @@
-import { query } from "../_generated/server";
-import { v } from "convex/values";
-import { calculateDistance, isAgeInRange, isGradeInRange } from "../lib/helpers";
+import { query } from '../_generated/server';
+import { v } from 'convex/values';
+import { calculateDistance, isAgeInRange, isGradeInRange } from '../lib/helpers';
 
 /**
  * Main discovery query for searching sessions
  */
 export const searchSessions = query({
   args: {
-    cityId: v.id("cities"),
+    cityId: v.id('cities'),
     startDateAfter: v.optional(v.string()),
     startDateBefore: v.optional(v.string()),
     categories: v.optional(v.array(v.string())),
@@ -15,8 +15,8 @@ export const searchSessions = query({
     excludeSoldOut: v.optional(v.boolean()),
     childAge: v.optional(v.number()),
     childGrade: v.optional(v.number()),
-    locationIds: v.optional(v.array(v.id("locations"))),
-    organizationIds: v.optional(v.array(v.id("organizations"))),
+    locationIds: v.optional(v.array(v.id('locations'))),
+    organizationIds: v.optional(v.array(v.id('organizations'))),
     extendedCareOnly: v.optional(v.boolean()),
     // Distance filtering
     homeLatitude: v.optional(v.number()),
@@ -28,10 +28,8 @@ export const searchSessions = query({
   handler: async (ctx, args) => {
     // Start with sessions in the city that are active
     let sessions = await ctx.db
-      .query("sessions")
-      .withIndex("by_city_and_status", (q) =>
-        q.eq("cityId", args.cityId).eq("status", "active")
-      )
+      .query('sessions')
+      .withIndex('by_city_and_status', (q) => q.eq('cityId', args.cityId).eq('status', 'active'))
       .collect();
 
     // Apply date range filters
@@ -49,9 +47,7 @@ export const searchSessions = query({
 
     // Exclude sold out sessions if requested
     if (args.excludeSoldOut) {
-      sessions = sessions.filter(
-        (session) => session.enrolledCount < session.capacity
-      );
+      sessions = sessions.filter((session) => session.enrolledCount < session.capacity);
     }
 
     // Apply location filter
@@ -73,14 +69,10 @@ export const searchSessions = query({
 
     // Apply age/grade filters
     if (args.childAge !== undefined) {
-      sessions = sessions.filter((session) =>
-        isAgeInRange(args.childAge!, session.ageRequirements)
-      );
+      sessions = sessions.filter((session) => isAgeInRange(args.childAge!, session.ageRequirements));
     }
     if (args.childGrade !== undefined) {
-      sessions = sessions.filter((session) =>
-        isGradeInRange(args.childGrade!, session.ageRequirements)
-      );
+      sessions = sessions.filter((session) => isGradeInRange(args.childGrade!, session.ageRequirements));
     }
 
     // Apply category filter - requires fetching camps
@@ -110,7 +102,7 @@ export const searchSessions = query({
     const hasHomeCoords = args.homeLatitude !== undefined && args.homeLongitude !== undefined;
 
     // Add location coordinates, distance, and org logo to each session
-    type SessionWithLocationAndDistance = typeof sessions[number] & {
+    type SessionWithLocationAndDistance = (typeof sessions)[number] & {
       distanceFromHome?: number;
       locationLatitude?: number;
       locationLongitude?: number;
@@ -137,7 +129,7 @@ export const searchSessions = query({
           args.homeLatitude!,
           args.homeLongitude!,
           location.latitude,
-          location.longitude
+          location.longitude,
         );
         result.distanceFromHome = Math.round(distance * 10) / 10;
       }
@@ -148,7 +140,7 @@ export const searchSessions = query({
     // Apply distance filter if specified
     if (hasHomeCoords && args.maxDistanceMiles !== undefined) {
       enrichedSessions = enrichedSessions.filter(
-        (session) => session.distanceFromHome !== undefined && session.distanceFromHome <= args.maxDistanceMiles!
+        (session) => session.distanceFromHome !== undefined && session.distanceFromHome <= args.maxDistanceMiles!,
       );
     }
 
@@ -172,7 +164,7 @@ export const searchSessions = query({
  */
 export const getSession = query({
   args: {
-    sessionId: v.id("sessions"),
+    sessionId: v.id('sessions'),
   },
   handler: async (ctx, args) => {
     const session = await ctx.db.get(args.sessionId);
@@ -215,12 +207,12 @@ export const getSession = query({
  */
 export const listSessionsByCamp = query({
   args: {
-    campId: v.id("camps"),
+    campId: v.id('camps'),
   },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("sessions")
-      .withIndex("by_camp", (q) => q.eq("campId", args.campId))
+      .query('sessions')
+      .withIndex('by_camp', (q) => q.eq('campId', args.campId))
       .collect();
   },
 });
@@ -230,17 +222,17 @@ export const listSessionsByCamp = query({
  */
 export const listUpcomingSessions = query({
   args: {
-    cityId: v.id("cities"),
+    cityId: v.id('cities'),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date().toISOString().split('T')[0];
     const limit = args.limit ?? 20;
 
     const sessions = await ctx.db
-      .query("sessions")
-      .withIndex("by_city_and_status_and_start_date", (q) =>
-        q.eq("cityId", args.cityId).eq("status", "active").gte("startDate", today)
+      .query('sessions')
+      .withIndex('by_city_and_status_and_start_date', (q) =>
+        q.eq('cityId', args.cityId).eq('status', 'active').gte('startDate', today),
       )
       .take(limit);
 
@@ -262,32 +254,28 @@ export const getFeaturedSessions = query({
 
     // Get city by slug
     const city = await ctx.db
-      .query("cities")
-      .withIndex("by_slug", (q) => q.eq("slug", args.citySlug))
+      .query('cities')
+      .withIndex('by_slug', (q) => q.eq('slug', args.citySlug))
       .unique();
 
     if (!city) return [];
 
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date().toISOString().split('T')[0];
 
     // Get all active sessions in the city (not ordered by date)
     // This ensures we sample from the full date range, not just the nearest dates
     const allSessions = await ctx.db
-      .query("sessions")
-      .withIndex("by_city_and_status", (q) =>
-        q.eq("cityId", city._id).eq("status", "active")
-      )
+      .query('sessions')
+      .withIndex('by_city_and_status', (q) => q.eq('cityId', city._id).eq('status', 'active'))
       .collect();
 
     // Filter to future sessions with prices
-    const sessionsWithPrices = allSessions.filter(
-      (s) => s.price > 0 && s.startDate >= today
-    );
+    const sessionsWithPrices = allSessions.filter((s) => s.price > 0 && s.startDate >= today);
 
     // Shuffle sessions for variety in the carousel
     // Use a simple Fisher-Yates shuffle with a daily seed so the order changes each day
     const shuffled = [...sessionsWithPrices];
-    let seed = today.split("-").reduce((acc, n) => acc + parseInt(n), 0);
+    let seed = today.split('-').reduce((acc, n) => acc + parseInt(n), 0);
     for (let i = shuffled.length - 1; i > 0; i--) {
       seed = (seed * 1103515245 + 12345) & 0x7fffffff;
       const j = seed % (i + 1);
@@ -332,15 +320,15 @@ export const getFeaturedSessions = query({
     const orgMap = new Map(orgsRaw.filter(Boolean).map((o) => [o!._id, o!]));
 
     // Collect all storage IDs that need URL resolution
-    const storageIds: Array<{ type: "camp" | "org"; id: string; storageId: string }> = [];
+    const storageIds: Array<{ type: 'camp' | 'org'; id: string; storageId: string }> = [];
     for (const camp of campMap.values()) {
       if (camp.imageStorageIds && camp.imageStorageIds.length > 0) {
-        storageIds.push({ type: "camp", id: camp._id, storageId: camp.imageStorageIds[0] });
+        storageIds.push({ type: 'camp', id: camp._id, storageId: camp.imageStorageIds[0] });
       }
     }
     for (const org of orgMap.values()) {
       if (org.logoStorageId) {
-        storageIds.push({ type: "org", id: org._id, storageId: org.logoStorageId });
+        storageIds.push({ type: 'org', id: org._id, storageId: org.logoStorageId });
       }
     }
 
@@ -349,14 +337,14 @@ export const getFeaturedSessions = query({
       storageIds.map(async (item) => ({
         ...item,
         url: await ctx.storage.getUrl(item.storageId as any),
-      }))
+      })),
     );
 
     const campImageUrls = new Map<string, string>();
     const orgLogoUrls = new Map<string, string>();
     for (const result of urlResults) {
       if (result.url) {
-        if (result.type === "camp") {
+        if (result.type === 'camp') {
           campImageUrls.set(result.id, result.url);
         } else {
           orgLogoUrls.set(result.id, result.url);
@@ -383,7 +371,7 @@ export const getFeaturedSessions = query({
         campName: camp.name,
         campSlug: camp.slug,
         organizationName: organization?.name,
-        organizationLogoUrl: orgLogoUrls.get(organization?._id ?? ""),
+        organizationLogoUrl: orgLogoUrls.get(organization?._id ?? ''),
         imageUrl,
         startDate: session.startDate,
         endDate: session.endDate,

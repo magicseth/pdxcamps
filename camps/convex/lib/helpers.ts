@@ -2,18 +2,18 @@
  * Utility functions for the camp marketplace
  */
 
-import { Doc, Id } from "../_generated/dataModel";
-import { DatabaseWriter } from "../_generated/server";
+import { Doc, Id } from '../_generated/dataModel';
+import { DatabaseWriter } from '../_generated/server';
 
 /**
  * Resolve a camp name using denormalized session data, falling back to a camp lookup map.
  * Extracts the common pattern: session.campName ?? campMap.get(session.campId)?.name ?? "Unknown Camp"
  */
 export function resolveCampName(
-  session: { campName?: string; campId: Id<"camps"> },
-  campMap: Map<Id<"camps">, Doc<"camps">>
+  session: { campName?: string; campId: Id<'camps'> },
+  campMap: Map<Id<'camps'>, Doc<'camps'>>,
 ): string {
-  return session.campName ?? campMap.get(session.campId)?.name ?? "Unknown Camp";
+  return session.campName ?? campMap.get(session.campId)?.name ?? 'Unknown Camp';
 }
 
 /**
@@ -23,16 +23,16 @@ export function resolveCampName(
  */
 export async function updateSessionCapacityStatus(
   db: DatabaseWriter,
-  sessionId: Id<"sessions">,
+  sessionId: Id<'sessions'>,
   enrolledCount: number,
   capacity: number,
-  currentStatus: string
+  currentStatus: string,
 ): Promise<void> {
   const isSoldOut = enrolledCount >= capacity;
-  if (currentStatus === "active" && isSoldOut) {
-    await db.patch(sessionId, { status: "sold_out" });
-  } else if (currentStatus === "sold_out" && !isSoldOut) {
-    await db.patch(sessionId, { status: "active" });
+  if (currentStatus === 'active' && isSoldOut) {
+    await db.patch(sessionId, { status: 'sold_out' });
+  } else if (currentStatus === 'sold_out' && !isSoldOut) {
+    await db.patch(sessionId, { status: 'active' });
   }
 }
 
@@ -82,10 +82,7 @@ export function calculateGradeFromAge(age: number, cutoffMonth: number = 8): num
  * @param range - Object with optional minAge and maxAge
  * @returns True if age is within range (inclusive)
  */
-export function isAgeInRange(
-  age: number,
-  range: { minAge?: number; maxAge?: number }
-): boolean {
+export function isAgeInRange(age: number, range: { minAge?: number; maxAge?: number }): boolean {
   const { minAge, maxAge } = range;
 
   if (minAge !== undefined && age < minAge) {
@@ -105,10 +102,7 @@ export function isAgeInRange(
  * @param range - Object with optional minGrade and maxGrade
  * @returns True if grade is within range (inclusive)
  */
-export function isGradeInRange(
-  grade: number,
-  range: { minGrade?: number; maxGrade?: number }
-): boolean {
+export function isGradeInRange(grade: number, range: { minGrade?: number; maxGrade?: number }): boolean {
   const { minGrade, maxGrade } = range;
 
   if (minGrade !== undefined && grade < minGrade) {
@@ -130,12 +124,7 @@ export function isGradeInRange(
  * @param lng2 - Longitude of second point
  * @returns Distance in miles
  */
-export function calculateDistance(
-  lat1: number,
-  lng1: number,
-  lat2: number,
-  lng2: number
-): number {
+export function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const EARTH_RADIUS_MILES = 3958.8; // Earth's radius in miles
 
   // Convert degrees to radians
@@ -211,8 +200,8 @@ export interface SummerWeek {
 export function generateWeeksForRange(startDate: string, endDate: string): SummerWeek[] {
   const weeks: SummerWeek[] = [];
 
-  const start = new Date(startDate + "T00:00:00");
-  const end = new Date(endDate + "T00:00:00");
+  const start = new Date(startDate + 'T00:00:00');
+  const end = new Date(endDate + 'T00:00:00');
 
   // Find the first Monday on or after startDate
   let currentDate = new Date(start);
@@ -342,12 +331,7 @@ function formatISODate(date: Date): string {
  * @param end2 - End date of second range (YYYY-MM-DD)
  * @returns True if the ranges overlap
  */
-export function doDateRangesOverlap(
-  start1: string,
-  end1: string,
-  start2: string,
-  end2: string
-): boolean {
+export function doDateRangesOverlap(start1: string, end1: string, start2: string, end2: string): boolean {
   // Two ranges [s1, e1] and [s2, e2] overlap if:
   // s1 <= e2 AND s2 <= e1
   return start1 <= end2 && start2 <= end1;
@@ -366,7 +350,7 @@ export function countOverlappingWeekdays(
   rangeStart: string,
   rangeEnd: string,
   weekStart: string,
-  weekEnd: string
+  weekEnd: string,
 ): number {
   if (!doDateRangesOverlap(rangeStart, rangeEnd, weekStart, weekEnd)) {
     return 0;

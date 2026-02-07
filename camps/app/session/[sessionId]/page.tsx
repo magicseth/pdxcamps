@@ -11,7 +11,22 @@ import { BottomNav } from '../../../components/shared/BottomNav';
 import { useMarket } from '../../../hooks/useMarket';
 
 import { GRADE_LABELS } from '../../../lib/constants';
-import { CalendarIcon, CalendarPlusIcon, ClockIcon, ChevronRightIcon, PlusCircleIcon, UsersIcon, LocationIcon, MapIcon, HeartIcon, ExternalLinkIcon, CheckCircleIcon, CloseIcon, SettingsIcon, ShareIcon } from '../../../components/shared/icons';
+import {
+  CalendarIcon,
+  CalendarPlusIcon,
+  ClockIcon,
+  ChevronRightIcon,
+  PlusCircleIcon,
+  UsersIcon,
+  LocationIcon,
+  MapIcon,
+  HeartIcon,
+  ExternalLinkIcon,
+  CheckCircleIcon,
+  CloseIcon,
+  SettingsIcon,
+  ShareIcon,
+} from '../../../components/shared/icons';
 
 export default function SessionDetailPage() {
   const params = useParams();
@@ -26,7 +41,7 @@ export default function SessionDetailPage() {
   // Fetch session data with related entities
   const session = useQuery(
     api.sessions.queries.getSession,
-    sessionId ? { sessionId: sessionId as Id<'sessions'> } : 'skip'
+    sessionId ? { sessionId: sessionId as Id<'sessions'> } : 'skip',
   );
 
   // Fetch children for the current family
@@ -35,24 +50,20 @@ export default function SessionDetailPage() {
   // Fetch friends attending this session
   const friendsAtSession = useQuery(
     api.social.queries.getFriendsAtSession,
-    sessionId ? { sessionId: sessionId as Id<'sessions'> } : 'skip'
+    sessionId ? { sessionId: sessionId as Id<'sessions'> } : 'skip',
   );
 
   // Fetch other sessions from the same camp
   const otherSessions = useQuery(
     api.sessions.queries.listSessionsByCamp,
-    session?.camp ? { campId: session.camp._id } : 'skip'
+    session?.camp ? { campId: session.camp._id } : 'skip',
   );
 
   // Filter to only active sessions that aren't the current one
   const otherAvailableSessions = useMemo(() => {
     if (!otherSessions || !sessionId) return [];
     return otherSessions
-      .filter((s) =>
-        s._id !== sessionId &&
-        s.status === 'active' &&
-        s.enrolledCount < s.capacity
-      )
+      .filter((s) => s._id !== sessionId && s.status === 'active' && s.enrolledCount < s.capacity)
       .sort((a, b) => a.startDate.localeCompare(b.startDate))
       .slice(0, 3);
   }, [otherSessions, sessionId]);
@@ -112,16 +123,11 @@ export default function SessionDetailPage() {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
-            Session Not Found
-          </h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Session Not Found</h1>
           <p className="text-slate-600 dark:text-slate-400 mb-6">
             We couldn&apos;t find this camp session. It may have been removed or the link is incorrect.
           </p>
-          <Link
-            href="/"
-            className="inline-block bg-primary text-white px-6 py-2 rounded-md hover:bg-primary-dark"
-          >
+          <Link href="/" className="inline-block bg-primary text-white px-6 py-2 rounded-md hover:bg-primary-dark">
             Back to Home
           </Link>
         </div>
@@ -182,12 +188,7 @@ export default function SessionDetailPage() {
     }).format(amount);
   };
 
-  const formatAgeRange = (requirements: {
-    minAge?: number;
-    maxAge?: number;
-    minGrade?: number;
-    maxGrade?: number;
-  }) => {
+  const formatAgeRange = (requirements: { minAge?: number; maxAge?: number; minGrade?: number; maxGrade?: number }) => {
     const parts: string[] = [];
 
     if (requirements.minAge !== undefined || requirements.maxAge !== undefined) {
@@ -324,20 +325,32 @@ export default function SessionDetailPage() {
       <main id="main-content" className="max-w-4xl mx-auto px-4 py-8">
         {/* Success/Error Messages */}
         {saveSuccess && (
-          <div role="status" className="mb-6 p-4 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg flex items-center gap-2">
+          <div
+            role="status"
+            className="mb-6 p-4 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg flex items-center gap-2"
+          >
             <CheckCircleIcon />
             Session saved for later!
           </div>
         )}
         {saveError && (
-          <div role="alert" className="mb-6 p-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg">
+          <div
+            role="alert"
+            className="mb-6 p-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg"
+          >
             {saveError}
           </div>
         )}
 
         {/* Breadcrumb Navigation */}
-        <nav aria-label="Breadcrumb" className="mb-4 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-          <Link href="/" className="hover:text-slate-700 dark:hover:text-slate-300 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+        <nav
+          aria-label="Breadcrumb"
+          className="mb-4 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400"
+        >
+          <Link
+            href="/"
+            className="hover:text-slate-700 dark:hover:text-slate-300 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
             Home
           </Link>
           <ChevronRightIcon className="w-4 h-4" />
@@ -350,7 +363,9 @@ export default function SessionDetailPage() {
           <ChevronRightIcon className="w-4 h-4" />
           {organization && (
             <>
-              <span className="truncate max-w-[150px]" title={organization.name}>{organization.name}</span>
+              <span className="truncate max-w-[150px]" title={organization.name}>
+                {organization.name}
+              </span>
               <ChevronRightIcon className="w-4 h-4" />
             </>
           )}
@@ -378,7 +393,12 @@ export default function SessionDetailPage() {
                 <div className="flex items-end gap-4">
                   {organization?.resolvedLogoUrl && (
                     <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-lg shadow-lg p-2 flex items-center justify-center flex-shrink-0">
-                      <OrgLogo url={organization.resolvedLogoUrl} name={organization.name} size="lg" className="w-full h-full" />
+                      <OrgLogo
+                        url={organization.resolvedLogoUrl}
+                        name={organization.name}
+                        size="lg"
+                        className="w-full h-full"
+                      />
                     </div>
                   )}
                   <div className="flex-1">
@@ -407,13 +427,16 @@ export default function SessionDetailPage() {
                 <div className="flex items-end gap-4">
                   {organization?.resolvedLogoUrl && (
                     <div className="w-14 h-14 bg-white dark:bg-slate-800 rounded-lg shadow-lg p-2 flex items-center justify-center flex-shrink-0">
-                      <OrgLogo url={organization.resolvedLogoUrl} name={organization.name} size="lg" className="w-full h-full" />
+                      <OrgLogo
+                        url={organization.resolvedLogoUrl}
+                        name={organization.name}
+                        size="lg"
+                        className="w-full h-full"
+                      />
                     </div>
                   )}
                   <div className="flex-1">
-                    <h1 className="text-2xl md:text-3xl font-bold text-white">
-                      {camp?.name ?? 'Camp Session'}
-                    </h1>
+                    <h1 className="text-2xl md:text-3xl font-bold text-white">{camp?.name ?? 'Camp Session'}</h1>
                     {organization && (
                       <p className="text-lg text-white/90 mt-1">
                         by{' '}
@@ -434,7 +457,9 @@ export default function SessionDetailPage() {
             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
               <div className="flex-1">
                 <div className="mt-2">
-                  <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${sessionStatus.className}`}>
+                  <span
+                    className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${sessionStatus.className}`}
+                  >
                     {sessionStatus.label}
                   </span>
                 </div>
@@ -455,12 +480,8 @@ export default function SessionDetailPage() {
             {/* Description */}
             {camp?.description && (
               <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-                  About This Camp
-                </h2>
-                <p className="text-slate-600 dark:text-slate-400 whitespace-pre-line">
-                  {camp.description}
-                </p>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">About This Camp</h2>
+                <p className="text-slate-600 dark:text-slate-400 whitespace-pre-line">{camp.description}</p>
                 {camp.categories && camp.categories.length > 0 && (
                   <div className="mt-4 flex flex-wrap gap-2">
                     {camp.categories.map((category) => (
@@ -478,9 +499,7 @@ export default function SessionDetailPage() {
 
             {/* Schedule */}
             <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-                Schedule
-              </h2>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Schedule</h2>
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
                   <CalendarIcon className="w-5 h-5 text-slate-400 mt-0.5" />
@@ -506,18 +525,24 @@ export default function SessionDetailPage() {
                   <div className="flex items-start gap-3">
                     <PlusCircleIcon className="w-5 h-5 text-slate-400 mt-0.5" />
                     <div>
-                      <div className="font-medium text-slate-900 dark:text-white">
-                        Extended Care Available
-                      </div>
+                      <div className="font-medium text-slate-900 dark:text-white">Extended Care Available</div>
                       <div className="text-slate-600 dark:text-slate-400">
                         {session.extendedCareDetails.earlyDropOffTime && (
-                          <>Early drop-off: {formatTime(session.extendedCareDetails.earlyDropOffTime)}<br /></>
+                          <>
+                            Early drop-off: {formatTime(session.extendedCareDetails.earlyDropOffTime)}
+                            <br />
+                          </>
                         )}
                         {session.extendedCareDetails.latePickUpTime && (
-                          <>Late pick-up: {formatTime(session.extendedCareDetails.latePickUpTime)}<br /></>
+                          <>
+                            Late pick-up: {formatTime(session.extendedCareDetails.latePickUpTime)}
+                            <br />
+                          </>
                         )}
                         {session.extendedCareDetails.additionalCost !== undefined && (
-                          <>Additional cost: {formatPrice(session.extendedCareDetails.additionalCost, session.currency)}</>
+                          <>
+                            Additional cost: {formatPrice(session.extendedCareDetails.additionalCost, session.currency)}
+                          </>
                         )}
                       </div>
                     </div>
@@ -528,29 +553,21 @@ export default function SessionDetailPage() {
 
             {/* Age Requirements */}
             <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-                Age Requirements
-              </h2>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Age Requirements</h2>
               <div className="flex items-center gap-3">
                 <UsersIcon className="w-5 h-5 text-slate-400" />
-                <span className="text-slate-600 dark:text-slate-400">
-                  {formatAgeRange(session.ageRequirements)}
-                </span>
+                <span className="text-slate-600 dark:text-slate-400">{formatAgeRange(session.ageRequirements)}</span>
               </div>
             </div>
 
             {/* Location */}
             {location && (
               <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-                  Location
-                </h2>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Location</h2>
                 <div className="flex items-start gap-3">
                   <LocationIcon className="w-5 h-5 text-slate-400 mt-0.5" />
                   <div className="flex-1">
-                    <div className="font-medium text-slate-900 dark:text-white">
-                      {location.name}
-                    </div>
+                    <div className="font-medium text-slate-900 dark:text-white">{location.name}</div>
                     {location.address && (
                       <div className="text-slate-600 dark:text-slate-400">
                         {location.address.street}
@@ -589,9 +606,7 @@ export default function SessionDetailPage() {
             {/* Friends Attending */}
             {friendsAtSession && friendsAtSession.length > 0 && (
               <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-                  Friends Attending
-                </h2>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Friends Attending</h2>
                 <div className="space-y-4">
                   {friendsAtSession.map((friend) => (
                     <div key={friend.family._id} className="flex items-start gap-3">
@@ -599,9 +614,7 @@ export default function SessionDetailPage() {
                         {friend.family.displayName[0].toUpperCase()}
                       </div>
                       <div>
-                        <div className="font-medium text-slate-900 dark:text-white">
-                          {friend.family.displayName}
-                        </div>
+                        <div className="font-medium text-slate-900 dark:text-white">{friend.family.displayName}</div>
                         <div className="text-sm text-slate-600 dark:text-slate-400">
                           {friend.children.map((child) => child.firstName).join(', ')}
                         </div>
@@ -617,9 +630,7 @@ export default function SessionDetailPage() {
           <div className="space-y-6">
             {/* Capacity Card */}
             <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-                Availability
-              </h3>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Availability</h3>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-slate-600 dark:text-slate-400">Spots Filled</span>
@@ -760,13 +771,9 @@ END:VCALENDAR`;
             {/* Organization Info */}
             {organization && (
               <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-                  About the Organization
-                </h3>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">About the Organization</h3>
                 <div className="space-y-3">
-                  <div className="font-medium text-slate-900 dark:text-white">
-                    {organization.name}
-                  </div>
+                  <div className="font-medium text-slate-900 dark:text-white">{organization.name}</div>
                   {organization.description && (
                     <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-3">
                       {organization.description}
@@ -784,15 +791,10 @@ END:VCALENDAR`;
                     </a>
                   )}
                   {organization.phone && (
-                    <div className="text-sm text-slate-600 dark:text-slate-400">
-                      Phone: {organization.phone}
-                    </div>
+                    <div className="text-sm text-slate-600 dark:text-slate-400">Phone: {organization.phone}</div>
                   )}
                   {organization.email && (
-                    <a
-                      href={`mailto:${organization.email}`}
-                      className="text-sm text-primary hover:text-primary-dark"
-                    >
+                    <a href={`mailto:${organization.email}`} className="text-sm text-primary hover:text-primary-dark">
                       {organization.email}
                     </a>
                   )}
@@ -803,9 +805,7 @@ END:VCALENDAR`;
             {/* Other Sessions from this Camp */}
             {otherAvailableSessions.length > 0 && (
               <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-                  Other Available Dates
-                </h3>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Other Available Dates</h3>
                 <div className="space-y-3">
                   {otherAvailableSessions.map((otherSession) => {
                     const spotsLeft = otherSession.capacity - otherSession.enrolledCount;
@@ -820,16 +820,25 @@ END:VCALENDAR`;
                             {new Date(otherSession.startDate + 'T00:00:00').toLocaleDateString('en-US', {
                               month: 'short',
                               day: 'numeric',
-                            })} - {new Date(otherSession.endDate + 'T00:00:00').toLocaleDateString('en-US', {
+                            })}{' '}
+                            -{' '}
+                            {new Date(otherSession.endDate + 'T00:00:00').toLocaleDateString('en-US', {
                               month: 'short',
                               day: 'numeric',
                             })}
                           </div>
                           <div className="text-sm text-slate-500 dark:text-slate-400">
-                            {formatPrice(otherSession.price, otherSession.currency)} • {spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} left
+                            {formatPrice(otherSession.price, otherSession.currency)} • {spotsLeft} spot
+                            {spotsLeft !== 1 ? 's' : ''} left
                           </div>
                         </div>
-                        <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <svg
+                          className="w-5 h-5 text-slate-400"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          aria-hidden="true"
+                        >
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                       </Link>
@@ -893,11 +902,14 @@ function RegisterModal({
   const register = useMutation(api.registrations.mutations.register);
 
   // ESC key to close modal
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Escape' && !isSubmitting && !success) {
-      onClose();
-    }
-  }, [onClose, isSubmitting, success]);
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isSubmitting && !success) {
+        onClose();
+      }
+    },
+    [onClose, isSubmitting, success],
+  );
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
@@ -905,11 +917,14 @@ function RegisterModal({
   }, [handleKeyDown]);
 
   // Backdrop click to close
-  const handleBackdropClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget && !isSubmitting && !success) {
-      onClose();
-    }
-  }, [onClose, isSubmitting, success]);
+  const handleBackdropClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (e.target === e.currentTarget && !isSubmitting && !success) {
+        onClose();
+      }
+    },
+    [onClose, isSubmitting, success],
+  );
 
   // Check if child meets age requirements
   const checkAgeEligibility = (birthdate: string): { eligible: boolean; reason?: string } => {
@@ -989,7 +1004,10 @@ function RegisterModal({
         ) : (
           <>
             {error && (
-              <div role="alert" className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm">
+              <div
+                role="alert"
+                className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm"
+              >
                 {error}
               </div>
             )}
@@ -998,13 +1016,8 @@ function RegisterModal({
               <div className="py-8 text-center text-slate-500">Loading children...</div>
             ) : children.length === 0 ? (
               <div className="py-8 text-center">
-                <p className="text-slate-600 dark:text-slate-400 mb-4">
-                  You need to add a child to your family first.
-                </p>
-                <Link
-                  href="/onboarding/children"
-                  className="text-primary hover:text-primary-dark font-medium"
-                >
+                <p className="text-slate-600 dark:text-slate-400 mb-4">You need to add a child to your family first.</p>
+                <Link href="/onboarding/children" className="text-primary hover:text-primary-dark font-medium">
                   Add a child
                 </Link>
               </div>
@@ -1047,13 +1060,9 @@ function RegisterModal({
                             <p className="text-xs text-slate-500 dark:text-slate-400">
                               {calculateDisplayAge(child.birthdate)}
                             </p>
-                            {!eligibility.eligible && (
-                              <p className="text-xs text-red-500 mt-1">{eligibility.reason}</p>
-                            )}
+                            {!eligibility.eligible && <p className="text-xs text-red-500 mt-1">{eligibility.reason}</p>}
                           </div>
-                          {eligibility.eligible && (
-                            <CheckCircleIcon className="w-5 h-5 text-green-500" />
-                          )}
+                          {eligibility.eligible && <CheckCircleIcon className="w-5 h-5 text-green-500" />}
                         </label>
                       );
                     })}
@@ -1110,11 +1119,14 @@ function WaitlistModal({
   const joinWaitlist = useMutation(api.registrations.mutations.joinWaitlist);
 
   // ESC key to close modal
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Escape' && !isSubmitting && !success) {
-      onClose();
-    }
-  }, [onClose, isSubmitting, success]);
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isSubmitting && !success) {
+        onClose();
+      }
+    },
+    [onClose, isSubmitting, success],
+  );
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
@@ -1122,11 +1134,14 @@ function WaitlistModal({
   }, [handleKeyDown]);
 
   // Backdrop click to close
-  const handleBackdropClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget && !isSubmitting && !success) {
-      onClose();
-    }
-  }, [onClose, isSubmitting, success]);
+  const handleBackdropClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (e.target === e.currentTarget && !isSubmitting && !success) {
+        onClose();
+      }
+    },
+    [onClose, isSubmitting, success],
+  );
 
   // Check if child meets age requirements
   const checkAgeEligibility = (birthdate: string): { eligible: boolean; reason?: string } => {
@@ -1199,14 +1214,15 @@ function WaitlistModal({
           <div role="status" className="text-center py-8">
             <CheckCircleIcon className="w-12 h-12 text-green-500 mx-auto mb-2" />
             <p className="text-lg font-medium text-slate-900 dark:text-white">Added to Waitlist!</p>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              You&apos;ll be notified if a spot opens up.
-            </p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">You&apos;ll be notified if a spot opens up.</p>
           </div>
         ) : (
           <>
             {error && (
-              <div role="alert" className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm">
+              <div
+                role="alert"
+                className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm"
+              >
                 {error}
               </div>
             )}
@@ -1219,13 +1235,8 @@ function WaitlistModal({
               <div className="py-8 text-center text-slate-500">Loading children...</div>
             ) : children.length === 0 ? (
               <div className="py-8 text-center">
-                <p className="text-slate-600 dark:text-slate-400 mb-4">
-                  You need to add a child to your family first.
-                </p>
-                <Link
-                  href="/onboarding/children"
-                  className="text-primary hover:text-primary-dark font-medium"
-                >
+                <p className="text-slate-600 dark:text-slate-400 mb-4">You need to add a child to your family first.</p>
+                <Link href="/onboarding/children" className="text-primary hover:text-primary-dark font-medium">
                   Add a child
                 </Link>
               </div>
@@ -1268,13 +1279,9 @@ function WaitlistModal({
                             <p className="text-xs text-slate-500 dark:text-slate-400">
                               {calculateDisplayAge(child.birthdate)}
                             </p>
-                            {!eligibility.eligible && (
-                              <p className="text-xs text-red-500 mt-1">{eligibility.reason}</p>
-                            )}
+                            {!eligibility.eligible && <p className="text-xs text-red-500 mt-1">{eligibility.reason}</p>}
                           </div>
-                          {eligibility.eligible && (
-                            <CheckCircleIcon className="w-5 h-5 text-green-500" />
-                          )}
+                          {eligibility.eligible && <CheckCircleIcon className="w-5 h-5 text-green-500" />}
                         </label>
                       );
                     })}
@@ -1316,7 +1323,6 @@ function calculateDisplayAge(birthdate: string): string {
   }
   return `${age} years old`;
 }
-
 
 // Share button component
 function ShareButton({ title }: { title: string }) {
@@ -1404,4 +1410,3 @@ function ShareButtonLarge({ title }: { title: string }) {
     </button>
   );
 }
-

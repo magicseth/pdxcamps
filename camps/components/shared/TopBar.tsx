@@ -22,15 +22,7 @@ export function TopBar({ title }: TopBarProps) {
     <header className="sticky top-0 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3 z-20">
       <div className="max-w-4xl mx-auto flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
-          <Image
-            src={iconUrl}
-            alt={market.tagline}
-            width={192}
-            height={192}
-            className="h-8 w-8"
-            priority
-            unoptimized
-          />
+          <Image src={iconUrl} alt={market.tagline} width={192} height={192} className="h-8 w-8" priority unoptimized />
           <span className="font-bold text-lg text-slate-900 dark:text-white">{market.tagline}</span>
         </Link>
 
@@ -46,4 +38,3 @@ export function TopBar({ title }: TopBarProps) {
     </header>
   );
 }
-

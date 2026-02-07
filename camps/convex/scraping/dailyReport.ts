@@ -1,4 +1,4 @@
-"use node";
+'use node';
 
 /**
  * Daily Scraper Report
@@ -6,13 +6,13 @@
  * Sends a daily email report with scraping statistics.
  */
 
-import { internalAction } from "../_generated/server";
-import { internal } from "../_generated/api";
-import { resend } from "../email";
+import { internalAction } from '../_generated/server';
+import { internal } from '../_generated/api';
+import { resend } from '../email';
 
-const REPORT_EMAIL = "seth@magicseth.com";
-const FROM_EMAIL = "hello@pdxcamps.com";
-const FROM_NAME = "PDX Camps";
+const REPORT_EMAIL = 'seth@magicseth.com';
+const FROM_EMAIL = 'hello@pdxcamps.com';
+const FROM_NAME = 'PDX Camps';
 
 /**
  * Send daily scraper report email.
@@ -23,27 +23,21 @@ export const sendDailyReport = internalAction({
   handler: async (ctx): Promise<{ success: boolean; error?: string }> => {
     try {
       // Get stats from the last 24 hours
-      const stats = await ctx.runQuery(
-        internal.scraping.dailyReportQueries.getDailyStats
-      );
+      const stats = await ctx.runQuery(internal.scraping.dailyReportQueries.getDailyStats);
 
       // Get automation metrics
-      const metrics = await ctx.runQuery(
-        internal.scraping.scraperAutomation.getAutomationMetrics
-      );
+      const metrics = await ctx.runQuery(internal.scraping.scraperAutomation.getAutomationMetrics);
 
       // Get recent alerts
-      const alerts = await ctx.runQuery(
-        internal.scraping.dailyReportQueries.getRecentAlerts
-      );
+      const alerts = await ctx.runQuery(internal.scraping.dailyReportQueries.getRecentAlerts);
 
       // Format the date
       const today = new Date();
-      const dateStr = today.toLocaleDateString("en-US", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
+      const dateStr = today.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
       });
 
       // Build the email
@@ -63,7 +57,7 @@ export const sendDailyReport = internalAction({
               </tr>
               <tr>
                 <td style="padding: 8px 0; border-bottom: 1px solid #eee;">Jobs Failed</td>
-                <td style="padding: 8px 0; border-bottom: 1px solid #eee; text-align: right; font-weight: bold; color: ${stats.jobsFailed > 0 ? "#dc2626" : "#16a34a"};">${stats.jobsFailed}</td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #eee; text-align: right; font-weight: bold; color: ${stats.jobsFailed > 0 ? '#dc2626' : '#16a34a'};">${stats.jobsFailed}</td>
               </tr>
               <tr>
                 <td style="padding: 8px 0; border-bottom: 1px solid #eee;">Sessions Found</td>
@@ -93,11 +87,11 @@ export const sendDailyReport = internalAction({
               </tr>
               <tr>
                 <td style="padding: 8px 0; border-bottom: 1px solid #eee;">Degraded Scrapers</td>
-                <td style="padding: 8px 0; border-bottom: 1px solid #eee; text-align: right; font-weight: bold; color: ${metrics.health.degraded > 0 ? "#f59e0b" : "#16a34a"};">${metrics.health.degraded}</td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #eee; text-align: right; font-weight: bold; color: ${metrics.health.degraded > 0 ? '#f59e0b' : '#16a34a'};">${metrics.health.degraded}</td>
               </tr>
               <tr>
                 <td style="padding: 8px 0; border-bottom: 1px solid #eee;">Failing Scrapers</td>
-                <td style="padding: 8px 0; border-bottom: 1px solid #eee; text-align: right; font-weight: bold; color: ${metrics.health.failing > 0 ? "#dc2626" : "#16a34a"};">${metrics.health.failing}</td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #eee; text-align: right; font-weight: bold; color: ${metrics.health.failing > 0 ? '#dc2626' : '#16a34a'};">${metrics.health.failing}</td>
               </tr>
               <tr>
                 <td style="padding: 8px 0; border-bottom: 1px solid #eee;">Sources Without Scraper</td>
@@ -110,24 +104,33 @@ export const sendDailyReport = internalAction({
             </table>
           </div>
 
-          ${alerts.length > 0 ? `
+          ${
+            alerts.length > 0
+              ? `
           <div style="background: #fef2f2; border-radius: 8px; padding: 16px; margin: 20px 0;">
             <h2 style="color: #dc2626; font-size: 18px; margin-top: 0;">⚠️ Recent Alerts (${alerts.length})</h2>
             <ul style="margin: 0; padding-left: 20px;">
-              ${alerts.slice(0, 5).map((alert: { message: string; severity: string }) => `
-                <li style="padding: 4px 0; color: ${alert.severity === "error" ? "#dc2626" : "#f59e0b"};">
+              ${alerts
+                .slice(0, 5)
+                .map(
+                  (alert: { message: string; severity: string }) => `
+                <li style="padding: 4px 0; color: ${alert.severity === 'error' ? '#dc2626' : '#f59e0b'};">
                   ${alert.message}
                 </li>
-              `).join("")}
+              `,
+                )
+                .join('')}
             </ul>
-            ${alerts.length > 5 ? `<p style="color: #666; font-size: 14px; margin-bottom: 0;">...and ${alerts.length - 5} more</p>` : ""}
+            ${alerts.length > 5 ? `<p style="color: #666; font-size: 14px; margin-bottom: 0;">...and ${alerts.length - 5} more</p>` : ''}
           </div>
-          ` : `
+          `
+              : `
           <div style="background: #f0fdf4; border-radius: 8px; padding: 16px; margin: 20px 0;">
             <h2 style="color: #16a34a; font-size: 18px; margin-top: 0;">✅ No Recent Alerts</h2>
             <p style="margin: 0; color: #666;">All systems operating normally.</p>
           </div>
-          `}
+          `
+          }
 
           <p style="color: #666; font-size: 14px; margin-top: 32px; border-top: 1px solid #eee; padding-top: 16px;">
             This is an automated report from PDX Camps scraper infrastructure.<br/>
@@ -154,9 +157,16 @@ Daily Scraper Report - ${dateStr}
 - Sources Without Scraper: ${metrics.sources.withoutScraper}
 - Dev Requests Pending: ${metrics.devRequests.pending}
 
-${alerts.length > 0 ? `⚠️ RECENT ALERTS (${alerts.length})
-${alerts.slice(0, 5).map((a: { message: string }) => `- ${a.message}`).join("\n")}
-${alerts.length > 5 ? `...and ${alerts.length - 5} more` : ""}` : "✅ No recent alerts - all systems operating normally."}
+${
+  alerts.length > 0
+    ? `⚠️ RECENT ALERTS (${alerts.length})
+${alerts
+  .slice(0, 5)
+  .map((a: { message: string }) => `- ${a.message}`)
+  .join('\n')}
+${alerts.length > 5 ? `...and ${alerts.length - 5} more` : ''}`
+    : '✅ No recent alerts - all systems operating normally.'
+}
 
 ---
 Automated report from PDX Camps scraper infrastructure.
@@ -172,10 +182,10 @@ Automated report from PDX Camps scraper infrastructure.
 
       return { success: true };
     } catch (error) {
-      console.error("Failed to send daily report:", error);
+      console.error('Failed to send daily report:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   },

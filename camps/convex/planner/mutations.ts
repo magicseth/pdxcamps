@@ -1,16 +1,16 @@
-import { mutation } from "../_generated/server";
-import { v } from "convex/values";
-import { requireFamily } from "../lib/auth";
+import { mutation } from '../_generated/server';
+import { v } from 'convex/values';
+import { requireFamily } from '../lib/auth';
 
 /**
  * Event type validator
  */
 const eventTypeValidator = v.union(
-  v.literal("vacation"),
-  v.literal("family_visit"),
-  v.literal("day_camp"),
-  v.literal("summer_school"),
-  v.literal("other")
+  v.literal('vacation'),
+  v.literal('family_visit'),
+  v.literal('day_camp'),
+  v.literal('summer_school'),
+  v.literal('other'),
 );
 
 /**
@@ -18,7 +18,7 @@ const eventTypeValidator = v.union(
  */
 export const createFamilyEvent = mutation({
   args: {
-    childIds: v.array(v.id("children")),
+    childIds: v.array(v.id('children')),
     title: v.string(),
     description: v.optional(v.string()),
     startDate: v.string(),
@@ -32,26 +32,24 @@ export const createFamilyEvent = mutation({
     const family = await requireFamily(ctx);
 
     // Validate that all children belong to this family
-    const children = await Promise.all(
-      args.childIds.map((id) => ctx.db.get(id))
-    );
+    const children = await Promise.all(args.childIds.map((id) => ctx.db.get(id)));
 
     for (const child of children) {
       if (!child) {
-        throw new Error("Child not found");
+        throw new Error('Child not found');
       }
       if (child.familyId !== family._id) {
-        throw new Error("Child does not belong to this family");
+        throw new Error('Child does not belong to this family');
       }
     }
 
     // Validate dates
     if (args.startDate > args.endDate) {
-      throw new Error("Start date must be before or equal to end date");
+      throw new Error('Start date must be before or equal to end date');
     }
 
     // Create the event
-    const eventId = await ctx.db.insert("familyEvents", {
+    const eventId = await ctx.db.insert('familyEvents', {
       familyId: family._id,
       childIds: args.childIds,
       title: args.title,
@@ -74,8 +72,8 @@ export const createFamilyEvent = mutation({
  */
 export const updateFamilyEvent = mutation({
   args: {
-    eventId: v.id("familyEvents"),
-    childIds: v.optional(v.array(v.id("children"))),
+    eventId: v.id('familyEvents'),
+    childIds: v.optional(v.array(v.id('children'))),
     title: v.optional(v.string()),
     description: v.optional(v.string()),
     startDate: v.optional(v.string()),
@@ -91,26 +89,24 @@ export const updateFamilyEvent = mutation({
     // Get the existing event
     const event = await ctx.db.get(args.eventId);
     if (!event) {
-      throw new Error("Event not found");
+      throw new Error('Event not found');
     }
 
     // Verify the event belongs to this family
     if (event.familyId !== family._id) {
-      throw new Error("Event does not belong to this family");
+      throw new Error('Event does not belong to this family');
     }
 
     // If updating children, validate they belong to this family
     if (args.childIds) {
-      const children = await Promise.all(
-        args.childIds.map((id) => ctx.db.get(id))
-      );
+      const children = await Promise.all(args.childIds.map((id) => ctx.db.get(id)));
 
       for (const child of children) {
         if (!child) {
-          throw new Error("Child not found");
+          throw new Error('Child not found');
         }
         if (child.familyId !== family._id) {
-          throw new Error("Child does not belong to this family");
+          throw new Error('Child does not belong to this family');
         }
       }
     }
@@ -119,7 +115,7 @@ export const updateFamilyEvent = mutation({
     const startDate = args.startDate ?? event.startDate;
     const endDate = args.endDate ?? event.endDate;
     if (startDate > endDate) {
-      throw new Error("Start date must be before or equal to end date");
+      throw new Error('Start date must be before or equal to end date');
     }
 
     // Build update object
@@ -145,7 +141,7 @@ export const updateFamilyEvent = mutation({
  */
 export const deleteFamilyEvent = mutation({
   args: {
-    eventId: v.id("familyEvents"),
+    eventId: v.id('familyEvents'),
   },
   handler: async (ctx, args) => {
     const family = await requireFamily(ctx);
@@ -153,12 +149,12 @@ export const deleteFamilyEvent = mutation({
     // Get the existing event
     const event = await ctx.db.get(args.eventId);
     if (!event) {
-      throw new Error("Event not found");
+      throw new Error('Event not found');
     }
 
     // Verify the event belongs to this family
     if (event.familyId !== family._id) {
-      throw new Error("Event does not belong to this family");
+      throw new Error('Event does not belong to this family');
     }
 
     // Soft delete

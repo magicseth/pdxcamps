@@ -1,34 +1,25 @@
-import { mutation } from "../_generated/server";
-import { v } from "convex/values";
-import { getBuiltInScraperForUrl } from "./scraperCodeValidation";
+import { mutation } from '../_generated/server';
+import { v } from 'convex/values';
+import { getBuiltInScraperForUrl } from './scraperCodeValidation';
 
 // Validators for scraper config matching schema.ts
 const scraperConfigValidator = v.object({
   version: v.number(),
   generatedAt: v.number(),
-  generatedBy: v.union(v.literal("claude"), v.literal("manual")),
+  generatedBy: v.union(v.literal('claude'), v.literal('manual')),
 
   entryPoints: v.array(
     v.object({
       url: v.string(),
-      type: v.union(
-        v.literal("session_list"),
-        v.literal("calendar"),
-        v.literal("program_page")
-      ),
-    })
+      type: v.union(v.literal('session_list'), v.literal('calendar'), v.literal('program_page')),
+    }),
   ),
 
   pagination: v.optional(
     v.object({
-      type: v.union(
-        v.literal("next_button"),
-        v.literal("load_more"),
-        v.literal("page_numbers"),
-        v.literal("none")
-      ),
+      type: v.union(v.literal('next_button'), v.literal('load_more'), v.literal('page_numbers'), v.literal('none')),
       selector: v.optional(v.string()),
-    })
+    }),
   ),
 
   sessionExtraction: v.object({
@@ -37,14 +28,12 @@ const scraperConfigValidator = v.object({
       name: v.object({ selector: v.string() }),
       dates: v.object({ selector: v.string(), format: v.string() }),
       price: v.optional(v.object({ selector: v.string() })),
-      ageRange: v.optional(
-        v.object({ selector: v.string(), pattern: v.string() })
-      ),
+      ageRange: v.optional(v.object({ selector: v.string(), pattern: v.string() })),
       status: v.optional(
         v.object({
           selector: v.string(),
           soldOutIndicators: v.array(v.string()),
-        })
+        }),
       ),
       registrationUrl: v.optional(v.object({ selector: v.string() })),
     }),
@@ -61,8 +50,8 @@ export const createScrapeSource = mutation({
   args: {
     name: v.string(),
     url: v.string(),
-    cityId: v.id("cities"), // Required: market this source belongs to
-    organizationId: v.optional(v.id("organizations")),
+    cityId: v.id('cities'), // Required: market this source belongs to
+    organizationId: v.optional(v.id('organizations')),
     scraperConfig: scraperConfigValidator,
     scrapeFrequencyHours: v.number(),
   },
@@ -71,18 +60,18 @@ export const createScrapeSource = mutation({
     if (args.organizationId) {
       const org = await ctx.db.get(args.organizationId);
       if (!org) {
-        throw new Error("Organization not found");
+        throw new Error('Organization not found');
       }
     }
 
     // Validate scrape frequency
     if (args.scrapeFrequencyHours < 1) {
-      throw new Error("Scrape frequency must be at least 1 hour");
+      throw new Error('Scrape frequency must be at least 1 hour');
     }
 
     const now = Date.now();
 
-    const sourceId = await ctx.db.insert("scrapeSources", {
+    const sourceId = await ctx.db.insert('scrapeSources', {
       name: args.name,
       url: args.url,
       cityId: args.cityId,
@@ -104,13 +93,13 @@ export const createScrapeSource = mutation({
     });
 
     // Create initial version history
-    await ctx.db.insert("scraperVersions", {
+    await ctx.db.insert('scraperVersions', {
       scrapeSourceId: sourceId,
       version: args.scraperConfig.version,
       config: JSON.stringify(args.scraperConfig),
       createdAt: now,
       createdBy: args.scraperConfig.generatedBy,
-      changeReason: "Initial configuration",
+      changeReason: 'Initial configuration',
       isActive: true,
     });
 
@@ -128,25 +117,25 @@ export const createScrapeSourceSimple = mutation({
   args: {
     name: v.string(),
     url: v.string(),
-    organizationId: v.id("organizations"),
+    organizationId: v.id('organizations'),
   },
   handler: async (ctx, args) => {
     // Validate organization exists
     const org = await ctx.db.get(args.organizationId);
     if (!org) {
-      throw new Error("Organization not found");
+      throw new Error('Organization not found');
     }
 
     // Get cityId from organization
     if (!org.cityIds || org.cityIds.length === 0) {
-      throw new Error("Organization has no city assigned");
+      throw new Error('Organization has no city assigned');
     }
     const cityId = org.cityIds[0];
 
     // Check if source already exists for this URL
     const existing = await ctx.db
-      .query("scrapeSources")
-      .withIndex("by_url", (q) => q.eq("url", args.url))
+      .query('scrapeSources')
+      .withIndex('by_url', (q) => q.eq('url', args.url))
       .first();
 
     if (existing) {
@@ -156,7 +145,7 @@ export const createScrapeSourceSimple = mutation({
     // Auto-detect built-in scraper based on domain
     const builtInScraper = getBuiltInScraperForUrl(args.url);
 
-    const sourceId = await ctx.db.insert("scrapeSources", {
+    const sourceId = await ctx.db.insert('scrapeSources', {
       name: args.name,
       url: args.url,
       cityId,
@@ -184,19 +173,19 @@ export const createScrapeSourceSimple = mutation({
     if (!builtInScraper) {
       // Check if dev request already exists for this URL
       const existingDevRequest = await ctx.db
-        .query("scraperDevelopmentRequests")
-        .withIndex("by_source_url", (q) => q.eq("sourceUrl", args.url))
+        .query('scraperDevelopmentRequests')
+        .withIndex('by_source_url', (q) => q.eq('sourceUrl', args.url))
         .first();
 
       if (!existingDevRequest) {
-        await ctx.db.insert("scraperDevelopmentRequests", {
+        await ctx.db.insert('scraperDevelopmentRequests', {
           sourceName: args.name,
           sourceUrl: args.url,
           cityId,
           sourceId,
-          requestedBy: "auto-source-creation",
+          requestedBy: 'auto-source-creation',
           requestedAt: Date.now(),
-          status: "pending",
+          status: 'pending',
           scraperVersion: 0,
         });
       }
@@ -212,14 +201,14 @@ export const createScrapeSourceSimple = mutation({
  */
 export const updateSourceDetails = mutation({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
     name: v.optional(v.string()),
     url: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const source = await ctx.db.get(args.sourceId);
     if (!source) {
-      throw new Error("Scrape source not found");
+      throw new Error('Scrape source not found');
     }
 
     const updates: Record<string, string> = {};
@@ -243,13 +232,13 @@ export const updateSourceDetails = mutation({
  */
 export const updateSourceUrl = mutation({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
     url: v.string(),
   },
   handler: async (ctx, args) => {
     const source = await ctx.db.get(args.sourceId);
     if (!source) {
-      throw new Error("Scrape source not found");
+      throw new Error('Scrape source not found');
     }
 
     await ctx.db.patch(args.sourceId, {
@@ -265,17 +254,17 @@ export const updateSourceUrl = mutation({
  */
 export const activateScrapeSource = mutation({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
   },
   handler: async (ctx, args) => {
     const source = await ctx.db.get(args.sourceId);
     if (!source) {
-      throw new Error("Scrape source not found");
+      throw new Error('Scrape source not found');
     }
 
     // Require either scraperModule or scraperCode
     if (!source.scraperModule && !source.scraperCode) {
-      throw new Error("Cannot activate source without scraper code or module");
+      throw new Error('Cannot activate source without scraper code or module');
     }
 
     await ctx.db.patch(args.sourceId, {
@@ -292,13 +281,13 @@ export const activateScrapeSource = mutation({
  */
 export const toggleSourceActive = mutation({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
     isActive: v.boolean(),
   },
   handler: async (ctx, args) => {
     const source = await ctx.db.get(args.sourceId);
     if (!source) {
-      throw new Error("Scrape source not found");
+      throw new Error('Scrape source not found');
     }
 
     await ctx.db.patch(args.sourceId, {
@@ -307,11 +296,11 @@ export const toggleSourceActive = mutation({
 
     // Create alert when disabling a source
     if (!args.isActive && source.isActive) {
-      await ctx.db.insert("scraperAlerts", {
+      await ctx.db.insert('scraperAlerts', {
         sourceId: args.sourceId,
-        alertType: "scraper_disabled",
+        alertType: 'scraper_disabled',
         message: `Scraper "${source.name}" has been disabled.`,
-        severity: "info",
+        severity: 'info',
         createdAt: Date.now(),
         acknowledgedAt: undefined,
         acknowledgedBy: undefined,
@@ -327,7 +316,7 @@ export const toggleSourceActive = mutation({
  */
 export const setSourceActive = mutation({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
     isActive: v.boolean(),
   },
   handler: async (ctx, args) => {
@@ -343,21 +332,21 @@ export const setSourceActive = mutation({
  */
 export const markSourceClosed = mutation({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
     reason: v.string(),
     closedBy: v.optional(v.string()), // "daemon" or admin identifier
   },
   handler: async (ctx, args) => {
     const source = await ctx.db.get(args.sourceId);
     if (!source) {
-      throw new Error("Source not found");
+      throw new Error('Source not found');
     }
 
     await ctx.db.patch(args.sourceId, {
       isActive: false,
       closureReason: args.reason,
       closedAt: Date.now(),
-      closedBy: args.closedBy ?? "daemon",
+      closedBy: args.closedBy ?? 'daemon',
     });
 
     return { closed: true, sourceId: args.sourceId };
@@ -369,12 +358,12 @@ export const markSourceClosed = mutation({
  */
 export const reopenSource = mutation({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
   },
   handler: async (ctx, args) => {
     const source = await ctx.db.get(args.sourceId);
     if (!source) {
-      throw new Error("Source not found");
+      throw new Error('Source not found');
     }
 
     await ctx.db.patch(args.sourceId, {
@@ -393,14 +382,14 @@ export const reopenSource = mutation({
  */
 export const deleteSourceWithData = mutation({
   args: {
-    sourceId: v.id("scrapeSources"),
+    sourceId: v.id('scrapeSources'),
     deleteJobs: v.optional(v.boolean()), // Default: true
     deleteSessions: v.optional(v.boolean()), // Default: false (dangerous)
   },
   handler: async (ctx, args) => {
     const source = await ctx.db.get(args.sourceId);
     if (!source) {
-      throw new Error("Scrape source not found");
+      throw new Error('Scrape source not found');
     }
 
     const deleteJobs = args.deleteJobs !== false; // Default true
@@ -409,15 +398,15 @@ export const deleteSourceWithData = mutation({
     // Delete associated scrape jobs
     if (deleteJobs) {
       const jobs = await ctx.db
-        .query("scrapeJobs")
-        .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+        .query('scrapeJobs')
+        .withIndex('by_source', (q) => q.eq('sourceId', args.sourceId))
         .collect();
 
       for (const job of jobs) {
         // Delete raw data for each job
         const rawData = await ctx.db
-          .query("scrapeRawData")
-          .withIndex("by_job", (q) => q.eq("jobId", job._id))
+          .query('scrapeRawData')
+          .withIndex('by_job', (q) => q.eq('jobId', job._id))
           .collect();
         for (const raw of rawData) {
           await ctx.db.delete(raw._id);
@@ -428,8 +417,8 @@ export const deleteSourceWithData = mutation({
 
     // Delete pending sessions
     const pendingSessions = await ctx.db
-      .query("pendingSessions")
-      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .query('pendingSessions')
+      .withIndex('by_source', (q) => q.eq('sourceId', args.sourceId))
       .collect();
     for (const pending of pendingSessions) {
       await ctx.db.delete(pending._id);
@@ -437,8 +426,8 @@ export const deleteSourceWithData = mutation({
 
     // Delete alerts for this source
     const alerts = await ctx.db
-      .query("scraperAlerts")
-      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .query('scraperAlerts')
+      .withIndex('by_source', (q) => q.eq('sourceId', args.sourceId))
       .collect();
     for (const alert of alerts) {
       await ctx.db.delete(alert._id);
@@ -446,8 +435,8 @@ export const deleteSourceWithData = mutation({
 
     // Delete scraper versions
     const versions = await ctx.db
-      .query("scraperVersions")
-      .withIndex("by_source", (q) => q.eq("scrapeSourceId", args.sourceId))
+      .query('scraperVersions')
+      .withIndex('by_source', (q) => q.eq('scrapeSourceId', args.sourceId))
       .collect();
     for (const version of versions) {
       await ctx.db.delete(version._id);
@@ -455,8 +444,8 @@ export const deleteSourceWithData = mutation({
 
     // Delete scrape changes
     const changes = await ctx.db
-      .query("scrapeChanges")
-      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .query('scrapeChanges')
+      .withIndex('by_source', (q) => q.eq('sourceId', args.sourceId))
       .collect();
     for (const change of changes) {
       await ctx.db.delete(change._id);
@@ -465,8 +454,8 @@ export const deleteSourceWithData = mutation({
     // Optionally delete sessions (dangerous!)
     if (deleteSessions) {
       const sessions = await ctx.db
-        .query("sessions")
-        .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+        .query('sessions')
+        .withIndex('by_source', (q) => q.eq('sourceId', args.sourceId))
         .collect();
       for (const session of sessions) {
         await ctx.db.delete(session._id);
@@ -474,8 +463,8 @@ export const deleteSourceWithData = mutation({
     } else {
       // Just unlink sessions from this source
       const sessions = await ctx.db
-        .query("sessions")
-        .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+        .query('sessions')
+        .withIndex('by_source', (q) => q.eq('sourceId', args.sourceId))
         .collect();
       for (const session of sessions) {
         await ctx.db.patch(session._id, { sourceId: undefined });

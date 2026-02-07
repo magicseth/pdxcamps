@@ -5,11 +5,11 @@
  * Porkbun allows 1 domain check per 10 seconds, enforced via rate limiter.
  */
 
-import { WorkflowManager } from "@convex-dev/workflow";
-import { RateLimiter, SECOND } from "@convex-dev/rate-limiter";
-import { components, internal } from "../_generated/api";
-import { v } from "convex/values";
-import { mutation, internalMutation, internalAction, query } from "../_generated/server";
+import { WorkflowManager } from '@convex-dev/workflow';
+import { RateLimiter, SECOND } from '@convex-dev/rate-limiter';
+import { components, internal } from '../_generated/api';
+import { v } from 'convex/values';
+import { mutation, internalMutation, internalAction, query } from '../_generated/server';
 
 // Create workflow manager
 export const workflow = new WorkflowManager(components.workflow, {
@@ -22,7 +22,7 @@ export const workflow = new WorkflowManager(components.workflow, {
 // 1 request per 10 seconds (we use 11 to be safe)
 export const rateLimiter = new RateLimiter(components.rateLimiter, {
   porkbunDomainCheck: {
-    kind: "fixed window",
+    kind: 'fixed window',
     rate: 1,
     period: 11 * SECOND,
   },
@@ -48,7 +48,10 @@ export const checkDomainsWorkflow = workflow.define({
     success: v.boolean(),
     results: v.array(domainResultValidator),
   }),
-  handler: async (step, args): Promise<{
+  handler: async (
+    step,
+    args,
+  ): Promise<{
     success: boolean;
     results: Array<{
       domain: string;
@@ -68,16 +71,13 @@ export const checkDomainsWorkflow = workflow.define({
       const domain = args.domains[i];
 
       // Consume rate limit token (will throw and retry if rate limited)
-      await step.runMutation(
-        internal.expansion.domainWorkflow.consumeRateLimit,
-        {}
-      );
+      await step.runMutation(internal.expansion.domainWorkflow.consumeRateLimit, {});
 
       // Check this domain
       const result = await step.runAction(
         internal.expansion.domainWorkflow.checkSingleDomain,
         { domain },
-        { retry: true }
+        { retry: true },
       );
 
       results.push(result);
@@ -113,7 +113,7 @@ export const checkDomainsWorkflow = workflow.define({
 export const consumeRateLimit = internalMutation({
   args: {},
   handler: async (ctx) => {
-    const status = await rateLimiter.limit(ctx, "porkbunDomainCheck", {
+    const status = await rateLimiter.limit(ctx, 'porkbunDomainCheck', {
       throws: false,
     });
     if (!status.ok) {
@@ -130,7 +130,10 @@ export const consumeRateLimit = internalMutation({
 export const checkSingleDomain = internalAction({
   args: { domain: v.string() },
   returns: domainResultValidator,
-  handler: async (_, args): Promise<{
+  handler: async (
+    _,
+    args,
+  ): Promise<{
     domain: string;
     available: boolean;
     price?: string;
@@ -143,26 +146,23 @@ export const checkSingleDomain = internalAction({
       return {
         domain: args.domain,
         available: false,
-        error: "Porkbun API credentials not configured",
+        error: 'Porkbun API credentials not configured',
       };
     }
 
     try {
-      const response = await fetch(
-        `https://api.porkbun.com/api/json/v3/domain/checkDomain/${args.domain}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            apikey: apiKey,
-            secretapikey: secretKey,
-          }),
-        }
-      );
+      const response = await fetch(`https://api.porkbun.com/api/json/v3/domain/checkDomain/${args.domain}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apikey: apiKey,
+          secretapikey: secretKey,
+        }),
+      });
 
       const data = await response.json();
 
-      if (!response.ok || data.status === "ERROR") {
+      if (!response.ok || data.status === 'ERROR') {
         return {
           domain: args.domain,
           available: false,
@@ -170,7 +170,7 @@ export const checkSingleDomain = internalAction({
         };
       }
 
-      const isAvailable = data.status === "SUCCESS" && data.response?.avail === "yes";
+      const isAvailable = data.status === 'SUCCESS' && data.response?.avail === 'yes';
       return {
         domain: args.domain,
         available: isAvailable,
@@ -180,7 +180,7 @@ export const checkSingleDomain = internalAction({
       return {
         domain: args.domain,
         available: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   },
@@ -201,8 +201,8 @@ export const saveDomainResult = internalMutation({
   },
   handler: async (ctx, args) => {
     const market = await ctx.db
-      .query("expansionMarkets")
-      .withIndex("by_market_key", (q) => q.eq("marketKey", args.marketKey))
+      .query('expansionMarkets')
+      .withIndex('by_market_key', (q) => q.eq('marketKey', args.marketKey))
       .unique();
 
     if (!market) return;
@@ -212,7 +212,9 @@ export const saveDomainResult = internalMutation({
       updatedAt: Date.now(),
     });
 
-    console.log(`Domain check progress: ${args.index + 1}/${args.total} - ${args.domain}: ${args.available ? 'available' : 'taken'}`);
+    console.log(
+      `Domain check progress: ${args.index + 1}/${args.total} - ${args.domain}: ${args.available ? 'available' : 'taken'}`,
+    );
   },
 });
 
@@ -226,8 +228,8 @@ export const markWorkflowComplete = internalMutation({
   },
   handler: async (ctx, args) => {
     const market = await ctx.db
-      .query("expansionMarkets")
-      .withIndex("by_market_key", (q) => q.eq("marketKey", args.marketKey))
+      .query('expansionMarkets')
+      .withIndex('by_market_key', (q) => q.eq('marketKey', args.marketKey))
       .unique();
 
     if (market) {
@@ -252,38 +254,34 @@ export const startDomainCheck = mutation({
   handler: async (ctx, args): Promise<string> => {
     // Initialize market if not exists
     const existing = await ctx.db
-      .query("expansionMarkets")
-      .withIndex("by_market_key", (q) => q.eq("marketKey", args.marketKey))
+      .query('expansionMarkets')
+      .withIndex('by_market_key', (q) => q.eq('marketKey', args.marketKey))
       .unique();
 
     if (!existing) {
       // Auto-initialize the market
-      const { getExpansionMarketByKey } = await import("../../lib/expansionMarkets");
+      const { getExpansionMarketByKey } = await import('../../lib/expansionMarkets');
       const marketData = getExpansionMarketByKey(args.marketKey);
       if (!marketData) {
         throw new Error(`Unknown market key: ${args.marketKey}`);
       }
 
-      await ctx.db.insert("expansionMarkets", {
+      await ctx.db.insert('expansionMarkets', {
         marketKey: args.marketKey,
         tier: marketData.tier,
         domainPurchased: false,
         dnsConfigured: false,
-        status: "not_started",
+        status: 'not_started',
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
     }
 
     // Start the workflow
-    const workflowId = await workflow.start(
-      ctx,
-      internal.expansion.domainWorkflow.checkDomainsWorkflow,
-      {
-        marketKey: args.marketKey,
-        domains: args.domains,
-      }
-    );
+    const workflowId = await workflow.start(ctx, internal.expansion.domainWorkflow.checkDomainsWorkflow, {
+      marketKey: args.marketKey,
+      domains: args.domains,
+    });
 
     return workflowId as string;
   },

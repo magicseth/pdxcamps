@@ -2,8 +2,8 @@
  * Internal mutations for icon generation
  */
 
-import { internalMutation } from "../_generated/server";
-import { v } from "convex/values";
+import { internalMutation } from '../_generated/server';
+import { v } from 'convex/values';
 
 /**
  * Store generated icon options
@@ -16,8 +16,8 @@ export const storeIconOptions = internalMutation({
   },
   handler: async (ctx, args) => {
     const market = await ctx.db
-      .query("expansionMarkets")
-      .withIndex("by_market_key", (q) => q.eq("marketKey", args.marketKey))
+      .query('expansionMarkets')
+      .withIndex('by_market_key', (q) => q.eq('marketKey', args.marketKey))
       .unique();
 
     if (!market) {
@@ -38,13 +38,13 @@ export const storeIconOptions = internalMutation({
 export const saveSelectedIcon = internalMutation({
   args: {
     marketKey: v.string(),
-    storageId: v.id("_storage"),
+    storageId: v.id('_storage'),
     sourceUrl: v.string(),
   },
   handler: async (ctx, args) => {
     const market = await ctx.db
-      .query("expansionMarkets")
-      .withIndex("by_market_key", (q) => q.eq("marketKey", args.marketKey))
+      .query('expansionMarkets')
+      .withIndex('by_market_key', (q) => q.eq('marketKey', args.marketKey))
       .unique();
 
     if (!market) {

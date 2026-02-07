@@ -13,7 +13,17 @@ import { useMarket } from '../../../../hooks/useMarket';
 import { EditEventModal } from '../../../../components/planner/EditEventModal';
 import { BottomNav } from '../../../../components/shared/BottomNav';
 import { MapWrapper, MapSession } from '../../../../components/map';
-import { BackIcon, SettingsIcon, PlusIcon, ChevronLeftIcon, ChevronRightIcon, GridIcon, SearchIcon, MapIcon, ChevronDownIcon } from '../../../../components/shared/icons';
+import {
+  BackIcon,
+  SettingsIcon,
+  PlusIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  GridIcon,
+  SearchIcon,
+  MapIcon,
+  ChevronDownIcon,
+} from '../../../../components/shared/icons';
 import { calculateAge, isAgeInRange, isGradeInRange, doDateRangesOverlap } from '../../../../convex/lib/helpers';
 
 export default function WeekDetailPage() {
@@ -31,7 +41,10 @@ export default function WeekDetailPage() {
 
       <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3 sticky top-0 z-20">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
             <BackIcon />
             <span className="font-medium">Back to Planner</span>
           </Link>
@@ -57,13 +70,8 @@ export default function WeekDetailPage() {
         </Authenticated>
         <Unauthenticated>
           <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-            <p className="text-slate-600 dark:text-slate-400">
-              Please sign in to view week details.
-            </p>
-            <a
-              href="/sign-in"
-              className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark"
-            >
+            <p className="text-slate-600 dark:text-slate-400">Please sign in to view week details.</p>
+            <a href="/sign-in" className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark">
               Sign in
             </a>
           </div>
@@ -83,25 +91,28 @@ function WeekDetailContent() {
   const [showAddEventModal, setShowAddEventModal] = useState(false);
 
   // Keyboard shortcuts: left/right arrows for week navigation, 'e' for add event
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    const target = e.target as HTMLElement;
-    // Don't trigger in form inputs
-    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') return;
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      // Don't trigger in form inputs
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') return;
 
-    if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      router.push(`/planner/week/${getPreviousMonday(weekStart)}`);
-    } else if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      router.push(`/planner/week/${getNextMonday(weekStart)}`);
-    } else if ((e.key === 'e' || e.key === 'E') && !showAddEventModal) {
-      e.preventDefault();
-      setShowAddEventModal(true);
-    } else if (e.key === 'Escape' && showAddEventModal) {
-      e.preventDefault();
-      setShowAddEventModal(false);
-    }
-  }, [router, weekStart, showAddEventModal]);
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        router.push(`/planner/week/${getPreviousMonday(weekStart)}`);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        router.push(`/planner/week/${getNextMonday(weekStart)}`);
+      } else if ((e.key === 'e' || e.key === 'E') && !showAddEventModal) {
+        e.preventDefault();
+        setShowAddEventModal(true);
+      } else if (e.key === 'Escape' && showAddEventModal) {
+        e.preventDefault();
+        setShowAddEventModal(false);
+      }
+    },
+    [router, weekStart, showAddEventModal],
+  );
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -145,9 +156,7 @@ function WeekDetailContent() {
   // Fetch week detail
   const weekDetail = useQuery(
     api.planner.queries.getWeekDetail,
-    family?.primaryCityId
-      ? { weekStartDate: weekStart, cityId: family.primaryCityId }
-      : 'skip'
+    family?.primaryCityId ? { weekStartDate: weekStart, cityId: family.primaryCityId } : 'skip',
   );
 
   // Fetch all available sessions for this week (for filter chips and camp suggestions)
@@ -162,7 +171,7 @@ function WeekDetailContent() {
           homeLongitude: hasHomeCoords ? homeLongitude : undefined,
           maxDistanceMiles: hasHomeCoords && maxDistanceMiles !== undefined ? maxDistanceMiles : undefined,
         }
-      : 'skip'
+      : 'skip',
   );
 
   // Children query for the add event modal
@@ -195,7 +204,7 @@ function WeekDetailContent() {
     let sessionsForLocations = allAvailableSessions;
     if (selectedOrganizations.length > 0) {
       sessionsForLocations = allAvailableSessions.filter(
-        (s) => s.organization && selectedOrganizations.includes(s.organization._id)
+        (s) => s.organization && selectedOrganizations.includes(s.organization._id),
       );
     }
 
@@ -224,9 +233,7 @@ function WeekDetailContent() {
       const childGrade = childData.child.currentGrade;
 
       // Get sessions the child is already registered for
-      const registeredSessionIds = new Set(
-        childData.registrations.map((r) => r.session._id)
-      );
+      const registeredSessionIds = new Set(childData.registrations.map((r) => r.session._id));
 
       // Collect all covered date ranges for this child (from registrations and events)
       const coveredDateRanges: { start: string; end: string }[] = [];
@@ -278,15 +285,13 @@ function WeekDetailContent() {
       // Apply organization filter if any selected
       if (selectedOrganizations.length > 0) {
         eligibleSessions = eligibleSessions.filter(
-          (s) => s.organization && selectedOrganizations.includes(s.organization._id)
+          (s) => s.organization && selectedOrganizations.includes(s.organization._id),
         );
       }
 
       // Apply location filter if any selected
       if (selectedLocations.length > 0) {
-        eligibleSessions = eligibleSessions.filter(
-          (s) => s.location && selectedLocations.includes(s.location._id)
-        );
+        eligibleSessions = eligibleSessions.filter((s) => s.location && selectedLocations.includes(s.location._id));
       }
 
       result.set(childData.child._id, eligibleSessions);
@@ -296,10 +301,7 @@ function WeekDetailContent() {
   }, [allAvailableSessions, weekDetail, selectedOrganizations, selectedLocations]);
 
   const totalCamps = useMemo(() => {
-    return Array.from(availableCampsPerChild.values()).reduce(
-      (sum, camps) => sum + camps.length,
-      0
-    );
+    return Array.from(availableCampsPerChild.values()).reduce((sum, camps) => sum + camps.length, 0);
   }, [availableCampsPerChild]);
 
   // Toggle organization filter (and clear locations when orgs change)
@@ -315,7 +317,7 @@ function WeekDetailContent() {
   // Toggle location filter
   const handleLocationToggle = (locationId: string) => {
     setSelectedLocations((prev) =>
-      prev.includes(locationId) ? prev.filter((id) => id !== locationId) : [...prev, locationId]
+      prev.includes(locationId) ? prev.filter((id) => id !== locationId) : [...prev, locationId],
     );
   };
 
@@ -361,9 +363,7 @@ function WeekDetailContent() {
     return (
       <div className="max-w-4xl mx-auto text-center py-16">
         <h2 className="text-xl font-semibold mb-2">Week not found</h2>
-        <p className="text-slate-600 dark:text-slate-400 mb-6">
-          Could not load details for this week.
-        </p>
+        <p className="text-slate-600 dark:text-slate-400 mb-6">Could not load details for this week.</p>
         <Link
           href="/"
           className="inline-block bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-primary-dark"
@@ -394,23 +394,21 @@ function WeekDetailContent() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-            {dateRangeStr}
-          </h2>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{dateRangeStr}</h2>
           <p className="text-sm text-slate-600 dark:text-slate-400">
             {weekDetail.children.length} child{weekDetail.children.length === 1 ? '' : 'ren'}
             {childrenWithGaps.length > 0 ? (
               <span className="text-red-600 dark:text-red-400">
-                {' '}&bull; {childrenWithGaps.length} need{childrenWithGaps.length === 1 ? 's' : ''} coverage
+                {' '}
+                &bull; {childrenWithGaps.length} need{childrenWithGaps.length === 1 ? 's' : ''} coverage
               </span>
             ) : (
-              <span className="text-green-600 dark:text-green-400">
-                {' '}&bull; All covered
-              </span>
+              <span className="text-green-600 dark:text-green-400"> &bull; All covered</span>
             )}
             {allAvailableSessions && (
               <span className="text-slate-500">
-                {' '}&bull; {allAvailableSessions.length} camp{allAvailableSessions.length === 1 ? '' : 's'} available
+                {' '}
+                &bull; {allAvailableSessions.length} camp{allAvailableSessions.length === 1 ? '' : 's'} available
               </span>
             )}
           </p>
@@ -459,11 +457,10 @@ function WeekDetailContent() {
         <div className="bg-primary/10 dark:bg-primary-dark/20 rounded-lg border border-primary/30 dark:border-primary-dark p-4 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-primary-dark dark:text-white/80">
-                Find camps to fill gaps
-              </p>
+              <p className="text-sm font-medium text-primary-dark dark:text-white/80">Find camps to fill gaps</p>
               <p className="text-xs text-primary-dark dark:text-white/60">
-                {childrenWithGaps.map(c => c.child.firstName).join(', ')} need{childrenWithGaps.length === 1 ? 's' : ''} coverage
+                {childrenWithGaps.map((c) => c.child.firstName).join(', ')} need
+                {childrenWithGaps.length === 1 ? 's' : ''} coverage
               </p>
             </div>
             {(selectedOrganizations.length > 0 || selectedLocations.length > 0 || maxDistanceMiles !== undefined) && (
@@ -550,8 +547,10 @@ function WeekDetailContent() {
           {(selectedOrganizations.length > 0 || selectedLocations.length > 0 || maxDistanceMiles !== undefined) && (
             <p className="text-xs text-primary-dark dark:text-white/60">
               Showing {totalCamps} camp{totalCamps === 1 ? '' : 's'}
-              {selectedOrganizations.length > 0 && ` from ${selectedOrganizations.length} organization${selectedOrganizations.length > 1 ? 's' : ''}`}
-              {selectedLocations.length > 0 && ` at ${selectedLocations.length} location${selectedLocations.length > 1 ? 's' : ''}`}
+              {selectedOrganizations.length > 0 &&
+                ` from ${selectedOrganizations.length} organization${selectedOrganizations.length > 1 ? 's' : ''}`}
+              {selectedLocations.length > 0 &&
+                ` at ${selectedLocations.length} location${selectedLocations.length > 1 ? 's' : ''}`}
               {maxDistanceMiles !== undefined && ` within ${maxDistanceMiles} miles`}
             </p>
           )}
@@ -562,7 +561,8 @@ function WeekDetailContent() {
       {childrenWithGaps.length > 0 && organizations.length === 0 && allAvailableSessions !== undefined && (
         <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800 p-4">
           <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100">
-            {childrenWithGaps.map(c => c.child.firstName).join(', ')} need{childrenWithGaps.length === 1 ? 's' : ''} coverage
+            {childrenWithGaps.map((c) => c.child.firstName).join(', ')} need{childrenWithGaps.length === 1 ? 's' : ''}{' '}
+            coverage
           </p>
           <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
             No camps found for this week. Try browsing all camps or add a family event.
@@ -587,26 +587,28 @@ function WeekDetailContent() {
           {showMap && (
             <div className="border-t border-slate-200 dark:border-slate-700">
               <MapWrapper
-                sessions={allAvailableSessions.map((session) => ({
-                  _id: session._id,
-                  startDate: session.startDate,
-                  endDate: session.endDate,
-                  price: session.price,
-                  currency: session.currency,
-                  spotsLeft: session.spotsLeft,
-                  distanceFromHome: session.distanceFromHome,
-                  camp: {
-                    name: session.camp?.name ?? 'Camp',
-                  },
-                  organization: {
-                    name: session.organization?.name ?? 'Organization',
-                  },
-                  location: {
-                    name: session.location?.name ?? 'Location',
-                    latitude: session.location?.latitude,
-                    longitude: session.location?.longitude,
-                  },
-                })) as MapSession[]}
+                sessions={
+                  allAvailableSessions.map((session) => ({
+                    _id: session._id,
+                    startDate: session.startDate,
+                    endDate: session.endDate,
+                    price: session.price,
+                    currency: session.currency,
+                    spotsLeft: session.spotsLeft,
+                    distanceFromHome: session.distanceFromHome,
+                    camp: {
+                      name: session.camp?.name ?? 'Camp',
+                    },
+                    organization: {
+                      name: session.organization?.name ?? 'Organization',
+                    },
+                    location: {
+                      name: session.location?.name ?? 'Location',
+                      latitude: session.location?.latitude,
+                      longitude: session.location?.longitude,
+                    },
+                  })) as MapSession[]
+                }
                 centerLatitude={45.5152} // Portland default, ideally get from city
                 centerLongitude={-122.6784}
                 homeLatitude={homeLatitude}
@@ -639,11 +641,11 @@ function WeekDetailContent() {
           }));
 
           // Enrich events with childIds for the edit modal
-          const enrichedEvents = childData.events.map(e => ({
+          const enrichedEvents = childData.events.map((e) => ({
             ...e,
             childIds: weekDetail.children
-              .filter(c => c.events.some(ev => ev._id === e._id))
-              .map(c => c.child._id),
+              .filter((c) => c.events.some((ev) => ev._id === e._id))
+              .map((c) => c.child._id),
           }));
 
           return (
@@ -696,13 +698,7 @@ function WeekDetailContent() {
       />
 
       {/* Edit Event Modal */}
-      {editingEvent && (
-        <EditEventModal
-          isOpen={true}
-          onClose={() => setEditingEvent(null)}
-          event={editingEvent}
-        />
-      )}
+      {editingEvent && <EditEventModal isOpen={true} onClose={() => setEditingEvent(null)} event={editingEvent} />}
     </div>
   );
 }
@@ -719,4 +715,3 @@ function getNextMonday(dateStr: string): string {
   date.setDate(date.getDate() + 7);
   return date.toISOString().split('T')[0];
 }
-

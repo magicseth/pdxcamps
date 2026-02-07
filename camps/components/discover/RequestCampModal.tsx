@@ -5,6 +5,7 @@ import { useMutation, useQuery } from 'convex/react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../convex/_generated/api';
 import { useMarket } from '../../hooks/useMarket';
+import posthog from 'posthog-js';
 
 interface RequestCampModalProps {
   isOpen: boolean;
@@ -33,7 +34,7 @@ export function RequestCampModal({ isOpen, onClose }: RequestCampModalProps) {
   // Autocomplete query - only search when we have 2+ characters
   const suggestions = useQuery(
     api.camps.queries.autocompleteCamps,
-    campName.length >= 2 ? { query: campName, citySlug: market.slug, limit: 5 } : 'skip'
+    campName.length >= 2 ? { query: campName, citySlug: market.slug, limit: 5 } : 'skip',
   );
 
   // Close suggestions when clicking outside
@@ -100,9 +101,18 @@ export function RequestCampModal({ isOpen, onClose }: RequestCampModalProps) {
       if (result.status === 'duplicate') {
         setError('Great news! This camp is already in our database. Try searching for it!');
       } else {
+        // Track camp request submission
+        posthog.capture('camp_request_submitted', {
+          has_website_url: !!websiteUrl.trim(),
+          has_organization: !!organizationName.trim(),
+          has_location: !!location.trim(),
+          has_notes: !!notes.trim(),
+          market: market.slug,
+        });
         setSubmitted(true);
       }
     } catch (err) {
+      posthog.captureException(err);
       setError(err instanceof Error ? err.message : 'Failed to submit request');
     } finally {
       setIsSubmitting(false);
@@ -127,18 +137,13 @@ export function RequestCampModal({ isOpen, onClose }: RequestCampModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={handleClose}
-      />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handleClose} />
 
       {/* Modal */}
       <div className="relative bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
-            Request a Camp
-          </h2>
+          <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Request a Camp</h2>
           <button
             onClick={handleClose}
             className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
@@ -154,12 +159,10 @@ export function RequestCampModal({ isOpen, onClose }: RequestCampModalProps) {
           {submitted ? (
             <div className="text-center py-8">
               <div className="text-5xl mb-4">🎉</div>
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-                Request Submitted!
-              </h3>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">Request Submitted!</h3>
               <p className="text-slate-600 dark:text-slate-400 mb-6">
-                We'll add this camp to our database and notify you when it's available.
-                This usually takes 1-2 business days.
+                We'll add this camp to our database and notify you when it's available. This usually takes 1-2 business
+                days.
               </p>
               <button
                 onClick={handleClose}
@@ -171,8 +174,8 @@ export function RequestCampModal({ isOpen, onClose }: RequestCampModalProps) {
           ) : (
             <>
               <p className="text-slate-600 dark:text-slate-400 mb-6">
-                Can't find a camp? Tell us about it and we'll add it to our database.
-                The more info you provide, the faster we can add it!
+                Can't find a camp? Tell us about it and we'll add it to our database. The more info you provide, the
+                faster we can add it!
               </p>
 
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -217,13 +220,9 @@ export function RequestCampModal({ isOpen, onClose }: RequestCampModalProps) {
                           }`}
                         >
                           <div>
-                            <div className="font-medium text-slate-900 dark:text-white">
-                              {camp.name}
-                            </div>
+                            <div className="font-medium text-slate-900 dark:text-white">{camp.name}</div>
                             {camp.organizationName && (
-                              <div className="text-sm text-slate-500 dark:text-slate-400">
-                                {camp.organizationName}
-                              </div>
+                              <div className="text-sm text-slate-500 dark:text-slate-400">{camp.organizationName}</div>
                             )}
                           </div>
                           <span className="text-xs text-primary">View sessions</span>
@@ -267,9 +266,7 @@ export function RequestCampModal({ isOpen, onClose }: RequestCampModalProps) {
 
                 {/* Location */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    Location
-                  </label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Location</label>
                   <input
                     type="text"
                     value={location}
@@ -317,8 +314,20 @@ export function RequestCampModal({ isOpen, onClose }: RequestCampModalProps) {
                     {isSubmitting ? (
                       <>
                         <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            fill="none"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
                         </svg>
                         Submitting...
                       </>
@@ -341,19 +350,25 @@ export function RequestCampModal({ isOpen, onClose }: RequestCampModalProps) {
                         key={request._id}
                         className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg text-sm"
                       >
-                        <span className="text-slate-900 dark:text-white font-medium">
-                          {request.campName}
-                        </span>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          request.status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                          request.status === 'failed' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                          request.status === 'duplicate' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                          'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                        }`}>
-                          {request.status === 'completed' ? 'Added' :
-                           request.status === 'failed' ? 'Failed' :
-                           request.status === 'duplicate' ? 'Already exists' :
-                           'Processing...'}
+                        <span className="text-slate-900 dark:text-white font-medium">{request.campName}</span>
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                            request.status === 'completed'
+                              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                              : request.status === 'failed'
+                                ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                : request.status === 'duplicate'
+                                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                                  : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                          }`}
+                        >
+                          {request.status === 'completed'
+                            ? 'Added'
+                            : request.status === 'failed'
+                              ? 'Failed'
+                              : request.status === 'duplicate'
+                                ? 'Already exists'
+                                : 'Processing...'}
                         </span>
                       </div>
                     ))}

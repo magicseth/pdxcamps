@@ -3,13 +3,26 @@
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import Link from 'next/link';
-import { use } from 'react';
+import { use, useEffect } from 'react';
 import { useMarket } from '@/hooks/useMarket';
 
 export default function SharedPlanPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params);
   const plan = useQuery(api.share.queries.getSharedPlan, { shareToken: token });
   const market = useMarket();
+
+  // Set referral cookie when viewing shared plan (for attribution)
+  useEffect(() => {
+    if (plan?.referralCode) {
+      fetch('/api/referral', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: plan.referralCode }),
+      }).catch(() => {
+        // Silently fail - referral attribution is not critical
+      });
+    }
+  }, [plan?.referralCode]);
 
   if (plan === undefined) {
     return (
@@ -28,9 +41,7 @@ export default function SharedPlanPage({ params }: { params: Promise<{ token: st
         <div className="text-center max-w-md">
           <div className="text-6xl mb-4">🔒</div>
           <h1 className="text-2xl font-bold text-slate-900 mb-2">Plan Not Found</h1>
-          <p className="text-slate-600 mb-6">
-            This plan link may have expired or been removed.
-          </p>
+          <p className="text-slate-600 mb-6">This plan link may have expired or been removed.</p>
           <Link
             href="/"
             className="inline-block px-6 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary-dark"
@@ -66,9 +77,7 @@ export default function SharedPlanPage({ params }: { params: Promise<{ token: st
           <h1 className="text-2xl font-bold mb-2">
             {plan.childName}'s Summer {plan.year}
           </h1>
-          <p className="text-white/80 mb-4">
-            Shared by the {plan.familyName} family
-          </p>
+          <p className="text-white/80 mb-4">Shared by the {plan.familyName} family</p>
 
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4">
@@ -96,23 +105,19 @@ export default function SharedPlanPage({ params }: { params: Promise<{ token: st
                 week.coveredDays >= 5
                   ? 'border-green-200 bg-green-50/30'
                   : week.coveredDays > 0
-                  ? 'border-yellow-200 bg-yellow-50/30'
-                  : 'border-slate-200'
+                    ? 'border-yellow-200 bg-yellow-50/30'
+                    : 'border-slate-200'
               }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <span className="font-medium text-slate-900">{week.week.label}</span>
-                  <span className="text-sm text-slate-500 ml-2">
-                    {week.week.monthName}
-                  </span>
+                  <span className="text-sm text-slate-500 ml-2">{week.week.monthName}</span>
                 </div>
                 {week.coveredDays >= 5 ? (
                   <span className="text-green-600 font-medium text-sm">✓ Covered</span>
                 ) : week.coveredDays > 0 ? (
-                  <span className="text-yellow-600 font-medium text-sm">
-                    {week.coveredDays}/5 days
-                  </span>
+                  <span className="text-yellow-600 font-medium text-sm">{week.coveredDays}/5 days</span>
                 ) : (
                   <span className="text-slate-400 text-sm">Open</span>
                 )}
@@ -157,12 +162,10 @@ export default function SharedPlanPage({ params }: { params: Promise<{ token: st
 
         {/* CTA Section */}
         <div className="bg-gradient-to-br from-accent/10 to-accent/5 border-2 border-accent/30 rounded-2xl p-8 text-center">
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">
-            Plan Your Family's Summer Too!
-          </h2>
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">Plan Your Family's Summer Too!</h2>
           <p className="text-slate-600 mb-6 max-w-md mx-auto">
-            Join thousands of {market.name} families using {market.tagline} to organize their summer.
-            Find camps near you, coordinate with friends, and never miss a deadline.
+            Join thousands of {market.name} families using {market.tagline} to organize their summer. Find camps near
+            you, coordinate with friends, and never miss a deadline.
           </p>
           <Link
             href="/sign-up"
@@ -170,16 +173,16 @@ export default function SharedPlanPage({ params }: { params: Promise<{ token: st
           >
             Start Planning Free →
           </Link>
-          <p className="text-sm text-slate-500 mt-3">
-            No credit card required
-          </p>
+          <p className="text-sm text-slate-500 mt-3">No credit card required</p>
         </div>
       </main>
 
       {/* Footer */}
       <footer className="bg-white border-t border-slate-200 py-8 mt-12">
         <div className="max-w-3xl mx-auto px-4 text-center text-slate-500 text-sm">
-          <p>© {new Date().getFullYear()} {market.tagline}. Made in {market.madeIn}.</p>
+          <p>
+            © {new Date().getFullYear()} {market.tagline}. Made in {market.madeIn}.
+          </p>
         </div>
       </footer>
     </div>

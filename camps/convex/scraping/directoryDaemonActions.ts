@@ -1,12 +1,12 @@
-"use node";
+'use node';
 
 /**
  * Directory Seeding Daemon - Actions
  * Node.js actions for processing directory URLs
  */
 
-import { action } from "../_generated/server";
-import { internal, api } from "../_generated/api";
+import { action } from '../_generated/server';
+import { internal, api } from '../_generated/api';
 
 // ============================================
 // ACTIONS - Processing
@@ -36,7 +36,7 @@ export const processDirectoryQueue = action({
         // Mark as processing
         await ctx.runMutation(internal.scraping.directoryDaemon.updateQueueItem, {
           id: item._id,
-          status: "processing",
+          status: 'processing',
         });
 
         // Get city info
@@ -45,14 +45,18 @@ export const processDirectoryQueue = action({
         });
 
         if (!city) {
-          throw new Error("City not found");
+          throw new Error('City not found');
         }
 
         // Scrape the directory
-        const scrapeResult = await scrapeDirectory(item.url, item.linkPattern ?? undefined, item.baseUrlFilter ?? undefined);
+        const scrapeResult = await scrapeDirectory(
+          item.url,
+          item.linkPattern ?? undefined,
+          item.baseUrlFilter ?? undefined,
+        );
 
         if (!scrapeResult.success) {
-          throw new Error(scrapeResult.error || "Failed to scrape directory");
+          throw new Error(scrapeResult.error || 'Failed to scrape directory');
         }
 
         // Organize and dedupe the links
@@ -72,7 +76,7 @@ export const processDirectoryQueue = action({
             const exists = existingOrgs?.some((o) => {
               if (!o.website) return false;
               try {
-                const orgDomain = new URL(o.website).hostname.replace(/^www\./, "");
+                const orgDomain = new URL(o.website).hostname.replace(/^www\./, '');
                 return orgDomain === org.domain;
               } catch {
                 return false;
@@ -105,7 +109,7 @@ export const processDirectoryQueue = action({
                 sourceUrl: org.bestUrl,
                 cityId: item.cityId,
                 notes: `Auto-discovered from directory: ${item.url}`,
-                requestedBy: "directory-daemon",
+                requestedBy: 'directory-daemon',
               });
             } catch {
               // Dev request might already exist
@@ -120,7 +124,7 @@ export const processDirectoryQueue = action({
         // Mark as completed
         await ctx.runMutation(internal.scraping.directoryDaemon.updateQueueItem, {
           id: item._id,
-          status: "completed",
+          status: 'completed',
           linksFound: scrapeResult.links.length,
           orgsCreated,
           orgsExisted,
@@ -131,8 +135,8 @@ export const processDirectoryQueue = action({
         errors++;
         await ctx.runMutation(internal.scraping.directoryDaemon.updateQueueItem, {
           id: item._id,
-          status: "failed",
-          error: err instanceof Error ? err.message : "Unknown error",
+          status: 'failed',
+          error: err instanceof Error ? err.message : 'Unknown error',
         });
       }
     }
@@ -160,27 +164,26 @@ interface OrganizedOrg {
 async function scrapeDirectory(
   url: string,
   linkPattern?: string,
-  baseUrlFilter?: string
+  baseUrlFilter?: string,
 ): Promise<{ success: boolean; links: ExtractedLink[]; error?: string }> {
   try {
     const response = await fetch(url, {
       headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-        Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Cache-Control": "no-cache",
-        Pragma: "no-cache",
-        "Sec-Ch-Ua": '"Not A(Brand";v="99", "Google Chrome";v="121", "Chromium";v="121"',
-        "Sec-Ch-Ua-Mobile": "?0",
-        "Sec-Ch-Ua-Platform": '"macOS"',
-        "Sec-Fetch-Dest": "document",
-        "Sec-Fetch-Mode": "navigate",
-        "Sec-Fetch-Site": "none",
-        "Sec-Fetch-User": "?1",
-        "Upgrade-Insecure-Requests": "1",
+        'User-Agent':
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Sec-Ch-Ua': '"Not A(Brand";v="99", "Google Chrome";v="121", "Chromium";v="121"',
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': '"macOS"',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+        'Upgrade-Insecure-Requests': '1',
       },
     });
 
@@ -203,10 +206,10 @@ async function scrapeDirectory(
       // Skip empty, anchors, javascript, mailto, tel
       if (
         !linkUrl ||
-        linkUrl.startsWith("#") ||
-        linkUrl.startsWith("javascript:") ||
-        linkUrl.startsWith("mailto:") ||
-        linkUrl.startsWith("tel:")
+        linkUrl.startsWith('#') ||
+        linkUrl.startsWith('javascript:') ||
+        linkUrl.startsWith('mailto:') ||
+        linkUrl.startsWith('tel:')
       ) {
         continue;
       }
@@ -224,20 +227,20 @@ async function scrapeDirectory(
 
       let domain: string;
       try {
-        domain = new URL(linkUrl).hostname.replace(/^www\./, "");
+        domain = new URL(linkUrl).hostname.replace(/^www\./, '');
       } catch {
         continue;
       }
 
       // Apply filters
       if (baseUrlFilter) {
-        const filterDomain = baseUrlFilter.replace(/^www\./, "");
+        const filterDomain = baseUrlFilter.replace(/^www\./, '');
         if (!domain.includes(filterDomain)) continue;
       }
 
       if (linkPattern) {
         try {
-          const pattern = new RegExp(linkPattern, "i");
+          const pattern = new RegExp(linkPattern, 'i');
           if (!pattern.test(linkUrl) && !pattern.test(text)) continue;
         } catch {
           // Invalid regex, skip
@@ -261,7 +264,7 @@ async function scrapeDirectory(
     return {
       success: false,
       links: [],
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
 }
@@ -306,10 +309,10 @@ function organizeLinks(links: ExtractedLink[]): OrganizedOrg[] {
 
     // Generate name from domain
     let suggestedName = domain
-      .replace(/\.(com|org|edu|net|gov|co|io)$/i, "")
+      .replace(/\.(com|org|edu|net|gov|co|io)$/i, '')
       .split(/[.-]/)
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
+      .join(' ');
 
     // Use link text if more descriptive
     const bestText = scored[0].text;

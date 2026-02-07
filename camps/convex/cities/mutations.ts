@@ -1,5 +1,5 @@
-import { mutation } from "../_generated/server";
-import { v } from "convex/values";
+import { mutation } from '../_generated/server';
+import { v } from 'convex/values';
 
 /**
  * Helper to convert a name to a URL-friendly slug
@@ -7,8 +7,8 @@ import { v } from "convex/values";
 function toSlug(name: string): string {
   return name
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 }
 
 /**
@@ -20,25 +20,25 @@ export const seedPortland = mutation({
   handler: async (ctx) => {
     // Check if Portland already exists
     const existingPortland = await ctx.db
-      .query("cities")
-      .withIndex("by_slug", (q) => q.eq("slug", "portland"))
+      .query('cities')
+      .withIndex('by_slug', (q) => q.eq('slug', 'portland'))
       .unique();
 
     if (existingPortland) {
       return {
         success: true,
-        message: "Portland already exists",
+        message: 'Portland already exists',
         cityId: existingPortland._id,
         created: false,
       };
     }
 
     // Create Portland
-    const cityId = await ctx.db.insert("cities", {
-      name: "Portland",
-      slug: "portland",
-      state: "OR",
-      timezone: "America/Los_Angeles",
+    const cityId = await ctx.db.insert('cities', {
+      name: 'Portland',
+      slug: 'portland',
+      state: 'OR',
+      timezone: 'America/Los_Angeles',
       isActive: true,
       centerLatitude: 45.5152,
       centerLongitude: -122.6784,
@@ -46,39 +46,39 @@ export const seedPortland = mutation({
 
     // Portland neighborhoods
     const neighborhoods = [
-      "Alberta Arts District",
-      "Alameda",
-      "Beaumont-Wilshire",
-      "Boise",
-      "Brooklyn",
-      "Buckman",
-      "Division",
-      "Downtown",
-      "Eastmoreland",
-      "Hawthorne",
-      "Hollywood",
-      "Irvington",
-      "Kerns",
-      "Laurelhurst",
-      "Mississippi",
-      "Montavilla",
-      "Mt. Tabor",
-      "Nob Hill",
-      "Northeast Portland",
-      "Northwest Portland",
-      "Pearl District",
-      "Richmond",
-      "Rose City Park",
-      "Sellwood-Moreland",
-      "St. Johns",
-      "Sunnyside",
-      "University Park",
-      "Woodstock",
+      'Alberta Arts District',
+      'Alameda',
+      'Beaumont-Wilshire',
+      'Boise',
+      'Brooklyn',
+      'Buckman',
+      'Division',
+      'Downtown',
+      'Eastmoreland',
+      'Hawthorne',
+      'Hollywood',
+      'Irvington',
+      'Kerns',
+      'Laurelhurst',
+      'Mississippi',
+      'Montavilla',
+      'Mt. Tabor',
+      'Nob Hill',
+      'Northeast Portland',
+      'Northwest Portland',
+      'Pearl District',
+      'Richmond',
+      'Rose City Park',
+      'Sellwood-Moreland',
+      'St. Johns',
+      'Sunnyside',
+      'University Park',
+      'Woodstock',
     ];
 
     // Insert all neighborhoods
     for (const name of neighborhoods) {
-      await ctx.db.insert("neighborhoods", {
+      await ctx.db.insert('neighborhoods', {
         cityId,
         name,
         slug: toSlug(name),
@@ -87,7 +87,7 @@ export const seedPortland = mutation({
 
     return {
       success: true,
-      message: "Portland created with neighborhoods",
+      message: 'Portland created with neighborhoods',
       cityId,
       created: true,
       neighborhoodCount: neighborhoods.length,
@@ -110,15 +110,15 @@ export const createCity = mutation({
   handler: async (ctx, args) => {
     // Check if slug already exists
     const existingCity = await ctx.db
-      .query("cities")
-      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .query('cities')
+      .withIndex('by_slug', (q) => q.eq('slug', args.slug))
       .unique();
 
     if (existingCity) {
       throw new Error(`City with slug "${args.slug}" already exists`);
     }
 
-    const cityId = await ctx.db.insert("cities", {
+    const cityId = await ctx.db.insert('cities', {
       name: args.name,
       slug: args.slug,
       state: args.state,
@@ -137,7 +137,7 @@ export const createCity = mutation({
  */
 export const setCityBrand = mutation({
   args: {
-    cityId: v.id("cities"),
+    cityId: v.id('cities'),
     brandName: v.string(),
     domain: v.string(),
     fromEmail: v.string(),
@@ -145,7 +145,7 @@ export const setCityBrand = mutation({
   handler: async (ctx, args) => {
     const city = await ctx.db.get(args.cityId);
     if (!city) {
-      throw new Error("City not found");
+      throw new Error('City not found');
     }
 
     await ctx.db.patch(args.cityId, {
@@ -167,18 +167,18 @@ export const setBrandInfoForAllCities = mutation({
     // Brand mapping by city slug
     const brandMapping: Record<string, { brandName: string; domain: string; fromEmail: string }> = {
       portland: {
-        brandName: "PDX Camps",
-        domain: "pdxcamps.com",
-        fromEmail: "hello@pdxcamps.com",
+        brandName: 'PDX Camps',
+        domain: 'pdxcamps.com',
+        fromEmail: 'hello@pdxcamps.com',
       },
       boston: {
-        brandName: "BOS Camps",
-        domain: "boscamps.com",
-        fromEmail: "hello@boscamps.com",
+        brandName: 'BOS Camps',
+        domain: 'boscamps.com',
+        fromEmail: 'hello@boscamps.com',
       },
     };
 
-    const cities = await ctx.db.query("cities").collect();
+    const cities = await ctx.db.query('cities').collect();
     const updates: string[] = [];
 
     for (const city of cities) {
@@ -202,7 +202,7 @@ export const setBrandInfoForAllCities = mutation({
  */
 export const updateCity = mutation({
   args: {
-    cityId: v.id("cities"),
+    cityId: v.id('cities'),
     name: v.optional(v.string()),
     brandName: v.optional(v.string()),
     domain: v.optional(v.string()),
@@ -211,7 +211,7 @@ export const updateCity = mutation({
   handler: async (ctx, args) => {
     const city = await ctx.db.get(args.cityId);
     if (!city) {
-      throw new Error("City not found");
+      throw new Error('City not found');
     }
 
     const updates: Partial<typeof city> = {};
@@ -231,13 +231,13 @@ export const updateCity = mutation({
  */
 export const setCityIcon = mutation({
   args: {
-    cityId: v.id("cities"),
-    iconStorageId: v.id("_storage"),
+    cityId: v.id('cities'),
+    iconStorageId: v.id('_storage'),
   },
   handler: async (ctx, args) => {
     const city = await ctx.db.get(args.cityId);
     if (!city) {
-      throw new Error("City not found");
+      throw new Error('City not found');
     }
 
     await ctx.db.patch(args.cityId, {
@@ -253,13 +253,13 @@ export const setCityIcon = mutation({
  */
 export const setCityHeaderImage = mutation({
   args: {
-    cityId: v.id("cities"),
-    headerImageStorageId: v.id("_storage"),
+    cityId: v.id('cities'),
+    headerImageStorageId: v.id('_storage'),
   },
   handler: async (ctx, args) => {
     const city = await ctx.db.get(args.cityId);
     if (!city) {
-      throw new Error("City not found");
+      throw new Error('City not found');
     }
 
     await ctx.db.patch(args.cityId, {
@@ -275,7 +275,7 @@ export const setCityHeaderImage = mutation({
  */
 export const createNeighborhood = mutation({
   args: {
-    cityId: v.id("cities"),
+    cityId: v.id('cities'),
     name: v.string(),
     slug: v.string(),
   },
@@ -283,24 +283,20 @@ export const createNeighborhood = mutation({
     // Verify city exists
     const city = await ctx.db.get(args.cityId);
     if (!city) {
-      throw new Error("City not found");
+      throw new Error('City not found');
     }
 
     // Check if neighborhood slug already exists for this city
     const existingNeighborhood = await ctx.db
-      .query("neighborhoods")
-      .withIndex("by_city_and_slug", (q) =>
-        q.eq("cityId", args.cityId).eq("slug", args.slug)
-      )
+      .query('neighborhoods')
+      .withIndex('by_city_and_slug', (q) => q.eq('cityId', args.cityId).eq('slug', args.slug))
       .unique();
 
     if (existingNeighborhood) {
-      throw new Error(
-        `Neighborhood with slug "${args.slug}" already exists in this city`
-      );
+      throw new Error(`Neighborhood with slug "${args.slug}" already exists in this city`);
     }
 
-    const neighborhoodId = await ctx.db.insert("neighborhoods", {
+    const neighborhoodId = await ctx.db.insert('neighborhoods', {
       cityId: args.cityId,
       name: args.name,
       slug: args.slug,

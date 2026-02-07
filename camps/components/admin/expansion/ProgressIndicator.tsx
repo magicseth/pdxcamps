@@ -46,27 +46,25 @@ export function ProgressIndicator({ currentStatus, activeStep, onStepClick }: Pr
                 className={`
                   w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium
                   transition-all duration-200
-                  ${isCompleted
-                    ? 'bg-green-500 text-white'
-                    : isActive || isCurrent
-                      ? 'bg-primary text-white'
-                      : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+                  ${
+                    isCompleted
+                      ? 'bg-green-500 text-white'
+                      : isActive || isCurrent
+                        ? 'bg-primary text-white'
+                        : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
                   }
                   ${canNavigate ? 'cursor-pointer hover:ring-2 hover:ring-offset-2 hover:ring-primary/50' : 'cursor-default'}
                 `}
               >
-                {isCompleted ? (
-                  <CheckIcon />
-                ) : (
-                  index + 1
-                )}
+                {isCompleted ? <CheckIcon /> : index + 1}
               </button>
               <span
                 className={`
                   mt-1 text-xs
-                  ${isCompleted || isActive
-                    ? 'text-slate-900 dark:text-white font-medium'
-                    : 'text-slate-500 dark:text-slate-400'
+                  ${
+                    isCompleted || isActive
+                      ? 'text-slate-900 dark:text-white font-medium'
+                      : 'text-slate-500 dark:text-slate-400'
                   }
                 `}
               >
@@ -79,10 +77,7 @@ export function ProgressIndicator({ currentStatus, activeStep, onStepClick }: Pr
               <div
                 className={`
                   flex-1 h-0.5 mx-2 transition-colors duration-200
-                  ${index < completedStep
-                    ? 'bg-green-500'
-                    : 'bg-slate-200 dark:bg-slate-700'
-                  }
+                  ${index < completedStep ? 'bg-green-500' : 'bg-slate-200 dark:bg-slate-700'}
                 `}
               />
             )}

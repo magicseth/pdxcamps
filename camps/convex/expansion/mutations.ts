@@ -1,6 +1,6 @@
-import { mutation } from "../_generated/server";
-import { v } from "convex/values";
-import { getExpansionMarketByKey } from "../../lib/expansionMarkets";
+import { mutation } from '../_generated/server';
+import { v } from 'convex/values';
+import { getExpansionMarketByKey } from '../../lib/expansionMarkets';
 
 /**
  * Initialize or get an expansion market tracking record
@@ -17,8 +17,8 @@ export const initializeMarket = mutation({
 
     // Check if already exists
     const existing = await ctx.db
-      .query("expansionMarkets")
-      .withIndex("by_market_key", (q) => q.eq("marketKey", args.marketKey))
+      .query('expansionMarkets')
+      .withIndex('by_market_key', (q) => q.eq('marketKey', args.marketKey))
       .unique();
 
     if (existing) {
@@ -26,12 +26,12 @@ export const initializeMarket = mutation({
     }
 
     const now = Date.now();
-    const id = await ctx.db.insert("expansionMarkets", {
+    const id = await ctx.db.insert('expansionMarkets', {
       marketKey: args.marketKey,
       tier: market.tier,
       domainPurchased: false,
       dnsConfigured: false,
-      status: "not_started",
+      status: 'not_started',
       createdAt: now,
       updatedAt: now,
     });
@@ -50,8 +50,8 @@ export const selectDomain = mutation({
   },
   handler: async (ctx, args) => {
     const record = await ctx.db
-      .query("expansionMarkets")
-      .withIndex("by_market_key", (q) => q.eq("marketKey", args.marketKey))
+      .query('expansionMarkets')
+      .withIndex('by_market_key', (q) => q.eq('marketKey', args.marketKey))
       .unique();
 
     if (!record) {
@@ -78,8 +78,8 @@ export const recordDomainPurchase = mutation({
   },
   handler: async (ctx, args) => {
     const record = await ctx.db
-      .query("expansionMarkets")
-      .withIndex("by_market_key", (q) => q.eq("marketKey", args.marketKey))
+      .query('expansionMarkets')
+      .withIndex('by_market_key', (q) => q.eq('marketKey', args.marketKey))
       .unique();
 
     if (!record) {
@@ -92,7 +92,7 @@ export const recordDomainPurchase = mutation({
       domainPurchased: true,
       domainPurchasedAt: now,
       porkbunOrderId: args.porkbunOrderId,
-      status: "domain_purchased",
+      status: 'domain_purchased',
       updatedAt: now,
     });
 
@@ -110,8 +110,8 @@ export const recordDnsConfiguration = mutation({
   },
   handler: async (ctx, args) => {
     const record = await ctx.db
-      .query("expansionMarkets")
-      .withIndex("by_market_key", (q) => q.eq("marketKey", args.marketKey))
+      .query('expansionMarkets')
+      .withIndex('by_market_key', (q) => q.eq('marketKey', args.marketKey))
       .unique();
 
     if (!record) {
@@ -121,7 +121,7 @@ export const recordDnsConfiguration = mutation({
     await ctx.db.patch(record._id, {
       dnsConfigured: true,
       netlifyZoneId: args.netlifyZoneId,
-      status: "dns_configured",
+      status: 'dns_configured',
       updatedAt: Date.now(),
     });
 
@@ -147,8 +147,8 @@ export const createCityForMarket = mutation({
   },
   handler: async (ctx, args) => {
     const record = await ctx.db
-      .query("expansionMarkets")
-      .withIndex("by_market_key", (q) => q.eq("marketKey", args.marketKey))
+      .query('expansionMarkets')
+      .withIndex('by_market_key', (q) => q.eq('marketKey', args.marketKey))
       .unique();
 
     if (!record) {
@@ -157,8 +157,8 @@ export const createCityForMarket = mutation({
 
     // Check if slug already exists
     const existingCity = await ctx.db
-      .query("cities")
-      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .query('cities')
+      .withIndex('by_slug', (q) => q.eq('slug', args.slug))
       .unique();
 
     if (existingCity) {
@@ -166,7 +166,7 @@ export const createCityForMarket = mutation({
     }
 
     // Create the city (include icon if already selected in expansion workflow)
-    const cityId = await ctx.db.insert("cities", {
+    const cityId = await ctx.db.insert('cities', {
       name: args.name,
       slug: args.slug,
       state: args.state,
@@ -184,7 +184,7 @@ export const createCityForMarket = mutation({
     // Link to expansion market record
     await ctx.db.patch(record._id, {
       cityId,
-      status: "city_created",
+      status: 'city_created',
       updatedAt: Date.now(),
     });
 
@@ -192,12 +192,12 @@ export const createCityForMarket = mutation({
     const regionName = `${args.name}, ${args.state}`;
     const searchQueries = generateMarketSearchQueries(regionName);
 
-    await ctx.db.insert("marketDiscoveryTasks", {
+    await ctx.db.insert('marketDiscoveryTasks', {
       cityId,
       regionName,
       searchQueries,
       maxSearchResults: 50,
-      status: "pending",
+      status: 'pending',
       createdAt: Date.now(),
     });
 
@@ -228,12 +228,12 @@ function generateMarketSearchQueries(regionName: string): string[] {
 export const linkExistingCity = mutation({
   args: {
     marketKey: v.string(),
-    cityId: v.id("cities"),
+    cityId: v.id('cities'),
   },
   handler: async (ctx, args) => {
     const record = await ctx.db
-      .query("expansionMarkets")
-      .withIndex("by_market_key", (q) => q.eq("marketKey", args.marketKey))
+      .query('expansionMarkets')
+      .withIndex('by_market_key', (q) => q.eq('marketKey', args.marketKey))
       .unique();
 
     if (!record) {
@@ -242,13 +242,13 @@ export const linkExistingCity = mutation({
 
     const city = await ctx.db.get(args.cityId);
     if (!city) {
-      throw new Error("City not found");
+      throw new Error('City not found');
     }
 
     // Link expansion market to city
     await ctx.db.patch(record._id, {
       cityId: args.cityId,
-      status: "city_created",
+      status: 'city_created',
       updatedAt: Date.now(),
     });
 
@@ -272,8 +272,8 @@ export const launchMarket = mutation({
   },
   handler: async (ctx, args) => {
     const record = await ctx.db
-      .query("expansionMarkets")
-      .withIndex("by_market_key", (q) => q.eq("marketKey", args.marketKey))
+      .query('expansionMarkets')
+      .withIndex('by_market_key', (q) => q.eq('marketKey', args.marketKey))
       .unique();
 
     if (!record) {
@@ -281,11 +281,11 @@ export const launchMarket = mutation({
     }
 
     if (!record.cityId) {
-      throw new Error("Cannot launch market without a city");
+      throw new Error('Cannot launch market without a city');
     }
 
     await ctx.db.patch(record._id, {
-      status: "launched",
+      status: 'launched',
       updatedAt: Date.now(),
     });
 
@@ -300,16 +300,16 @@ export const resetMarketStatus = mutation({
   args: {
     marketKey: v.string(),
     status: v.union(
-      v.literal("not_started"),
-      v.literal("domain_purchased"),
-      v.literal("dns_configured"),
-      v.literal("city_created")
+      v.literal('not_started'),
+      v.literal('domain_purchased'),
+      v.literal('dns_configured'),
+      v.literal('city_created'),
     ),
   },
   handler: async (ctx, args) => {
     const record = await ctx.db
-      .query("expansionMarkets")
-      .withIndex("by_market_key", (q) => q.eq("marketKey", args.marketKey))
+      .query('expansionMarkets')
+      .withIndex('by_market_key', (q) => q.eq('marketKey', args.marketKey))
       .unique();
 
     if (!record) {
@@ -347,8 +347,8 @@ export const addDomain = mutation({
   },
   handler: async (ctx, args) => {
     const record = await ctx.db
-      .query("expansionMarkets")
-      .withIndex("by_market_key", (q) => q.eq("marketKey", args.marketKey))
+      .query('expansionMarkets')
+      .withIndex('by_market_key', (q) => q.eq('marketKey', args.marketKey))
       .unique();
 
     if (!record) {
@@ -359,7 +359,7 @@ export const addDomain = mutation({
     const existingDomains = record.domains || [];
 
     // Check if domain already exists
-    if (existingDomains.some(d => d.domain === args.domain)) {
+    if (existingDomains.some((d) => d.domain === args.domain)) {
       throw new Error(`Domain ${args.domain} already registered for this market`);
     }
 
@@ -368,9 +368,7 @@ export const addDomain = mutation({
     const shouldBePrimary = args.makePrimary || isFirstDomain;
 
     // If making this primary, unset primary on others
-    const updatedDomains = shouldBePrimary
-      ? existingDomains.map(d => ({ ...d, isPrimary: false }))
-      : existingDomains;
+    const updatedDomains = shouldBePrimary ? existingDomains.map((d) => ({ ...d, isPrimary: false })) : existingDomains;
 
     const newDomain = {
       domain: args.domain,
@@ -387,7 +385,7 @@ export const addDomain = mutation({
       domainPurchased: true,
       domainPurchasedAt: isFirstDomain ? now : record.domainPurchasedAt,
       porkbunOrderId: isFirstDomain ? args.orderId : record.porkbunOrderId,
-      status: record.status === "not_started" ? "domain_purchased" : record.status,
+      status: record.status === 'not_started' ? 'domain_purchased' : record.status,
       updatedAt: now,
     });
 
@@ -405,8 +403,8 @@ export const removeDomain = mutation({
   },
   handler: async (ctx, args) => {
     const record = await ctx.db
-      .query("expansionMarkets")
-      .withIndex("by_market_key", (q) => q.eq("marketKey", args.marketKey))
+      .query('expansionMarkets')
+      .withIndex('by_market_key', (q) => q.eq('marketKey', args.marketKey))
       .unique();
 
     if (!record) {
@@ -414,20 +412,20 @@ export const removeDomain = mutation({
     }
 
     const existingDomains = record.domains || [];
-    const domainToRemove = existingDomains.find(d => d.domain === args.domain);
+    const domainToRemove = existingDomains.find((d) => d.domain === args.domain);
 
     if (!domainToRemove) {
       throw new Error(`Domain ${args.domain} not found for this market`);
     }
 
-    const updatedDomains = existingDomains.filter(d => d.domain !== args.domain);
+    const updatedDomains = existingDomains.filter((d) => d.domain !== args.domain);
 
     // If we removed the primary, make the first remaining domain primary
     if (domainToRemove.isPrimary && updatedDomains.length > 0) {
       updatedDomains[0].isPrimary = true;
     }
 
-    const newPrimaryDomain = updatedDomains.find(d => d.isPrimary)?.domain;
+    const newPrimaryDomain = updatedDomains.find((d) => d.isPrimary)?.domain;
 
     await ctx.db.patch(record._id, {
       domains: updatedDomains,
@@ -450,8 +448,8 @@ export const setPrimaryDomain = mutation({
   },
   handler: async (ctx, args) => {
     const record = await ctx.db
-      .query("expansionMarkets")
-      .withIndex("by_market_key", (q) => q.eq("marketKey", args.marketKey))
+      .query('expansionMarkets')
+      .withIndex('by_market_key', (q) => q.eq('marketKey', args.marketKey))
       .unique();
 
     if (!record) {
@@ -459,14 +457,14 @@ export const setPrimaryDomain = mutation({
     }
 
     const existingDomains = record.domains || [];
-    const targetDomain = existingDomains.find(d => d.domain === args.domain);
+    const targetDomain = existingDomains.find((d) => d.domain === args.domain);
 
     if (!targetDomain) {
       throw new Error(`Domain ${args.domain} not found for this market`);
     }
 
     // Update all domains: unset primary on others, set on target
-    const updatedDomains = existingDomains.map(d => ({
+    const updatedDomains = existingDomains.map((d) => ({
       ...d,
       isPrimary: d.domain === args.domain,
     }));
@@ -492,8 +490,8 @@ export const recordDomainDnsConfiguration = mutation({
   },
   handler: async (ctx, args) => {
     const record = await ctx.db
-      .query("expansionMarkets")
-      .withIndex("by_market_key", (q) => q.eq("marketKey", args.marketKey))
+      .query('expansionMarkets')
+      .withIndex('by_market_key', (q) => q.eq('marketKey', args.marketKey))
       .unique();
 
     if (!record) {
@@ -501,7 +499,7 @@ export const recordDomainDnsConfiguration = mutation({
     }
 
     const existingDomains = record.domains || [];
-    const targetIndex = existingDomains.findIndex(d => d.domain === args.domain);
+    const targetIndex = existingDomains.findIndex((d) => d.domain === args.domain);
 
     if (targetIndex === -1) {
       throw new Error(`Domain ${args.domain} not found for this market`);
@@ -515,7 +513,7 @@ export const recordDomainDnsConfiguration = mutation({
     };
 
     // Check if primary domain has DNS configured
-    const primaryDomain = updatedDomains.find(d => d.isPrimary);
+    const primaryDomain = updatedDomains.find((d) => d.isPrimary);
     const primaryDnsConfigured = primaryDomain?.dnsConfigured || false;
 
     await ctx.db.patch(record._id, {
@@ -523,9 +521,7 @@ export const recordDomainDnsConfiguration = mutation({
       // Update legacy field if this is the primary domain
       dnsConfigured: primaryDnsConfigured,
       netlifyZoneId: primaryDomain?.netlifyZoneId || record.netlifyZoneId,
-      status: primaryDnsConfigured && record.status === "domain_purchased"
-        ? "dns_configured"
-        : record.status,
+      status: primaryDnsConfigured && record.status === 'domain_purchased' ? 'dns_configured' : record.status,
       updatedAt: Date.now(),
     });
 

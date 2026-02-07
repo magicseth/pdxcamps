@@ -59,7 +59,11 @@ function AuthenticatedHub({ user, onSignOut }: { user: User | null; onSignOut: (
 function LoadingState() {
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <div role="status" aria-live="polite" className="animate-pulse motion-reduce:animate-none flex flex-col items-center gap-4">
+      <div
+        role="status"
+        aria-live="polite"
+        className="animate-pulse motion-reduce:animate-none flex flex-col items-center gap-4"
+      >
         <div className="w-12 h-12 bg-primary/30 dark:bg-primary-dark rounded-full" aria-hidden="true"></div>
         <div className="h-4 w-32 bg-slate-200 dark:bg-slate-700 rounded" aria-hidden="true"></div>
         <span className="sr-only">Loading...</span>
@@ -68,7 +72,15 @@ function LoadingState() {
   );
 }
 
-function OnboardingPrompt({ user, onSignOut, hasFamily }: { user: User | null; onSignOut: () => void; hasFamily: boolean }) {
+function OnboardingPrompt({
+  user,
+  onSignOut,
+  hasFamily,
+}: {
+  user: User | null;
+  onSignOut: () => void;
+  hasFamily: boolean;
+}) {
   return (
     <div className="min-h-screen flex flex-col">
       <AppHeader user={user} onSignOut={onSignOut} />
@@ -76,19 +88,18 @@ function OnboardingPrompt({ user, onSignOut, hasFamily }: { user: User | null; o
         <div className="text-center max-w-md">
           <div className="text-6xl mb-6">👨‍👩‍👧‍👦</div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
-            {hasFamily ? "Add your children" : "Welcome! Let's get started"}
+            {hasFamily ? 'Add your children' : "Welcome! Let's get started"}
           </h1>
           <p className="text-slate-600 dark:text-slate-400 mb-8">
             {hasFamily
-              ? "Add your children to start planning their summer camps."
-              : "Set up your family profile to discover and plan summer camps."
-            }
+              ? 'Add your children to start planning their summer camps.'
+              : 'Set up your family profile to discover and plan summer camps.'}
           </p>
           <Link
-            href={hasFamily ? "/onboarding/children" : "/onboarding"}
+            href={hasFamily ? '/onboarding/children' : '/onboarding'}
             className="inline-block px-8 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary-dark"
           >
-            {hasFamily ? "Add Children" : "Complete Setup"}
+            {hasFamily ? 'Add Children' : 'Complete Setup'}
           </Link>
         </div>
       </main>

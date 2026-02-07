@@ -126,8 +126,8 @@ export function ChildCoverageCard({
               coveredDays === 5
                 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                 : coveredDays > 0
-                ? 'bg-accent/20 text-accent-dark dark:bg-accent/30 dark:text-accent'
-                : 'bg-accent/10 text-accent-dark dark:bg-accent/20 dark:text-accent'
+                  ? 'bg-accent/20 text-accent-dark dark:bg-accent/30 dark:text-accent'
+                  : 'bg-accent/10 text-accent-dark dark:bg-accent/20 dark:text-accent'
             }`}
             title={`${coveredDays} out of 5 weekdays covered`}
           >
@@ -161,10 +161,16 @@ export function ChildCoverageCard({
               {tentativeCamps.map((reg) => (
                 <div key={reg.registrationId} className="flex items-center gap-2 text-xs py-1">
                   <OrgLogo url={reg.organization?.logoUrl} size="xs" />
-                  <span className="text-slate-700 dark:text-slate-300 flex-1 truncate" title={reg.camp?.name}>{reg.camp?.name}</span>
-                  <span className={`px-1.5 py-0.5 rounded text-xs flex-shrink-0 ${
-                    reg.status === 'waitlisted' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
-                  }`}>
+                  <span className="text-slate-700 dark:text-slate-300 flex-1 truncate" title={reg.camp?.name}>
+                    {reg.camp?.name}
+                  </span>
+                  <span
+                    className={`px-1.5 py-0.5 rounded text-xs flex-shrink-0 ${
+                      reg.status === 'waitlisted'
+                        ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                        : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
+                    }`}
+                  >
                     {reg.status === 'waitlisted' ? 'WL' : 'Int'}
                   </span>
                   {reg.status === 'interested' && onMarkRegistered && (
@@ -195,11 +201,17 @@ export function ChildCoverageCard({
                     className="flex-1 min-w-0 cursor-pointer"
                     title="Open in new tab"
                   >
-                    <div className="font-medium text-slate-900 dark:text-white truncate group-hover:text-primary dark:group-hover:text-primary-light" title={camp.campName}>
+                    <div
+                      className="font-medium text-slate-900 dark:text-white truncate group-hover:text-primary dark:group-hover:text-primary-light"
+                      title={camp.campName}
+                    >
                       {camp.campName}
                       <span className="ml-1 opacity-0 group-hover:opacity-100 text-primary">↗</span>
                     </div>
-                    <div className="text-slate-500 truncate" title={`${formatTime(camp.dropOffTime)}-${formatTime(camp.pickUpTime)} · ${camp.locationName}${camp.distanceFromHome ? ` · ${camp.distanceFromHome} mi` : ''}`}>
+                    <div
+                      className="text-slate-500 truncate"
+                      title={`${formatTime(camp.dropOffTime)}-${formatTime(camp.pickUpTime)} · ${camp.locationName}${camp.distanceFromHome ? ` · ${camp.distanceFromHome} mi` : ''}`}
+                    >
                       {formatTime(camp.dropOffTime)}-{formatTime(camp.pickUpTime)} · {camp.locationName}
                       {camp.distanceFromHome !== undefined && (
                         <span className="ml-1 text-primary dark:text-primary-light">{camp.distanceFromHome} mi</span>

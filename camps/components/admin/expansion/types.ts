@@ -34,12 +34,7 @@ export interface MarketWithStatus {
   dnsConfigured: boolean;
   netlifyZoneId?: string;
   cityId?: Id<'cities'>;
-  status:
-    | 'not_started'
-    | 'domain_purchased'
-    | 'dns_configured'
-    | 'city_created'
-    | 'launched';
+  status: 'not_started' | 'domain_purchased' | 'dns_configured' | 'city_created' | 'launched';
   createdAt?: number;
   updatedAt?: number;
 

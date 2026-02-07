@@ -18,6 +18,7 @@ This document describes how to add and maintain scrapers for camp websites.
 ```
 
 ### Key Tables
+
 - `scrapeSources` - Camp provider config (URL, scraper code/module)
 - `scrapeJobs` - Each scrape run
 - `scrapeRawData` - Raw JSON from each scrape (non-destructive history)
@@ -49,11 +50,13 @@ Or add to the seed file: `convex/scraping/seedSources.ts`
 ### Step 3: Generate Scraper Code
 
 For **API-based sites** (like OMSI with Salesforce):
+
 - Find the API endpoint
 - Identify required headers/auth
 - Create scraper that calls API directly
 
 For **HTML sites**:
+
 - Identify CSS selectors for camp containers
 - Map selectors to data fields (name, dates, price, etc.)
 
@@ -88,6 +91,7 @@ export default myScraper;
 ```
 
 Then add to executor.ts BUILTIN_SCRAPERS and run:
+
 ```bash
 npx convex run scraping/mutations:updateScraperModule '{"sourceId": "...", "module": "my-scraper"}'
 ```
@@ -102,6 +106,7 @@ npx convex run scraping/scrapers/executor:testScraperCode '{
 ```
 
 If test passes, save it:
+
 ```bash
 npx convex run scraping/mutations:updateScraperCode '{"sourceId": "...", "code": "..."}'
 ```
@@ -119,6 +124,7 @@ npx convex run scraping/scrapers/executor:executeScraper '{"sourceId": "..."}'
 ## Dynamic Scraper Code Template
 
 Dynamic scrapers receive these parameters:
+
 - `config` - { sourceId, url, name, organizationId, customConfig }
 - `log` - function(level, message, data) for logging
 - `fetch` - standard fetch API
@@ -128,35 +134,42 @@ Dynamic scrapers receive these parameters:
 // Example dynamic scraper code
 const response = await fetch(config.url, {
   headers: {
-    "User-Agent": "Mozilla/5.0 (compatible; PDXCampsBot/1.0)",
-    "Accept": "text/html"
-  }
+    'User-Agent': 'Mozilla/5.0 (compatible; PDXCampsBot/1.0)',
+    'Accept': 'text/html',
+  },
 });
 
 if (!response.ok) {
-  return { success: false, error: `HTTP ${response.status}`, sessions: [], scrapedAt: Date.now(), durationMs: 0, pagesScraped: 0 };
+  return {
+    success: false,
+    error: `HTTP ${response.status}`,
+    sessions: [],
+    scrapedAt: Date.now(),
+    durationMs: 0,
+    pagesScraped: 0,
+  };
 }
 
 const html = await response.text();
 const $ = cheerio.load(html);
 const sessions = [];
 
-$(".camp-item").each((i, el) => {
-  const name = $(el).find(".title").text().trim();
-  const dateRaw = $(el).find(".dates").text().trim();
-  const priceRaw = $(el).find(".price").text().trim();
+$('.camp-item').each((i, el) => {
+  const name = $(el).find('.title').text().trim();
+  const dateRaw = $(el).find('.dates').text().trim();
+  const priceRaw = $(el).find('.price').text().trim();
 
   if (name) {
     sessions.push({
       name,
       dateRaw,
       priceRaw,
-      registrationUrl: $(el).find("a").attr("href"),
+      registrationUrl: $(el).find('a').attr('href'),
     });
   }
 });
 
-log("INFO", "Found sessions", { count: sessions.length });
+log('INFO', 'Found sessions', { count: sessions.length });
 
 return {
   success: true,
@@ -171,12 +184,12 @@ return {
 
 ```typescript
 interface ScrapedSession {
-  name: string;                    // Required
+  name: string; // Required
 
   // Dates
-  startDate?: string;              // ISO: YYYY-MM-DD
+  startDate?: string; // ISO: YYYY-MM-DD
   endDate?: string;
-  dateRaw?: string;                // Original string
+  dateRaw?: string; // Original string
 
   // Times
   dropOffHour?: number;
@@ -199,7 +212,7 @@ interface ScrapedSession {
 
   // Other
   location?: string;
-  isAvailable?: boolean;  // Only set if explicitly shown on page - do NOT default to true
+  isAvailable?: boolean; // Only set if explicitly shown on page - do NOT default to true
   registrationUrl?: string;
   imageUrls?: string[];
   description?: string;
@@ -211,15 +224,20 @@ interface ScrapedSession {
 ## Troubleshooting
 
 ### "A pending job already exists"
+
 A previous scrape didn't complete. Check scrapeJobs table and mark stale jobs as failed.
 
 ### Scraper timeout
+
 Dynamic scrapers have 60-second timeout. For slow sites, consider:
+
 - Reducing data fetched
 - Using built-in scraper with chunked processing
 
 ### CORS/fetch errors
+
 Some sites block server-side requests. Options:
+
 - Check for API endpoints instead of HTML
 - Use Stagehand for browser-based scraping (see below)
 
@@ -228,17 +246,20 @@ Some sites block server-side requests. Options:
 Many camp websites use JavaScript frameworks (React, Angular, Vue) that render content client-side. For these sites, we need browser-based scraping via Stagehand.
 
 ### When to Use Stagehand
+
 - Site uses Angular, React, Vue, or similar frameworks
 - Camp data is loaded via JavaScript after page load
 - Site has interactive filters that load content dynamically
 - Content is served from a headless CMS (Contentful, Sanity, etc.)
 
 ### How to Identify JS-Heavy Sites
+
 1. View page source (Ctrl+U) - if you see `<div id="root"></div>` or `ng-app`, it's JS-heavy
 2. Disable JavaScript in DevTools - if content disappears, it's JS-rendered
 3. Check Network tab for XHR/Fetch requests that return JSON data
 
 ### Stagehand Setup (TODO)
+
 ```bash
 # Install Stagehand dependencies
 npm install @anthropic-ai/stagehand puppeteer
@@ -248,6 +269,7 @@ npm install @anthropic-ai/stagehand puppeteer
 ```
 
 ### Priority Sites for Stagehand
+
 1. Trackers Earth (Angular + Contentful)
 2. School of Rock (dynamic inventory)
 3. Coding With Kids (dynamic filters)
@@ -282,6 +304,7 @@ done
 ```
 
 **Results:**
+
 - Directory 242: 1207 entries (Portland summer camps, June start)
 - Directory 243: 1207 entries (Portland summer, August continuation)
 - Directory 248: 237 entries (Portland spring break)
@@ -293,20 +316,24 @@ done
 {
   "location_id": 2,
   "location_name": "SE Portland",
-  "containers": [{
-    "title": "Week 1",
-    "display_date": "June 15-19, 2026",
-    "entries": [{
-      "theme_name": "Rangers: Stealth, Archery & Wilderness Survival",
-      "path": "/youth/camps/summer-camp/rangers/",
-      "open_grades": [3, 4, 5],
-      "grade_range_displays": ["3-5"],
-      "time_start": "9:00 am",
-      "time_end": "3:30 pm",
-      "theme_id": 123,
-      "tag": "Rangers"
-    }]
-  }]
+  "containers": [
+    {
+      "title": "Week 1",
+      "display_date": "June 15-19, 2026",
+      "entries": [
+        {
+          "theme_name": "Rangers: Stealth, Archery & Wilderness Survival",
+          "path": "/youth/camps/summer-camp/rangers/",
+          "open_grades": [3, 4, 5],
+          "grade_range_displays": ["3-5"],
+          "time_start": "9:00 am",
+          "time_end": "3:30 pm",
+          "theme_id": 123,
+          "tag": "Rangers"
+        }
+      ]
+    }
+  ]
 }
 ```
 
@@ -340,6 +367,7 @@ npx convex run scraping/mutations:activateScrapeSource '{"sourceId": "..."}'
 ## Current Status
 
 ### Working Scrapers
+
 - **OMSI** (omsi module) - Salesforce Visualforce API, 250 sessions imported
 - **Trackers Earth** (dynamic code) - Directory API, 904 sessions imported
 - **Northwest Children's Theater** (dynamic code) - Sawyer API, 39 sessions imported
@@ -358,6 +386,7 @@ https://www.hisawyer.com/api/v1/widget/scheduled_activities?slug={org_slug}&sche
 ```
 
 **Response includes:**
+
 - Full session details (name, dates, times, pricing)
 - Image URLs (via CDN)
 - Registration URLs (pdp_url)
@@ -379,16 +408,19 @@ npx convex run scraping/scrapers/executor:executeStagehandScraper '{
 ```
 
 **Requirements:**
+
 - `BROWSERBASE_API_KEY` - Browserbase API key
 - `BROWSERBASE_PROJECT_ID` - Browserbase project ID
 - `MODEL_API_KEY` - Anthropic API key for Claude
 
 **Limitations:**
+
 - Free tier has 1 concurrent session limit
 - Sessions may get stuck requiring manual cleanup in Browserbase dashboard
 - Pages with too much content (>200k tokens) will fail - try a more specific page URL
 
 **Best Practices for Stagehand Instructions:**
+
 - **Extract individual sessions, not overview info.** Many camps run weekly - extract each week as a separate session with specific dates, not just "June-August"
 - Be specific: "Extract each weekly camp session with its specific start and end dates"
 - If a site has multiple pages/tabs for different weeks, navigate to get all data
@@ -411,28 +443,32 @@ npx convex run scraping/import:importFromJob '{"jobId": "..."}'
 We analyzed Portland camp providers. Here's what we found:
 
 #### Sites with APIs (Easiest to Scrape)
-| Site | API Type | Status |
-|------|----------|--------|
-| **OMSI** | Salesforce Visualforce | ✅ Working - 250 sessions |
-| **Trackers Earth** | Custom REST API | ✅ Working - 904 sessions |
+
+| Site               | API Type               | Status                    |
+| ------------------ | ---------------------- | ------------------------- |
+| **OMSI**           | Salesforce Visualforce | ✅ Working - 250 sessions |
+| **Trackers Earth** | Custom REST API        | ✅ Working - 904 sessions |
 
 #### Sites with Registration Platforms (May Have APIs)
-| Site | Platform | Notes |
-|------|----------|-------|
-| **Oregon JCC** | Daxko | API requires business account |
-| **Oregon Children's Theatre** | Sawyer | No public API, uses embedded widgets |
-| **THPRD** | Custom (myTHPRD) | Custom registration system |
-| **Portland Parks** | ActiveCommunities | Uses external registration portal |
+
+| Site                          | Platform          | Notes                                |
+| ----------------------------- | ----------------- | ------------------------------------ |
+| **Oregon JCC**                | Daxko             | API requires business account        |
+| **Oregon Children's Theatre** | Sawyer            | No public API, uses embedded widgets |
+| **THPRD**                     | Custom (myTHPRD)  | Custom registration system           |
+| **Portland Parks**            | ActiveCommunities | Uses external registration portal    |
 
 #### Sites Requiring Stagehand (JavaScript-Heavy)
-| Site | Framework | Notes |
-|------|-----------|-------|
-| **World of Speed** | WordPress/Elementor | Content loaded via JavaScript |
-| **NW Children's Theater** | WordPress | Has PDF schedules, embedded widgets |
-| **Portland Art Museum** | WordPress | /learn/camps/ returns 404 |
-| **Oregon Zoo** | Drupal | /camps returns 404, needs URL update |
+
+| Site                      | Framework           | Notes                                |
+| ------------------------- | ------------------- | ------------------------------------ |
+| **World of Speed**        | WordPress/Elementor | Content loaded via JavaScript        |
+| **NW Children's Theater** | WordPress           | Has PDF schedules, embedded widgets  |
+| **Portland Art Museum**   | WordPress           | /learn/camps/ returns 404            |
+| **Oregon Zoo**            | Drupal              | /camps returns 404, needs URL update |
 
 #### Sites with Broken/Changed URLs
+
 - Oregon Zoo: `/camps` returns 404
 - Portland Art Museum: `/learn/camps/` returns 404
 - Camp Fire Columbia: Returns Wix 404
@@ -440,34 +476,41 @@ We analyzed Portland camp providers. Here's what we found:
 - NCPRD: `/camps` returns 404
 
 #### Sites Requiring Stagehand (JavaScript-heavy)
-| Site | Technology | Notes |
-|------|------------|-------|
-| Trackers Earth | Angular + Contentful CMS | Data loaded client-side via Angular |
-| School of Rock | React/Dynamic | Camp inventory loaded via JavaScript |
-| Coding With Kids | Dynamic filters | JavaScript-dependent camp listings |
-| NW Children's Theater | Unknown | URL structure unclear, needs investigation |
+
+| Site                  | Technology               | Notes                                      |
+| --------------------- | ------------------------ | ------------------------------------------ |
+| Trackers Earth        | Angular + Contentful CMS | Data loaded client-side via Angular        |
+| School of Rock        | React/Dynamic            | Camp inventory loaded via JavaScript       |
+| Coding With Kids      | Dynamic filters          | JavaScript-dependent camp listings         |
+| NW Children's Theater | Unknown                  | URL structure unclear, needs investigation |
 
 #### Sites with Simpler HTML (potential for direct scraping)
-| Site | Notes |
-|------|-------|
-| PDX Fencing | Has basic camp info in HTML, registration via email |
+
+| Site            | Notes                                                  |
+| --------------- | ------------------------------------------------------ |
+| PDX Fencing     | Has basic camp info in HTML, registration via email    |
 | Oregon JCC/MJCC | Has dates/hours visible, calendar may have more detail |
 
 #### Sites with API Potential
-| Site | Notes |
-|------|-------|
+
+| Site | Notes                                   |
+| ---- | --------------------------------------- |
 | OMSI | ✅ Working - Salesforce Visualforce API |
 
 ### Priority for Stagehand Integration
+
 1. **Trackers Earth** - Large provider, well-structured data (in Contentful)
 2. **Oregon JCC** - Community center with many camp options
 3. **School of Rock** - Popular music camps
 
 ### Pending Sources (need scrapers)
+
 Run `npx convex run scraping/seedSources:listScrapeSources '{}'` to see all sources.
 
 ### Sources Added to Waitlist
+
 From PDX Parent guide scrape:
+
 - Trackers Earth
 - NW Children's Theater
 - Backbeat Music Academy
