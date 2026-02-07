@@ -148,10 +148,12 @@ export const getSession = query({
       ctx.db.get(session.organizationId),
     ]);
 
-    // Resolve camp image URLs
+    // Resolve camp image URLs — prefer stored images, fall back to source URLs
     let campImageUrl: string | null = null;
     if (camp?.imageStorageIds && camp.imageStorageIds.length > 0) {
       campImageUrl = await ctx.storage.getUrl(camp.imageStorageIds[0]);
+    } else if (camp?.imageUrls && camp.imageUrls.length > 0) {
+      campImageUrl = camp.imageUrls[0];
     }
 
     // Resolve organization logo URL
