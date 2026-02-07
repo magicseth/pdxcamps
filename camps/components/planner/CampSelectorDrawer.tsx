@@ -57,6 +57,9 @@ interface CampSelectorDrawerProps {
   childAge?: number;
   childGrade?: number;
   cityId: Id<'cities'>;
+  // Pre-selected filters from planner
+  initialCategories?: string[];
+  initialOrganizationId?: string;
 }
 
 function formatDateRange(startDate: string, endDate: string): string {
@@ -81,11 +84,22 @@ export function CampSelectorDrawer({
   childAge,
   childGrade,
   cityId,
+  initialCategories = [],
+  initialOrganizationId,
 }: CampSelectorDrawerProps) {
   const avatarColor = childColor || DEFAULT_CHILD_COLORS[0];
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedOrg, setSelectedOrg] = useState<string | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(initialCategories);
+  const [selectedOrg, setSelectedOrg] = useState<string | null>(initialOrganizationId ?? null);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+
+  // Reset filters when drawer opens with new initial values
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedCategories(initialCategories);
+      setSelectedOrg(initialOrganizationId ?? null);
+      setSelectedLocation(null);
+    }
+  }, [isOpen, initialCategories, initialOrganizationId]);
 
   // Query ALL sessions for this week/child (for filter options)
   const allSessionsResult = useQuery(

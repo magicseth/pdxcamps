@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
+import { DEFAULT_CHILD_COLORS } from '../../lib/constants';
 
 export function SharePlanModal({
   isOpen,
@@ -12,13 +13,14 @@ export function SharePlanModal({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  children: { _id: Id<'children'>; firstName: string; shareToken?: string }[];
+  children: { _id: Id<'children'>; firstName: string; color?: string; shareToken?: string }[];
 }) {
   const generateFamilyToken = useMutation(api.children.mutations.generateFamilyShareToken);
   const [selectedChildIds, setSelectedChildIds] = useState<Set<Id<'children'>>>(new Set());
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showToast, setShowToast] = useState(false);
 
   // Initialize with all children selected
   useEffect(() => {
@@ -49,7 +51,17 @@ export function SharePlanModal({
     try {
       const childIds = Array.from(selectedChildIds);
       const token = await generateFamilyToken({ childIds });
-      setShareUrl(`${window.location.origin}/share/family/${token}`);
+      const url = `${window.location.origin}/share/family/${token}`;
+      setShareUrl(url);
+
+      // Auto-copy to clipboard and show toast
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setShowToast(true);
+      setTimeout(() => {
+        setCopied(false);
+        setShowToast(false);
+      }, 3000);
     } catch (error) {
       console.error('Failed to generate share link:', error);
     } finally {
@@ -63,7 +75,11 @@ export function SharePlanModal({
     if (!shareUrl) return;
     await navigator.clipboard.writeText(shareUrl);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setShowToast(true);
+    setTimeout(() => {
+      setCopied(false);
+      setShowToast(false);
+    }, 3000);
   };
 
   const handleShare = async () => {
@@ -88,6 +104,7 @@ export function SharePlanModal({
   if (!isOpen) return null;
 
   return (
+    <>
     <div
       className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
@@ -112,24 +129,36 @@ export function SharePlanModal({
               Select kids to include
             </label>
             <div className="flex flex-wrap gap-2">
-              {children.map((child) => (
-                <button
-                  key={child._id}
-                  onClick={() => toggleChild(child._id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                    selectedChildIds.has(child._id)
-                      ? 'bg-accent text-white shadow-md'
-                      : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
-                  }`}
-                >
-                  {selectedChildIds.has(child._id) && (
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  )}
-                  {child.firstName}
-                </button>
-              ))}
+              {children.map((child, index) => {
+                const avatarColor = child.color || DEFAULT_CHILD_COLORS[index % DEFAULT_CHILD_COLORS.length];
+                const isSelected = selectedChildIds.has(child._id);
+                return (
+                  <button
+                    key={child._id}
+                    onClick={() => toggleChild(child._id)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all ${
+                      isSelected
+                        ? 'bg-accent text-white shadow-md'
+                        : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
+                    }`}
+                  >
+                    <span
+                      className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 transition-all ${
+                        isSelected ? 'ring-2 ring-white ring-offset-1 ring-offset-accent' : ''
+                      }`}
+                      style={{ backgroundColor: avatarColor }}
+                    >
+                      {child.firstName[0]}
+                    </span>
+                    {child.firstName}
+                    {isSelected && (
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </button>
+                );
+              })}
             </div>
             <p className="text-xs text-slate-500 mt-2">
               One link will show all selected kids' schedules
@@ -190,5 +219,22 @@ export function SharePlanModal({
         )}
       </div>
     </div>
+
+    {/* Toast notification */}
+    <div
+      className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] transition-all duration-300 ${
+        showToast
+          ? 'opacity-100 translate-y-0'
+          : 'opacity-0 translate-y-4 pointer-events-none'
+      }`}
+    >
+      <div className="flex items-center gap-2 px-4 py-3 bg-slate-900 dark:bg-slate-700 text-white rounded-xl shadow-lg">
+        <svg className="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        </svg>
+        <span className="font-medium">Link copied to clipboard!</span>
+      </div>
+    </div>
+    </>
   );
 }

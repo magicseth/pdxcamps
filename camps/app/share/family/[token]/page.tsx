@@ -183,7 +183,38 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
         )}
 
         {/* Each Child's Schedule */}
-        {plan.children.map((child) => (
+        {plan.children.map((child) => {
+          // Group consecutive unscheduled weeks
+          type WeekGroup = {
+            type: 'scheduled';
+            week: typeof child.weeks[0];
+          } | {
+            type: 'unscheduled';
+            weeks: typeof child.weeks;
+          };
+
+          const groupedWeeks: WeekGroup[] = [];
+          let currentUnscheduledGroup: typeof child.weeks = [];
+
+          for (const week of child.weeks) {
+            const isScheduled = week.camps.length > 0 || week.hasEvent;
+            if (isScheduled) {
+              // Flush any pending unscheduled group
+              if (currentUnscheduledGroup.length > 0) {
+                groupedWeeks.push({ type: 'unscheduled', weeks: currentUnscheduledGroup });
+                currentUnscheduledGroup = [];
+              }
+              groupedWeeks.push({ type: 'scheduled', week });
+            } else {
+              currentUnscheduledGroup.push(week);
+            }
+          }
+          // Flush remaining unscheduled
+          if (currentUnscheduledGroup.length > 0) {
+            groupedWeeks.push({ type: 'unscheduled', weeks: currentUnscheduledGroup });
+          }
+
+          return (
           <div key={child.childId} className="mb-8">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-bold text-slate-900">
@@ -196,7 +227,40 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
 
             {/* Week-by-week with camp details */}
             <div className="space-y-3">
-              {child.weeks.map((week) => (
+              {groupedWeeks.map((group, groupIndex) => {
+                if (group.type === 'unscheduled') {
+                  const firstWeek = group.weeks[0];
+                  const lastWeek = group.weeks[group.weeks.length - 1];
+                  const weekLabel = group.weeks.length === 1
+                    ? firstWeek.label
+                    : `${firstWeek.label} - ${lastWeek.label}`;
+                  const monthLabel = firstWeek.monthName === lastWeek.monthName
+                    ? firstWeek.monthName
+                    : `${firstWeek.monthName} - ${lastWeek.monthName}`;
+
+                  return (
+                    <div
+                      key={`unscheduled-${groupIndex}`}
+                      className="bg-white rounded-xl border border-slate-200 p-4"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-medium text-slate-900">{weekLabel}</span>
+                          <span className="text-sm text-slate-500 ml-2">{monthLabel}</span>
+                        </div>
+                        <span className="text-slate-400 text-sm">
+                          {group.weeks.length === 1 ? 'Open' : `${group.weeks.length} open weeks`}
+                        </span>
+                      </div>
+                      <div className="text-slate-400 text-sm italic mt-2">
+                        No camps planned yet
+                      </div>
+                    </div>
+                  );
+                }
+
+                const week = group.week;
+                return (
                 <div
                   key={week.weekNumber}
                   className={`bg-white rounded-xl border p-4 ${
@@ -278,16 +342,14 @@ export default function FamilySharedPlanPage({ params }: { params: Promise<{ tok
                     <div className="flex items-center gap-3 text-slate-500 text-sm">
                       <span>📅</span> Family event
                     </div>
-                  ) : (
-                    <div className="text-slate-400 text-sm italic">
-                      No camps planned yet
-                    </div>
-                  )}
+                  ) : null}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
-        ))}
+          );
+        })}
 
         {/* All Sessions Summary */}
         {allCamps.size > 0 && isLoggedIn && (

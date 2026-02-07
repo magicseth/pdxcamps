@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useQuery } from 'convex/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -123,6 +123,22 @@ export function PlannerHub({
       prev.includes(orgId) ? prev.filter(o => o !== orgId) : [...prev, orgId]
     );
   }, []);
+
+  // Animation key for swoosh effect when filters change
+  const [filterAnimationKey, setFilterAnimationKey] = useState(0);
+  const prevFiltersRef = useRef({ categories: selectedCategories, orgs: selectedOrgs });
+
+  useEffect(() => {
+    const prevFilters = prevFiltersRef.current;
+    const filtersChanged =
+      JSON.stringify(prevFilters.categories) !== JSON.stringify(selectedCategories) ||
+      JSON.stringify(prevFilters.orgs) !== JSON.stringify(selectedOrgs);
+
+    if (filtersChanged) {
+      setFilterAnimationKey(k => k + 1);
+      prevFiltersRef.current = { categories: selectedCategories, orgs: selectedOrgs };
+    }
+  }, [selectedCategories, selectedOrgs]);
 
   // Derive available categories from aggregate data, sorted by frequency
   // Filter out generic catch-all categories
@@ -561,16 +577,21 @@ export function PlannerHub({
             </div>
           ) : (
             <QueryErrorBoundary section="planner">
-              <PlannerGrid
-                coverage={filteredCoverage}
-                children={children}
-                citySlug={defaultCity?.slug}
-                sessionCounts={sessionCounts}
-                onGapClick={handleGapClick}
-                onRegistrationClick={handleRegistrationClick}
-                onEventClick={handleEventClick}
-                onAddChild={() => setShowAddChildModal(true)}
-              />
+              <div
+                key={filterAnimationKey}
+                className={filterAnimationKey > 0 ? 'animate-filter-swoosh' : ''}
+              >
+                <PlannerGrid
+                  coverage={filteredCoverage}
+                  children={children}
+                  citySlug={defaultCity?.slug}
+                  sessionCounts={sessionCounts}
+                  onGapClick={handleGapClick}
+                  onRegistrationClick={handleRegistrationClick}
+                  onEventClick={handleEventClick}
+                  onAddChild={() => setShowAddChildModal(true)}
+                />
+              </div>
             </QueryErrorBoundary>
           )}
         </div>
@@ -606,7 +627,7 @@ export function PlannerHub({
               </div>
             </div>
 
-            <style jsx>{`
+            <style jsx global>{`
               @keyframes scroll-planner {
                 0% { transform: translateX(0); }
                 100% { transform: translateX(-50%); }
@@ -616,6 +637,31 @@ export function PlannerHub({
               }
               .animate-scroll-planner:hover {
                 animation-play-state: paused;
+              }
+              @keyframes filter-swoosh {
+                0% {
+                  opacity: 0.6;
+                  transform: translate(-6px, -4px);
+                }
+                25% {
+                  opacity: 0.75;
+                  transform: translate(4px, -2px);
+                }
+                50% {
+                  opacity: 0.85;
+                  transform: translate(3px, 3px);
+                }
+                75% {
+                  opacity: 0.95;
+                  transform: translate(-2px, 2px);
+                }
+                100% {
+                  opacity: 1;
+                  transform: translate(0, 0);
+                }
+              }
+              .animate-filter-swoosh {
+                animation: filter-swoosh 0.4s ease-out;
               }
             `}</style>
           </section>
@@ -703,6 +749,8 @@ export function PlannerHub({
           childAge={selectedGap.childAge}
           childGrade={selectedGap.childGrade}
           cityId={defaultCity._id}
+          initialCategories={selectedCategories}
+          initialOrganizationId={selectedOrgs[0]}
         />
       )}
 
