@@ -377,7 +377,7 @@ export function PlannerHub({
           )}
 
           {/* Registration Progress Banner */}
-          {stats && (registrationStats.registered > 0 || registrationStats.todo > 0 || registrationStats.waitlist > 0) && (
+          {stats && (
             <RegistrationProgressBanner
               year={selectedYear}
               totalWeeks={stats.totalWeeks}
@@ -386,60 +386,37 @@ export function PlannerHub({
               todoCount={registrationStats.todo}
               waitlistCount={registrationStats.waitlist}
               onTodoClick={() => setShowChecklist(true)}
+              onAddEventClick={() => setShowAddEventModal(true)}
+              onShareClick={() => setShowShareModal(true)}
             />
           )}
 
-          {/* Category filter chips + action buttons */}
-          <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide">
-            {/* Find Camps button */}
-            {stats && stats.weeksWithGaps > 0 && defaultCity && (
-              <Link
-                href={`/discover/${defaultCity.slug}`}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-accent text-white rounded-full font-medium text-xs hover:bg-accent-dark transition-colors flex-shrink-0"
-              >
-                <SearchIcon />
-                <span>Find Camps</span>
-              </Link>
-            )}
-
-            {/* Add Event button */}
-            <button
-              onClick={() => setShowAddEventModal(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-full text-xs font-medium hover:bg-slate-200 dark:hover:bg-slate-600 flex-shrink-0"
-              title="Add family event (E key)"
-            >
-              <PlusIcon />
-              <span>Add Event</span>
-            </button>
-
-            {/* Divider */}
-            {availableCategories.length > 0 && (
-              <div className="w-px h-5 bg-slate-200 dark:bg-slate-600 flex-shrink-0" />
-            )}
-
-            {/* Category filter chips */}
-            {availableCategories.length > 0 && availableCategories.map(cat => (
-              <button
-                key={cat}
-                onClick={() => toggleCategory(cat)}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0 transition-colors whitespace-nowrap ${
-                  selectedCategories.includes(cat)
-                    ? 'bg-primary text-white'
-                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-            {selectedCategories.length > 0 && (
-              <button
-                onClick={() => setSelectedCategories([])}
-                className="px-2.5 py-1 rounded-full text-xs font-medium text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 flex-shrink-0"
-              >
-                Clear
-              </button>
-            )}
-          </div>
+          {/* Category filter chips */}
+          {availableCategories.length > 0 && (
+            <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide">
+              {availableCategories.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => toggleCategory(cat)}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0 transition-colors whitespace-nowrap ${
+                    selectedCategories.includes(cat)
+                      ? 'bg-primary text-white'
+                      : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+              {selectedCategories.length > 0 && (
+                <button
+                  onClick={() => setSelectedCategories([])}
+                  className="px-2.5 py-1 rounded-full text-xs font-medium text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 flex-shrink-0"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Organization filter chips */}
           {availableOrgs.length > 0 && (
