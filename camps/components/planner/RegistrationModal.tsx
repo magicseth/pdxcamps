@@ -23,9 +23,19 @@ interface RegistrationModalProps {
     notes?: string;
   } | null;
   citySlug?: string;
+  onMarkRegistered?: (data: {
+    registrationId: Id<'registrations'>;
+    sessionId: Id<'sessions'>;
+    childId: Id<'children'>;
+    childName: string;
+    campName: string;
+    organizationName?: string;
+    organizationLogoUrl?: string | null;
+    dateRange: string;
+  }) => void;
 }
 
-export function RegistrationModal({ isOpen, onClose, registration, citySlug }: RegistrationModalProps) {
+export function RegistrationModal({ isOpen, onClose, registration, citySlug, onMarkRegistered }: RegistrationModalProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [showConfirmRemove, setShowConfirmRemove] = useState(false);
 
@@ -35,6 +45,23 @@ export function RegistrationModal({ isOpen, onClose, registration, citySlug }: R
   if (!isOpen || !registration) return null;
 
   const handleMarkRegistered = async () => {
+    // If onMarkRegistered callback is provided, use the celebratory modal flow
+    if (onMarkRegistered) {
+      onMarkRegistered({
+        registrationId: registration.registrationId,
+        sessionId: registration.sessionId,
+        childId: registration.childId,
+        childName: registration.childName,
+        campName: registration.campName,
+        organizationName: registration.organizationName,
+        organizationLogoUrl: registration.organizationLogoUrl,
+        dateRange: registration.weekLabel,
+      });
+      onClose();
+      return;
+    }
+
+    // Fallback to direct mutation call
     setIsUpdating(true);
     try {
       await registerMutation({

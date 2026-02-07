@@ -21,6 +21,9 @@ import { useMarket } from '../../hooks/useMarket';
 import { QueryErrorBoundary } from '../shared/QueryErrorBoundary';
 import { PlusIcon, SearchIcon } from '../shared/icons';
 import { generateSummerWeeks, type SummerWeek, isAgeInRange, isGradeInRange, calculateAge } from '../../convex/lib/helpers';
+import { RegistrationProgressBanner } from './RegistrationProgressBanner';
+import { RegistrationChecklist, ChecklistFAB } from './RegistrationChecklist';
+import { MarkRegisteredModal } from './MarkRegisteredModal';
 
 export function PlannerHub({
   user,
@@ -50,7 +53,18 @@ export function PlannerHub({
   const [showShareModal, setShowShareModal] = useState(false);
   const [showAddChildModal, setShowAddChildModal] = useState(false);
   const [showRequestCampModal, setShowRequestCampModal] = useState(false);
+  const [showChecklist, setShowChecklist] = useState(false);
   const [selectedRegistration, setSelectedRegistration] = useState<RegistrationClickData | null>(null);
+  const [markRegisteredData, setMarkRegisteredData] = useState<{
+    registrationId: Id<'registrations'>;
+    sessionId: Id<'sessions'>;
+    childId: Id<'children'>;
+    childName: string;
+    campName: string;
+    organizationName?: string;
+    organizationLogoUrl?: string | null;
+    dateRange: string;
+  } | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<Id<'familyEvents'> | null>(null);
 
   useEffect(() => {
@@ -150,6 +164,9 @@ export function PlannerHub({
   const subscription = useQuery(api.subscriptions.getSubscription);
   const isPremium = subscription?.isPremium ?? false;
 
+  // Query saved camps for the registration checklist
+  const savedCamps = useQuery(api.registrations.queries.getSavedCamps);
+
   const featuredSessions = useQuery(api.sessions.queries.getFeaturedSessions, {
     citySlug: market.slug,
     limit: 16,
@@ -216,6 +233,16 @@ export function PlannerHub({
       totalGaps,
     };
   }, [coverage]);
+
+  // Get registration counts from savedCamps query for the progress banner
+  const registrationStats = useMemo(() => {
+    if (!savedCamps) return { registered: 0, todo: 0, waitlist: 0 };
+    return {
+      registered: savedCamps.registered.length,
+      todo: savedCamps.interested.length,
+      waitlist: savedCamps.waitlisted.length,
+    };
+  }, [savedCamps]);
 
   const defaultCity = cities.find(c => c.slug === market.slug) || cities[0];
 
@@ -306,6 +333,18 @@ export function PlannerHub({
             </Link>
           )}
 
+          {/* Registration Progress Banner */}
+          {stats && (registrationStats.registered > 0 || registrationStats.todo > 0 || registrationStats.waitlist > 0) && (
+            <RegistrationProgressBanner
+              year={selectedYear}
+              totalWeeks={stats.totalWeeks}
+              coveredWeeks={stats.fullyPlannedWeeks}
+              registeredCount={registrationStats.registered}
+              todoCount={registrationStats.todo}
+              waitlistCount={registrationStats.waitlist}
+              onTodoClick={() => setShowChecklist(true)}
+            />
+          )}
 
           {/* Category filter chips + action buttons */}
           <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide">
@@ -577,6 +616,9 @@ export function PlannerHub({
           registrationUrl: selectedRegistration.registrationUrl,
         } : null}
         citySlug={defaultCity?.slug}
+        onMarkRegistered={(data) => {
+          setMarkRegisteredData(data);
+        }}
       />
 
       {selectedEvent && (
@@ -597,6 +639,27 @@ export function PlannerHub({
           }}
         />
       )}
+
+      {/* Registration Checklist Drawer */}
+      <RegistrationChecklist
+        isOpen={showChecklist}
+        onClose={() => setShowChecklist(false)}
+        children={children}
+      />
+
+      {/* Floating Action Button for quick access to checklist */}
+      <ChecklistFAB
+        pendingCount={registrationStats.todo}
+        onClick={() => setShowChecklist(true)}
+      />
+
+      {/* Mark Registered Modal (for when triggered from RegistrationModal) */}
+      <MarkRegisteredModal
+        isOpen={markRegisteredData !== null}
+        onClose={() => setMarkRegisteredData(null)}
+        registration={markRegisteredData}
+        remainingCount={registrationStats.todo - 1}
+      />
     </div>
   );
 }

@@ -433,16 +433,23 @@ function CoverageCell({ data, week, childId, childName, childGrade, availableSes
   const campName = data?.registrations?.[0]?.campName;
   const eventTitle = data?.events?.[0]?.title;
   const logoUrl = data?.registrations?.[0]?.organizationLogoUrl;
+  const registrationStatus = data?.registrations?.[0]?.status;
   const availableCount = availableSessionCount;
+
+  // Determine registration-specific styling
+  const isRegistered = registrationStatus === 'registered';
+  const isWishlist = registrationStatus === 'interested';
+  const isWaitlisted = registrationStatus === 'waitlisted';
 
   const tdClass = `border-b border-slate-100 dark:border-slate-700/50 p-0 ${
     isMonthStart ? 'border-l border-l-slate-300 dark:border-l-slate-600' : 'border-l border-l-slate-100 dark:border-l-slate-700/50'
   }`;
 
-  // Determine cell appearance
+  // Determine cell appearance based on registration status
   let bgColor = '';
   let icon = '';
   let tooltip = '';
+  let borderStyle = '';
 
   if (hasEvent) {
     bgColor = 'bg-surface/30 dark:bg-surface-dark/40';
@@ -452,14 +459,25 @@ function CoverageCell({ data, week, childId, childName, childGrade, availableSes
     bgColor = 'bg-slate-100 dark:bg-slate-800';
     icon = '📚';
     tooltip = 'Still in school';
-  } else if (status === 'full') {
-    bgColor = 'bg-green-100 dark:bg-green-900/40';
-    icon = '✓';
-    tooltip = campName || 'Covered';
-  } else if (status === 'partial') {
-    bgColor = 'bg-accent/20 dark:bg-accent/30';
-    icon = '◐';
-    tooltip = campName ? `Partial: ${campName}` : 'Partial coverage';
+  } else if (status === 'full' || status === 'partial') {
+    // Determine styling based on registration status
+    if (isRegistered) {
+      bgColor = 'bg-green-100 dark:bg-green-900/40';
+      tooltip = campName ? `${campName} (Registered)` : 'Registered';
+    } else if (isWaitlisted) {
+      bgColor = 'bg-yellow-100 dark:bg-yellow-900/40';
+      tooltip = campName ? `${campName} (Waitlisted)` : 'Waitlisted';
+    } else if (isWishlist) {
+      bgColor = 'bg-amber-50 dark:bg-amber-900/30';
+      borderStyle = 'border-l-2 border-l-amber-400 dark:border-l-amber-500';
+      tooltip = campName ? `${campName} (Need to register)` : 'Need to register';
+    } else {
+      bgColor = 'bg-green-100 dark:bg-green-900/40';
+      tooltip = campName || 'Covered';
+    }
+    if (status === 'partial') {
+      tooltip = `Partial: ${tooltip}`;
+    }
   } else {
     bgColor = 'bg-accent/10 dark:bg-accent/20';
     icon = '';
@@ -468,28 +486,67 @@ function CoverageCell({ data, week, childId, childName, childGrade, availableSes
       : 'Gap - needs camp';
   }
 
+  // Status badge component for org logo overlay
+  const StatusBadge = () => {
+    if (!hasRegistration || hasEvent || status === 'school' || status === 'gap') return null;
+
+    if (isRegistered) {
+      return (
+        <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full flex items-center justify-center border border-white dark:border-slate-800">
+          <svg className="w-2 h-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </span>
+      );
+    }
+    if (isWaitlisted) {
+      return (
+        <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-yellow-500 rounded-full flex items-center justify-center border border-white dark:border-slate-800 text-[8px]">
+          ⏳
+        </span>
+      );
+    }
+    if (isWishlist) {
+      return (
+        <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-amber-400 rounded-full border border-white dark:border-slate-800" />
+      );
+    }
+    return null;
+  };
+
   const cellContent = (
     <div
-      className={`w-full h-full min-h-[48px] flex flex-col items-center justify-center ${bgColor} ${
+      className={`w-full h-full min-h-[48px] flex flex-col items-center justify-center ${bgColor} ${borderStyle} ${
         isPastWeek ? 'opacity-50' : ''
       } ${isCurrentWeek ? 'ring-2 ring-primary ring-inset' : ''}`}
       title={tooltip}
     >
       {logoUrl ? (
-        <img
-          src={logoUrl}
-          alt={campName || ''}
-          title={campName || 'Camp'}
-          className="w-6 h-6 rounded object-contain"
-        />
+        <div className="relative">
+          <img
+            src={logoUrl}
+            alt={campName || ''}
+            title={campName || 'Camp'}
+            className="w-6 h-6 rounded object-contain"
+          />
+          <StatusBadge />
+        </div>
       ) : hasEvent ? (
         <span className="text-base">{icon}</span>
       ) : status === 'school' ? (
         <span className="text-slate-400 dark:text-slate-500 text-sm">{icon}</span>
-      ) : status === 'full' ? (
-        <span className="text-green-600 dark:text-green-400 font-bold text-sm">{icon}</span>
-      ) : status === 'partial' ? (
-        <span className="text-accent-dark dark:text-accent text-sm">{icon}</span>
+      ) : status === 'full' || status === 'partial' ? (
+        <div className="relative">
+          {isRegistered ? (
+            <span className="text-green-600 dark:text-green-400 font-bold text-sm">✓</span>
+          ) : isWaitlisted ? (
+            <span className="text-yellow-600 dark:text-yellow-400 text-sm">⏳</span>
+          ) : isWishlist ? (
+            <span className="text-amber-500 dark:text-amber-400 text-lg">○</span>
+          ) : (
+            <span className="text-green-600 dark:text-green-400 font-bold text-sm">✓</span>
+          )}
+        </div>
       ) : (
         <>
           {availableCount !== undefined && availableCount > 0 ? (

@@ -4,7 +4,8 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import confetti from 'canvas-confetti';
 
 function formatDate(dateStr: string) {
   const date = new Date(dateStr + 'T00:00:00');
@@ -13,7 +14,7 @@ function formatDate(dateStr: string) {
 
 function formatPrice(price: number | null | undefined) {
   if (!price) return null;
-  return `$${price}`;
+  return `$${(price / 100).toFixed(0)}`;
 }
 
 interface SavedCamp {
@@ -47,16 +48,16 @@ interface SavedCamp {
   } | null;
 }
 
-function CampCard({
+function TodoCampCard({
   camp,
-  showActions = false,
   onMarkRegistered,
   onRemove,
+  isProcessing,
 }: {
   camp: SavedCamp;
-  showActions?: boolean;
-  onMarkRegistered?: (id: Id<"registrations">) => void;
-  onRemove?: (id: Id<"registrations">) => void;
+  onMarkRegistered: () => void;
+  onRemove: () => void;
+  isProcessing: boolean;
 }) {
   const session = camp.session;
   const campInfo = session?.camp;
@@ -64,35 +65,38 @@ function CampCard({
   const location = session?.location;
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 hover:shadow-md transition-shadow">
-      <div className="flex justify-between items-start gap-4">
+    <div className="bg-white dark:bg-slate-800 rounded-xl border-l-4 border-l-amber-400 border border-slate-200 dark:border-slate-700 p-4 hover:shadow-md transition-shadow">
+      <div className="flex gap-3">
+        {/* Checkbox visual */}
+        <div className="flex-shrink-0 pt-0.5">
+          <div className="w-5 h-5 rounded-full border-2 border-amber-400 dark:border-amber-500" />
+        </div>
+
+        {/* Content */}
         <div className="flex-1 min-w-0">
-          {/* Camp name */}
-          <Link
-            href={`/session/${session?._id}`}
-            className="font-medium text-slate-900 dark:text-white hover:text-primary dark:hover:text-primary-light block truncate"
-          >
-            {campInfo?.name ?? 'Unknown Camp'}
-          </Link>
-
-          {/* Organization */}
-          <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
-            {org?.name}
-          </p>
-
-          {/* Child */}
-          {camp.child && (
-            <p className="text-sm text-primary dark:text-primary-light mt-1">
-              for {camp.child.firstName}
-            </p>
-          )}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <Link
+                href={`/session/${session?._id}`}
+                className="font-medium text-slate-900 dark:text-white hover:text-primary dark:hover:text-primary-light block truncate"
+              >
+                {campInfo?.name ?? 'Unknown Camp'}
+              </Link>
+              <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
+                {org?.name}
+              </p>
+            </div>
+            {camp.child && (
+              <span className="text-xs font-medium text-primary dark:text-primary-light bg-primary/10 dark:bg-primary/20 px-2 py-0.5 rounded-full flex-shrink-0">
+                {camp.child.firstName}
+              </span>
+            )}
+          </div>
 
           {/* Details row */}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-sm text-slate-600 dark:text-slate-400">
             {session && (
-              <span>
-                {formatDate(session.startDate)} - {formatDate(session.endDate)}
-              </span>
+              <span>{formatDate(session.startDate)} - {formatDate(session.endDate)}</span>
             )}
             {session?.price && (
               <span className="font-medium text-slate-900 dark:text-white">
@@ -104,50 +108,195 @@ function CampCard({
             )}
           </div>
 
-          {/* Notes */}
-          {camp.notes && (
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 italic">
-              Note: {camp.notes}
-            </p>
-          )}
-
-          {/* Confirmation code */}
-          {camp.externalConfirmationCode && (
-            <p className="text-sm text-green-600 dark:text-green-400 mt-2">
-              Confirmation: {camp.externalConfirmationCode}
-            </p>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div className="flex flex-col gap-2 shrink-0">
-          {showActions && session?.externalRegistrationUrl && (
-            <a
-              href={session.externalRegistrationUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3 py-1.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-dark transition-colors text-center"
-            >
-              Register
-            </a>
-          )}
-          {showActions && onMarkRegistered && (
+          {/* Action buttons */}
+          <div className="flex items-center gap-2 mt-3">
+            {session?.externalRegistrationUrl && (
+              <a
+                href={session.externalRegistrationUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-dark transition-colors"
+              >
+                Register
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
+            )}
             <button
-              onClick={() => onMarkRegistered(camp._id)}
-              className="px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+              onClick={onMarkRegistered}
+              disabled={isProcessing}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
             >
+              {isProcessing ? (
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              )}
               Mark Done
             </button>
-          )}
-          {onRemove && (
             <button
-              onClick={() => onRemove(camp._id)}
-              className="px-3 py-1.5 text-slate-500 dark:text-slate-400 text-sm hover:text-red-600 dark:hover:text-red-400 transition-colors"
+              onClick={onRemove}
+              disabled={isProcessing}
+              className="px-3 py-1.5 text-slate-500 dark:text-slate-400 text-sm hover:text-red-600 dark:hover:text-red-400 transition-colors disabled:opacity-50"
             >
               Remove
             </button>
-          )}
+          </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function RegisteredCampCard({
+  camp,
+  onRemove,
+  isProcessing,
+}: {
+  camp: SavedCamp;
+  onRemove: () => void;
+  isProcessing: boolean;
+}) {
+  const session = camp.session;
+  const campInfo = session?.camp;
+  const org = session?.organization;
+
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-xl border-l-4 border-l-green-500 border border-slate-200 dark:border-slate-700 p-4 hover:shadow-md transition-shadow">
+      <div className="flex gap-3">
+        {/* Checkmark */}
+        <div className="flex-shrink-0 pt-0.5">
+          <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <Link
+                href={`/session/${session?._id}`}
+                className="font-medium text-slate-900 dark:text-white hover:text-primary dark:hover:text-primary-light block truncate"
+              >
+                {campInfo?.name ?? 'Unknown Camp'}
+              </Link>
+              <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
+                {org?.name}
+              </p>
+            </div>
+            {camp.child && (
+              <span className="text-xs font-medium text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded-full flex-shrink-0">
+                {camp.child.firstName}
+              </span>
+            )}
+          </div>
+
+          {/* Details row */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-sm text-slate-600 dark:text-slate-400">
+            {session && (
+              <span>{formatDate(session.startDate)} - {formatDate(session.endDate)}</span>
+            )}
+            {session?.price && (
+              <span className="font-medium text-slate-900 dark:text-white">
+                {formatPrice(session.price)}
+              </span>
+            )}
+          </div>
+
+          {/* Confirmation code */}
+          {camp.externalConfirmationCode && (
+            <div className="mt-2 inline-flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Confirmation: {camp.externalConfirmationCode}
+            </div>
+          )}
+
+          {/* Remove button */}
+          <div className="mt-3">
+            <button
+              onClick={onRemove}
+              disabled={isProcessing}
+              className="px-3 py-1.5 text-slate-500 dark:text-slate-400 text-sm hover:text-red-600 dark:hover:text-red-400 transition-colors disabled:opacity-50"
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProgressHeader({
+  registeredCount,
+  todoCount,
+  waitlistCount,
+}: {
+  registeredCount: number;
+  todoCount: number;
+  waitlistCount: number;
+}) {
+  const totalCamps = registeredCount + todoCount + waitlistCount;
+  const progressPercent = totalCamps > 0 ? Math.round((registeredCount / totalCamps) * 100) : 0;
+
+  return (
+    <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+      <div className="max-w-3xl mx-auto px-4 py-6">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
+          My Summer Camps
+        </h1>
+
+        {totalCamps > 0 && (
+          <>
+            {/* Progress bar */}
+            <div className="flex items-center gap-3 mt-4">
+              <div className="flex-1 h-2.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-green-400 to-green-500 rounded-full transition-all duration-500"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+              <span className="text-sm font-medium text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                {registeredCount}/{totalCamps} done
+              </span>
+            </div>
+
+            {/* Status pills */}
+            <div className="flex items-center gap-2 mt-4 flex-wrap">
+              {registeredCount > 0 && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-sm font-medium">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  {registeredCount} Registered
+                </span>
+              )}
+              {todoCount > 0 && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full text-sm font-medium">
+                  <span className="w-2 h-2 rounded-full bg-amber-500" />
+                  {todoCount} To Do
+                </span>
+              )}
+              {waitlistCount > 0 && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full text-sm font-medium">
+                  <span className="text-xs">⏳</span>
+                  {waitlistCount} Waitlist
+                </span>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -160,12 +309,12 @@ function SectionHeader({
 }: {
   title: string;
   count: number;
-  color: 'yellow' | 'green' | 'orange' | 'slate';
+  color: 'amber' | 'green' | 'yellow' | 'slate';
 }) {
   const colors = {
+    amber: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
     yellow: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
     green: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-    orange: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
     slate: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400',
   };
 
@@ -189,19 +338,68 @@ export default function SavedCampsPage() {
 
   const isPremium = subscription?.isPremium ?? false;
   const savedCount = savedCamps ? savedCamps.interested.length + savedCamps.waitlisted.length : 0;
-  // Must match FREE_SAVED_CAMPS_LIMIT in convex/lib/paywall.ts
   const FREE_LIMIT = 5;
+
+  const registrationStats = useMemo(() => {
+    if (!savedCamps) return { registered: 0, todo: 0, waitlist: 0 };
+    return {
+      registered: savedCamps.registered.length,
+      todo: savedCamps.interested.length,
+      waitlist: savedCamps.waitlisted.length,
+    };
+  }, [savedCamps]);
+
+  const fireConfetti = () => {
+    const count = 200;
+    const defaults = {
+      origin: { y: 0.7 },
+      zIndex: 9999,
+    };
+
+    confetti({
+      ...defaults,
+      particleCount: Math.floor(count * 0.25),
+      spread: 26,
+      startVelocity: 55,
+    });
+    confetti({
+      ...defaults,
+      particleCount: Math.floor(count * 0.2),
+      spread: 60,
+    });
+    confetti({
+      ...defaults,
+      particleCount: Math.floor(count * 0.35),
+      spread: 100,
+      decay: 0.91,
+      scalar: 0.8,
+    });
+    confetti({
+      ...defaults,
+      particleCount: Math.floor(count * 0.1),
+      spread: 120,
+      startVelocity: 25,
+      decay: 0.92,
+      scalar: 1.2,
+    });
+    confetti({
+      ...defaults,
+      particleCount: Math.floor(count * 0.1),
+      spread: 120,
+      startVelocity: 45,
+    });
+  };
 
   const handleMarkRegistered = async (registrationId: Id<"registrations">) => {
     setProcessingId(registrationId);
     try {
-      // Find the registration to get childId and sessionId
       const registration = savedCamps?.interested.find(r => r._id === registrationId);
       if (registration && registration.child && registration.session) {
         await register({
           childId: registration.child._id,
           sessionId: registration.session._id,
         });
+        fireConfetti();
       }
     } catch (error) {
       console.error('Failed to mark as registered:', error);
@@ -242,19 +440,14 @@ export default function SavedCampsPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-      {/* Header */}
-      <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-        <div className="max-w-3xl mx-auto px-4 py-6">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            My Camps
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">
-            Track your saved camps and registrations
-          </p>
-        </div>
-      </div>
+      {/* Progress Header */}
+      <ProgressHeader
+        registeredCount={registrationStats.registered}
+        todoCount={registrationStats.todo}
+        waitlistCount={registrationStats.waitlist}
+      />
 
-      <div className="max-w-3xl mx-auto px-4 py-6 space-y-8">
+      <div className="max-w-3xl mx-auto px-4 py-6 space-y-8 pb-24">
         {/* Upgrade Banner for Free Users */}
         {!isPremium && subscription !== undefined && savedCount >= FREE_LIMIT - 1 && (
           <div className="bg-gradient-to-r from-accent/10 to-accent/5 dark:from-accent/20 dark:to-accent/10 border border-accent/30 dark:border-accent/40 rounded-xl p-4">
@@ -306,16 +499,16 @@ export default function SavedCampsPage() {
                 <SectionHeader
                   title="Need to Register"
                   count={savedCamps.interested.length}
-                  color="yellow"
+                  color="amber"
                 />
                 <div className="space-y-3">
                   {savedCamps.interested.map((camp) => (
-                    <CampCard
+                    <TodoCampCard
                       key={camp._id}
                       camp={camp as SavedCamp}
-                      showActions
-                      onMarkRegistered={handleMarkRegistered}
-                      onRemove={handleRemove}
+                      onMarkRegistered={() => handleMarkRegistered(camp._id)}
+                      onRemove={() => handleRemove(camp._id)}
+                      isProcessing={processingId === camp._id}
                     />
                   ))}
                 </div>
@@ -328,14 +521,16 @@ export default function SavedCampsPage() {
                 <SectionHeader
                   title="On Waitlist"
                   count={savedCamps.waitlisted.length}
-                  color="orange"
+                  color="yellow"
                 />
                 <div className="space-y-3">
                   {savedCamps.waitlisted.map((camp) => (
-                    <CampCard
+                    <TodoCampCard
                       key={camp._id}
                       camp={camp as SavedCamp}
-                      onRemove={handleRemove}
+                      onMarkRegistered={() => handleMarkRegistered(camp._id)}
+                      onRemove={() => handleRemove(camp._id)}
+                      isProcessing={processingId === camp._id}
                     />
                   ))}
                 </div>
@@ -352,10 +547,11 @@ export default function SavedCampsPage() {
                 />
                 <div className="space-y-3">
                   {savedCamps.registered.map((camp) => (
-                    <CampCard
+                    <RegisteredCampCard
                       key={camp._id}
                       camp={camp as SavedCamp}
-                      onRemove={handleRemove}
+                      onRemove={() => handleRemove(camp._id)}
+                      isProcessing={processingId === camp._id}
                     />
                   ))}
                 </div>
