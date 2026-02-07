@@ -1550,6 +1550,11 @@ function SessionCard({
 
   // Get status info
   const getStatusBadge = () => {
+    // No real availability data (default capacity=20, enrolled=0)
+    if (session.capacity === 20 && session.enrolledCount === 0 && session.status !== 'sold_out') {
+      return null;
+    }
+
     if (session.status === 'sold_out' || session.enrolledCount >= session.capacity) {
       if (session.waitlistEnabled) {
         return {
@@ -1628,6 +1633,7 @@ function SessionCard({
 
   // Calculate spots left
   const spotsLeft = session.capacity - session.enrolledCount;
+  const hasAvailabilityData = !(session.capacity === 20 && session.enrolledCount === 0);
   const isSoldOut = session.status === 'sold_out' || spotsLeft <= 0;
 
   // Check if popular (75%+ enrolled but not sold out)
@@ -1793,11 +1799,13 @@ function SessionCard({
           <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/30 to-transparent pointer-events-none" />
           {/* Status badges overlay */}
           <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
-            <span
-              className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadge.className} ${statusBadge.urgent ? 'animate-pulse motion-reduce:animate-none' : ''}`}
-            >
-              {statusBadge.label}
-            </span>
+            {statusBadge && (
+              <span
+                className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadge.className} ${statusBadge.urgent ? 'animate-pulse motion-reduce:animate-none' : ''}`}
+              >
+                {statusBadge.label}
+              </span>
+            )}
             {timingBadge && (
               <span
                 className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${timingBadge.className} ${timingBadge.urgent ? 'animate-pulse motion-reduce:animate-none' : ''}`}
@@ -1880,7 +1888,7 @@ function SessionCard({
           </div>
 
         {/* Spots Left Bar */}
-        {!isSoldOut && (
+        {!isSoldOut && hasAvailabilityData && (
           <div
             className="mb-4 cursor-help"
             title={`${spotsLeft <= 3 ? 'Very limited spots - register soon!' : spotsLeft <= 5 ? 'Limited spots remaining' : 'Good availability'}`}
