@@ -4,23 +4,33 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useMarket } from '@/hooks/useMarket';
 
+// Convex HTTP actions URL for serving dynamic assets
+const CONVEX_SITE_URL = process.env.NEXT_PUBLIC_CONVEX_SITE_URL || 'https://deafening-schnauzer-923.convex.site';
+
 interface TopBarProps {
   title?: string;
 }
 
 export function TopBar({ title }: TopBarProps) {
   const market = useMarket();
+
+  // Use Convex storage if available, otherwise static path
+  const iconUrl = market.iconStorageId
+    ? `${CONVEX_SITE_URL}/city-icon/${market.slug}`
+    : `${market.iconPath}/apple-icon.png`;
+
   return (
     <header className="sticky top-0 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3 z-20">
       <div className="max-w-4xl mx-auto flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
           <Image
-            src={`${market.iconPath}/apple-icon.png`}
+            src={iconUrl}
             alt={market.tagline}
             width={192}
             height={192}
             className="h-8 w-8"
             priority
+            unoptimized={!!market.iconStorageId}
           />
           <span className="font-bold text-lg text-slate-900 dark:text-white">{market.tagline}</span>
         </Link>

@@ -295,6 +295,76 @@ export default defineSchema({
     .index("by_family_and_active", ["familyId", "isActive"])
     .index("by_family_and_dates", ["familyId", "startDate", "endDate"]),
 
+  // ============ CAMP REQUESTS (User-Submitted) ============
+
+  // Requests from users to add camps not in our database
+  // Triggers the scraping pipeline to find and add the camp
+  campRequests: defineTable({
+    familyId: v.id("families"),
+    cityId: v.id("cities"),
+    // What the user provided
+    campName: v.string(),
+    organizationName: v.optional(v.string()),
+    websiteUrl: v.optional(v.string()), // If user knows the URL
+    location: v.optional(v.string()), // General location hint
+    notes: v.optional(v.string()),
+    // Processing status
+    status: v.union(
+      v.literal("pending"), // Waiting to be processed
+      v.literal("searching"), // Searching for the camp
+      v.literal("scraping"), // Found URL, scraping
+      v.literal("completed"), // Successfully added to database
+      v.literal("failed"), // Could not find/scrape
+      v.literal("duplicate") // Already exists in database
+    ),
+    // Results
+    foundUrl: v.optional(v.string()), // URL we found via search
+    scrapeSourceId: v.optional(v.id("scrapeSources")),
+    organizationId: v.optional(v.id("organizations")),
+    errorMessage: v.optional(v.string()),
+    // Metadata
+    createdAt: v.number(),
+    processedAt: v.optional(v.number()),
+  })
+    .index("by_family", ["familyId"])
+    .index("by_status", ["status"])
+    .index("by_city_and_status", ["cityId", "status"]),
+
+  // Custom camps (manual tracking when scraping isn't possible)
+  // Used when user wants to track a camp that can't be scraped
+  customCamps: defineTable({
+    familyId: v.id("families"),
+    childId: v.id("children"),
+    // Camp details
+    campName: v.string(),
+    organizationName: v.optional(v.string()),
+    location: v.optional(v.string()),
+    website: v.optional(v.string()),
+    // Schedule
+    startDate: v.string(), // "2024-06-15"
+    endDate: v.string(),
+    dropOffTime: v.optional(v.string()), // "9:00 AM"
+    pickUpTime: v.optional(v.string()), // "3:00 PM"
+    // Cost
+    price: v.optional(v.number()), // cents
+    // Status
+    status: v.union(
+      v.literal("interested"),
+      v.literal("registered"),
+      v.literal("waitlisted"),
+      v.literal("cancelled")
+    ),
+    confirmationCode: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    // Metadata
+    createdAt: v.number(),
+    isActive: v.boolean(),
+  })
+    .index("by_family", ["familyId"])
+    .index("by_family_and_active", ["familyId", "isActive"])
+    .index("by_child", ["childId"])
+    .index("by_child_and_active", ["childId", "isActive"]),
+
   // ============ REGISTRATIONS ============
 
   registrations: defineTable({

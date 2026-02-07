@@ -180,7 +180,133 @@ export function PlannerGrid({ coverage, children, citySlug, onGapClick, onRegist
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
-      <div className="overflow-x-auto">
+      {/* Mobile layout: months stacked vertically */}
+      <div className="md:hidden">
+        {weeksByMonth.map(([month, weeks], monthIndex) => (
+          <div key={month}>
+            {/* Month header */}
+            <div className="px-4 py-2 text-center text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
+              {month}
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 dark:bg-slate-800/50">
+                    <th className="sticky left-0 z-10 bg-slate-50 dark:bg-slate-800/50 px-3 py-1.5 text-left text-xs font-medium text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700 min-w-[90px]">
+                    </th>
+                    {weeks.map((week) => {
+                      const current = isCurrentWeek(week);
+                      const past = isPastWeek(week);
+                      return (
+                        <th
+                          key={week.week.startDate}
+                          className={`px-1 py-1.5 text-center text-xs border-b border-l border-slate-200 dark:border-slate-700 ${
+                            current
+                              ? 'bg-primary/20 dark:bg-primary-dark/30 text-primary-dark dark:text-white/60 font-bold'
+                              : past
+                              ? 'text-slate-400 dark:text-slate-500'
+                              : 'text-slate-500 dark:text-slate-400'
+                          }`}
+                          title={`${week.week.startDate} - ${week.week.endDate}`}
+                        >
+                          <div className="font-medium">{week.week.label.split(' ')[0]}</div>
+                          <div className="text-[10px] opacity-70">{week.week.label.split(' ').slice(1).join(' ')}</div>
+                        </th>
+                      );
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {children.map((child, childIndex) => {
+                    const childColor = child.color || DEFAULT_CHILD_COLORS[childIndex % DEFAULT_CHILD_COLORS.length];
+                    return (
+                      <tr
+                        key={child._id}
+                        className={childIndex % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50/50 dark:bg-slate-800/50'}
+                      >
+                        <td className="sticky left-0 z-10 px-3 py-2 text-sm font-medium text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-700/50 bg-inherit">
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                              style={{ backgroundColor: childColor }}
+                            >
+                              {child.firstName[0]}
+                            </span>
+                            <span className="truncate text-xs">{child.firstName}</span>
+                            <button
+                              onClick={() => handleShareClick(child._id, child.firstName, child.shareToken)}
+                              disabled={generatingToken === child._id}
+                              className="text-slate-400 hover:text-primary transition-colors disabled:opacity-50 flex-shrink-0"
+                              title={`Share ${child.firstName}'s schedule`}
+                            >
+                              {copiedChildId === child._id ? (
+                                <span className="text-xs text-green-600 dark:text-green-400 font-medium">Copied!</span>
+                              ) : (
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                                </svg>
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                        {weeks.map((week) => {
+                          const cellData = getCellData(child._id, week);
+                          const current = isCurrentWeek(week);
+                          const past = isPastWeek(week);
+                          return (
+                            <CoverageCell
+                              key={`${child._id}-${week.week.startDate}`}
+                              data={cellData}
+                              week={week}
+                              childId={child._id}
+                              childName={child.firstName}
+                              isCurrentWeek={current}
+                              isPastWeek={past}
+                              citySlug={citySlug}
+                              onGapClick={onGapClick}
+                              onRegistrationClick={onRegistrationClick}
+                              onEventClick={onEventClick}
+                            />
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                  {/* Add Kid row - only in the last month */}
+                  {onAddChild && monthIndex === weeksByMonth.length - 1 && (
+                    <tr className="bg-white dark:bg-slate-800">
+                      <td className="sticky left-0 z-10 px-3 py-2 bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700/50">
+                        <button
+                          onClick={onAddChild}
+                          className="flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-primary dark:hover:text-primary-light transition-colors"
+                        >
+                          <span className="w-6 h-6 rounded-full border-2 border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center">
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                          </span>
+                          Add Kid
+                        </button>
+                      </td>
+                      {weeks.map((week) => (
+                        <td
+                          key={`add-${week.week.startDate}`}
+                          className="border-b border-l border-slate-100 dark:border-slate-700/50 p-0"
+                        >
+                          <div className="w-full min-h-[48px]" />
+                        </td>
+                      ))}
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop layout: all months side-by-side */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full border-collapse">
           {/* Month headers */}
           <thead>
@@ -260,7 +386,7 @@ export function PlannerGrid({ coverage, children, citySlug, onGapClick, onRegist
                     <button
                       onClick={() => handleCalendarClick(child._id, child.firstName, child.shareToken)}
                       disabled={generatingToken === child._id}
-                      className="text-slate-400 hover:text-primary transition-colors disabled:opacity-50"
+                      className="hidden md:inline-flex text-slate-400 hover:text-primary transition-colors disabled:opacity-50"
                       title={`Copy calendar URL for ${child.firstName}`}
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

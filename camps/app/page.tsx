@@ -14,8 +14,22 @@ import { RegistrationModal } from '../components/planner/RegistrationModal';
 import { EditEventModal } from '../components/planner/EditEventModal';
 import { AddEventModal } from '../components/planner/AddEventModal';
 import { AddChildModal } from '../components/planner/AddChildModal';
+import { RequestCampModal } from '../components/discover/RequestCampModal';
 import { BottomNav } from '../components/shared/BottomNav';
-import { useMarket } from '../hooks/useMarket';
+import { useMarket, type Market } from '../hooks/useMarket';
+
+// Convex HTTP actions URL for serving dynamic assets
+const CONVEX_SITE_URL = process.env.NEXT_PUBLIC_CONVEX_SITE_URL || 'https://deafening-schnauzer-923.convex.site';
+
+/**
+ * Get icon URL - uses Convex storage if available, otherwise static path
+ */
+function getIconUrl(market: Market): string {
+  if (market.iconStorageId) {
+    return `${CONVEX_SITE_URL}/city-icon/${market.slug}`;
+  }
+  return `${market.iconPath}/apple-icon.png`;
+}
 
 export default function Home() {
   const { user, signOut } = useAuth();
@@ -62,12 +76,13 @@ function LandingPage() {
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link href="/" className="flex items-center">
             <Image
-              src={`${market.iconPath}/apple-icon.png`}
+              src={getIconUrl(market)}
               alt={market.tagline}
               width={120}
               height={40}
               className="h-10 w-auto"
               priority
+              unoptimized={!!market.iconStorageId}
             />
           </Link>
           <div className="flex items-center gap-2">
@@ -653,11 +668,12 @@ function LandingPage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-3">
               <Image
-                src={`${market.iconPath}/apple-icon.png`}
+                src={getIconUrl(market)}
                 alt={market.tagline}
                 width={100}
                 height={32}
                 className="h-8 w-auto brightness-0 invert"
+                unoptimized={!!market.iconStorageId}
               />
               <p className="text-xs text-slate-500">By {market.name} parents, for {market.name} parents</p>
             </div>
@@ -966,6 +982,7 @@ function PlannerHub({
   const [showAddEventModal, setShowAddEventModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showAddChildModal, setShowAddChildModal] = useState(false);
+  const [showRequestCampModal, setShowRequestCampModal] = useState(false);
   const [selectedRegistration, setSelectedRegistration] = useState<RegistrationClickData | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<Id<'familyEvents'> | null>(null);
 
@@ -1243,10 +1260,23 @@ function PlannerHub({
         {featuredSessions && featuredSessions.length > 0 && (
           <section className="bg-slate-900 py-12 overflow-hidden mt-8 -mx-4">
             <div className="max-w-4xl mx-auto px-4 mb-6">
-              <h2 className="text-xl font-bold text-white">
-                Featured camps in {market.name}
-              </h2>
-              <p className="text-slate-400 text-sm mt-1">Happening this summer</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-white">
+                    Featured camps in {market.name}
+                  </h2>
+                  <p className="text-slate-400 text-sm mt-1">Happening this summer</p>
+                </div>
+                <button
+                  onClick={() => setShowRequestCampModal(true)}
+                  className="text-sm text-slate-400 hover:text-white flex items-center gap-1"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Request a camp
+                </button>
+              </div>
             </div>
 
             <div className="relative">
@@ -1287,6 +1317,11 @@ function PlannerHub({
       <AddChildModal
         isOpen={showAddChildModal}
         onClose={() => setShowAddChildModal(false)}
+      />
+
+      <RequestCampModal
+        isOpen={showRequestCampModal}
+        onClose={() => setShowRequestCampModal(false)}
       />
 
       <SharePlanModal
@@ -1533,12 +1568,13 @@ function AppHeader({ user, onSignOut, isPremium }: { user: User | null; onSignOu
       <div className="max-w-4xl mx-auto flex items-center justify-between">
         <Link href="/" className="flex items-center">
           <Image
-            src={`${market.iconPath}/apple-icon.png`}
+            src={getIconUrl(market)}
             alt={market.tagline}
             width={100}
             height={32}
             className="h-8 w-auto"
             priority
+            unoptimized={!!market.iconStorageId}
           />
         </Link>
         <div className="flex items-center gap-4">

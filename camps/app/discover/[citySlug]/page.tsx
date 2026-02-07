@@ -12,6 +12,7 @@ import { BottomNav } from '../../../components/shared/BottomNav';
 import { MapWrapper, MapSession } from '../../../components/map';
 import { UpgradeModal } from '../../../components/shared/UpgradeModal';
 import { AddChildModal } from '../../../components/planner/AddChildModal';
+import { RequestCampModal } from '../../../components/discover/RequestCampModal';
 import { useMarket } from '../../../hooks/useMarket';
 
 // Categories for filtering
@@ -83,6 +84,7 @@ export default function DiscoverPage() {
   const [selectedChildId, setSelectedChildId] = useState<Id<'children'> | null>(null);
   const [showFilters, setShowFilters] = useState(true);
   const [showAddChildModal, setShowAddChildModal] = useState(false);
+  const [showRequestCampModal, setShowRequestCampModal] = useState(false);
   const [selectedOrganizations, setSelectedOrganizations] = useState<string[]>(() => getInitialState().selectedOrganizations);
   const [selectedLocations, setSelectedLocations] = useState<string[]>(() => getInitialState().selectedLocations);
   const [maxDistanceMiles, setMaxDistanceMiles] = useState<number | undefined>(() => getInitialState().maxDistanceMiles);
@@ -1096,20 +1098,28 @@ export default function DiscoverPage() {
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-2">
-                <label htmlFor="discover-sort" className="text-xs text-slate-500 dark:text-slate-400">Sort:</label>
-                <select
-                  id="discover-sort"
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as 'date' | 'price-low' | 'price-high' | 'spots' | 'distance')}
-                  className="text-sm px-2 py-1 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300"
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setShowRequestCampModal(true)}
+                  className="text-xs text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary-light underline underline-offset-2"
                 >
-                  <option value="date">Start Date</option>
-                  <option value="price-low">Price: Low to High</option>
-                  <option value="price-high">Price: High to Low</option>
-                  <option value="spots">Most Spots Available</option>
-                  {hasHomeCoords && <option value="distance">Distance</option>}
-                </select>
+                  Can't find a camp?
+                </button>
+                <div className="flex items-center gap-2">
+                  <label htmlFor="discover-sort" className="text-xs text-slate-500 dark:text-slate-400">Sort:</label>
+                  <select
+                    id="discover-sort"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as 'date' | 'price-low' | 'price-high' | 'spots' | 'distance')}
+                    className="text-sm px-2 py-1 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300"
+                  >
+                    <option value="date">Start Date</option>
+                    <option value="price-low">Price: Low to High</option>
+                    <option value="price-high">Price: High to Low</option>
+                    <option value="spots">Most Spots Available</option>
+                    {hasHomeCoords && <option value="distance">Distance</option>}
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -1213,6 +1223,20 @@ export default function DiscoverPage() {
                     </Link>
                   )}
                 </div>
+                <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
+                  <p className="text-slate-500 dark:text-slate-400 text-sm mb-3">
+                    Know a camp that should be listed here?
+                  </p>
+                  <button
+                    onClick={() => setShowRequestCampModal(true)}
+                    className="text-primary hover:text-primary-dark font-medium text-sm flex items-center gap-1 mx-auto"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Request a Camp
+                  </button>
+                </div>
               </div>
             )}
 
@@ -1276,6 +1300,12 @@ export default function DiscoverPage() {
       <AddChildModal
         isOpen={showAddChildModal}
         onClose={() => setShowAddChildModal(false)}
+      />
+
+      {/* Request Camp Modal */}
+      <RequestCampModal
+        isOpen={showRequestCampModal}
+        onClose={() => setShowRequestCampModal(false)}
       />
     </div>
   );

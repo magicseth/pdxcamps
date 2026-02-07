@@ -4,9 +4,6 @@ import { action } from "../_generated/server";
 import { api } from "../_generated/api";
 import { v } from "convex/values";
 
-// Standard .com price on Porkbun (checked via slkjsdlfkjsdfljsc.com Feb 2026)
-const STANDARD_COM_PRICE = "11.08";
-
 // Porkbun API types
 interface PorkbunPricingResponse {
   status: string;
@@ -43,59 +40,89 @@ interface NetlifyDnsRecord {
 }
 
 /**
- * Check domain availability using Domainr API via RapidAPI
- * Fast and reliable - no rate limiting issues like Porkbun
+ * Sleep helper for rate limiting
  */
-async function checkDomainDomainr(domain: string): Promise<{ available: boolean; error?: string }> {
-  const rapidApiKey = process.env.RAPIDAPI_KEY;
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-  if (!rapidApiKey) {
-    return { available: false, error: "RapidAPI key not configured" };
-  }
-
+/**
+ * Check domain availability using Fastly Domain Research API (powered by Domainr)
+ * Fast and reliable - no strict rate limiting like Porkbun
+ * Endpoint: https://api.fastly.com/domain-management/v1/tools/status
+ */
+async function checkDomainFastly(
+  domain: string,
+  apiKey: string
+): Promise<{ available: boolean; status?: string; error?: string }> {
   try {
     const response = await fetch(
-      `https://domainr.p.rapidapi.com/v2/status?domain=${encodeURIComponent(domain)}`,
+      `https://api.fastly.com/domain-management/v1/tools/status?domain=${encodeURIComponent(domain)}`,
       {
         method: "GET",
         headers: {
-          "X-RapidAPI-Key": rapidApiKey,
-          "X-RapidAPI-Host": "domainr.p.rapidapi.com",
+          "Fastly-Key": apiKey,
+          "Accept": "application/json",
         },
       }
     );
 
     if (!response.ok) {
-      return { available: false, error: `Domainr API error: ${response.status}` };
+      const errorText = await response.text();
+      return {
+        available: false,
+        error: `Fastly API error: ${response.status} - ${errorText}`,
+      };
     }
 
     const data = await response.json();
 
-    // Domainr returns status array with zone info
-    // Status contains: "undelegated" (available), "active" (taken), etc.
-    const status = data.status?.[0];
-    if (!status) {
-      return { available: false, error: "No status returned" };
-    }
+    // Fastly returns status like "undelegated inactive" for available domains
+    // "undelegated" or "inactive" = available
+    // "active", "marketed", "parked" = taken
+    const statusStr = data.status || "";
+    const isAvailable = statusStr.includes("undelegated") || statusStr.includes("inactive");
 
-    // "undelegated" or "inactive" means available
-    // "active", "marketed", "parked" means taken
-    const availableStatuses = ["undelegated", "inactive"];
-    const isAvailable = availableStatuses.some(s => status.status?.includes(s));
-
-    return { available: isAvailable };
+    return {
+      available: isAvailable,
+      status: statusStr,
+    };
   } catch (error) {
     return {
       available: false,
-      error: error instanceof Error ? error.message : "Unknown error"
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
 
 /**
- * Fast bulk domain availability check using Domainr API (via RapidAPI)
- * No rate limits like Porkbun! Checks all domains in parallel.
- * Assumes standard .com price ($9.73). If price is wrong, purchase will verify with Porkbun.
+ * Check multiple domains using Fastly Domain Research API
+ * Much faster than Porkbun - can check in parallel
+ */
+async function checkDomainsWithFastly(
+  domains: string[],
+  apiKey: string
+): Promise<Array<{ domain: string; available: boolean; price?: string; error?: string }>> {
+  // Check all domains in parallel - Fastly doesn't have strict rate limits
+  const results = await Promise.all(
+    domains.map(async (domain) => {
+      const result = await checkDomainFastly(domain, apiKey);
+      return {
+        domain,
+        available: result.available,
+        // Fastly doesn't return price - we'll get actual price from Porkbun when purchasing
+        price: result.available ? undefined : undefined,
+        error: result.error,
+      };
+    })
+  );
+
+  return results;
+}
+
+/**
+ * Bulk domain availability check using Fastly Domain Research API
+ * Fast parallel checking - completes in ~1-2 seconds for multiple domains
  */
 export const checkDomainsQuick = action({
   args: {
@@ -109,21 +136,17 @@ export const checkDomainsQuick = action({
       error?: string;
     }>
   > => {
-    // Check all domains in parallel - Domainr has generous rate limits
-    const results = await Promise.all(
-      args.domains.map(async (domain) => {
-        const result = await checkDomainDomainr(domain);
-        return {
-          domain,
-          available: result.available,
-          // Assume standard .com price for available domains
-          price: result.available ? STANDARD_COM_PRICE : undefined,
-          error: result.error,
-        };
-      })
-    );
+    const fastlyKey = process.env.FASTLY_API_KEY;
 
-    return results;
+    if (!fastlyKey) {
+      return args.domains.map((domain) => ({
+        domain,
+        available: false,
+        error: "Fastly API key not configured",
+      }));
+    }
+
+    return checkDomainsWithFastly(args.domains, fastlyKey);
   },
 });
 

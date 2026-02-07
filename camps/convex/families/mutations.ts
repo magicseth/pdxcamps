@@ -4,6 +4,9 @@ import { v } from "convex/values";
 import { requireAuth, requireFamily, getFamily } from "../lib/auth";
 import { addressValidator, calendarSharingDefaultValidator } from "../lib/validators";
 
+// Flag to control new user notifications (set to true to enable)
+const NOTIFY_ON_SIGNUP = true;
+
 /**
  * Create a new family for the current authenticated user.
  * Throws if user is not authenticated or already has a family.
@@ -37,6 +40,16 @@ export const createFamily = mutation({
       primaryCityId: args.primaryCityId,
       calendarSharingDefault: args.calendarSharingDefault,
     });
+
+    // Notify Seth about new signups
+    if (NOTIFY_ON_SIGNUP) {
+      await ctx.scheduler.runAfter(0, internal.email.sendNewUserNotification, {
+        userEmail: args.email,
+        displayName: args.displayName,
+        cityName: city.name,
+        brandName: city.brandName || "PDX Camps",
+      });
+    }
 
     return familyId;
   },

@@ -12,6 +12,7 @@ export interface Market {
   madeIn: string; // e.g., "Portland"
   // Branding
   iconPath: string; // e.g., "/icons/pdx" - will have /icon.png, /icon-192.png, /apple-icon.png
+  iconStorageId?: string; // Convex storage ID for dynamically stored icon
   themeColor: string;
 }
 

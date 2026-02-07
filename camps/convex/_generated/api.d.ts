@@ -11,6 +11,9 @@
 import type * as admin_migrations from "../admin/migrations.js";
 import type * as admin_mutations from "../admin/mutations.js";
 import type * as admin_queries from "../admin/queries.js";
+import type * as campRequests_actions from "../campRequests/actions.js";
+import type * as campRequests_mutations from "../campRequests/mutations.js";
+import type * as campRequests_queries from "../campRequests/queries.js";
 import type * as camps_mutations from "../camps/mutations.js";
 import type * as camps_queries from "../camps/queries.js";
 import type * as children_mutations from "../children/mutations.js";
@@ -20,6 +23,8 @@ import type * as cities_mutations from "../cities/mutations.js";
 import type * as cities_queries from "../cities/queries.js";
 import type * as cleanup from "../cleanup.js";
 import type * as crons from "../crons.js";
+import type * as customCamps_mutations from "../customCamps/mutations.js";
+import type * as customCamps_queries from "../customCamps/queries.js";
 import type * as dataCleanup from "../dataCleanup.js";
 import type * as discovery_actions from "../discovery/actions.js";
 import type * as discovery_mutations from "../discovery/mutations.js";
@@ -109,6 +114,9 @@ declare const fullApi: ApiFromModules<{
   "admin/migrations": typeof admin_migrations;
   "admin/mutations": typeof admin_mutations;
   "admin/queries": typeof admin_queries;
+  "campRequests/actions": typeof campRequests_actions;
+  "campRequests/mutations": typeof campRequests_mutations;
+  "campRequests/queries": typeof campRequests_queries;
   "camps/mutations": typeof camps_mutations;
   "camps/queries": typeof camps_queries;
   "children/mutations": typeof children_mutations;
@@ -118,6 +126,8 @@ declare const fullApi: ApiFromModules<{
   "cities/queries": typeof cities_queries;
   cleanup: typeof cleanup;
   crons: typeof crons;
+  "customCamps/mutations": typeof customCamps_mutations;
+  "customCamps/queries": typeof customCamps_queries;
   dataCleanup: typeof dataCleanup;
   "discovery/actions": typeof discovery_actions;
   "discovery/mutations": typeof discovery_mutations;

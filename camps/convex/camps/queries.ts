@@ -584,6 +584,81 @@ export const getFeaturedCamps = query({
 });
 
 /**
+ * Simple autocomplete search for camps by name
+ * Returns matching camps with basic info for suggestions
+ */
+export const autocompleteCamps = query({
+  args: {
+    query: v.string(),
+    citySlug: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    if (!args.query || args.query.length < 2) {
+      return [];
+    }
+
+    const limit = args.limit ?? 10;
+    const queryLower = args.query.toLowerCase();
+
+    // Get city ID if citySlug provided
+    let cityId: Id<"cities"> | undefined;
+    if (args.citySlug) {
+      const city = await ctx.db
+        .query("cities")
+        .withIndex("by_slug", (q) => q.eq("slug", args.citySlug!))
+        .unique();
+      cityId = city?._id;
+    }
+
+    // Get organizations in this city
+    let orgIdsInCity: Set<Id<"organizations">> | undefined;
+    if (cityId) {
+      const orgsInCity = await ctx.db
+        .query("organizations")
+        .withIndex("by_is_active", (q) => q.eq("isActive", true))
+        .collect();
+      orgIdsInCity = new Set(
+        orgsInCity
+          .filter((org) => org.cityIds.includes(cityId as Id<"cities">))
+          .map((org) => org._id)
+      );
+    }
+
+    // Get active camps
+    const allCamps = await ctx.db
+      .query("camps")
+      .withIndex("by_is_active", (q) => q.eq("isActive", true))
+      .collect();
+
+    // Filter by name match and city
+    const matching = allCamps
+      .filter((camp) => {
+        const nameMatch = camp.name.toLowerCase().includes(queryLower);
+        const cityMatch = !orgIdsInCity || orgIdsInCity.has(camp.organizationId);
+        return nameMatch && cityMatch;
+      })
+      .slice(0, limit);
+
+    // Enrich with organization info
+    const results = await Promise.all(
+      matching.map(async (camp) => {
+        const org = await ctx.db.get(camp.organizationId);
+        return {
+          _id: camp._id,
+          name: camp.name,
+          slug: camp.slug,
+          organizationName: org?.name,
+          organizationSlug: org?.slug,
+        };
+      })
+    );
+
+    return results;
+  },
+});
+
+/**
  * Full text search camps in a city
  */
 export const searchCamps = query({

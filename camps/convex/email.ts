@@ -601,3 +601,54 @@ export const getMostRecentNonSethInbound = internalQuery({
     return nonSethEmail || null;
   },
 });
+
+/**
+ * Notify Seth when a new user signs up
+ * Sent immediately when a new family is created
+ */
+export const sendNewUserNotification = internalAction({
+  args: {
+    userEmail: v.string(),
+    displayName: v.string(),
+    cityName: v.string(),
+    brandName: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const result = await resend.sendEmail(ctx, {
+      from: `${args.brandName} <hello@pdxcamps.com>`,
+      to: ["seth@magicseth.com"],
+      subject: `New user signup: ${args.displayName} (${args.cityName})`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #1a1a1a;">New User Signup</h2>
+
+          <table style="border-collapse: collapse; width: 100%;">
+            <tr>
+              <td style="padding: 8px 0; font-weight: bold;">Name:</td>
+              <td style="padding: 8px 0;">${args.displayName}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; font-weight: bold;">Email:</td>
+              <td style="padding: 8px 0;"><a href="mailto:${args.userEmail}">${args.userEmail}</a></td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; font-weight: bold;">City:</td>
+              <td style="padding: 8px 0;">${args.cityName}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; font-weight: bold;">Brand:</td>
+              <td style="padding: 8px 0;">${args.brandName}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; font-weight: bold;">Time:</td>
+              <td style="padding: 8px 0;">${new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" })}</td>
+            </tr>
+          </table>
+        </div>
+      `,
+      text: `New user signup!\n\nName: ${args.displayName}\nEmail: ${args.userEmail}\nCity: ${args.cityName}\nBrand: ${args.brandName}\nTime: ${new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" })}`,
+    });
+
+    return result;
+  },
+});

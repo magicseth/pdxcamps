@@ -29,7 +29,7 @@ export function DomainChecker({
   const [loading, setLoading] = useState(false);
   const [customDomain, setCustomDomain] = useState('');
 
-  // Use the fast Domainr-based check
+  // Use Fastly Domain Research API for fast availability checks
   const checkDomainsQuick = useAction(api.expansion.actions.checkDomainsQuick);
 
   const handleCheck = async () => {
@@ -40,7 +40,7 @@ export function DomainChecker({
         ? [...suggestedDomains, customDomain]
         : suggestedDomains;
 
-      // Fast check using Domainr API - returns in ~1-2 seconds!
+      // Check using Fastly Domain Research API - fast parallel checking
       const checkResults = await checkDomainsQuick({ domains: domainsToCheck });
       setResults(checkResults);
     } catch (error) {
@@ -86,7 +86,7 @@ export function DomainChecker({
                 Checking {domainsToShow.length} domains...
               </p>
               <p className="text-xs text-blue-600 dark:text-blue-300">
-                Using fast Domainr API - should complete in a few seconds.
+                Using Fastly Domain Research API - should complete in a few seconds.
               </p>
             </div>
           </div>

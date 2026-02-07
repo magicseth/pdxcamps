@@ -5,6 +5,9 @@ import { useQuery } from 'convex/react';
 import { api } from '../convex/_generated/api';
 import { getMarketFromHostname, type Market, DEFAULT_MARKET } from '../lib/markets';
 
+// Re-export Market type for convenience
+export type { Market };
+
 /**
  * Hook to get the current market based on the hostname
  * First checks the database (cities table), then falls back to static config
@@ -36,6 +39,7 @@ export function useMarket(): Market {
         testimonialAttribution: `${city.name} parent of 2`,
         madeIn: city.name,
         iconPath: `/icons/${city.slug}`,
+        iconStorageId: city.iconStorageId,
         themeColor: '#2563eb',
       };
     }
