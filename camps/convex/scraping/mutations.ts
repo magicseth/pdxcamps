@@ -1069,6 +1069,20 @@ export const updateSourceDetails = mutation({
 });
 
 /**
+ * Toggle a scrape source's active status
+ */
+export const setSourceActive = mutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+    isActive: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.sourceId, { isActive: args.isActive });
+    return args.sourceId;
+  },
+});
+
+/**
  * Refresh the organization logo for a source
  * This queues a job to re-fetch the logo from the organization's website
  */
