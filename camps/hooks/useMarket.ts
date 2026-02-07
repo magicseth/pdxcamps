@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '../convex/_generated/api';
-import { getMarketFromHostname, type Market, DEFAULT_MARKET } from '../lib/markets';
+import { getMarketFromHostname, getMarketBySlug, type Market, DEFAULT_MARKET } from '../lib/markets';
 
 // Re-export Market type for convenience
 export type { Market };
@@ -38,7 +38,7 @@ export function useMarket(): Market {
         neighborhoods: '',
         testimonialAttribution: `${city.name} parent of 2`,
         madeIn: city.name,
-        iconPath: `/icons/${city.slug}`,
+        iconPath: getMarketBySlug(city.slug)?.iconPath || `/icons/${city.slug}`,
         iconStorageId: city.iconStorageId,
         themeColor: '#2563eb',
       };
