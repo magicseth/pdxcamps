@@ -46,10 +46,29 @@ export function CampSelectorDrawer({
   const [selectedOrg, setSelectedOrg] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
 
-  // Query sessions for this week and child
-  const sessionsResult = useQuery(
+  // Query ALL sessions for this week/child (for filter options)
+  const allSessionsResult = useQuery(
     api.sessions.queries.searchSessions,
     isOpen
+      ? {
+          cityId,
+          startDateAfter: weekStart,
+          startDateBefore: weekEnd,
+          childAge,
+          childGrade,
+          excludeSoldOut: true,
+          limit: 200,
+        }
+      : 'skip'
+  );
+
+  const allSessions = allSessionsResult?.sessions ?? [];
+
+  // Query FILTERED sessions for display
+  const hasFilters = selectedCategories.length > 0 || selectedOrg !== null || selectedLocation !== null;
+  const filteredSessionsResult = useQuery(
+    api.sessions.queries.searchSessions,
+    isOpen && hasFilters
       ? {
           cityId,
           startDateAfter: weekStart,
@@ -65,31 +84,34 @@ export function CampSelectorDrawer({
       : 'skip'
   );
 
-  const sessions = sessionsResult?.sessions ?? [];
-  const totalCount = sessionsResult?.totalCount ?? 0;
+  // Use filtered results if we have filters, otherwise use all sessions
+  const sessions = hasFilters ? (filteredSessionsResult?.sessions ?? []) : allSessions;
+  const totalCount = hasFilters ? (filteredSessionsResult?.totalCount ?? 0) : (allSessionsResult?.totalCount ?? 0);
+  const isLoading = hasFilters ? filteredSessionsResult === undefined : allSessionsResult === undefined;
 
-  // Get unique organizations from sessions for filter chips
+  // Get unique organizations from ALL sessions for filter chips
   const organizations = useMemo(() => {
     const orgs = new Map<string, { id: string; name: string; logoUrl?: string; count: number }>();
-    for (const session of sessions) {
+    for (const session of allSessions) {
       if (!orgs.has(session.organizationId)) {
         orgs.set(session.organizationId, {
           id: session.organizationId,
           name: session.organizationName || 'Unknown',
-          logoUrl: undefined, // Will fetch separately if needed
+          logoUrl: undefined,
           count: 0,
         });
       }
       orgs.get(session.organizationId)!.count++;
     }
     return Array.from(orgs.values()).sort((a, b) => b.count - a.count);
-  }, [sessions]);
+  }, [allSessions]);
 
-  // Get unique locations from sessions (only when org is selected)
+  // Get unique locations from sessions for the selected org
   const locations = useMemo(() => {
     if (!selectedOrg) return [];
+    const orgSessions = allSessions.filter(s => s.organizationId === selectedOrg);
     const locs = new Map<string, { id: string; name: string; count: number }>();
-    for (const session of sessions) {
+    for (const session of orgSessions) {
       if (!locs.has(session.locationId)) {
         locs.set(session.locationId, {
           id: session.locationId,
@@ -100,12 +122,12 @@ export function CampSelectorDrawer({
       locs.get(session.locationId)!.count++;
     }
     return Array.from(locs.values()).sort((a, b) => b.count - a.count);
-  }, [sessions, selectedOrg]);
+  }, [allSessions, selectedOrg]);
 
-  // Get available categories from sessions
+  // Get available categories from ALL sessions
   const availableCategories = useMemo(() => {
     const cats = new Set<string>();
-    for (const session of sessions) {
+    for (const session of allSessions) {
       if (session.campCategories) {
         for (const cat of session.campCategories) {
           if (cat !== 'General' && cat !== 'camp') {
@@ -115,7 +137,7 @@ export function CampSelectorDrawer({
       }
     }
     return CATEGORIES.filter(cat => cats.has(cat));
-  }, [sessions]);
+  }, [allSessions]);
 
   const toggleCategory = (cat: string) => {
     setSelectedCategories(prev =>
@@ -229,7 +251,7 @@ export function CampSelectorDrawer({
 
         {/* Results count */}
         <div className="px-4 py-2 text-sm text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-slate-700/50">
-          {sessionsResult === undefined ? (
+          {isLoading ? (
             'Loading...'
           ) : totalCount === 0 ? (
             'No camps available'
@@ -240,7 +262,7 @@ export function CampSelectorDrawer({
 
         {/* Session list */}
         <div className="flex-1 overflow-y-auto p-4">
-          {sessionsResult === undefined ? (
+          {isLoading ? (
             <div className="space-y-3">
               {[1, 2, 3].map(i => (
                 <div key={i} className="bg-slate-100 dark:bg-slate-700/50 rounded-xl p-4 animate-pulse">
