@@ -62,7 +62,7 @@ export const recomputeForCity = internalMutation({
     const orgMap = new Map(
       orgsRaw
         .filter((o): o is NonNullable<typeof o> => o !== null)
-        .map((o) => [o._id, o.name])
+        .map((o) => [o._id, { name: o.name, logoUrl: o.logoUrl }])
     );
 
     // Build per-week session summaries
@@ -76,6 +76,7 @@ export const recomputeForCity = internalMutation({
         cats: string[];
         orgId: string;
         orgName: string;
+        orgLogoUrl?: string;
       }>
     > = {};
 
@@ -86,15 +87,19 @@ export const recomputeForCity = internalMutation({
 
       if (overlapping.length === 0) continue;
 
-      weekData[week.startDate] = overlapping.map((s) => ({
-        minAge: s.ageRequirements.minAge,
-        maxAge: s.ageRequirements.maxAge,
-        minGrade: s.ageRequirements.minGrade,
-        maxGrade: s.ageRequirements.maxGrade,
-        cats: s.campCategories || campMap.get(s.campId)?.categories || [],
-        orgId: s.organizationId,
-        orgName: s.organizationName || orgMap.get(s.organizationId) || "Unknown",
-      }));
+      weekData[week.startDate] = overlapping.map((s) => {
+        const org = orgMap.get(s.organizationId);
+        return {
+          minAge: s.ageRequirements.minAge,
+          maxAge: s.ageRequirements.maxAge,
+          minGrade: s.ageRequirements.minGrade,
+          maxGrade: s.ageRequirements.maxGrade,
+          cats: s.campCategories || campMap.get(s.campId)?.categories || [],
+          orgId: s.organizationId,
+          orgName: s.organizationName || org?.name || "Unknown",
+          orgLogoUrl: org?.logoUrl,
+        };
+      });
     }
 
     // Upsert the aggregate document
@@ -196,6 +201,7 @@ export const getWeeklyAvailability = query({
           cats: string[];
           orgId: string;
           orgName: string;
+          orgLogoUrl?: string;
         }>
       >,
       updatedAt: doc.updatedAt,

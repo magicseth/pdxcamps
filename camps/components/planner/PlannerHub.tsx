@@ -98,12 +98,19 @@ export function PlannerHub({
     year: selectedYear,
   });
 
-  // Category filter for planner grid counts
+  // Category and org filters for planner grid counts
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedOrgs, setSelectedOrgs] = useState<string[]>([]);
 
   const toggleCategory = useCallback((cat: string) => {
     setSelectedCategories(prev =>
       prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+    );
+  }, []);
+
+  const toggleOrg = useCallback((orgId: string) => {
+    setSelectedOrgs(prev =>
+      prev.includes(orgId) ? prev.filter(o => o !== orgId) : [...prev, orgId]
     );
   }, []);
 
@@ -124,6 +131,23 @@ export function PlannerHub({
     return Object.entries(freq)
       .sort((a, b) => b[1] - a[1])
       .map(([cat]) => cat);
+  }, [availability]);
+
+  // Derive available organizations from aggregate data, sorted by frequency
+  const availableOrgs = useMemo(() => {
+    if (!availability?.weeks) return [];
+    const orgs: Record<string, { name: string; logoUrl?: string; count: number }> = {};
+    for (const summaries of Object.values(availability.weeks)) {
+      for (const s of summaries) {
+        if (!orgs[s.orgId]) {
+          orgs[s.orgId] = { name: s.orgName, logoUrl: s.orgLogoUrl, count: 0 };
+        }
+        orgs[s.orgId].count++;
+      }
+    }
+    return Object.entries(orgs)
+      .sort((a, b) => b[1].count - a[1].count)
+      .map(([id, org]) => ({ id, name: org.name, logoUrl: org.logoUrl }));
   }, [availability]);
 
   // Compute session counts client-side from the aggregate, applying filters
@@ -149,6 +173,8 @@ export function PlannerHub({
           ) continue;
           // Apply category filter
           if (selectedCategories.length > 0 && !selectedCategories.some(cat => s.cats.includes(cat))) continue;
+          // Apply org filter
+          if (selectedOrgs.length > 0 && !selectedOrgs.includes(s.orgId)) continue;
           count++;
         }
 
@@ -159,7 +185,7 @@ export function PlannerHub({
     }
 
     return result;
-  }, [availability, children, selectedCategories]);
+  }, [availability, children, selectedCategories, selectedOrgs]);
 
   const subscription = useQuery(api.subscriptions.getSubscription);
   const isPremium = subscription?.isPremium ?? false;
@@ -398,6 +424,49 @@ export function PlannerHub({
             )}
           </div>
 
+          {/* Organization filter chips */}
+          {availableOrgs.length > 0 && (
+            <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide">
+              {availableOrgs.map(org => (
+                <button
+                  key={org.id}
+                  onClick={() => toggleOrg(org.id)}
+                  title={org.name}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0 transition-colors whitespace-nowrap ${
+                    selectedOrgs.includes(org.id)
+                      ? 'bg-primary text-white ring-1 ring-primary'
+                      : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                  }`}
+                >
+                  {org.logoUrl ? (
+                    <img
+                      src={org.logoUrl}
+                      alt=""
+                      className={`w-4 h-4 rounded-full object-contain flex-shrink-0 ${
+                        selectedOrgs.includes(org.id) ? 'bg-white/90' : 'bg-white'
+                      }`}
+                    />
+                  ) : (
+                    <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold flex-shrink-0 ${
+                      selectedOrgs.includes(org.id) ? 'bg-white/20 text-white' : 'bg-slate-300 dark:bg-slate-500 text-white'
+                    }`}>
+                      {org.name[0]}
+                    </span>
+                  )}
+                  <span className="max-w-[120px] truncate">{org.name}</span>
+                </button>
+              ))}
+              {selectedOrgs.length > 0 && (
+                <button
+                  onClick={() => setSelectedOrgs([])}
+                  className="px-2.5 py-1 rounded-full text-xs font-medium text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 flex-shrink-0"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          )}
+
           {coverage === undefined ? (
             <div role="status" aria-live="polite" className="animate-in fade-in duration-300" style={{ animationDelay: '300ms', animationFillMode: 'backwards' }}>
               <span className="sr-only">Loading coverage data...</span>
@@ -531,7 +600,7 @@ export function PlannerHub({
 
         {/* Scrolling Sessions Showcase */}
         {featuredSessions && featuredSessions.length > 0 && (
-          <section className="bg-slate-900 py-12 overflow-hidden mt-8 -mx-4">
+          <section className="bg-slate-900 py-12 overflow-hidden mt-8">
             <div className="max-w-4xl mx-auto px-4 mb-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-white">
