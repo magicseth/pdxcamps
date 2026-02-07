@@ -178,12 +178,21 @@ export function PlannerGrid({ coverage, children, citySlug, onGapClick, onRegist
     return childCov || null;
   };
 
+  // Track which weeks start a new month (for vertical divider in desktop view)
+  const monthStartDates = useMemo(() => {
+    const starts = new Set<string>();
+    weeksByMonth.forEach(([, weeks], i) => {
+      if (i > 0 && weeks.length > 0) starts.add(weeks[0].week.startDate);
+    });
+    return starts;
+  }, [weeksByMonth]);
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
       {/* Mobile layout: months stacked vertically */}
       <div className="md:hidden">
         {weeksByMonth.map(([month, weeks], monthIndex) => (
-          <div key={month}>
+          <div key={month} className={monthIndex > 0 ? 'mt-3' : ''}>
             {/* Month header */}
             <div className="px-4 py-2 text-center text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
               {month}
@@ -332,10 +341,13 @@ export function PlannerGrid({ coverage, children, citySlug, onGapClick, onRegist
               {coverage.map((week) => {
                 const current = isCurrentWeek(week);
                 const past = isPastWeek(week);
+                const isMonthStart = monthStartDates.has(week.week.startDate);
                 return (
                   <th
                     key={week.week.startDate}
-                    className={`px-1 py-1.5 text-center text-xs border-b border-l border-slate-200 dark:border-slate-700 ${
+                    className={`px-1 py-1.5 text-center text-xs border-b border-slate-200 dark:border-slate-700 ${
+                      isMonthStart ? 'border-l-2 border-l-slate-300 dark:border-l-slate-600' : 'border-l border-l-slate-200 dark:border-l-slate-700'
+                    } ${
                       current
                         ? 'bg-primary/20 dark:bg-primary-dark/30 text-primary-dark dark:text-white/60 font-bold'
                         : past
@@ -410,6 +422,7 @@ export function PlannerGrid({ coverage, children, citySlug, onGapClick, onRegist
                       childName={child.firstName}
                       isCurrentWeek={current}
                       isPastWeek={past}
+                      isMonthStart={monthStartDates.has(week.week.startDate)}
                       citySlug={citySlug}
                       onGapClick={onGapClick}
                       onRegistrationClick={onRegistrationClick}
@@ -439,7 +452,9 @@ export function PlannerGrid({ coverage, children, citySlug, onGapClick, onRegist
                 {coverage.map((week) => (
                   <td
                     key={`add-${week.week.startDate}`}
-                    className="border-b border-l border-slate-100 dark:border-slate-700/50 p-0"
+                    className={`border-b border-slate-100 dark:border-slate-700/50 p-0 ${
+                      monthStartDates.has(week.week.startDate) ? 'border-l-2 border-l-slate-300 dark:border-l-slate-600' : 'border-l border-l-slate-100 dark:border-l-slate-700/50'
+                    }`}
                   >
                     <div className="w-full min-h-[48px]" />
                   </td>
@@ -460,13 +475,14 @@ interface CoverageCellProps {
   childName: string;
   isCurrentWeek: boolean;
   isPastWeek: boolean;
+  isMonthStart?: boolean;
   citySlug?: string;
   onGapClick?: (weekStart: string, weekEnd: string, childId: Id<'children'>) => void;
   onRegistrationClick?: (data: RegistrationClickData) => void;
   onEventClick?: (data: EventClickData) => void;
 }
 
-function CoverageCell({ data, week, childId, childName, isCurrentWeek, isPastWeek, citySlug, onGapClick, onRegistrationClick, onEventClick }: CoverageCellProps) {
+function CoverageCell({ data, week, childId, childName, isCurrentWeek, isPastWeek, isMonthStart, citySlug, onGapClick, onRegistrationClick, onEventClick }: CoverageCellProps) {
   const status = data?.status || 'gap';
   const hasEvent = data?.events && data.events.length > 0;
   const hasRegistration = data?.registrations && data.registrations.length > 0;
@@ -474,6 +490,10 @@ function CoverageCell({ data, week, childId, childName, isCurrentWeek, isPastWee
   const eventTitle = data?.events?.[0]?.title;
   const logoUrl = data?.registrations?.[0]?.organizationLogoUrl;
   const availableCount = data?.availableSessionCount;
+
+  const tdClass = `border-b border-slate-100 dark:border-slate-700/50 p-0 ${
+    isMonthStart ? 'border-l-2 border-l-slate-300 dark:border-l-slate-600' : 'border-l border-l-slate-100 dark:border-l-slate-700/50'
+  }`;
 
   // Determine cell appearance
   let bgColor = '';
@@ -549,7 +569,7 @@ function CoverageCell({ data, week, childId, childName, isCurrentWeek, isPastWee
     // If we have an onGapClick handler, use a button; otherwise use a Link
     if (onGapClick) {
       return (
-        <td className="border-b border-l border-slate-100 dark:border-slate-700/50 p-0">
+        <td className={tdClass}>
           <button
             onClick={handleClick}
             className="block w-full h-full hover:bg-accent/20 dark:hover:bg-accent/30 transition-colors cursor-pointer"
@@ -561,7 +581,7 @@ function CoverageCell({ data, week, childId, childName, isCurrentWeek, isPastWee
     }
 
     return (
-      <td className="border-b border-l border-slate-100 dark:border-slate-700/50 p-0">
+      <td className={tdClass}>
         <Link
           href={citySlug ? `/discover/${citySlug}?from=${week.week.startDate}&to=${week.week.endDate}` : `/planner/week/${week.week.startDate}`}
           className="block w-full h-full hover:bg-accent/20 dark:hover:bg-accent/30 transition-colors"
@@ -591,7 +611,7 @@ function CoverageCell({ data, week, childId, childName, isCurrentWeek, isPastWee
     };
 
     return (
-      <td className="border-b border-l border-slate-100 dark:border-slate-700/50 p-0">
+      <td className={tdClass}>
         <button
           onClick={handleRegistrationClick}
           className="block w-full h-full hover:bg-green-200 dark:hover:bg-green-800/40 transition-colors cursor-pointer"
@@ -616,7 +636,7 @@ function CoverageCell({ data, week, childId, childName, isCurrentWeek, isPastWee
     };
 
     return (
-      <td className="border-b border-l border-slate-100 dark:border-slate-700/50 p-0">
+      <td className={tdClass}>
         <button
           onClick={handleEventClick}
           className="block w-full h-full hover:bg-surface/50 dark:hover:bg-surface-dark/50 transition-colors cursor-pointer"
@@ -628,7 +648,7 @@ function CoverageCell({ data, week, childId, childName, isCurrentWeek, isPastWee
   }
 
   return (
-    <td className="border-b border-l border-slate-100 dark:border-slate-700/50 p-0">
+    <td className={tdClass}>
       {cellContent}
     </td>
   );
