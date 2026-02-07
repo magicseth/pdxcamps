@@ -25,27 +25,21 @@ export function useMarket(): Market {
   );
 
   return useMemo(() => {
-    // If we found a city in the database, convert to Market format
+    // Get static market config (always available, has correct iconPath etc.)
+    const staticMarket = hostname ? getMarketFromHostname(hostname) : DEFAULT_MARKET;
+
+    // If we found a city in the database, merge with static config
     if (city) {
       return {
+        ...staticMarket,
         slug: city.slug,
         name: city.name,
-        tagline: city.brandName || `${city.name} Camps`,
-        region: `${city.name} Metro Area`,
+        tagline: city.brandName || staticMarket.tagline || `${city.name} Camps`,
         domains: [city.domain, `www.${city.domain}`].filter(Boolean) as string[],
-        emoji: '🏕️',
-        popularOrgs: '',
-        neighborhoods: '',
-        testimonialAttribution: `${city.name} parent of 2`,
-        madeIn: city.name,
-        iconPath: getMarketBySlug(city.slug)?.iconPath || `/icons/${city.slug}`,
         iconStorageId: city.iconStorageId,
-        themeColor: '#2563eb',
       };
     }
 
-    // Fall back to static config
-    if (!hostname) return DEFAULT_MARKET;
-    return getMarketFromHostname(hostname);
+    return staticMarket;
   }, [city, hostname]);
 }
