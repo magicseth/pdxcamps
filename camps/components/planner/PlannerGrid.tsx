@@ -346,7 +346,7 @@ export function PlannerGrid({ coverage, children, citySlug, onGapClick, onRegist
                   <th
                     key={week.week.startDate}
                     className={`px-1 py-1.5 text-center text-xs border-b border-slate-200 dark:border-slate-700 ${
-                      isMonthStart ? 'border-l-2 border-l-slate-300 dark:border-l-slate-600' : 'border-l border-l-slate-200 dark:border-l-slate-700'
+                      isMonthStart ? 'border-l border-l-slate-300 dark:border-l-slate-600' : 'border-l border-l-slate-200 dark:border-l-slate-700'
                     } ${
                       current
                         ? 'bg-primary/20 dark:bg-primary-dark/30 text-primary-dark dark:text-white/60 font-bold'
@@ -453,7 +453,7 @@ export function PlannerGrid({ coverage, children, citySlug, onGapClick, onRegist
                   <td
                     key={`add-${week.week.startDate}`}
                     className={`border-b border-slate-100 dark:border-slate-700/50 p-0 ${
-                      monthStartDates.has(week.week.startDate) ? 'border-l-2 border-l-slate-300 dark:border-l-slate-600' : 'border-l border-l-slate-100 dark:border-l-slate-700/50'
+                      monthStartDates.has(week.week.startDate) ? 'border-l border-l-slate-300 dark:border-l-slate-600' : 'border-l border-l-slate-100 dark:border-l-slate-700/50'
                     }`}
                   >
                     <div className="w-full min-h-[48px]" />
@@ -492,7 +492,7 @@ function CoverageCell({ data, week, childId, childName, isCurrentWeek, isPastWee
   const availableCount = data?.availableSessionCount;
 
   const tdClass = `border-b border-slate-100 dark:border-slate-700/50 p-0 ${
-    isMonthStart ? 'border-l-2 border-l-slate-300 dark:border-l-slate-600' : 'border-l border-l-slate-100 dark:border-l-slate-700/50'
+    isMonthStart ? 'border-l border-l-slate-300 dark:border-l-slate-600' : 'border-l border-l-slate-100 dark:border-l-slate-700/50'
   }`;
 
   // Determine cell appearance
