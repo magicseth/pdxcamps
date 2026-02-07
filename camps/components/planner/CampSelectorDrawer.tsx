@@ -1,13 +1,12 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery } from 'convex/react';
 import Link from 'next/link';
 import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
-import { OrgLogo } from '../shared/OrgLogo';
 import { CATEGORIES } from '../../lib/constants';
-import confetti from 'canvas-confetti';
+import { SessionCard } from '../discover/SessionCard';
 
 interface CampSelectorDrawerProps {
   isOpen: boolean;
@@ -32,15 +31,6 @@ function formatDateRange(startDate: string, endDate: string): string {
   return `${monthNames[start.getMonth()]} ${start.getDate()} - ${monthNames[end.getMonth()]} ${end.getDate()}`;
 }
 
-function formatTime(time: { hour: number; minute: number }): string {
-  const hour12 = time.hour % 12 || 12;
-  const ampm = time.hour < 12 ? 'am' : 'pm';
-  if (time.minute === 0) {
-    return `${hour12}${ampm}`;
-  }
-  return `${hour12}:${time.minute.toString().padStart(2, '0')}${ampm}`;
-}
-
 export function CampSelectorDrawer({
   isOpen,
   onClose,
@@ -55,9 +45,6 @@ export function CampSelectorDrawer({
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedOrg, setSelectedOrg] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
-  const [savingSessionId, setSavingSessionId] = useState<Id<'sessions'> | null>(null);
-
-  const saveMutation = useMutation(api.registrations.mutations.markInterested);
 
   // Query sessions for this week and child
   const sessionsResult = useQuery(
@@ -129,23 +116,6 @@ export function CampSelectorDrawer({
     }
     return CATEGORIES.filter(cat => cats.has(cat));
   }, [sessions]);
-
-  const handleSave = async (sessionId: Id<'sessions'>, campName: string) => {
-    setSavingSessionId(sessionId);
-    try {
-      await saveMutation({ sessionId, childId });
-      confetti({
-        particleCount: 60,
-        spread: 50,
-        origin: { y: 0.7 },
-        zIndex: 9999,
-      });
-    } catch (error) {
-      console.error('Failed to save session:', error);
-    } finally {
-      setSavingSessionId(null);
-    }
-  };
 
   const toggleCategory = (cat: string) => {
     setSelectedCategories(prev =>
@@ -300,13 +270,13 @@ export function CampSelectorDrawer({
               </Link>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {sessions.map(session => (
-                <CompactSessionCard
+                <SessionCard
                   key={session._id}
-                  session={session}
-                  onSave={() => handleSave(session._id, session.campName || 'Camp')}
-                  isSaving={savingSessionId === session._id}
+                  session={session as any}
+                  cityId={cityId}
+                  preSelectedChildId={childId}
                 />
               ))}
             </div>
@@ -328,110 +298,5 @@ export function CampSelectorDrawer({
         </div>
       </div>
     </>
-  );
-}
-
-// Compact session card for the drawer
-function CompactSessionCard({
-  session,
-  onSave,
-  isSaving,
-}: {
-  session: {
-    _id: Id<'sessions'>;
-    campName?: string;
-    organizationName?: string;
-    startDate: string;
-    endDate: string;
-    dropOffTime: { hour: number; minute: number };
-    pickUpTime: { hour: number; minute: number };
-    price: number;
-    capacity: number;
-    enrolledCount: number;
-    locationName?: string;
-    externalRegistrationUrl?: string;
-    campCategories?: string[];
-  };
-  onSave: () => void;
-  isSaving: boolean;
-}) {
-  const spotsLeft = session.capacity - session.enrolledCount;
-  const hasAvailability = !(session.capacity === 20 && session.enrolledCount === 0);
-
-  return (
-    <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 border border-slate-200 dark:border-slate-600">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <Link
-            href={`/session/${session._id}`}
-            className="font-medium text-slate-900 dark:text-white hover:text-primary dark:hover:text-primary-light line-clamp-1"
-          >
-            {session.campName || 'Camp'}
-          </Link>
-          <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-1">
-            {session.organizationName}
-          </p>
-        </div>
-        <span className="text-lg font-bold text-green-600 dark:text-green-400 flex-shrink-0">
-          ${(session.price / 100).toFixed(0)}
-        </span>
-      </div>
-
-      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
-        <span>{formatDateRange(session.startDate, session.endDate)}</span>
-        <span>•</span>
-        <span>{formatTime(session.dropOffTime)} - {formatTime(session.pickUpTime)}</span>
-        {session.locationName && (
-          <>
-            <span>•</span>
-            <span className="truncate max-w-[120px]">{session.locationName}</span>
-          </>
-        )}
-      </div>
-
-      {/* Categories */}
-      {session.campCategories && session.campCategories.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1">
-          {session.campCategories.slice(0, 3).map(cat => (
-            <span
-              key={cat}
-              className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300"
-            >
-              {cat}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Availability and actions */}
-      <div className="mt-3 flex items-center justify-between">
-        {hasAvailability && (
-          <span className={`text-xs font-medium ${
-            spotsLeft <= 3 ? 'text-red-600' : spotsLeft <= 5 ? 'text-yellow-600' : 'text-green-600'
-          }`}>
-            {spotsLeft} spot{spotsLeft === 1 ? '' : 's'} left
-          </span>
-        )}
-        <div className="flex items-center gap-2 ml-auto">
-          {session.externalRegistrationUrl && (
-            <a
-              href={session.externalRegistrationUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary-light"
-            >
-              Register →
-            </a>
-          )}
-          <button
-            onClick={onSave}
-            disabled={isSaving}
-            className="px-3 py-1.5 bg-primary text-white text-xs font-medium rounded-lg hover:bg-primary-dark disabled:opacity-50 transition-colors"
-          >
-            {isSaving ? 'Saving...' : '+ Save'}
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
