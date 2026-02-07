@@ -172,18 +172,31 @@ export const updateExistingSession = internalMutation({
 });
 
 /**
+ * Normalize a session name by stripping grade/age suffixes
+ * e.g. "Pottery Studio (Grades 3-5)" → "pottery studio"
+ */
+function normalizeName(name: string): string {
+  return (name || "")
+    .toLowerCase()
+    .replace(/\s*\(grades?\s*[\d\-kK]+\s*(?:-\s*[\d\-kK]+)?\)\s*$/i, "")
+    .replace(/\s*\(ages?\s*\d+\s*(?:-\s*\d+)?\)\s*$/i, "")
+    .trim();
+}
+
+/**
  * Calculate string similarity using Levenshtein distance
  * Returns a value between 0 (completely different) and 1 (identical)
+ * Normalizes names by stripping grade/age suffixes before comparing
  */
 export function similarity(a: string, b: string): number {
-  const aLower = a?.toLowerCase().trim() || "";
-  const bLower = b?.toLowerCase().trim() || "";
+  const aNorm = normalizeName(a);
+  const bNorm = normalizeName(b);
 
-  if (aLower === bLower) return 1;
-  if (aLower.length === 0 || bLower.length === 0) return 0;
+  if (aNorm === bNorm) return 1;
+  if (aNorm.length === 0 || bNorm.length === 0) return 0;
 
-  const maxLen = Math.max(aLower.length, bLower.length);
-  const distance = levenshtein(aLower, bLower);
+  const maxLen = Math.max(aNorm.length, bNorm.length);
+  const distance = levenshtein(aNorm, bNorm);
 
   return 1 - distance / maxLen;
 }
