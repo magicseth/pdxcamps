@@ -52,9 +52,9 @@ export default function DiscoverPage() {
     };
   }, [city?.name]);
 
-  // Fetch all organizations for filter chips
+  // Fetch all organizations with session counts for filter chips
   const allOrganizations = useQuery(
-    api.organizations.queries.listOrganizations,
+    api.organizations.queries.listOrganizationsWithSessionCounts,
     city ? { cityId: city._id } : 'skip'
   );
 
@@ -142,15 +142,15 @@ export default function DiscoverPage() {
   // Use server's hasMore flag for pagination
   const hasMoreSessions = serverHasMore;
 
-  // Count sessions per organization (from raw sessions, not filtered)
+  // Session counts per org come from the allOrganizations query (independent of pagination)
   const sessionCountsByOrg = useMemo(() => {
-    if (!sessions) return new Map<string, number>();
+    if (!allOrganizations) return new Map<string, number>();
     const counts = new Map<string, number>();
-    sessions.forEach((s) => {
-      counts.set(s.organizationId, (counts.get(s.organizationId) || 0) + 1);
+    allOrganizations.forEach((org) => {
+      counts.set(org._id, org.sessionCount);
     });
     return counts;
-  }, [sessions]);
+  }, [allOrganizations]);
 
   // Filter locations to only show those with sessions in current results
   // (sessions are already filtered by org/etc on the server)

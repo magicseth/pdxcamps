@@ -35,6 +35,50 @@ export const listOrganizations = query({
 });
 
 /**
+ * List active organizations in a city with their active session counts.
+ * Used for filter chips so counts are independent of pagination.
+ */
+export const listOrganizationsWithSessionCounts = query({
+  args: {
+    cityId: v.id("cities"),
+  },
+  handler: async (ctx, args) => {
+    // Get all active organizations in this city
+    const organizations = await ctx.db
+      .query("organizations")
+      .withIndex("by_is_active", (q) => q.eq("isActive", true))
+      .collect();
+
+    const cityOrgs = organizations.filter((org) => org.cityIds.includes(args.cityId));
+
+    // Count active sessions per org
+    return Promise.all(
+      cityOrgs.map(async (org) => {
+        const sessions = await ctx.db
+          .query("sessions")
+          .withIndex("by_organization_and_status", (q) =>
+            q.eq("organizationId", org._id).eq("status", "active")
+          )
+          .collect();
+
+        let resolvedLogoUrl: string | null = null;
+        if (org.logoStorageId) {
+          resolvedLogoUrl = await ctx.storage.getUrl(org.logoStorageId);
+        }
+
+        return {
+          _id: org._id,
+          name: org.name,
+          slug: org.slug,
+          logoUrl: resolvedLogoUrl,
+          sessionCount: sessions.length,
+        };
+      })
+    );
+  },
+});
+
+/**
  * Get an organization by ID
  */
 export const getOrganization = query({

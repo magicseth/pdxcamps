@@ -130,22 +130,24 @@ export function CampSelectorDrawer({
   const totalCount = hasFilters ? (filteredSessionsResult?.totalCount ?? 0) : (allSessionsResult?.totalCount ?? 0);
   const isLoading = hasFilters ? filteredSessionsResult === undefined : allSessionsResult === undefined;
 
-  // Get unique organizations from ALL sessions for filter chips
+  // Fetch ALL organizations with session counts (independent of pagination)
+  const allOrganizations = useQuery(
+    api.organizations.queries.listOrganizationsWithSessionCounts,
+    isOpen ? { cityId } : 'skip'
+  );
+
   const organizations = useMemo(() => {
-    const orgs = new Map<string, { id: string; name: string; logoUrl?: string; count: number }>();
-    for (const session of allSessions) {
-      if (!orgs.has(session.organizationId)) {
-        orgs.set(session.organizationId, {
-          id: session.organizationId,
-          name: session.organizationName || 'Unknown',
-          logoUrl: (session as any).organizationLogoUrl,
-          count: 0,
-        });
-      }
-      orgs.get(session.organizationId)!.count++;
-    }
-    return Array.from(orgs.values()).sort((a, b) => b.count - a.count);
-  }, [allSessions]);
+    if (!allOrganizations) return [];
+    return allOrganizations
+      .filter(org => org.sessionCount > 0)
+      .map(org => ({
+        id: org._id,
+        name: org.name,
+        logoUrl: org.logoUrl ?? undefined,
+        count: org.sessionCount,
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [allOrganizations]);
 
   // Get unique locations from sessions for the selected org
   const locations = useMemo(() => {

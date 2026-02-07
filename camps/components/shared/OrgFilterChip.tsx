@@ -13,6 +13,22 @@ interface OrgFilterChipProps {
   size?: 'sm' | 'md';
 }
 
+// Letter fallback when no logo is available
+function LetterFallback({ name, isSelected, size }: { name: string; isSelected: boolean; size: 'sm' | 'md' }) {
+  const sizeClasses = size === 'sm' ? 'w-4 h-4 text-[8px]' : 'w-5 h-5 text-[10px]';
+  return (
+    <span
+      className={`${sizeClasses} rounded-full flex items-center justify-center font-bold flex-shrink-0 ${
+        isSelected
+          ? 'bg-white/20 text-white'
+          : 'bg-slate-300 dark:bg-slate-500 text-white'
+      }`}
+    >
+      {name[0]?.toUpperCase()}
+    </span>
+  );
+}
+
 export function OrgFilterChip({
   name,
   logoUrl,
@@ -26,6 +42,8 @@ export function OrgFilterChip({
     ? 'px-2 py-1 text-xs gap-1.5'
     : 'px-3 py-1.5 text-sm gap-2';
 
+  const hasLogo = logoUrl && logoUrl.startsWith('http');
+
   return (
     <button
       onClick={onClick}
@@ -35,7 +53,11 @@ export function OrgFilterChip({
           : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
       }`}
     >
-      <OrgLogo url={logoUrl} name={name} size="xs" />
+      {hasLogo ? (
+        <OrgLogo url={logoUrl} name={name} size="xs" />
+      ) : (
+        <LetterFallback name={name} isSelected={isSelected} size={size} />
+      )}
       <span className="truncate max-w-[120px]">{name}</span>
       {showCount && count !== undefined && (
         <span className={`tabular-nums ${

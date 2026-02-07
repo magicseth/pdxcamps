@@ -98,6 +98,16 @@ export function PlannerHub({
     year: selectedYear,
   });
 
+  // Get primary city for org filter
+  const primaryCity = cities.find(c => c.slug === market.slug) || cities[0];
+
+  // Fetch organizations with logos for filter chips
+  const allOrganizations = useQuery(
+    api.organizations.queries.listOrganizationsWithSessionCounts,
+    primaryCity ? { cityId: primaryCity._id } : 'skip'
+  );
+
+
   // Category and org filters for planner grid counts
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedOrgs, setSelectedOrgs] = useState<string[]>([]);
@@ -133,24 +143,30 @@ export function PlannerHub({
       .map(([cat]) => cat);
   }, [availability]);
 
-  // Derive available organizations from aggregate data, sorted by frequency
+  // Derive available organizations - use orgs query for logos, aggregate for counts
   const availableOrgs = useMemo(() => {
-    if (!availability?.weeks) return [];
-    const orgs: Record<string, { name: string; logoUrl?: string; count: number }> = {};
+    if (!availability?.weeks || !allOrganizations) return [];
+
+    // Count orgs from aggregate
+    const orgCounts: Record<string, number> = {};
     for (const summaries of Object.values(availability.weeks)) {
       for (const s of summaries) {
-        if (!s.orgName) continue; // Skip entries without org name
-        if (!orgs[s.orgId]) {
-          orgs[s.orgId] = { name: s.orgName, logoUrl: s.orgLogoUrl, count: 0 };
-        }
-        orgs[s.orgId].count++;
+        if (!s.orgId) continue;
+        orgCounts[s.orgId] = (orgCounts[s.orgId] || 0) + 1;
       }
     }
-    return Object.entries(orgs)
-      .filter(([, org]) => org.name) // Filter out any with undefined names
-      .sort((a, b) => b[1].count - a[1].count)
-      .map(([id, org]) => ({ id, name: org.name, logoUrl: org.logoUrl }));
-  }, [availability]);
+
+    // Map org data with logos, filtered to those with sessions
+    return allOrganizations
+      .filter(org => orgCounts[org._id] > 0)
+      .map(org => ({
+        id: org._id,
+        name: org.name,
+        logoUrl: org.logoUrl ?? undefined,
+        count: orgCounts[org._id] || 0,
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [availability, allOrganizations]);
 
   // Compute session counts client-side from the aggregate, applying filters
   const sessionCounts = useMemo(() => {
