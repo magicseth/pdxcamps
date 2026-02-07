@@ -553,32 +553,23 @@ export function SessionCard({
             )}
           </div>
 
-        {/* Spots Left Bar */}
+        {/* Spots Left Indicator */}
         {!isSoldOut && hasAvailabilityData && (
-          <div
-            className="mb-4 cursor-help"
-            title={`${spotsLeft <= 3 ? 'Very limited spots - register soon!' : spotsLeft <= 5 ? 'Limited spots remaining' : 'Good availability'}`}
-          >
-            <div className="flex items-center justify-between text-xs mb-1">
-              <span className="text-slate-600 dark:text-slate-400">
-                {spotsLeft} of {session.capacity} spots left
-              </span>
-              <span className="text-slate-500 dark:text-slate-500">
-                {Math.round((session.enrolledCount / session.capacity) * 100)}% full
-              </span>
-            </div>
-            <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all ${
-                  spotsLeft <= 3
-                    ? 'bg-red-500'
-                    : spotsLeft <= 5
-                    ? 'bg-yellow-500'
-                    : 'bg-green-500'
-                }`}
-                style={{ width: `${(session.enrolledCount / session.capacity) * 100}%` }}
-              />
-            </div>
+          <div className="mb-4 flex items-center gap-2">
+            <span
+              className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${
+                spotsLeft <= 3
+                  ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                  : spotsLeft <= 5
+                  ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                  : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+              }`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${
+                spotsLeft <= 3 ? 'bg-red-500' : spotsLeft <= 5 ? 'bg-yellow-500' : 'bg-green-500'
+              }`} />
+              {spotsLeft} spot{spotsLeft === 1 ? '' : 's'} left
+            </span>
           </div>
         )}
 

@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { useQuery } from 'convex/react';
+import { useState, useMemo, useEffect } from 'react';
+import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
 import { DEFAULT_CHILD_COLORS } from '../../lib/constants';
-import { MarkRegisteredModal } from './MarkRegisteredModal';
+import confetti from 'canvas-confetti';
 
 interface RegistrationChecklistProps {
   isOpen: boolean;
@@ -34,7 +34,56 @@ function formatDate(dateStr: string) {
 
 export function RegistrationChecklist({ isOpen, onClose, children }: RegistrationChecklistProps) {
   const savedCamps = useQuery(api.registrations.queries.getSavedCamps);
-  const [selectedCamp, setSelectedCamp] = useState<PendingCamp | null>(null);
+  const registerMutation = useMutation(api.registrations.mutations.register);
+  const cancelMutation = useMutation(api.registrations.mutations.cancelRegistration);
+
+  const [recentlyRegistered, setRecentlyRegistered] = useState<{
+    registrationId: Id<'registrations'>;
+    campName: string;
+  } | null>(null);
+
+  // Clear the undo toast after 5 seconds
+  useEffect(() => {
+    if (recentlyRegistered) {
+      const timer = setTimeout(() => setRecentlyRegistered(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [recentlyRegistered]);
+
+  const fireConfetti = () => {
+    confetti({
+      particleCount: 80,
+      spread: 60,
+      origin: { y: 0.7 },
+      zIndex: 9999,
+    });
+  };
+
+  const handleMarkDone = async (camp: PendingCamp) => {
+    try {
+      await registerMutation({
+        childId: camp.childId,
+        sessionId: camp.sessionId,
+      });
+      fireConfetti();
+      setRecentlyRegistered({
+        registrationId: camp.registrationId,
+        campName: camp.campName,
+      });
+    } catch (error) {
+      console.error('Failed to mark as registered:', error);
+    }
+  };
+
+  const handleUndo = async () => {
+    if (!recentlyRegistered) return;
+    try {
+      await cancelMutation({ registrationId: recentlyRegistered.registrationId });
+      setRecentlyRegistered(null);
+    } catch (error) {
+      console.error('Failed to undo:', error);
+    }
+  };
 
   // Build child color map
   const childColors = useMemo(() => {
@@ -200,7 +249,7 @@ export function RegistrationChecklist({ isOpen, onClose, children }: Registratio
                             </a>
                           )}
                           <button
-                            onClick={() => setSelectedCamp(camp)}
+                            onClick={() => handleMarkDone(camp)}
                             className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
                           >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -219,22 +268,25 @@ export function RegistrationChecklist({ isOpen, onClose, children }: Registratio
         </div>
       </div>
 
-      {/* Mark Registered Modal */}
-      <MarkRegisteredModal
-        isOpen={selectedCamp !== null}
-        onClose={() => setSelectedCamp(null)}
-        registration={selectedCamp ? {
-          registrationId: selectedCamp.registrationId,
-          sessionId: selectedCamp.sessionId,
-          childId: selectedCamp.childId,
-          childName: selectedCamp.childName,
-          campName: selectedCamp.campName,
-          organizationName: selectedCamp.organizationName,
-          organizationLogoUrl: selectedCamp.organizationLogoUrl,
-          dateRange: selectedCamp.dateRange,
-        } : null}
-        remainingCount={totalPending - 1}
-      />
+      {/* Undo Toast */}
+      {recentlyRegistered && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[60] animate-in slide-in-from-bottom-4 duration-300">
+          <div className="flex items-center gap-3 px-4 py-3 bg-slate-900 text-white rounded-xl shadow-lg">
+            <svg className="w-5 h-5 text-green-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            <span className="text-sm font-medium">
+              {recentlyRegistered.campName} marked as registered
+            </span>
+            <button
+              onClick={handleUndo}
+              className="text-sm font-medium text-amber-400 hover:text-amber-300 ml-2"
+            >
+              Undo
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

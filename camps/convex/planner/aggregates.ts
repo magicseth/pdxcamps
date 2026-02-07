@@ -59,10 +59,22 @@ export const recomputeForCity = internalMutation({
     // Fetch org names for all orgs referenced by available sessions
     const orgIds = [...new Set(available.map((s) => s.organizationId))];
     const orgsRaw = await Promise.all(orgIds.map((id) => ctx.db.get(id)));
+    const orgsFiltered = orgsRaw.filter((o): o is NonNullable<typeof o> => o !== null);
+
+    // Resolve logo storage IDs to URLs
+    const logoUrls = await Promise.all(
+      orgsFiltered.map(async (o) => {
+        if (o.logoStorageId) {
+          const url = await ctx.storage.getUrl(o.logoStorageId);
+          return [o._id, url] as const;
+        }
+        return [o._id, null] as const;
+      })
+    );
+    const logoUrlMap = new Map(logoUrls);
+
     const orgMap = new Map(
-      orgsRaw
-        .filter((o): o is NonNullable<typeof o> => o !== null)
-        .map((o) => [o._id, { name: o.name, logoUrl: o.logoUrl }])
+      orgsFiltered.map((o) => [o._id, { name: o.name, logoUrl: logoUrlMap.get(o._id) ?? undefined }])
     );
 
     // Build per-week session summaries

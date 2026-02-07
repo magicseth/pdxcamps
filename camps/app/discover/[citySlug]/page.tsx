@@ -28,6 +28,17 @@ export default function DiscoverPage() {
 
   const filters = useDiscoverFilters(citySlug, searchParams);
 
+  // Pagination state
+  const SESSIONS_PER_PAGE = 20;
+  const [displayCount, setDisplayCount] = useState(SESSIONS_PER_PAGE);
+
+  // Reset display count when filters change
+  useEffect(() => {
+    setDisplayCount(SESSIONS_PER_PAGE);
+  }, [filters.selectedCategories, filters.selectedOrganizations, filters.selectedLocations,
+      filters.startDateAfter, filters.startDateBefore, filters.maxPrice, filters.hideSoldOut,
+      filters.childAge, filters.childGrade, filters.maxDistanceMiles, filters.sortBy]);
+
   // Fetch city data
   const city = useQuery(api.cities.queries.getCityBySlug, { slug: citySlug });
 
@@ -64,8 +75,8 @@ export default function DiscoverPage() {
   const homeLongitude = family?.homeAddress?.longitude;
   const hasHomeCoords = homeLatitude !== undefined && homeLongitude !== undefined;
 
-  // Fetch sessions with filters
-  const sessions = useQuery(
+  // Fetch sessions with filters (server-side pagination)
+  const sessionsResult = useQuery(
     api.sessions.queries.searchSessions,
     city
       ? {
@@ -78,29 +89,28 @@ export default function DiscoverPage() {
           childAge: filters.childAge,
           childGrade: filters.childGrade,
           locationIds: filters.selectedLocations.length > 0 ? filters.selectedLocations as Id<'locations'>[] : undefined,
+          organizationIds: filters.selectedOrganizations.length > 0 ? filters.selectedOrganizations as Id<'organizations'>[] : undefined,
+          extendedCareOnly: filters.extendedCareOnly || undefined,
           homeLatitude: hasHomeCoords ? homeLatitude : undefined,
           homeLongitude: hasHomeCoords ? homeLongitude : undefined,
           maxDistanceMiles: hasHomeCoords && filters.maxDistanceMiles !== undefined ? filters.maxDistanceMiles : undefined,
+          limit: displayCount + 20, // Request a bit more than we display for smoother loading
         }
       : 'skip'
   );
 
-  // Filter and sort sessions by selected organizations (client-side)
+  // Extract sessions array and metadata from paginated result
+  const sessions = sessionsResult?.sessions;
+  const totalSessionCount = sessionsResult?.totalCount ?? 0;
+  const serverHasMore = sessionsResult?.hasMore ?? false;
+
+  // Sort sessions client-side (filtering is now server-side)
   // This useMemo must be called before any early returns to maintain hooks order
   const filteredSessions = useMemo(() => {
     if (!sessions) return [];
 
-    // Filter by organizations
-    let result = filters.selectedOrganizations.length === 0
-      ? [...sessions]
-      : sessions.filter((s) => filters.selectedOrganizations.includes(s.organizationId));
-
-    // Filter by extended care
-    if (filters.extendedCareOnly) {
-      result = result.filter((s) => s.extendedCareAvailable);
-    }
-
-    // Sort results
+    // Clone and sort results
+    const result = [...sessions];
     result.sort((a, b) => {
       switch (filters.sortBy) {
         case 'date':
@@ -123,7 +133,13 @@ export default function DiscoverPage() {
     });
 
     return result;
-  }, [sessions, filters.selectedOrganizations, filters.extendedCareOnly, filters.sortBy]);
+  }, [sessions, filters.sortBy]);
+
+  // All sorted sessions are already limited by server - just use them
+  const displayedSessions = filteredSessions;
+
+  // Use server's hasMore flag for pagination
+  const hasMoreSessions = serverHasMore;
 
   // Count sessions per organization (from raw sessions, not filtered)
   const sessionCountsByOrg = useMemo(() => {
@@ -136,19 +152,13 @@ export default function DiscoverPage() {
   }, [sessions]);
 
   // Filter locations to only show those with sessions in current results
-  // (based on date/age/org filters already applied)
+  // (sessions are already filtered by org/etc on the server)
   const relevantLocations = useMemo(() => {
     if (!allLocations || !sessions) return [];
 
     // Get location IDs that have at least one session in current results
     const locationsWithSessions = new Set<string>();
-
-    // If org filter is active, only count sessions from selected orgs
-    const sessionsToCount = filters.selectedOrganizations.length === 0
-      ? sessions
-      : sessions.filter((s) => filters.selectedOrganizations.includes(s.organizationId));
-
-    sessionsToCount.forEach((s) => locationsWithSessions.add(s.locationId));
+    sessions.forEach((s) => locationsWithSessions.add(s.locationId));
 
     // Also include any currently selected locations (so they don't disappear)
     filters.selectedLocations.forEach((locId) => locationsWithSessions.add(locId));
@@ -165,7 +175,7 @@ export default function DiscoverPage() {
       seenNames.add(normalizedName);
       return true;
     });
-  }, [allLocations, sessions, filters.selectedOrganizations, filters.selectedLocations]);
+  }, [allLocations, sessions, filters.selectedLocations]);
 
   // Loading state
   if (city === undefined) {
@@ -833,11 +843,13 @@ export default function DiscoverPage() {
                     </svg>
                     <span>Searching camps...</span>
                   </span>
-                ) : filteredSessions.length === 0 ? (
+                ) : totalSessionCount === 0 ? (
                   'No sessions found'
                 ) : (
                   <span className="flex items-center gap-3 flex-wrap">
-                    <span className="font-medium text-slate-900 dark:text-white">{filteredSessions.length} session{filteredSessions.length === 1 ? '' : 's'}</span>
+                    <span className="font-medium text-slate-900 dark:text-white">
+                      {hasMoreSessions ? `${filteredSessions.length} of ${totalSessionCount}` : totalSessionCount} session{totalSessionCount === 1 ? '' : 's'}
+                    </span>
                     <span className="text-slate-400 dark:text-slate-500">•</span>
                     <span>{new Set(filteredSessions.map(s => s.campId)).size} camp{new Set(filteredSessions.map(s => s.campId)).size === 1 ? '' : 's'}</span>
                     <span className="text-slate-400 dark:text-slate-500">•</span>
@@ -1045,18 +1057,30 @@ export default function DiscoverPage() {
                   />
                 </div>
               ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {filteredSessions.map((session) => (
-                    <SessionCard
-                      key={session._id}
-                      session={session}
-                      cityId={city._id}
-                      isAdmin={isAdmin ?? false}
-                      distanceFromHome={(session as { distanceFromHome?: number }).distanceFromHome}
-                      preSelectedChildId={filters.selectedChildId}
-                    />
-                  ))}
-                </div>
+                <>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {displayedSessions.map((session) => (
+                      <SessionCard
+                        key={session._id}
+                        session={session}
+                        cityId={city._id}
+                        isAdmin={isAdmin ?? false}
+                        distanceFromHome={(session as { distanceFromHome?: number }).distanceFromHome}
+                        preSelectedChildId={filters.selectedChildId}
+                      />
+                    ))}
+                  </div>
+                  {hasMoreSessions && (
+                    <div className="mt-6 text-center">
+                      <button
+                        onClick={() => setDisplayCount(prev => prev + SESSIONS_PER_PAGE)}
+                        className="px-6 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                      >
+                        Load more ({totalSessionCount - filteredSessions.length} remaining)
+                      </button>
+                    </div>
+                  )}
+                </>
               )
             )}
           </main>

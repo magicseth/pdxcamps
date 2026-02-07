@@ -23,7 +23,6 @@ import { PlusIcon, SearchIcon } from '../shared/icons';
 import { generateSummerWeeks, type SummerWeek, isAgeInRange, isGradeInRange, calculateAge } from '../../convex/lib/helpers';
 import { RegistrationProgressBanner } from './RegistrationProgressBanner';
 import { RegistrationChecklist, ChecklistFAB } from './RegistrationChecklist';
-import { MarkRegisteredModal } from './MarkRegisteredModal';
 
 export function PlannerHub({
   user,
@@ -55,16 +54,6 @@ export function PlannerHub({
   const [showRequestCampModal, setShowRequestCampModal] = useState(false);
   const [showChecklist, setShowChecklist] = useState(false);
   const [selectedRegistration, setSelectedRegistration] = useState<RegistrationClickData | null>(null);
-  const [markRegisteredData, setMarkRegisteredData] = useState<{
-    registrationId: Id<'registrations'>;
-    sessionId: Id<'sessions'>;
-    childId: Id<'children'>;
-    childName: string;
-    campName: string;
-    organizationName?: string;
-    organizationLogoUrl?: string | null;
-    dateRange: string;
-  } | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<Id<'familyEvents'> | null>(null);
 
   useEffect(() => {
@@ -139,6 +128,7 @@ export function PlannerHub({
     const orgs: Record<string, { name: string; logoUrl?: string; count: number }> = {};
     for (const summaries of Object.values(availability.weeks)) {
       for (const s of summaries) {
+        if (!s.orgName) continue; // Skip entries without org name
         if (!orgs[s.orgId]) {
           orgs[s.orgId] = { name: s.orgName, logoUrl: s.orgLogoUrl, count: 0 };
         }
@@ -146,6 +136,7 @@ export function PlannerHub({
       }
     }
     return Object.entries(orgs)
+      .filter(([, org]) => org.name) // Filter out any with undefined names
       .sort((a, b) => b[1].count - a[1].count)
       .map(([id, org]) => ({ id, name: org.name, logoUrl: org.logoUrl }));
   }, [availability]);
@@ -685,9 +676,6 @@ export function PlannerHub({
           registrationUrl: selectedRegistration.registrationUrl,
         } : null}
         citySlug={defaultCity?.slug}
-        onMarkRegistered={(data) => {
-          setMarkRegisteredData(data);
-        }}
       />
 
       {selectedEvent && (
@@ -720,14 +708,6 @@ export function PlannerHub({
       <ChecklistFAB
         pendingCount={registrationStats.todo}
         onClick={() => setShowChecklist(true)}
-      />
-
-      {/* Mark Registered Modal (for when triggered from RegistrationModal) */}
-      <MarkRegisteredModal
-        isOpen={markRegisteredData !== null}
-        onClose={() => setMarkRegisteredData(null)}
-        registration={markRegisteredData}
-        remainingCount={registrationStats.todo - 1}
       />
     </div>
   );

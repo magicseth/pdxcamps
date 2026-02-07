@@ -126,13 +126,13 @@ export function PlannerGrid({ coverage, children, citySlug, sessionCounts, onGap
   }, [weeksByMonth]);
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
+    <div className="md:bg-white md:dark:bg-slate-800 md:rounded-xl md:border md:border-slate-200 md:dark:border-slate-700 overflow-hidden md:shadow-sm">
       {/* Mobile layout: months stacked vertically */}
-      <div className="md:hidden">
+      <div className="md:hidden space-y-3">
         {weeksByMonth.map(([month, weeks], monthIndex) => (
-          <div key={month} className={monthIndex > 0 ? 'mt-3' : ''}>
+          <div key={month} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
             {/* Month header */}
-            <div className="px-4 py-2 text-center text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
+            <div className="px-4 py-2 text-center text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900">
               {month}
             </div>
             <div className="overflow-x-auto">

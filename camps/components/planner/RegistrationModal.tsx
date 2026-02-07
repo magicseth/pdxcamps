@@ -5,6 +5,7 @@ import { useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
 import Link from 'next/link';
+import confetti from 'canvas-confetti';
 
 interface RegistrationModalProps {
   isOpen: boolean;
@@ -23,19 +24,9 @@ interface RegistrationModalProps {
     notes?: string;
   } | null;
   citySlug?: string;
-  onMarkRegistered?: (data: {
-    registrationId: Id<'registrations'>;
-    sessionId: Id<'sessions'>;
-    childId: Id<'children'>;
-    childName: string;
-    campName: string;
-    organizationName?: string;
-    organizationLogoUrl?: string | null;
-    dateRange: string;
-  }) => void;
 }
 
-export function RegistrationModal({ isOpen, onClose, registration, citySlug, onMarkRegistered }: RegistrationModalProps) {
+export function RegistrationModal({ isOpen, onClose, registration, citySlug }: RegistrationModalProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [showConfirmRemove, setShowConfirmRemove] = useState(false);
 
@@ -44,30 +35,23 @@ export function RegistrationModal({ isOpen, onClose, registration, citySlug, onM
 
   if (!isOpen || !registration) return null;
 
-  const handleMarkRegistered = async () => {
-    // If onMarkRegistered callback is provided, use the celebratory modal flow
-    if (onMarkRegistered) {
-      onMarkRegistered({
-        registrationId: registration.registrationId,
-        sessionId: registration.sessionId,
-        childId: registration.childId,
-        childName: registration.childName,
-        campName: registration.campName,
-        organizationName: registration.organizationName,
-        organizationLogoUrl: registration.organizationLogoUrl,
-        dateRange: registration.weekLabel,
-      });
-      onClose();
-      return;
-    }
+  const fireConfetti = () => {
+    confetti({
+      particleCount: 80,
+      spread: 60,
+      origin: { y: 0.6 },
+      zIndex: 9999,
+    });
+  };
 
-    // Fallback to direct mutation call
+  const handleMarkRegistered = async () => {
     setIsUpdating(true);
     try {
       await registerMutation({
         childId: registration.childId,
         sessionId: registration.sessionId,
       });
+      fireConfetti();
       onClose();
     } catch (error) {
       console.error('Failed to update registration:', error);
@@ -179,7 +163,7 @@ export function RegistrationModal({ isOpen, onClose, registration, citySlug, onM
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
-                Register on Provider Site
+                Register for {registration.campName}
               </a>
             )}
 

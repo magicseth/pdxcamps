@@ -16,10 +16,14 @@ export const searchSessions = query({
     childAge: v.optional(v.number()),
     childGrade: v.optional(v.number()),
     locationIds: v.optional(v.array(v.id("locations"))),
+    organizationIds: v.optional(v.array(v.id("organizations"))),
+    extendedCareOnly: v.optional(v.boolean()),
     // Distance filtering
     homeLatitude: v.optional(v.number()),
     homeLongitude: v.optional(v.number()),
     maxDistanceMiles: v.optional(v.number()),
+    // Pagination
+    limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     // Start with sessions in the city that are active
@@ -54,6 +58,17 @@ export const searchSessions = query({
     if (args.locationIds && args.locationIds.length > 0) {
       const locationIdSet = new Set(args.locationIds);
       sessions = sessions.filter((session) => locationIdSet.has(session.locationId));
+    }
+
+    // Apply organization filter
+    if (args.organizationIds && args.organizationIds.length > 0) {
+      const orgIdSet = new Set(args.organizationIds);
+      sessions = sessions.filter((session) => orgIdSet.has(session.organizationId));
+    }
+
+    // Apply extended care filter
+    if (args.extendedCareOnly) {
+      sessions = sessions.filter((session) => session.extendedCareAvailable);
     }
 
     // Apply age/grade filters
@@ -124,7 +139,18 @@ export const searchSessions = query({
       );
     }
 
-    return enrichedSessions;
+    // Get total count before pagination
+    const totalCount = enrichedSessions.length;
+
+    // Apply limit (client handles progressive loading)
+    const limit = Math.min(args.limit ?? 100, 1000); // Cap at 1000 to stay well under Convex limits
+    const paginatedSessions = enrichedSessions.slice(0, limit);
+
+    return {
+      sessions: paginatedSessions,
+      totalCount,
+      hasMore: limit < totalCount,
+    };
   },
 });
 
