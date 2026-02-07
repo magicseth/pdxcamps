@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery } from 'convex/react';
+import posthog from 'posthog-js';
 
 // Animated count component with slide-up effect
 function AnimatedCount({ count, className = '' }: { count: number; className?: string }) {
@@ -98,6 +99,7 @@ export function CampSelectorDrawer({
       setSelectedCategories(initialCategories);
       setSelectedOrg(initialOrganizationId ?? null);
       setSelectedLocation(null);
+      posthog.capture('camp_selector_opened');
     }
   }, [isOpen, initialCategories, initialOrganizationId]);
 
@@ -114,7 +116,7 @@ export function CampSelectorDrawer({
           excludeSoldOut: true,
           limit: 200,
         }
-      : 'skip'
+      : 'skip',
   );
 
   const allSessions = allSessionsResult?.sessions ?? [];
@@ -136,7 +138,7 @@ export function CampSelectorDrawer({
           excludeSoldOut: true,
           limit: 50,
         }
-      : 'skip'
+      : 'skip',
   );
 
   // Use filtered results if we have filters, otherwise use all sessions
@@ -147,14 +149,14 @@ export function CampSelectorDrawer({
   // Fetch ALL organizations with session counts (independent of pagination)
   const allOrganizations = useQuery(
     api.organizations.queries.listOrganizationsWithSessionCounts,
-    isOpen ? { cityId } : 'skip'
+    isOpen ? { cityId } : 'skip',
   );
 
   const organizations = useMemo(() => {
     if (!allOrganizations) return [];
     return allOrganizations
-      .filter(org => org.sessionCount > 0)
-      .map(org => ({
+      .filter((org) => org.sessionCount > 0)
+      .map((org) => ({
         id: org._id,
         name: org.name,
         logoUrl: org.logoUrl ?? undefined,
@@ -166,7 +168,7 @@ export function CampSelectorDrawer({
   // Get unique locations from sessions for the selected org
   const locations = useMemo(() => {
     if (!selectedOrg) return [];
-    const orgSessions = allSessions.filter(s => s.organizationId === selectedOrg);
+    const orgSessions = allSessions.filter((s) => s.organizationId === selectedOrg);
     const locs = new Map<string, { id: string; name: string; count: number }>();
     for (const session of orgSessions) {
       if (!locs.has(session.locationId)) {
@@ -193,13 +195,11 @@ export function CampSelectorDrawer({
         }
       }
     }
-    return CATEGORIES.filter(cat => cats.has(cat));
+    return CATEGORIES.filter((cat) => cats.has(cat));
   }, [allSessions]);
 
   const toggleCategory = (cat: string) => {
-    setSelectedCategories(prev =>
-      prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
-    );
+    setSelectedCategories((prev) => (prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]));
   };
 
   if (!isOpen) return null;
@@ -207,10 +207,7 @@ export function CampSelectorDrawer({
   return (
     <>
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 transition-opacity"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 transition-opacity" onClick={onClose} />
 
       {/* Drawer */}
       <div className="fixed inset-y-0 right-0 w-full max-w-md bg-white dark:bg-slate-800 shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
@@ -225,12 +222,8 @@ export function CampSelectorDrawer({
                 {childName[0]}
               </span>
               <div>
-                <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                  Find a Camp for {childName}
-                </h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  {formatDateRange(weekStart, weekEnd)}
-                </p>
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Find a Camp for {childName}</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{formatDateRange(weekStart, weekEnd)}</p>
               </div>
             </div>
             <button
@@ -246,7 +239,7 @@ export function CampSelectorDrawer({
           {/* Category filters */}
           {availableCategories.length > 0 && (
             <div className="px-4 pb-3 flex flex-wrap gap-1.5">
-              {availableCategories.map(cat => (
+              {availableCategories.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => toggleCategory(cat)}
@@ -273,7 +266,7 @@ export function CampSelectorDrawer({
           {/* Organization filters */}
           {organizations.length > 0 && (
             <div className="px-4 pb-3 flex flex-wrap gap-1.5">
-              {organizations.slice(0, 8).map(org => (
+              {organizations.slice(0, 8).map((org) => (
                 <OrgFilterChip
                   key={org.id}
                   id={org.id}
@@ -295,7 +288,7 @@ export function CampSelectorDrawer({
           {selectedOrg && locations.length > 1 && (
             <div className="px-4 pb-3 flex flex-wrap gap-1.5">
               <span className="text-xs text-slate-400 mr-1">Location:</span>
-              {locations.map(loc => (
+              {locations.map((loc) => (
                 <button
                   key={loc.id}
                   onClick={() => setSelectedLocation(selectedLocation === loc.id ? null : loc.id)}
@@ -324,9 +317,7 @@ export function CampSelectorDrawer({
                 count={sessions.length}
                 className="font-semibold text-slate-700 dark:text-slate-200 min-w-[2ch]"
               />
-              {totalCount > sessions.length && (
-                <span>of {totalCount}</span>
-              )}
+              {totalCount > sessions.length && <span>of {totalCount}</span>}
               <span>camp{totalCount === 1 ? '' : 's'} available</span>
             </span>
           )}
@@ -336,7 +327,7 @@ export function CampSelectorDrawer({
         <div className="flex-1 overflow-y-auto p-4">
           {isLoading ? (
             <div className="space-y-3">
-              {[1, 2, 3].map(i => (
+              {[1, 2, 3].map((i) => (
                 <div key={i} className="bg-slate-100 dark:bg-slate-700/50 rounded-xl p-4 animate-pulse">
                   <div className="h-5 bg-slate-200 dark:bg-slate-600 rounded w-3/4 mb-2" />
                   <div className="h-4 bg-slate-200 dark:bg-slate-600 rounded w-1/2" />
@@ -346,9 +337,7 @@ export function CampSelectorDrawer({
           ) : sessions.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-4xl mb-4">🏕️</div>
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-                No camps found
-              </h3>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">No camps found</h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
                 Try adjusting your filters or check another week
               </p>
@@ -359,19 +348,19 @@ export function CampSelectorDrawer({
               >
                 Browse all camps
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                  />
                 </svg>
               </Link>
             </div>
           ) : (
             <div className="space-y-4">
-              {sessions.map(session => (
-                <SessionCard
-                  key={session._id}
-                  session={session as any}
-                  cityId={cityId}
-                  preSelectedChildId={childId}
-                />
+              {sessions.map((session) => (
+                <SessionCard key={session._id} session={session as any} cityId={cityId} preSelectedChildId={childId} />
               ))}
             </div>
           )}

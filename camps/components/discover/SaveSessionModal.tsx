@@ -8,6 +8,7 @@ import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
 import { getChildAge, calculateDisplayAge } from '../../lib/dateUtils';
 import { CloseIcon } from '../shared/icons';
+import posthog from 'posthog-js';
 
 export function SaveSessionModal({
   sessionId,
@@ -40,7 +41,10 @@ export function SaveSessionModal({
   const markInterested = useMutation(api.registrations.mutations.markInterested);
 
   // Check if a child is eligible based on age/grade requirements
-  const checkEligibility = (child: { birthdate: string; currentGrade?: number }): { eligible: boolean; reason?: string } => {
+  const checkEligibility = (child: {
+    birthdate: string;
+    currentGrade?: number;
+  }): { eligible: boolean; reason?: string } => {
     const age = getChildAge(child.birthdate);
     const grade = child.currentGrade;
 
@@ -78,7 +82,7 @@ export function SaveSessionModal({
 
       // If there's a pre-selected child and they're eligible, select them
       if (preSelectedChildId) {
-        const preSelectedChild = children.find(c => c._id === preSelectedChildId);
+        const preSelectedChild = children.find((c) => c._id === preSelectedChildId);
         if (preSelectedChild) {
           const { eligible } = checkEligibility(preSelectedChild);
           if (eligible) {
@@ -93,7 +97,7 @@ export function SaveSessionModal({
   }, [children, preSelectedChildId, initialized]);
 
   const toggleChild = (childId: Id<'children'>) => {
-    setSelectedChildIds(prev => {
+    setSelectedChildIds((prev) => {
       const next = new Set(prev);
       if (next.has(childId)) {
         next.delete(childId);
@@ -135,11 +139,19 @@ export function SaveSessionModal({
         });
       }
 
+      // Track camp saved event
+      posthog.capture('camp_saved', {
+        children_count: childIdArray.length,
+        has_notes: !!notes,
+        camp_name: campName,
+      });
+
       setSuccess(true);
       setTimeout(() => {
         onClose();
       }, 1500);
     } catch (err) {
+      posthog.captureException(err);
       // Check for paywall error - ConvexError has data property
       console.log('Save error:', err);
 
@@ -149,6 +161,7 @@ export function SaveSessionModal({
         console.log('ConvexError data:', data);
         if (data?.type === 'PAYWALL') {
           console.log('Paywall detected via ConvexError, showing upgrade modal');
+          posthog.capture('paywall_hit', { source: 'save_session' });
           onClose();
           onPaywallHit();
           return;
@@ -159,6 +172,7 @@ export function SaveSessionModal({
       const errorMessage = err instanceof Error ? err.message : String(err);
       if (errorMessage.includes('PAYWALL:')) {
         console.log('Paywall detected via message, showing upgrade modal');
+        posthog.capture('paywall_hit', { source: 'save_session' });
         onClose();
         onPaywallHit();
         return;
@@ -212,14 +226,15 @@ export function SaveSessionModal({
               </div>
             </div>
             <p className="text-lg font-medium text-slate-900 dark:text-white">Saved!</p>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              This session has been added to your list.
-            </p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">This session has been added to your list.</p>
           </div>
         ) : (
           <>
             {error && (
-              <div role="alert" className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm">
+              <div
+                role="alert"
+                className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm"
+              >
                 {error}
               </div>
             )}
@@ -228,13 +243,8 @@ export function SaveSessionModal({
               <div className="py-8 text-center text-slate-500">Loading children...</div>
             ) : children.length === 0 ? (
               <div className="py-8 text-center">
-                <p className="text-slate-600 dark:text-slate-400 mb-4">
-                  You need to add a child to your family first.
-                </p>
-                <Link
-                  href="/onboarding"
-                  className="text-primary hover:text-primary-dark font-medium"
-                >
+                <p className="text-slate-600 dark:text-slate-400 mb-4">You need to add a child to your family first.</p>
+                <Link href="/onboarding" className="text-primary hover:text-primary-dark font-medium">
                   Add a child
                 </Link>
               </div>
@@ -268,13 +278,15 @@ export function SaveSessionModal({
                             onChange={() => eligible && toggleChild(child._id)}
                             className="sr-only"
                           />
-                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
-                            !eligible
-                              ? 'border-slate-300 dark:border-slate-600 bg-slate-200 dark:bg-slate-700'
-                              : isSelected
-                                ? 'border-primary bg-primary'
-                                : 'border-slate-300 dark:border-slate-500'
-                          }`}>
+                          <div
+                            className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                              !eligible
+                                ? 'border-slate-300 dark:border-slate-600 bg-slate-200 dark:bg-slate-700'
+                                : isSelected
+                                  ? 'border-primary bg-primary'
+                                  : 'border-slate-300 dark:border-slate-500'
+                            }`}
+                          >
                             {isSelected && (
                               <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -285,7 +297,9 @@ export function SaveSessionModal({
                             {child.firstName[0]}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className={`font-medium ${!eligible ? 'text-slate-500 dark:text-slate-400' : 'text-slate-900 dark:text-white'}`}>
+                            <p
+                              className={`font-medium ${!eligible ? 'text-slate-500 dark:text-slate-400' : 'text-slate-900 dark:text-white'}`}
+                            >
                               {child.firstName} {child.lastName}
                             </p>
                             {child.birthdate && (
@@ -294,9 +308,7 @@ export function SaveSessionModal({
                               </p>
                             )}
                             {!eligible && reason && (
-                              <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
-                                {reason}
-                              </p>
+                              <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">{reason}</p>
                             )}
                           </div>
                         </label>
@@ -306,7 +318,10 @@ export function SaveSessionModal({
                 </div>
 
                 <div className="mb-6">
-                  <label htmlFor="save-session-notes" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  <label
+                    htmlFor="save-session-notes"
+                    className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
+                  >
                     Notes (optional)
                   </label>
                   <textarea
@@ -342,4 +357,3 @@ export function SaveSessionModal({
     </div>
   );
 }
-

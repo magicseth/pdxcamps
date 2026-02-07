@@ -20,6 +20,7 @@ import { getChildAge, formatDateShort } from '../../../lib/dateUtils';
 
 import { CATEGORIES, GRADE_LABELS } from '../../../lib/constants';
 import { SettingsIcon, FilterIcon, LocationIcon, ListIcon, MapIcon } from '../../../components/shared/icons';
+import posthog from 'posthog-js';
 
 export default function DiscoverPage() {
   const params = useParams();
@@ -36,9 +37,19 @@ export default function DiscoverPage() {
   // Reset display count when filters change
   useEffect(() => {
     setDisplayCount(SESSIONS_PER_PAGE);
-  }, [filters.selectedCategories, filters.selectedOrganizations, filters.selectedLocations,
-      filters.startDateAfter, filters.startDateBefore, filters.maxPrice, filters.hideSoldOut,
-      filters.childAge, filters.childGrade, filters.maxDistanceMiles, filters.sortBy]);
+  }, [
+    filters.selectedCategories,
+    filters.selectedOrganizations,
+    filters.selectedLocations,
+    filters.startDateAfter,
+    filters.startDateBefore,
+    filters.maxPrice,
+    filters.hideSoldOut,
+    filters.childAge,
+    filters.childGrade,
+    filters.maxDistanceMiles,
+    filters.sortBy,
+  ]);
 
   // Fetch city data
   const city = useQuery(api.cities.queries.getCityBySlug, { slug: citySlug });
@@ -55,14 +66,11 @@ export default function DiscoverPage() {
   // Fetch all organizations with session counts for filter chips
   const allOrganizations = useQuery(
     api.organizations.queries.listOrganizationsWithSessionCounts,
-    city ? { cityId: city._id } : 'skip'
+    city ? { cityId: city._id } : 'skip',
   );
 
   // Fetch all locations for filter chips
-  const allLocations = useQuery(
-    api.locations.queries.listLocations,
-    city ? { cityId: city._id } : 'skip'
-  );
+  const allLocations = useQuery(api.locations.queries.listLocations, city ? { cityId: city._id } : 'skip');
 
   // Check if user is admin (for generate image button)
   const isAdmin = useQuery(api.admin.queries.isAdmin);
@@ -89,15 +97,20 @@ export default function DiscoverPage() {
           excludeSoldOut: filters.hideSoldOut || undefined,
           childAge: filters.childAge,
           childGrade: filters.childGrade,
-          locationIds: filters.selectedLocations.length > 0 ? filters.selectedLocations as Id<'locations'>[] : undefined,
-          organizationIds: filters.selectedOrganizations.length > 0 ? filters.selectedOrganizations as Id<'organizations'>[] : undefined,
+          locationIds:
+            filters.selectedLocations.length > 0 ? (filters.selectedLocations as Id<'locations'>[]) : undefined,
+          organizationIds:
+            filters.selectedOrganizations.length > 0
+              ? (filters.selectedOrganizations as Id<'organizations'>[])
+              : undefined,
           extendedCareOnly: filters.extendedCareOnly || undefined,
           homeLatitude: hasHomeCoords ? homeLatitude : undefined,
           homeLongitude: hasHomeCoords ? homeLongitude : undefined,
-          maxDistanceMiles: hasHomeCoords && filters.maxDistanceMiles !== undefined ? filters.maxDistanceMiles : undefined,
+          maxDistanceMiles:
+            hasHomeCoords && filters.maxDistanceMiles !== undefined ? filters.maxDistanceMiles : undefined,
           limit: displayCount + 20, // Request a bit more than we display for smoother loading
         }
-      : 'skip'
+      : 'skip',
   );
 
   // Extract sessions array and metadata from paginated result
@@ -207,10 +220,7 @@ export default function DiscoverPage() {
           <p className="text-slate-600 dark:text-slate-400 mb-6">
             We couldn&apos;t find a city with the slug &quot;{citySlug}&quot;.
           </p>
-          <Link
-            href="/"
-            className="inline-block bg-primary text-white px-6 py-2 rounded-md hover:bg-primary-dark"
-          >
+          <Link href="/" className="inline-block bg-primary text-white px-6 py-2 rounded-md hover:bg-primary-dark">
             Back to Home
           </Link>
         </div>
@@ -233,16 +243,17 @@ export default function DiscoverPage() {
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link href="/" className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+              <Link
+                href="/"
+                className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
                 <span className="text-sm font-medium hidden sm:inline">Planner</span>
               </Link>
               <div className="h-6 w-px bg-slate-200 dark:bg-slate-700"></div>
-              <h1 className="text-lg font-bold text-slate-900 dark:text-white">
-                Discover Camps
-              </h1>
+              <h1 className="text-lg font-bold text-slate-900 dark:text-white">Discover Camps</h1>
             </div>
             <div className="flex items-center gap-3">
               {/* View Mode Toggle */}
@@ -285,9 +296,7 @@ export default function DiscoverPage() {
                 <span>
                   Filters
                   {sessions !== undefined && (
-                    <span className="text-slate-500 dark:text-slate-400 ml-1">
-                      ({filteredSessions.length})
-                    </span>
+                    <span className="text-slate-500 dark:text-slate-400 ml-1">({filteredSessions.length})</span>
                   )}
                 </span>
                 {filters.activeFilterCount > 0 && (
@@ -316,21 +325,20 @@ export default function DiscoverPage() {
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex flex-col md:flex-row gap-6">
           {/* Filters Sidebar */}
-          <aside
-            className={`${
-              filters.showFilters ? 'block' : 'hidden'
-            } md:block w-full md:w-72 flex-shrink-0`}
-          >
+          <aside className={`${filters.showFilters ? 'block' : 'hidden'} md:block w-full md:w-72 flex-shrink-0`}>
             <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 sticky top-24 max-h-[calc(100vh-12rem)] overflow-y-auto">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                   Filters
-                  <kbd className="hidden lg:inline px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-400 rounded text-[10px]" title="Press F to toggle filters">F</kbd>
+                  <kbd
+                    className="hidden lg:inline px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-400 rounded text-[10px]"
+                    title="Press F to toggle filters"
+                  >
+                    F
+                  </kbd>
                 </h2>
                 <div className="flex items-center gap-3">
-                  {filters.hasActiveFilters && (
-                    <ShareSearchButton />
-                  )}
+                  {filters.hasActiveFilters && <ShareSearchButton />}
                   {filters.hasActiveFilters && (
                     <button
                       onClick={filters.clearFilters}
@@ -346,12 +354,12 @@ export default function DiscoverPage() {
 
               {/* Date Range */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Date Range
-                </label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Date Range</label>
                 <div className="space-y-2">
                   <div>
-                    <label htmlFor="discover-date-from" className="text-xs text-slate-500 dark:text-slate-400">From</label>
+                    <label htmlFor="discover-date-from" className="text-xs text-slate-500 dark:text-slate-400">
+                      From
+                    </label>
                     <input
                       id="discover-date-from"
                       type="date"
@@ -362,7 +370,9 @@ export default function DiscoverPage() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="discover-date-to" className="text-xs text-slate-500 dark:text-slate-400">To</label>
+                    <label htmlFor="discover-date-to" className="text-xs text-slate-500 dark:text-slate-400">
+                      To
+                    </label>
                     <input
                       id="discover-date-to"
                       type="date"
@@ -436,7 +446,9 @@ export default function DiscoverPage() {
                 ) : (
                   <div className="space-y-2">
                     <div>
-                      <label htmlFor="discover-child-age" className="text-xs text-slate-500 dark:text-slate-400">Age (years)</label>
+                      <label htmlFor="discover-child-age" className="text-xs text-slate-500 dark:text-slate-400">
+                        Age (years)
+                      </label>
                       <input
                         id="discover-child-age"
                         type="number"
@@ -444,22 +456,20 @@ export default function DiscoverPage() {
                         min={3}
                         max={18}
                         value={filters.childAge ?? ''}
-                        onChange={(e) =>
-                          filters.setChildAge(e.target.value ? parseInt(e.target.value) : undefined)
-                        }
+                        onChange={(e) => filters.setChildAge(e.target.value ? parseInt(e.target.value) : undefined)}
                         placeholder="e.g., 8"
                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                       />
                     </div>
                     <div className="text-center text-xs text-slate-400">or</div>
                     <div>
-                      <label htmlFor="discover-child-grade" className="text-xs text-slate-500 dark:text-slate-400">Grade</label>
+                      <label htmlFor="discover-child-grade" className="text-xs text-slate-500 dark:text-slate-400">
+                        Grade
+                      </label>
                       <select
                         id="discover-child-grade"
                         value={filters.childGrade ?? ''}
-                        onChange={(e) =>
-                          filters.setChildGrade(e.target.value ? parseInt(e.target.value) : undefined)
-                        }
+                        onChange={(e) => filters.setChildGrade(e.target.value ? parseInt(e.target.value) : undefined)}
                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                       >
                         <option value="">Any grade</option>
@@ -483,9 +493,7 @@ export default function DiscoverPage() {
 
               {/* Categories */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Categories
-                </label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Categories</label>
                 <div className="flex flex-wrap gap-2">
                   {CATEGORIES.map((category) => {
                     const emoji: Record<string, string> = {
@@ -505,7 +513,10 @@ export default function DiscoverPage() {
                       <button
                         key={category}
                         type="button"
-                        onClick={() => filters.handleCategoryToggle(category)}
+                        onClick={() => {
+                          filters.handleCategoryToggle(category);
+                          posthog.capture('discover_filtered', { filter_type: 'category', value: category });
+                        }}
                         className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors flex items-center gap-1 ${
                           isSelected
                             ? 'bg-primary text-white border-primary'
@@ -523,9 +534,7 @@ export default function DiscoverPage() {
 
               {/* Max Price */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Max Price
-                </label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Max Price</label>
                 <div className="flex flex-wrap gap-2 mb-3">
                   {[200, 300, 500, 1000].map((price) => (
                     <button
@@ -543,7 +552,9 @@ export default function DiscoverPage() {
                   ))}
                 </div>
                 <div className="flex items-center gap-2">
-                  <label htmlFor="discover-max-price" className="text-slate-500">$</label>
+                  <label htmlFor="discover-max-price" className="text-slate-500">
+                    $
+                  </label>
                   <input
                     id="discover-max-price"
                     type="number"
@@ -551,9 +562,7 @@ export default function DiscoverPage() {
                     min={0}
                     step={50}
                     value={filters.maxPrice ?? ''}
-                    onChange={(e) =>
-                      filters.setMaxPrice(e.target.value ? parseInt(e.target.value) : undefined)
-                    }
+                    onChange={(e) => filters.setMaxPrice(e.target.value ? parseInt(e.target.value) : undefined)}
                     placeholder="Custom amount"
                     className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                   />
@@ -610,7 +619,9 @@ export default function DiscoverPage() {
                         <button
                           key={distance}
                           type="button"
-                          onClick={() => filters.setMaxDistanceMiles(filters.maxDistanceMiles === distance ? undefined : distance)}
+                          onClick={() =>
+                            filters.setMaxDistanceMiles(filters.maxDistanceMiles === distance ? undefined : distance)
+                          }
                           className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
                             filters.maxDistanceMiles === distance
                               ? 'bg-primary text-white border-primary'
@@ -672,28 +683,40 @@ export default function DiscoverPage() {
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                    Filter by Organization ({allOrganizations.filter(org => (sessionCountsByOrg.get(org._id) || 0) > 0 || filters.selectedOrganizations.includes(org._id)).length})
+                    Filter by Organization (
+                    {
+                      allOrganizations.filter(
+                        (org) =>
+                          (sessionCountsByOrg.get(org._id) || 0) > 0 || filters.selectedOrganizations.includes(org._id),
+                      ).length
+                    }
+                    )
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {allOrganizations.filter(org => {
-                    const sessionCount = sessionCountsByOrg.get(org._id) || 0;
-                    // Show org if it has sessions OR if it's currently selected
-                    return sessionCount > 0 || filters.selectedOrganizations.includes(org._id);
-                  }).map((org) => {
-                    const sessionCount = sessionCountsByOrg.get(org._id) || 0;
-                    return (
-                      <OrgFilterChip
-                        key={org._id}
-                        id={org._id}
-                        name={org.name}
-                        logoUrl={org.logoUrl}
-                        count={sessionCount}
-                        isSelected={filters.selectedOrganizations.includes(org._id)}
-                        onClick={() => filters.handleOrganizationToggle(org._id)}
-                      />
-                    );
-                  })}
+                  {allOrganizations
+                    .filter((org) => {
+                      const sessionCount = sessionCountsByOrg.get(org._id) || 0;
+                      // Show org if it has sessions OR if it's currently selected
+                      return sessionCount > 0 || filters.selectedOrganizations.includes(org._id);
+                    })
+                    .map((org) => {
+                      const sessionCount = sessionCountsByOrg.get(org._id) || 0;
+                      return (
+                        <OrgFilterChip
+                          key={org._id}
+                          id={org._id}
+                          name={org.name}
+                          logoUrl={org.logoUrl}
+                          count={sessionCount}
+                          isSelected={filters.selectedOrganizations.includes(org._id)}
+                          onClick={() => {
+                            filters.handleOrganizationToggle(org._id);
+                            posthog.capture('discover_filtered', { filter_type: 'organization', value: org.name });
+                          }}
+                        />
+                      );
+                    })}
                 </div>
               </div>
             )}
@@ -717,9 +740,7 @@ export default function DiscoverPage() {
                     >
                       <LocationIcon />
                       {location.name}
-                      {filters.selectedLocations.includes(location._id) && (
-                        <span className="ml-1">✕</span>
-                      )}
+                      {filters.selectedLocations.includes(location._id) && <span className="ml-1">✕</span>}
                     </button>
                   ))}
                 </div>
@@ -754,10 +775,7 @@ export default function DiscoverPage() {
                     />
                   )}
                   {filters.childAge !== undefined && (
-                    <FilterChip
-                      label={`Age: ${filters.childAge}`}
-                      onRemove={() => filters.setChildAge(undefined)}
-                    />
+                    <FilterChip label={`Age: ${filters.childAge}`} onRemove={() => filters.setChildAge(undefined)} />
                   )}
                   {filters.childGrade !== undefined && (
                     <FilterChip
@@ -766,29 +784,16 @@ export default function DiscoverPage() {
                     />
                   )}
                   {filters.selectedCategories.map((cat) => (
-                    <FilterChip
-                      key={cat}
-                      label={cat}
-                      onRemove={() => filters.handleCategoryToggle(cat)}
-                    />
+                    <FilterChip key={cat} label={cat} onRemove={() => filters.handleCategoryToggle(cat)} />
                   ))}
                   {filters.maxPrice !== undefined && (
-                    <FilterChip
-                      label={`Max: $${filters.maxPrice}`}
-                      onRemove={() => filters.setMaxPrice(undefined)}
-                    />
+                    <FilterChip label={`Max: $${filters.maxPrice}`} onRemove={() => filters.setMaxPrice(undefined)} />
                   )}
                   {!filters.hideSoldOut && (
-                    <FilterChip
-                      label="Showing sold out"
-                      onRemove={() => filters.setHideSoldOut(true)}
-                    />
+                    <FilterChip label="Showing sold out" onRemove={() => filters.setHideSoldOut(true)} />
                   )}
                   {filters.extendedCareOnly && (
-                    <FilterChip
-                      label="Extended care"
-                      onRemove={() => filters.setExtendedCareOnly(false)}
-                    />
+                    <FilterChip label="Extended care" onRemove={() => filters.setExtendedCareOnly(false)} />
                   )}
                   {filters.selectedOrganizations.map((orgId) => {
                     const org = allOrganizations?.find((o) => o._id === orgId);
@@ -825,9 +830,18 @@ export default function DiscoverPage() {
               <div className="text-sm text-slate-600 dark:text-slate-400">
                 {sessions === undefined ? (
                   <span className="flex items-center gap-2">
-                    <svg className="w-4 h-4 animate-spin motion-reduce:animate-none" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                    <svg
+                      className="w-4 h-4 animate-spin motion-reduce:animate-none"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
                     </svg>
                     <span>Searching camps...</span>
                   </span>
@@ -836,22 +850,28 @@ export default function DiscoverPage() {
                 ) : (
                   <span className="flex items-center gap-3 flex-wrap">
                     <span className="font-medium text-slate-900 dark:text-white">
-                      {hasMoreSessions ? `${filteredSessions.length} of ${totalSessionCount}` : totalSessionCount} session{totalSessionCount === 1 ? '' : 's'}
+                      {hasMoreSessions ? `${filteredSessions.length} of ${totalSessionCount}` : totalSessionCount}{' '}
+                      session{totalSessionCount === 1 ? '' : 's'}
                     </span>
                     <span className="text-slate-400 dark:text-slate-500">•</span>
-                    <span>{new Set(filteredSessions.map(s => s.campId)).size} camp{new Set(filteredSessions.map(s => s.campId)).size === 1 ? '' : 's'}</span>
+                    <span>
+                      {new Set(filteredSessions.map((s) => s.campId)).size} camp
+                      {new Set(filteredSessions.map((s) => s.campId)).size === 1 ? '' : 's'}
+                    </span>
                     <span className="text-slate-400 dark:text-slate-500">•</span>
-                    <span>{new Set(filteredSessions.map(s => s.organizationId)).size} org{new Set(filteredSessions.map(s => s.organizationId)).size === 1 ? '' : 's'}</span>
+                    <span>
+                      {new Set(filteredSessions.map((s) => s.organizationId)).size} org
+                      {new Set(filteredSessions.map((s) => s.organizationId)).size === 1 ? '' : 's'}
+                    </span>
                     {filteredSessions.length > 0 && (
                       <>
                         <span className="text-slate-400 dark:text-slate-500">•</span>
                         <span>
-                          ${Math.round(Math.min(...filteredSessions.map(s => s.price)) / 100)}
-                          {' - '}
-                          ${Math.round(Math.max(...filteredSessions.map(s => s.price)) / 100)}
+                          ${Math.round(Math.min(...filteredSessions.map((s) => s.price)) / 100)}
+                          {' - '}${Math.round(Math.max(...filteredSessions.map((s) => s.price)) / 100)}
                         </span>
                         {(() => {
-                          const available = filteredSessions.filter(s => s.capacity > s.enrolledCount).length;
+                          const available = filteredSessions.filter((s) => s.capacity > s.enrolledCount).length;
                           const soldOut = filteredSessions.length - available;
                           if (soldOut > 0) {
                             return (
@@ -878,11 +898,15 @@ export default function DiscoverPage() {
                   Can't find a camp?
                 </button>
                 <div className="flex items-center gap-2">
-                  <label htmlFor="discover-sort" className="text-xs text-slate-500 dark:text-slate-400">Sort:</label>
+                  <label htmlFor="discover-sort" className="text-xs text-slate-500 dark:text-slate-400">
+                    Sort:
+                  </label>
                   <select
                     id="discover-sort"
                     value={filters.sortBy}
-                    onChange={(e) => filters.setSortBy(e.target.value as 'date' | 'price-low' | 'price-high' | 'spots' | 'distance')}
+                    onChange={(e) =>
+                      filters.setSortBy(e.target.value as 'date' | 'price-low' | 'price-high' | 'spots' | 'distance')
+                    }
                     className="text-sm px-2 py-1 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300"
                   >
                     <option value="date">Start Date</option>
@@ -960,7 +984,13 @@ export default function DiscoverPage() {
                         onClick={filters.clearFilters}
                         className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 flex items-center gap-2"
                       >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          aria-hidden="true"
+                        >
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                         Clear all filters
@@ -1013,30 +1043,33 @@ export default function DiscoverPage() {
             )}
 
             {/* Sessions List or Map View */}
-            {sessions !== undefined && filteredSessions.length > 0 && (
-              filters.viewMode === 'map' ? (
+            {sessions !== undefined &&
+              filteredSessions.length > 0 &&
+              (filters.viewMode === 'map' ? (
                 <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden">
                   <MapWrapper
-                    sessions={filteredSessions.map((session) => ({
-                      _id: session._id,
-                      startDate: session.startDate,
-                      endDate: session.endDate,
-                      price: session.price,
-                      currency: session.currency,
-                      spotsLeft: Math.max(0, session.capacity - session.enrolledCount),
-                      distanceFromHome: (session as { distanceFromHome?: number }).distanceFromHome,
-                      camp: {
-                        name: session.campName ?? 'Camp',
-                      },
-                      organization: {
-                        name: session.organizationName ?? 'Organization',
-                      },
-                      location: {
-                        name: session.locationName ?? 'Location',
-                        latitude: session.locationLatitude,
-                        longitude: session.locationLongitude,
-                      },
-                    })) as MapSession[]}
+                    sessions={
+                      filteredSessions.map((session) => ({
+                        _id: session._id,
+                        startDate: session.startDate,
+                        endDate: session.endDate,
+                        price: session.price,
+                        currency: session.currency,
+                        spotsLeft: Math.max(0, session.capacity - session.enrolledCount),
+                        distanceFromHome: (session as { distanceFromHome?: number }).distanceFromHome,
+                        camp: {
+                          name: session.campName ?? 'Camp',
+                        },
+                        organization: {
+                          name: session.organizationName ?? 'Organization',
+                        },
+                        location: {
+                          name: session.locationName ?? 'Location',
+                          latitude: session.locationLatitude,
+                          longitude: session.locationLongitude,
+                        },
+                      })) as MapSession[]
+                    }
                     centerLatitude={city.centerLatitude}
                     centerLongitude={city.centerLongitude}
                     homeLatitude={homeLatitude}
@@ -1061,7 +1094,7 @@ export default function DiscoverPage() {
                   {hasMoreSessions && (
                     <div className="mt-6 text-center">
                       <button
-                        onClick={() => setDisplayCount(prev => prev + SESSIONS_PER_PAGE)}
+                        onClick={() => setDisplayCount((prev) => prev + SESSIONS_PER_PAGE)}
                         className="px-6 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                       >
                         Load more ({totalSessionCount - filteredSessions.length} remaining)
@@ -1069,8 +1102,7 @@ export default function DiscoverPage() {
                     </div>
                   )}
                 </>
-              )
-            )}
+              ))}
           </main>
         </div>
       </div>
@@ -1081,16 +1113,10 @@ export default function DiscoverPage() {
       <BackToTopButton />
 
       {/* Add Child Modal */}
-      <AddChildModal
-        isOpen={filters.showAddChildModal}
-        onClose={() => filters.setShowAddChildModal(false)}
-      />
+      <AddChildModal isOpen={filters.showAddChildModal} onClose={() => filters.setShowAddChildModal(false)} />
 
       {/* Request Camp Modal */}
-      <RequestCampModal
-        isOpen={filters.showRequestCampModal}
-        onClose={() => filters.setShowRequestCampModal(false)}
-      />
+      <RequestCampModal isOpen={filters.showRequestCampModal} onClose={() => filters.setShowRequestCampModal(false)} />
     </div>
   );
 }
@@ -1115,9 +1141,7 @@ function BackToTopButton() {
     <button
       onClick={scrollToTop}
       className={`fixed bottom-24 right-4 p-3 bg-primary text-white rounded-full shadow-lg hover:bg-primary-dark transition-all duration-300 z-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
-        isVisible
-          ? 'opacity-100 translate-y-0'
-          : 'opacity-0 translate-y-4 pointer-events-none'
+        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
       }`}
       aria-label="Back to top"
       aria-hidden={!isVisible}
@@ -1128,7 +1152,6 @@ function BackToTopButton() {
     </button>
   );
 }
-
 
 function ShareSearchButton() {
   const [copied, setCopied] = useState(false);
@@ -1170,7 +1193,12 @@ function ShareSearchButton() {
       ) : (
         <>
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+            />
           </svg>
           <span>Share</span>
         </>
