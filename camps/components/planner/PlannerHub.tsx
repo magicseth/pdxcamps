@@ -404,8 +404,8 @@ export function PlannerHub({
             </Link>
           )}
 
-          {/* Referral Callout */}
-          <ReferralCallout />
+          {/* Referral Callout - hidden until referral program launches */}
+          {/* <ReferralCallout /> */}
 
           {/* Registration Progress Banner */}
           {stats && (

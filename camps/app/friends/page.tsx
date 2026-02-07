@@ -573,12 +573,16 @@ function AddFriend() {
     setIsSubmitting(true);
     setMessage(null);
     try {
-      await sendRequest({ addresseeEmail: email.trim() });
-      setMessage({ type: 'success', text: 'Friend request sent!' });
+      const result = await sendRequest({ addresseeEmail: email.trim() });
+      if (result === null) {
+        setMessage({ type: 'success', text: `Invite sent to ${email.trim()}! They'll get an email to join.` });
+      } else {
+        setMessage({ type: 'success', text: 'Friend request sent!' });
+      }
       setEmail('');
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to send friend request';
-      setMessage({ type: 'error', text: errorMessage });
+    } catch (error: any) {
+      const errorMessage = error?.message ?? 'Failed to send friend request';
+      setMessage({ type: 'error', text: String(errorMessage) });
     } finally {
       setIsSubmitting(false);
     }

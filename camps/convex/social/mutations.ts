@@ -1,5 +1,6 @@
 import { mutation } from '../_generated/server';
 import { v } from 'convex/values';
+import { internal } from '../_generated/api';
 import { requireFamily, getFamily } from '../lib/auth';
 import { friendshipStatusValidator } from '../lib/validators';
 
@@ -21,7 +22,38 @@ export const sendFriendRequest = mutation({
       .unique();
 
     if (!addressee) {
-      throw new Error('No family found with that email address');
+      // Person isn't on the platform — send them an invite email
+      const city = await ctx.db.get(family.primaryCityId);
+      const brandName = city?.brandName || 'PDX Camps';
+      const domain = city?.domain || 'pdxcamps.com';
+      const fromEmail = city?.fromEmail || 'hello@pdxcamps.com';
+
+      await ctx.scheduler.runAfter(0, internal.email.sendEmail, {
+        to: args.addresseeEmail,
+        subject: `${family.displayName} invited you to ${brandName}!`,
+        html: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
+            <p>Hi there!</p>
+            <p><strong>${family.displayName}</strong> wants to connect with you on <strong>${brandName}</strong> — a free tool that helps families plan summer camps together.</p>
+            <p>Sign up to:</p>
+            <ul>
+              <li>Browse and compare summer camps</li>
+              <li>Plan your summer week by week</li>
+              <li>Share calendars with friends to coordinate</li>
+            </ul>
+            <p style="text-align: center; margin: 24px 0;">
+              <a href="https://${domain}" style="display: inline-block; padding: 14px 28px; background-color: #E5A33B; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">Join ${brandName}</a>
+            </p>
+            <p style="color: #666; font-size: 14px; margin-top: 24px; border-top: 1px solid #eee; padding-top: 16px;">
+              — The ${brandName} Team<br/>
+              <a href="https://${domain}" style="color: #E5A33B;">${domain}</a>
+            </p>
+          </div>
+        `,
+        text: `${family.displayName} invited you to ${brandName}! Sign up at https://${domain} to plan summer camps together.`,
+      });
+
+      return null; // Signals invite sent (not a friendship ID)
     }
 
     // Cannot friend yourself
