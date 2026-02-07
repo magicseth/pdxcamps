@@ -27,7 +27,7 @@ export const createScrapeJob = mutation({
       .first();
 
     if (existingJob) {
-      throw new Error('A pending job already exists for this source');
+      return null; // Already has a pending job — skip silently
     }
 
     const runningJob = await ctx.db
@@ -36,7 +36,7 @@ export const createScrapeJob = mutation({
       .first();
 
     if (runningJob) {
-      throw new Error('A job is already running for this source');
+      return null; // Already running — skip silently
     }
 
     const jobId = await ctx.db.insert('scrapeJobs', {

@@ -65,11 +65,15 @@ export const executeScrape = action({
       throw new Error('Scrape source is not active');
     }
 
-    // 2. Create a job record
+    // 2. Create a job record (returns null if one already exists)
     const jobId = await ctx.runMutation(api.scraping.jobs.createScrapeJob, {
       sourceId: args.sourceId,
       triggeredBy: args.triggeredBy,
     });
+
+    if (!jobId) {
+      throw new Error('A job is already pending or running for this source');
+    }
 
     // 3. Start the job
     await ctx.runMutation(api.scraping.jobs.startScrapeJob, {
@@ -538,6 +542,16 @@ export const internalExecuteScrape = internalAction({
       sourceId: args.sourceId,
       triggeredBy: args.triggeredBy,
     });
+
+    if (!jobId) {
+      return {
+        success: false,
+        sessions: [],
+        error: 'A job is already pending or running for this source',
+        pagesScraped: 0,
+        rawData: '{}',
+      };
+    }
 
     await ctx.runMutation(api.scraping.jobs.startScrapeJob, { jobId });
 

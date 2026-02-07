@@ -94,11 +94,15 @@ export const executeScraper = action({
         );
       }
 
-      // Create and start scrape job record
+      // Create and start scrape job record (returns null if one already exists)
       const jobId = await ctx.runMutation(api.scraping.jobs.createScrapeJob, {
         sourceId: args.sourceId,
         triggeredBy: 'executor',
       });
+
+      if (!jobId) {
+        return { success: false, error: 'A job is already pending or running for this source', sessions: [], scrapedAt: Date.now(), durationMs: 0, pagesScraped: 0 };
+      }
 
       // Start the job
       await ctx.runMutation(api.scraping.jobs.startScrapeJob, {
@@ -683,6 +687,10 @@ ${parsingNotes}
           sourceId: args.sourceId,
           triggeredBy: 'stagehand',
         });
+
+        if (!jobId) {
+          return { ...result, error: 'A job is already pending or running for this source' };
+        }
 
         await ctx.runMutation(api.scraping.jobs.startScrapeJob, { jobId });
 
