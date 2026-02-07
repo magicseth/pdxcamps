@@ -92,7 +92,7 @@ export const processDirectoryQueue = action({
             });
 
             // Create scrape source
-            await ctx.runMutation(api.scraping.mutations.createScrapeSourceSimple, {
+            await ctx.runMutation(api.scraping.sources.createScrapeSourceSimple, {
               name: org.suggestedName,
               url: org.bestUrl,
               organizationId: orgId,

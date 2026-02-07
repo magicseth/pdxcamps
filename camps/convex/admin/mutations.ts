@@ -1,15 +1,7 @@
-import { mutation, action, MutationCtx } from "../_generated/server";
+import { mutation, action } from "../_generated/server";
 import { api } from "../_generated/api";
 import { v } from "convex/values";
-import { getFamily } from "../lib/auth";
-
-const ADMIN_EMAILS = ["seth@magicseth.com"];
-
-async function checkIsAdmin(ctx: MutationCtx): Promise<boolean> {
-  const family = await getFamily(ctx);
-  if (!family) return false;
-  return ADMIN_EMAILS.includes(family.email);
-}
+import { checkIsAdmin } from "../lib/adminAuth";
 
 /**
  * Update a location's address and coordinates

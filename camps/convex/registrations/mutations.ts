@@ -1,11 +1,9 @@
 import { mutation, internalMutation } from "../_generated/server";
+import { internal } from "../_generated/api";
 import { v } from "convex/values";
-import { ConvexError } from "convex/values";
 import { requireFamily } from "../lib/auth";
-import { components } from "../_generated/api";
-
-// Free tier limit for saved camps
-const FREE_SAVED_CAMPS_LIMIT = 4;
+import { updateSessionCapacityStatus } from "../lib/helpers";
+import { enforceSavedCampLimit } from "../lib/paywall";
 
 /**
  * Internal mutation to update session capacity counts.
@@ -32,11 +30,19 @@ export const updateSessionCounts = internalMutation({
     });
 
     // Auto-update status based on capacity
-    const isSoldOut = newEnrolledCount >= session.capacity;
-    if (session.status === "active" && isSoldOut) {
-      await ctx.db.patch(args.sessionId, { status: "sold_out" });
-    } else if (session.status === "sold_out" && !isSoldOut) {
-      await ctx.db.patch(args.sessionId, { status: "active" });
+    await updateSessionCapacityStatus(
+      ctx.db, args.sessionId, newEnrolledCount, session.capacity, session.status
+    );
+
+    // Refresh planner availability aggregate if this changed availability
+    const wasSoldOut = session.enrolledCount >= session.capacity;
+    const nowSoldOut = newEnrolledCount >= session.capacity;
+    if (wasSoldOut !== nowSoldOut) {
+      const currentYear = new Date().getFullYear();
+      await ctx.scheduler.runAfter(0, internal.planner.aggregates.recomputeForCity, {
+        cityId: session.cityId,
+        year: currentYear,
+      });
     }
   },
 });
@@ -84,45 +90,9 @@ export const markInterested = mutation({
     }
 
     // === PAYWALL CHECK ===
-    // Count existing saved camps for this family (interested, registered, waitlisted)
-    const existingRegistrations = await ctx.db
-      .query("registrations")
-      .withIndex("by_family", (q) => q.eq("familyId", family._id))
-      .collect();
-
-    const activeSavedCamps = existingRegistrations.filter(
-      (r) => r.status === "interested" || r.status === "registered" || r.status === "waitlisted"
-    ).length;
-
-    // Check if user has premium subscription
-    const identity = await ctx.auth.getUserIdentity();
-    let isPremium = false;
-
-    if (identity) {
-      try {
-        const subscriptions = await ctx.runQuery(
-          components.stripe.public.listSubscriptionsByUserId,
-          { userId: identity.subject }
-        );
-        isPremium = subscriptions.some(
-          (sub) => sub.status === "active" || sub.status === "trialing"
-        );
-      } catch (e) {
-        // If Stripe component fails, assume not premium but don't block
-        console.error("Failed to check subscription status:", e);
-        isPremium = false;
-      }
-    }
-
-    // Block if at limit and not premium
-    if (activeSavedCamps >= FREE_SAVED_CAMPS_LIMIT && !isPremium) {
-      throw new ConvexError({
-        type: "PAYWALL",
-        code: "CAMP_LIMIT",
-        savedCount: activeSavedCamps,
-        limit: FREE_SAVED_CAMPS_LIMIT,
-      });
-    }
+    // Free users can only save a limited number of camps (registrations + custom camps).
+    // Premium users get unlimited. See convex/lib/paywall.ts for details.
+    await enforceSavedCampLimit(ctx, family._id, "save_camp");
     // === END PAYWALL CHECK ===
 
     const registrationId = await ctx.db.insert("registrations", {
@@ -141,6 +111,12 @@ export const markInterested = mutation({
  * Register a child for a session.
  * Can upgrade from "interested" to "registered" or create a new registration.
  * Automatically moves to waitlist if session is full.
+ *
+ * NO PAYWALL: This mutation typically upgrades an existing "interested" registration
+ * (which was already paywall-gated via markInterested) to "registered". When it
+ * creates a brand-new registration, the user has already committed to registering
+ * externally — blocking them here would be confusing. The paywall lives at the
+ * "save/bookmark" step, not the "I actually registered" step.
  */
 export const register = mutation({
   args: {
@@ -203,9 +179,9 @@ export const register = mutation({
           });
 
           // Check if session should be marked sold out
-          if (session.enrolledCount + 1 >= session.capacity && session.status === "active") {
-            await ctx.db.patch(args.sessionId, { status: "sold_out" });
-          }
+          await updateSessionCapacityStatus(
+            ctx.db, args.sessionId, session.enrolledCount + 1, session.capacity, session.status
+          );
 
           return existingRegistration._id;
         } else if (session.waitlistEnabled) {
@@ -239,9 +215,9 @@ export const register = mutation({
           enrolledCount: session.enrolledCount + 1,
         });
 
-        if (session.enrolledCount + 1 >= session.capacity && session.status === "active") {
-          await ctx.db.patch(args.sessionId, { status: "sold_out" });
-        }
+        await updateSessionCapacityStatus(
+          ctx.db, args.sessionId, session.enrolledCount + 1, session.capacity, session.status
+        );
 
         return existingRegistration._id;
       } else if (session.waitlistEnabled) {
@@ -277,9 +253,9 @@ export const register = mutation({
         enrolledCount: session.enrolledCount + 1,
       });
 
-      if (session.enrolledCount + 1 >= session.capacity && session.status === "active") {
-        await ctx.db.patch(args.sessionId, { status: "sold_out" });
-      }
+      await updateSessionCapacityStatus(
+        ctx.db, args.sessionId, session.enrolledCount + 1, session.capacity, session.status
+      );
 
       return registrationId;
     } else if (session.waitlistEnabled) {
@@ -347,9 +323,9 @@ export const cancelRegistration = mutation({
         });
 
         // If session was sold out and now has capacity, mark as active
-        if (session.status === "sold_out" && newEnrolledCount < session.capacity) {
-          await ctx.db.patch(registration.sessionId, { status: "active" });
-        }
+        await updateSessionCapacityStatus(
+          ctx.db, registration.sessionId, newEnrolledCount, session.capacity, session.status
+        );
       } else if (previousStatus === "waitlisted") {
         await ctx.db.patch(registration.sessionId, {
           waitlistCount: Math.max(0, session.waitlistCount - 1),
@@ -412,6 +388,11 @@ export const updateRegistrationNotes = mutation({
 /**
  * Join the waitlist for a sold-out session.
  * Creates a registration with status "waitlisted" or upgrades from "interested".
+ *
+ * NO PAYWALL: Joining a waitlist is an upgrade from an existing "interested"
+ * registration (already paywall-gated) or a direct action where the user is
+ * tracking external waitlist status. Same reasoning as register() — the gate
+ * is at the bookmark step.
  */
 export const joinWaitlist = mutation({
   args: {

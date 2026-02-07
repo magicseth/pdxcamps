@@ -383,13 +383,13 @@ export const checkMultipleDomains = action({
 
 /**
  * Purchase a domain via Porkbun
- * If price is wrong (e.g., assumed standard price), will fetch actual price and retry
+ * If price is not provided or wrong, will fetch actual price from Porkbun first
  */
 export const purchaseDomain = action({
   args: {
     domain: v.string(),
-    // Price from domain check (e.g., "9.73" for $9.73) - may be assumed price
-    price: v.string(),
+    // Price from domain check (e.g., "9.73" for $9.73) - optional, will fetch if not provided
+    price: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<{
     success: boolean;
@@ -405,6 +405,33 @@ export const purchaseDomain = action({
         success: false,
         error: "Porkbun API credentials not configured",
       };
+    }
+
+    // If no price provided or price is empty/invalid, get it from Porkbun first
+    let priceToUse = args.price;
+    if (!priceToUse || priceToUse.trim() === '' || isNaN(parseFloat(priceToUse))) {
+      console.log(`No valid price provided for ${args.domain}, fetching from Porkbun...`);
+      const priceResult = await ctx.runAction(
+        api.expansion.actions.getDomainPrice,
+        { domain: args.domain }
+      );
+
+      if (!priceResult.available) {
+        return {
+          success: false,
+          error: priceResult.error || "Domain is not available",
+        };
+      }
+
+      if (!priceResult.price) {
+        return {
+          success: false,
+          error: "Could not get price from Porkbun",
+        };
+      }
+
+      priceToUse = priceResult.price;
+      console.log(`Got price ${priceToUse} for ${args.domain}`);
     }
 
     // Helper to attempt purchase with given price
@@ -452,14 +479,14 @@ export const purchaseDomain = action({
     }
 
     try {
-      // First attempt with provided price
-      const firstAttempt = await attemptPurchase(args.price);
+      // Attempt purchase with the price we have
+      const firstAttempt = await attemptPurchase(priceToUse);
 
       if (firstAttempt.success) {
         return {
           success: true,
           orderId: firstAttempt.orderId,
-          actualPrice: args.price,
+          actualPrice: priceToUse,
         };
       }
 

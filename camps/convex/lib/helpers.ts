@@ -2,6 +2,40 @@
  * Utility functions for the camp marketplace
  */
 
+import { Doc, Id } from "../_generated/dataModel";
+import { DatabaseWriter } from "../_generated/server";
+
+/**
+ * Resolve a camp name using denormalized session data, falling back to a camp lookup map.
+ * Extracts the common pattern: session.campName ?? campMap.get(session.campId)?.name ?? "Unknown Camp"
+ */
+export function resolveCampName(
+  session: { campName?: string; campId: Id<"camps"> },
+  campMap: Map<Id<"camps">, Doc<"camps">>
+): string {
+  return session.campName ?? campMap.get(session.campId)?.name ?? "Unknown Camp";
+}
+
+/**
+ * Update a session's status based on its capacity.
+ * If enrolled >= capacity and status is "active", mark as "sold_out".
+ * If enrolled < capacity and status is "sold_out", mark as "active".
+ */
+export async function updateSessionCapacityStatus(
+  db: DatabaseWriter,
+  sessionId: Id<"sessions">,
+  enrolledCount: number,
+  capacity: number,
+  currentStatus: string
+): Promise<void> {
+  const isSoldOut = enrolledCount >= capacity;
+  if (currentStatus === "active" && isSoldOut) {
+    await db.patch(sessionId, { status: "sold_out" });
+  } else if (currentStatus === "sold_out" && !isSoldOut) {
+    await db.patch(sessionId, { status: "active" });
+  }
+}
+
 /**
  * Calculate age from an ISO date string (YYYY-MM-DD)
  * @param birthdate - ISO date string in YYYY-MM-DD format

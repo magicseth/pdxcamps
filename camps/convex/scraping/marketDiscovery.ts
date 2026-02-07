@@ -403,6 +403,19 @@ export const createOrgsFromDiscoveredUrls = mutation({
     let existed = 0;
     let sourcesCreated = 0;
 
+    // Load all org domains ONCE before the loop to avoid repeated full-table scans
+    const allOrgs = await ctx.db.query("organizations").collect();
+    const existingDomains = new Set<string>();
+    for (const org of allOrgs) {
+      if (!org.website) continue;
+      try {
+        const domain = new URL(org.website).hostname.replace(/^www\./, "");
+        existingDomains.add(domain);
+      } catch {
+        // skip invalid URLs
+      }
+    }
+
     for (const item of args.urls) {
       try {
         // Generate name from title or domain
@@ -419,21 +432,13 @@ export const createOrgsFromDiscoveredUrls = mutation({
         name = name.slice(0, 100); // Limit length
 
         // Check if org already exists by domain
-        const existingOrgs = await ctx.db.query("organizations").collect();
-        const existingOrg = existingOrgs.find((o) => {
-          if (!o.website) return false;
-          try {
-            const orgDomain = new URL(o.website).hostname.replace(/^www\./, "");
-            return orgDomain === item.domain;
-          } catch {
-            return false;
-          }
-        });
-
-        if (existingOrg) {
+        if (existingDomains.has(item.domain)) {
           existed++;
           continue;
         }
+
+        // Track newly created domains to avoid duplicates within this batch
+        existingDomains.add(item.domain);
 
         // Create organization
         const orgId = await ctx.db.insert("organizations", {

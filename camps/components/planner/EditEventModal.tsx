@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
+import { CloseIcon } from '../shared/icons';
 
 type EventType = 'vacation' | 'family_visit' | 'day_camp' | 'summer_school' | 'other';
 
@@ -178,7 +179,7 @@ export function EditEventModal({ isOpen, onClose, event }: EditEventModalProps) 
             aria-label="Close"
             title="Close (Esc)"
           >
-            <CloseIcon />
+            <CloseIcon className="w-5 h-5 text-slate-500" />
           </button>
         </div>
 
@@ -429,10 +430,3 @@ export function EditEventModal({ isOpen, onClose, event }: EditEventModalProps) 
   );
 }
 
-function CloseIcon() {
-  return (
-    <svg className="w-5 h-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-    </svg>
-  );
-}

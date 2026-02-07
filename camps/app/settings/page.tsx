@@ -7,6 +7,8 @@ import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
 import { Authenticated, Unauthenticated } from 'convex/react';
 import { BottomNav } from '../../components/shared/BottomNav';
+import { CHILD_COLOR_OPTIONS as CHILD_COLORS } from '../../lib/constants';
+import { BackIcon, PlusIcon, CloseIcon, LocationIcon, CheckIcon, CrownIcon, UserIcon } from '../../components/shared/icons';
 
 export default function SettingsPage() {
   return (
@@ -582,7 +584,7 @@ function HomeAddressSection({
             disabled={isGettingLocation}
             className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <LocationIcon />
+            <LocationIcon className="w-5 h-5" />
             {isGettingLocation ? 'Getting location...' : 'Use my current location'}
           </button>
 
@@ -1030,18 +1032,6 @@ function CancelSubscriptionModal({
     </div>
   );
 }
-
-// Preset colors for children - softer palette matching app vibe
-const CHILD_COLORS = [
-  { value: '#5B9BD5', label: 'Sky' },       // Soft sky blue
-  { value: '#7CB887', label: 'Sage' },      // Soft sage green
-  { value: '#E8927C', label: 'Coral' },     // Muted coral
-  { value: '#9B8DC5', label: 'Lavender' },  // Soft lavender
-  { value: '#5DADE2', label: 'Ocean' },     // Ocean blue
-  { value: '#D4A574', label: 'Sand' },      // Warm sand/caramel
-  { value: '#82C4C3', label: 'Seafoam' },   // Soft teal
-  { value: '#C9A0DC', label: 'Orchid' },    // Light orchid
-];
 
 function ChildrenSection({
   children,
@@ -1523,7 +1513,7 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
             aria-label="Close"
             title="Close (Esc)"
           >
-            <CloseIcon />
+            <CloseIcon className="w-5 h-5 text-slate-500" />
           </button>
         </div>
 
@@ -1689,60 +1679,3 @@ function getGradeLabel(grade: number): string {
   return found?.label ?? `Grade ${grade}`;
 }
 
-// Icons
-function BackIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-    </svg>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-    </svg>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg className="w-5 h-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-    </svg>
-  );
-}
-
-function LocationIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-    </svg>
-  );
-}
-
-function CrownIcon() {
-  return (
-    <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5z" />
-    </svg>
-  );
-}
-
-function UserIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-    </svg>
-  );
-}

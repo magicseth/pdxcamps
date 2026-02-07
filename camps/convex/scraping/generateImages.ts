@@ -45,64 +45,60 @@ function pickFromHash<T>(arr: T[], hash: number, offset: number = 0): T {
 function generateStylePrompt(campId: string): string {
   const hash = hashString(campId);
 
-  // Art medium / technique - more specific and interesting
-  const media = [
-    "vibrant watercolor with wet-on-wet technique, paint bleeding beautifully",
-    "rich oil painting with visible impasto brushstrokes",
-    "crisp digital art, trending on artstation",
-    "detailed colored pencil illustration with textured paper visible",
-    "bold gouache painting with flat graphic shapes",
-    "dreamy soft pastel artwork with chalky texture",
-    "expressive acrylic painting with bold strokes",
-    "elegant ink and watercolor wash",
-    "polished digital painting like a Pixar concept art",
-    "nostalgic Norman Rockwell style illustration",
-    "Studio Ghibli inspired animation style",
-    "editorial illustration style for New York Times",
+  // Photography style — real-world look, not illustration
+  const photoStyle = [
+    "candid documentary photography, shot on Canon EOS R5, 85mm f/1.4",
+    "lifestyle editorial photography, shot on Sony A7IV, 35mm f/1.8",
+    "vibrant photojournalism style, shot on Nikon Z9, 24-70mm f/2.8",
+    "warm family photography style, shot on Fujifilm X-T5, 56mm f/1.2",
+    "bright commercial photography for a summer catalog, shot on Phase One",
+    "authentic moment captured by a parent with an iPhone 15 Pro, natural and unposed",
+    "sports action photography, shot on Canon R3, 70-200mm f/2.8, high shutter speed",
+    "environmental portrait photography, shot on Hasselblad, medium format film look",
   ];
 
-  // Camera/composition - more dynamic
+  // Composition — camera angles and framing
   const composition = [
-    "dramatic low angle looking up, kids appearing heroic",
-    "bird's eye view showing the whole activity",
-    "over-the-shoulder perspective, intimate and immersive",
-    "dutch angle adding energy and movement",
-    "close-up on hands and activity, shallow depth of field",
-    "wide cinematic shot with rule of thirds",
-    "dynamic diagonal composition with movement blur",
-    "symmetrical framing with central focus",
+    "low angle looking up at the action, kids filling the frame",
+    "eye-level with the children, intimate perspective",
+    "over-the-shoulder shot showing what the child sees",
+    "wide establishing shot showing the full environment and activity",
+    "close-up on hands working, shallow depth of field with bokeh background",
+    "candid profile shot from the side, capturing concentration",
+    "pull-back shot with foreground framing (doorway, trees, equipment)",
+    "dynamic shot with slight motion blur on the edges, tack-sharp subject",
   ];
 
-  // Lighting - specific and atmospheric
+  // Lighting — natural, realistic
   const lighting = [
-    "golden hour sunlight streaming through, lens flare",
-    "dappled light filtering through trees",
-    "bright overcast day, soft even lighting",
-    "dramatic rim lighting from behind",
-    "warm indoor lighting with soft shadows",
-    "magic hour glow, long shadows",
-    "high key bright and airy",
-    "natural window light, cozy atmosphere",
+    "golden hour morning light, warm tones, long soft shadows",
+    "bright midday Oregon summer sun, vivid colors, hard shadows",
+    "open shade under trees, even soft light on faces",
+    "overcast Pacific Northwest sky, diffused light, rich saturated colors",
+    "backlit with sun flare, rim light on hair",
+    "indoor with large windows, natural light flooding in",
+    "mixed sun and cloud, dappled light through tree canopy",
+    "late afternoon warm side-light, dramatic but natural",
   ];
 
-  // Energy/action words
-  const energy = [
-    "frozen mid-action, peak moment captured",
-    "genuine laughter and joy visible",
-    "intense concentration and focus",
-    "collaborative teamwork moment",
-    "triumphant achievement expression",
-    "curious discovery moment",
-    "playful chaos and movement",
-    "peaceful flow state",
+  // Setting detail — grounds the image in a real place
+  const setting = [
+    "at a Portland park with Douglas fir trees in background",
+    "in a bright modern classroom or maker space",
+    "on a grassy sports field with a treeline behind",
+    "at an outdoor picnic table area with craft supplies spread out",
+    "in a gymnasium or indoor sports facility",
+    "along a forest trail in the Pacific Northwest",
+    "at a waterfront or creek with kids in rubber boots",
+    "in an art studio with paint-splattered tables and supplies everywhere",
   ];
 
-  const selectedMedia = pickFromHash(media, hash, 0);
+  const selectedPhoto = pickFromHash(photoStyle, hash, 0);
   const selectedComp = pickFromHash(composition, hash, 1);
   const selectedLight = pickFromHash(lighting, hash, 2);
-  const selectedEnergy = pickFromHash(energy, hash, 3);
+  const selectedSetting = pickFromHash(setting, hash, 3);
 
-  return `${selectedMedia}. ${selectedComp}. ${selectedLight}. ${selectedEnergy}.`;
+  return `${selectedPhoto}. ${selectedComp}. ${selectedLight}. ${selectedSetting}.`;
 }
 
 /**
@@ -125,28 +121,29 @@ async function generateImagePromptWithClaude(camp: {
     messages: [
       {
         role: "user",
-        content: `You are an expert at writing image generation prompts. Generate a prompt for an image that represents this summer camp:
+        content: `You write prompts for photorealistic image generation. Generate a prompt for a PHOTOGRAPH (not illustration) representing this summer camp:
 
 Camp Name: ${camp.name}
 Organization: ${camp.organizationName || "Unknown"}
 Description: ${camp.description}
 Age Group: ${camp.ageDescription}
 
-Write a detailed image prompt that:
-1. Clearly depicts the SPECIFIC activity of this camp (not generic camp activities)
-2. Shows diverse children (mixed ethnicities: Asian, Black, Latino, White) of the appropriate age
-3. Includes specific props and setting that match THIS camp's activity
-4. Has dynamic, interesting composition
+Rules:
+1. Describe a REAL PHOTOGRAPH of the specific activity — not a painting, cartoon, or illustration
+2. Focus on ONE vivid, specific moment (a kid mid-swing with a hammer at woodworking camp, a girl pipetting liquid in a chemistry camp, kids hauling a canoe into water)
+3. Include concrete sensory details: textures, materials, colors of equipment, what's on the table, what they're wearing
+4. Mention the children naturally without over-specifying demographics — just describe the scene with kids of the right age doing the activity
+5. NEVER use words like "illustration", "painting", "cartoon", "artwork", "render", "digital art", "anime", "stylized"
 
-Style to use: ${camp.stylePrompt}
+Photography direction: ${camp.stylePrompt}
 
-Respond with ONLY the image prompt, no explanation. The prompt should be 2-4 sentences. End with "No text, words, or logos in the image."`
+Respond with ONLY the prompt, 2-4 sentences. End with "Photorealistic, high resolution photograph. No text, words, logos, or watermarks."`
       }
     ]
   });
 
   const textContent = response.content.find(c => c.type === "text");
-  return textContent?.text || `Children at ${camp.name} summer camp. ${camp.stylePrompt} No text, words, or logos in the image.`;
+  return textContent?.text || `Children at ${camp.name} summer camp, candid photograph. ${camp.stylePrompt} Photorealistic, high resolution photograph. No text, words, logos, or watermarks.`;
 }
 
 /**
@@ -251,15 +248,13 @@ export const generateSingleImage = internalAction({
     try {
       console.log(`[GenerateImages] Generating for: ${args.campName}`);
 
-      // Call FAL to generate image using FLUX Dev (higher quality)
-      const result = await fal.subscribe("fal-ai/flux/dev", {
+      // Call FAL to generate image using FLUX Pro 1.1 (photorealistic quality)
+      const result = await fal.subscribe("fal-ai/flux-pro/v1.1", {
         input: {
           prompt: args.prompt,
           image_size: "landscape_16_9",
-          num_inference_steps: 28,
-          guidance_scale: 3.5,
           num_images: 1,
-          enable_safety_checker: true,
+          safety_tolerance: "2",
         },
       });
 

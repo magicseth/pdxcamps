@@ -1,156 +1,32 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useState, useMemo, useEffect } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useQuery, useMutation, useAction } from 'convex/react';
-import { ConvexError } from 'convex/values';
+import { useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Id } from '../../../convex/_generated/dataModel';
 import { OrgLogo } from '../../../components/shared/OrgLogo';
 import { BottomNav } from '../../../components/shared/BottomNav';
 import { MapWrapper, MapSession } from '../../../components/map';
-import { UpgradeModal } from '../../../components/shared/UpgradeModal';
 import { AddChildModal } from '../../../components/planner/AddChildModal';
 import { RequestCampModal } from '../../../components/discover/RequestCampModal';
+import { SessionCard } from '../../../components/discover/SessionCard';
+import { FilterChip } from '../../../components/discover/FilterControls';
 import { useMarket } from '../../../hooks/useMarket';
+import { useDiscoverFilters } from '../../../hooks/useDiscoverFilters';
+import { getChildAge, formatDateShort } from '../../../lib/dateUtils';
 
-// Categories for filtering
-const CATEGORIES = [
-  'Sports',
-  'Arts',
-  'STEM',
-  'Nature',
-  'Music',
-  'Academic',
-  'Drama',
-  'Adventure',
-  'Cooking',
-  'Dance',
-];
-
-// Grade mapping for display
-const GRADE_LABELS: Record<number, string> = {
-  [-2]: 'Preschool',
-  [-1]: 'Pre-K',
-  [0]: 'Kindergarten',
-  [1]: '1st Grade',
-  [2]: '2nd Grade',
-  [3]: '3rd Grade',
-  [4]: '4th Grade',
-  [5]: '5th Grade',
-  [6]: '6th Grade',
-  [7]: '7th Grade',
-  [8]: '8th Grade',
-  [9]: '9th Grade',
-  [10]: '10th Grade',
-  [11]: '11th Grade',
-  [12]: '12th Grade',
-};
+import { CATEGORIES, GRADE_LABELS } from '../../../lib/constants';
+import { SettingsIcon, FilterIcon, LocationIcon, ListIcon, MapIcon } from '../../../components/shared/icons';
 
 export default function DiscoverPage() {
   const params = useParams();
   const citySlug = params.citySlug as string;
-  const router = useRouter();
   const searchParams = useSearchParams();
   const market = useMarket();
 
-  // Parse initial state from URL
-  const getInitialState = useCallback(() => {
-    return {
-      startDateAfter: searchParams.get('from') || '',
-      startDateBefore: searchParams.get('to') || '',
-      selectedCategories: searchParams.get('categories')?.split(',').filter(Boolean) || [],
-      maxPrice: searchParams.get('maxPrice') ? parseInt(searchParams.get('maxPrice')!) : undefined,
-      hideSoldOut: searchParams.get('hideSoldOut') !== 'false', // Default to true
-      extendedCareOnly: searchParams.get('extendedCare') === 'true',
-      childAge: searchParams.get('age') ? parseInt(searchParams.get('age')!) : undefined,
-      childGrade: searchParams.get('grade') ? parseInt(searchParams.get('grade')!) : undefined,
-      selectedOrganizations: searchParams.get('orgs')?.split(',').filter(Boolean) || [],
-      selectedLocations: searchParams.get('locations')?.split(',').filter(Boolean) || [],
-      maxDistanceMiles: searchParams.get('distance') ? parseInt(searchParams.get('distance')!) : undefined,
-    };
-  }, [searchParams]);
-
-  // Filter state - initialized from URL
-  const [startDateAfter, setStartDateAfter] = useState<string>(() => getInitialState().startDateAfter);
-  const [startDateBefore, setStartDateBefore] = useState<string>(() => getInitialState().startDateBefore);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(() => getInitialState().selectedCategories);
-  const [maxPrice, setMaxPrice] = useState<number | undefined>(() => getInitialState().maxPrice);
-  const [hideSoldOut, setHideSoldOut] = useState(() => getInitialState().hideSoldOut);
-  const [extendedCareOnly, setExtendedCareOnly] = useState(() => getInitialState().extendedCareOnly);
-  const [childAge, setChildAge] = useState<number | undefined>(() => getInitialState().childAge);
-  const [childGrade, setChildGrade] = useState<number | undefined>(() => getInitialState().childGrade);
-  const [selectedChildId, setSelectedChildId] = useState<Id<'children'> | null>(null);
-  const [showFilters, setShowFilters] = useState(true);
-  const [showAddChildModal, setShowAddChildModal] = useState(false);
-  const [showRequestCampModal, setShowRequestCampModal] = useState(false);
-  const [selectedOrganizations, setSelectedOrganizations] = useState<string[]>(() => getInitialState().selectedOrganizations);
-  const [selectedLocations, setSelectedLocations] = useState<string[]>(() => getInitialState().selectedLocations);
-  const [maxDistanceMiles, setMaxDistanceMiles] = useState<number | undefined>(() => getInitialState().maxDistanceMiles);
-  const [sortBy, setSortBy] = useState<'date' | 'price-low' | 'price-high' | 'spots' | 'distance'>('date');
-  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
-
-  // Ref for results section and initial render tracking
-  const resultsRef = useRef<HTMLDivElement>(null);
-  const isInitialRender = useRef(true);
-
-  // Scroll to results when filters change (but not on initial load)
-  useEffect(() => {
-    if (isInitialRender.current) {
-      isInitialRender.current = false;
-      return;
-    }
-    // Only scroll on mobile/tablet where filters might overlap content
-    if (window.innerWidth < 768 && resultsRef.current) {
-      resultsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [startDateAfter, startDateBefore, selectedCategories, maxPrice, hideSoldOut, extendedCareOnly, childAge, childGrade, selectedOrganizations, selectedLocations]);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if typing in an input, textarea, or select
-      const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
-        return;
-      }
-      if (e.key === 'f' || e.key === 'F') {
-        e.preventDefault();
-        setShowFilters((prev) => !prev);
-      }
-      if (e.key === 'm' || e.key === 'M') {
-        e.preventDefault();
-        setViewMode((prev) => prev === 'list' ? 'map' : 'list');
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  // Update URL when filters change
-  useEffect(() => {
-    const params = new URLSearchParams();
-    if (startDateAfter) params.set('from', startDateAfter);
-    if (startDateBefore) params.set('to', startDateBefore);
-    if (selectedCategories.length > 0) params.set('categories', selectedCategories.join(','));
-    if (maxPrice !== undefined) params.set('maxPrice', maxPrice.toString());
-    if (!hideSoldOut) params.set('hideSoldOut', 'false'); // Only add when explicitly false (true is default)
-    if (extendedCareOnly) params.set('extendedCare', 'true');
-    if (childAge !== undefined) params.set('age', childAge.toString());
-    if (childGrade !== undefined) params.set('grade', childGrade.toString());
-    if (selectedOrganizations.length > 0) params.set('orgs', selectedOrganizations.join(','));
-    if (selectedLocations.length > 0) params.set('locations', selectedLocations.join(','));
-    if (maxDistanceMiles !== undefined) params.set('distance', maxDistanceMiles.toString());
-
-    const queryString = params.toString();
-    const newUrl = queryString ? `?${queryString}` : '';
-
-    // Only update if the URL actually changed
-    if (window.location.search !== newUrl) {
-      router.replace(`/discover/${citySlug}${newUrl}`, { scroll: false });
-    }
-  }, [startDateAfter, startDateBefore, selectedCategories, maxPrice, hideSoldOut, extendedCareOnly, childAge, childGrade, selectedOrganizations, selectedLocations, maxDistanceMiles, citySlug, router]);
+  const filters = useDiscoverFilters(citySlug, searchParams);
 
   // Fetch city data
   const city = useQuery(api.cities.queries.getCityBySlug, { slug: citySlug });
@@ -194,17 +70,17 @@ export default function DiscoverPage() {
     city
       ? {
           cityId: city._id,
-          startDateAfter: startDateAfter || undefined,
-          startDateBefore: startDateBefore || undefined,
-          categories: selectedCategories.length > 0 ? selectedCategories : undefined,
-          maxPrice: maxPrice !== undefined ? maxPrice * 100 : undefined, // Convert to cents
-          excludeSoldOut: hideSoldOut || undefined,
-          childAge: childAge,
-          childGrade: childGrade,
-          locationIds: selectedLocations.length > 0 ? selectedLocations as Id<'locations'>[] : undefined,
+          startDateAfter: filters.startDateAfter || undefined,
+          startDateBefore: filters.startDateBefore || undefined,
+          categories: filters.selectedCategories.length > 0 ? filters.selectedCategories : undefined,
+          maxPrice: filters.maxPrice !== undefined ? filters.maxPrice * 100 : undefined, // Convert to cents
+          excludeSoldOut: filters.hideSoldOut || undefined,
+          childAge: filters.childAge,
+          childGrade: filters.childGrade,
+          locationIds: filters.selectedLocations.length > 0 ? filters.selectedLocations as Id<'locations'>[] : undefined,
           homeLatitude: hasHomeCoords ? homeLatitude : undefined,
           homeLongitude: hasHomeCoords ? homeLongitude : undefined,
-          maxDistanceMiles: hasHomeCoords && maxDistanceMiles !== undefined ? maxDistanceMiles : undefined,
+          maxDistanceMiles: hasHomeCoords && filters.maxDistanceMiles !== undefined ? filters.maxDistanceMiles : undefined,
         }
       : 'skip'
   );
@@ -215,18 +91,18 @@ export default function DiscoverPage() {
     if (!sessions) return [];
 
     // Filter by organizations
-    let result = selectedOrganizations.length === 0
+    let result = filters.selectedOrganizations.length === 0
       ? [...sessions]
-      : sessions.filter((s) => selectedOrganizations.includes(s.organizationId));
+      : sessions.filter((s) => filters.selectedOrganizations.includes(s.organizationId));
 
     // Filter by extended care
-    if (extendedCareOnly) {
+    if (filters.extendedCareOnly) {
       result = result.filter((s) => s.extendedCareAvailable);
     }
 
     // Sort results
     result.sort((a, b) => {
-      switch (sortBy) {
+      switch (filters.sortBy) {
         case 'date':
           return a.startDate.localeCompare(b.startDate);
         case 'price-low':
@@ -247,7 +123,7 @@ export default function DiscoverPage() {
     });
 
     return result;
-  }, [sessions, selectedOrganizations, extendedCareOnly, sortBy]);
+  }, [sessions, filters.selectedOrganizations, filters.extendedCareOnly, filters.sortBy]);
 
   // Count sessions per organization (from raw sessions, not filtered)
   const sessionCountsByOrg = useMemo(() => {
@@ -268,14 +144,14 @@ export default function DiscoverPage() {
     const locationsWithSessions = new Set<string>();
 
     // If org filter is active, only count sessions from selected orgs
-    const sessionsToCount = selectedOrganizations.length === 0
+    const sessionsToCount = filters.selectedOrganizations.length === 0
       ? sessions
-      : sessions.filter((s) => selectedOrganizations.includes(s.organizationId));
+      : sessions.filter((s) => filters.selectedOrganizations.includes(s.organizationId));
 
     sessionsToCount.forEach((s) => locationsWithSessions.add(s.locationId));
 
     // Also include any currently selected locations (so they don't disappear)
-    selectedLocations.forEach((locId) => locationsWithSessions.add(locId));
+    filters.selectedLocations.forEach((locId) => locationsWithSessions.add(locId));
 
     const filtered = allLocations.filter((loc) => locationsWithSessions.has(loc._id));
 
@@ -289,7 +165,7 @@ export default function DiscoverPage() {
       seenNames.add(normalizedName);
       return true;
     });
-  }, [allLocations, sessions, selectedOrganizations, selectedLocations]);
+  }, [allLocations, sessions, filters.selectedOrganizations, filters.selectedLocations]);
 
   // Loading state
   if (city === undefined) {
@@ -331,70 +207,6 @@ export default function DiscoverPage() {
     );
   }
 
-  const handleCategoryToggle = (category: string) => {
-    setSelectedCategories((prev) =>
-      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]
-    );
-  };
-
-  const clearFilters = () => {
-    setStartDateAfter('');
-    setStartDateBefore('');
-    setSelectedCategories([]);
-    setMaxPrice(undefined);
-    setHideSoldOut(true); // Reset to default (hide sold out)
-    setChildAge(undefined);
-    setChildGrade(undefined);
-    setSelectedOrganizations([]);
-    setSelectedLocations([]);
-    setMaxDistanceMiles(undefined);
-  };
-
-  const hasActiveFilters =
-    startDateAfter ||
-    startDateBefore ||
-    selectedCategories.length > 0 ||
-    maxPrice !== undefined ||
-    !hideSoldOut || // Count when showing sold out (non-default)
-    extendedCareOnly ||
-    childAge !== undefined ||
-    childGrade !== undefined ||
-    selectedOrganizations.length > 0 ||
-    selectedLocations.length > 0 ||
-    maxDistanceMiles !== undefined;
-
-  // Count active filters for the badge
-  const activeFilterCount =
-    (startDateAfter ? 1 : 0) +
-    (startDateBefore ? 1 : 0) +
-    selectedCategories.length +
-    (maxPrice !== undefined ? 1 : 0) +
-    (!hideSoldOut ? 1 : 0) + // Count when showing sold out (non-default)
-    (extendedCareOnly ? 1 : 0) +
-    (childAge !== undefined ? 1 : 0) +
-    (childGrade !== undefined ? 1 : 0) +
-    selectedOrganizations.length +
-    selectedLocations.length +
-    (maxDistanceMiles !== undefined ? 1 : 0);
-
-  const handleOrganizationToggle = (orgId: string) => {
-    setSelectedOrganizations((prev) => {
-      const isRemoving = prev.includes(orgId);
-      const newSelection = isRemoving ? prev.filter((id) => id !== orgId) : [...prev, orgId];
-      // Clear location filters when all organizations are deselected
-      if (newSelection.length === 0) {
-        setSelectedLocations([]);
-      }
-      return newSelection;
-    });
-  };
-
-  const handleLocationToggle = (locationId: string) => {
-    setSelectedLocations((prev) =>
-      prev.includes(locationId) ? prev.filter((id) => id !== locationId) : [...prev, locationId]
-    );
-  };
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 pb-20">
       {/* Skip to main content link for keyboard users */}
@@ -426,9 +238,9 @@ export default function DiscoverPage() {
               <div className="flex items-center rounded-lg border border-slate-300 dark:border-slate-600 overflow-hidden">
                 <button
                   type="button"
-                  onClick={() => setViewMode('list')}
+                  onClick={() => filters.setViewMode('list')}
                   className={`px-3 py-1.5 text-sm font-medium flex items-center gap-1 ${
-                    viewMode === 'list'
+                    filters.viewMode === 'list'
                       ? 'bg-primary text-white'
                       : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                   }`}
@@ -439,9 +251,9 @@ export default function DiscoverPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setViewMode('map')}
+                  onClick={() => filters.setViewMode('map')}
                   className={`px-3 py-1.5 text-sm font-medium flex items-center gap-1 ${
-                    viewMode === 'map'
+                    filters.viewMode === 'map'
                       ? 'bg-primary text-white'
                       : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                   }`}
@@ -453,8 +265,8 @@ export default function DiscoverPage() {
               </div>
               <button
                 type="button"
-                onClick={() => setShowFilters(!showFilters)}
-                aria-expanded={showFilters}
+                onClick={() => filters.setShowFilters(!filters.showFilters)}
+                aria-expanded={filters.showFilters}
                 className="md:hidden flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 rounded-lg text-sm"
                 title="Toggle filters (F key)"
               >
@@ -467,9 +279,9 @@ export default function DiscoverPage() {
                     </span>
                   )}
                 </span>
-                {activeFilterCount > 0 && (
+                {filters.activeFilterCount > 0 && (
                   <span className="min-w-5 h-5 px-1 bg-primary text-white text-xs font-medium rounded-full flex items-center justify-center">
-                    {activeFilterCount}
+                    {filters.activeFilterCount}
                   </span>
                 )}
               </button>
@@ -495,7 +307,7 @@ export default function DiscoverPage() {
           {/* Filters Sidebar */}
           <aside
             className={`${
-              showFilters ? 'block' : 'hidden'
+              filters.showFilters ? 'block' : 'hidden'
             } md:block w-full md:w-72 flex-shrink-0`}
           >
             <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 sticky top-24 max-h-[calc(100vh-12rem)] overflow-y-auto">
@@ -505,17 +317,17 @@ export default function DiscoverPage() {
                   <kbd className="hidden lg:inline px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-400 rounded text-[10px]" title="Press F to toggle filters">F</kbd>
                 </h2>
                 <div className="flex items-center gap-3">
-                  {hasActiveFilters && (
+                  {filters.hasActiveFilters && (
                     <ShareSearchButton />
                   )}
-                  {hasActiveFilters && (
+                  {filters.hasActiveFilters && (
                     <button
-                      onClick={clearFilters}
+                      onClick={filters.clearFilters}
                       className={`text-sm text-primary hover:text-primary-dark ${
-                        activeFilterCount > 3 ? 'font-medium animate-pulse motion-reduce:animate-none' : ''
+                        filters.activeFilterCount > 3 ? 'font-medium animate-pulse motion-reduce:animate-none' : ''
                       }`}
                     >
-                      Clear all {activeFilterCount > 3 && `(${activeFilterCount})`}
+                      Clear all {filters.activeFilterCount > 3 && `(${filters.activeFilterCount})`}
                     </button>
                   )}
                 </div>
@@ -526,74 +338,14 @@ export default function DiscoverPage() {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Date Range
                 </label>
-                {/* Quick date presets */}
-                <div className="flex flex-wrap gap-1.5 mb-3">
-                  <QuickDateButton
-                    label="This Week"
-                    onClick={() => {
-                      const { start, end } = getThisWeekDates();
-                      setStartDateAfter(start);
-                      setStartDateBefore(end);
-                    }}
-                    isActive={isThisWeekSelected(startDateAfter, startDateBefore)}
-                  />
-                  <QuickDateButton
-                    label="Next Week"
-                    onClick={() => {
-                      const { start, end } = getNextWeekDates();
-                      setStartDateAfter(start);
-                      setStartDateBefore(end);
-                    }}
-                    isActive={isNextWeekSelected(startDateAfter, startDateBefore)}
-                  />
-                  <QuickDateButton
-                    label="June"
-                    onClick={() => {
-                      const year = new Date().getFullYear();
-                      setStartDateAfter(`${year}-06-01`);
-                      setStartDateBefore(`${year}-06-30`);
-                    }}
-                    isActive={startDateAfter.endsWith('-06-01') && startDateBefore.endsWith('-06-30')}
-                  />
-                  <QuickDateButton
-                    label="July"
-                    onClick={() => {
-                      const year = new Date().getFullYear();
-                      setStartDateAfter(`${year}-07-01`);
-                      setStartDateBefore(`${year}-07-31`);
-                    }}
-                    isActive={startDateAfter.endsWith('-07-01') && startDateBefore.endsWith('-07-31')}
-                  />
-                  <QuickDateButton
-                    label="August"
-                    onClick={() => {
-                      const year = new Date().getFullYear();
-                      setStartDateAfter(`${year}-08-01`);
-                      setStartDateBefore(`${year}-08-31`);
-                    }}
-                    isActive={startDateAfter.endsWith('-08-01') && startDateBefore.endsWith('-08-31')}
-                  />
-                  <QuickDateButton
-                    label="All Summer"
-                    onClick={() => {
-                      const year = new Date().getFullYear();
-                      setStartDateAfter(`${year}-06-01`);
-                      setStartDateBefore(`${year}-08-31`);
-                    }}
-                    isActive={startDateAfter.endsWith('-06-01') && startDateBefore.endsWith('-08-31')}
-                  />
-                </div>
                 <div className="space-y-2">
-                  <div className="text-xs text-slate-400 dark:text-slate-500 mb-1">
-                    Today: {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                  </div>
                   <div>
                     <label htmlFor="discover-date-from" className="text-xs text-slate-500 dark:text-slate-400">From</label>
                     <input
                       id="discover-date-from"
                       type="date"
-                      value={startDateAfter}
-                      onChange={(e) => setStartDateAfter(e.target.value)}
+                      value={filters.startDateAfter}
+                      onChange={(e) => filters.setStartDateAfter(e.target.value)}
                       min={new Date().toISOString().split('T')[0]}
                       className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                     />
@@ -603,9 +355,9 @@ export default function DiscoverPage() {
                     <input
                       id="discover-date-to"
                       type="date"
-                      value={startDateBefore}
-                      onChange={(e) => setStartDateBefore(e.target.value)}
-                      min={startDateAfter || new Date().toISOString().split('T')[0]}
+                      value={filters.startDateBefore}
+                      onChange={(e) => filters.setStartDateBefore(e.target.value)}
+                      min={filters.startDateAfter || new Date().toISOString().split('T')[0]}
                       className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                     />
                   </div>
@@ -624,7 +376,7 @@ export default function DiscoverPage() {
                       {myChildren.map((child) => {
                         const age = getChildAge(child.birthdate);
                         const grade = child.currentGrade;
-                        const isSelected = selectedChildId === child._id;
+                        const isSelected = filters.selectedChildId === child._id;
                         return (
                           <button
                             key={child._id}
@@ -632,21 +384,21 @@ export default function DiscoverPage() {
                             onClick={() => {
                               if (isSelected) {
                                 // Deselect: clear child selection and age/grade filters
-                                setSelectedChildId(null);
-                                setChildAge(undefined);
-                                setChildGrade(undefined);
+                                filters.setSelectedChildId(null);
+                                filters.setChildAge(undefined);
+                                filters.setChildGrade(undefined);
                               } else {
                                 // Select: set child and apply their age/grade
-                                setSelectedChildId(child._id);
+                                filters.setSelectedChildId(child._id);
                                 // Set age if available (always show in button)
                                 if (age !== null) {
-                                  setChildAge(age);
+                                  filters.setChildAge(age);
                                 }
                                 // Also set grade if available for more accurate filtering
                                 if (grade !== undefined) {
-                                  setChildGrade(grade);
+                                  filters.setChildGrade(grade);
                                 } else {
-                                  setChildGrade(undefined);
+                                  filters.setChildGrade(undefined);
                                 }
                               }
                             }}
@@ -663,7 +415,7 @@ export default function DiscoverPage() {
                       })}
                       <button
                         type="button"
-                        onClick={() => setShowAddChildModal(true)}
+                        onClick={() => filters.setShowAddChildModal(true)}
                         className="px-2 py-1 text-xs rounded-md font-medium transition-colors border border-dashed border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-primary hover:text-primary"
                       >
                         + Add Child
@@ -680,9 +432,9 @@ export default function DiscoverPage() {
                         inputMode="numeric"
                         min={3}
                         max={18}
-                        value={childAge ?? ''}
+                        value={filters.childAge ?? ''}
                         onChange={(e) =>
-                          setChildAge(e.target.value ? parseInt(e.target.value) : undefined)
+                          filters.setChildAge(e.target.value ? parseInt(e.target.value) : undefined)
                         }
                         placeholder="e.g., 8"
                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
@@ -693,9 +445,9 @@ export default function DiscoverPage() {
                       <label htmlFor="discover-child-grade" className="text-xs text-slate-500 dark:text-slate-400">Grade</label>
                       <select
                         id="discover-child-grade"
-                        value={childGrade ?? ''}
+                        value={filters.childGrade ?? ''}
                         onChange={(e) =>
-                          setChildGrade(e.target.value ? parseInt(e.target.value) : undefined)
+                          filters.setChildGrade(e.target.value ? parseInt(e.target.value) : undefined)
                         }
                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                       >
@@ -709,7 +461,7 @@ export default function DiscoverPage() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => setShowAddChildModal(true)}
+                      onClick={() => filters.setShowAddChildModal(true)}
                       className="w-full mt-2 px-3 py-2 text-sm rounded-md font-medium transition-colors border border-dashed border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-primary hover:text-primary"
                     >
                       + Add a Child
@@ -723,18 +475,38 @@ export default function DiscoverPage() {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Categories
                 </label>
-                <div className="space-y-2">
-                  {CATEGORIES.map((category) => (
-                    <label key={category} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedCategories.includes(category)}
-                        onChange={() => handleCategoryToggle(category)}
-                        className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary"
-                      />
-                      <span className="text-sm text-slate-700 dark:text-slate-300">{category}</span>
-                    </label>
-                  ))}
+                <div className="flex flex-wrap gap-2">
+                  {CATEGORIES.map((category) => {
+                    const emoji: Record<string, string> = {
+                      Sports: '⚽',
+                      Arts: '🎨',
+                      STEM: '🔬',
+                      Nature: '🌲',
+                      Music: '🎵',
+                      Academic: '📚',
+                      Drama: '🎭',
+                      Adventure: '🏔️',
+                      Cooking: '🍳',
+                      Dance: '💃',
+                    };
+                    const isSelected = filters.selectedCategories.includes(category);
+                    return (
+                      <button
+                        key={category}
+                        type="button"
+                        onClick={() => filters.handleCategoryToggle(category)}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors flex items-center gap-1 ${
+                          isSelected
+                            ? 'bg-primary text-white border-primary'
+                            : 'border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                        }`}
+                      >
+                        <span>{emoji[category] || '🏕️'}</span>
+                        {category}
+                        {isSelected && <span className="ml-0.5">✕</span>}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -748,9 +520,9 @@ export default function DiscoverPage() {
                     <button
                       key={price}
                       type="button"
-                      onClick={() => setMaxPrice(maxPrice === price ? undefined : price)}
+                      onClick={() => filters.setMaxPrice(filters.maxPrice === price ? undefined : price)}
                       className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
-                        maxPrice === price
+                        filters.maxPrice === price
                           ? 'bg-primary text-white border-primary'
                           : 'border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                       }`}
@@ -767,22 +539,22 @@ export default function DiscoverPage() {
                     inputMode="numeric"
                     min={0}
                     step={50}
-                    value={maxPrice ?? ''}
+                    value={filters.maxPrice ?? ''}
                     onChange={(e) =>
-                      setMaxPrice(e.target.value ? parseInt(e.target.value) : undefined)
+                      filters.setMaxPrice(e.target.value ? parseInt(e.target.value) : undefined)
                     }
                     placeholder="Custom amount"
                     className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                   />
                 </div>
-                {maxPrice !== undefined && (
+                {filters.maxPrice !== undefined && (
                   <input
                     type="range"
                     min={0}
                     max={2000}
                     step={50}
-                    value={maxPrice}
-                    onChange={(e) => setMaxPrice(parseInt(e.target.value))}
+                    value={filters.maxPrice}
+                    onChange={(e) => filters.setMaxPrice(parseInt(e.target.value))}
                     aria-label="Max price slider"
                     className="w-full mt-2"
                   />
@@ -794,8 +566,8 @@ export default function DiscoverPage() {
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={hideSoldOut}
-                    onChange={(e) => setHideSoldOut(e.target.checked)}
+                    checked={filters.hideSoldOut}
+                    onChange={(e) => filters.setHideSoldOut(e.target.checked)}
                     className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary"
                   />
                   <span className="text-sm text-slate-700 dark:text-slate-300">Hide sold out</span>
@@ -807,8 +579,8 @@ export default function DiscoverPage() {
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={extendedCareOnly}
-                    onChange={(e) => setExtendedCareOnly(e.target.checked)}
+                    checked={filters.extendedCareOnly}
+                    onChange={(e) => filters.setExtendedCareOnly(e.target.checked)}
                     className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary"
                   />
                   <span className="text-sm text-slate-700 dark:text-slate-300">Extended care available</span>
@@ -827,9 +599,9 @@ export default function DiscoverPage() {
                         <button
                           key={distance}
                           type="button"
-                          onClick={() => setMaxDistanceMiles(maxDistanceMiles === distance ? undefined : distance)}
+                          onClick={() => filters.setMaxDistanceMiles(filters.maxDistanceMiles === distance ? undefined : distance)}
                           className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
-                            maxDistanceMiles === distance
+                            filters.maxDistanceMiles === distance
                               ? 'bg-primary text-white border-primary'
                               : 'border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                           }`}
@@ -846,22 +618,22 @@ export default function DiscoverPage() {
                           inputMode="numeric"
                           min={1}
                           max={50}
-                          value={maxDistanceMiles ?? ''}
+                          value={filters.maxDistanceMiles ?? ''}
                           onChange={(e) =>
-                            setMaxDistanceMiles(e.target.value ? parseInt(e.target.value) : undefined)
+                            filters.setMaxDistanceMiles(e.target.value ? parseInt(e.target.value) : undefined)
                           }
                           placeholder="Custom miles"
                           className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                         />
                         <span className="text-sm text-slate-500">mi</span>
                       </div>
-                      {maxDistanceMiles !== undefined && (
+                      {filters.maxDistanceMiles !== undefined && (
                         <input
                           type="range"
                           min={1}
                           max={50}
-                          value={maxDistanceMiles}
-                          onChange={(e) => setMaxDistanceMiles(parseInt(e.target.value))}
+                          value={filters.maxDistanceMiles}
+                          onChange={(e) => filters.setMaxDistanceMiles(parseInt(e.target.value))}
                           aria-label="Distance slider"
                           className="w-full"
                         />
@@ -889,22 +661,22 @@ export default function DiscoverPage() {
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                    Filter by Organization ({allOrganizations.filter(org => (sessionCountsByOrg.get(org._id) || 0) > 0 || selectedOrganizations.includes(org._id)).length})
+                    Filter by Organization ({allOrganizations.filter(org => (sessionCountsByOrg.get(org._id) || 0) > 0 || filters.selectedOrganizations.includes(org._id)).length})
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {allOrganizations.filter(org => {
                     const sessionCount = sessionCountsByOrg.get(org._id) || 0;
                     // Show org if it has sessions OR if it's currently selected
-                    return sessionCount > 0 || selectedOrganizations.includes(org._id);
+                    return sessionCount > 0 || filters.selectedOrganizations.includes(org._id);
                   }).map((org) => {
                     const sessionCount = sessionCountsByOrg.get(org._id) || 0;
                     return (
                       <button
                         key={org._id}
-                        onClick={() => handleOrganizationToggle(org._id)}
+                        onClick={() => filters.handleOrganizationToggle(org._id)}
                         className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                          selectedOrganizations.includes(org._id)
+                          filters.selectedOrganizations.includes(org._id)
                             ? 'bg-primary text-white'
                             : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
                         }`}
@@ -912,13 +684,13 @@ export default function DiscoverPage() {
                         <OrgLogo url={org.logoUrl} name={org.name} size="xs" />
                         {org.name}
                         <span className={`text-xs ${
-                          selectedOrganizations.includes(org._id)
+                          filters.selectedOrganizations.includes(org._id)
                             ? 'text-white/70'
                             : 'text-slate-400 dark:text-slate-500'
                         }`}>
                           {sessionCount}
                         </span>
-                        {selectedOrganizations.includes(org._id) && (
+                        {filters.selectedOrganizations.includes(org._id) && (
                           <span className="ml-1">✕</span>
                         )}
                       </button>
@@ -929,7 +701,7 @@ export default function DiscoverPage() {
             )}
 
             {/* Location Filter Chips - only show when organizations are selected */}
-            {selectedOrganizations.length > 0 && relevantLocations && relevantLocations.length > 0 && (
+            {filters.selectedOrganizations.length > 0 && relevantLocations && relevantLocations.length > 0 && (
               <div className="mb-4">
                 <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">
                   Filter by Location
@@ -938,16 +710,16 @@ export default function DiscoverPage() {
                   {relevantLocations.map((location) => (
                     <button
                       key={location._id}
-                      onClick={() => handleLocationToggle(location._id)}
+                      onClick={() => filters.handleLocationToggle(location._id)}
                       className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                        selectedLocations.includes(location._id)
+                        filters.selectedLocations.includes(location._id)
                           ? 'bg-green-600 text-white'
                           : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
                       }`}
                     >
                       <LocationIcon />
                       {location.name}
-                      {selectedLocations.includes(location._id) && (
+                      {filters.selectedLocations.includes(location._id) && (
                         <span className="ml-1">✕</span>
                       )}
                     </button>
@@ -957,93 +729,93 @@ export default function DiscoverPage() {
             )}
 
             {/* Active Filters Summary */}
-            {hasActiveFilters && (
+            {filters.hasActiveFilters && (
               <div className="mb-4 p-3 bg-slate-100 dark:bg-slate-800 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                     Active Filters
                   </p>
                   <button
-                    onClick={clearFilters}
+                    onClick={filters.clearFilters}
                     className="text-xs text-primary hover:text-primary-dark font-medium"
                   >
                     Clear all
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {startDateAfter && (
+                  {filters.startDateAfter && (
                     <FilterChip
-                      label={`From: ${formatDateShort(startDateAfter)}`}
-                      onRemove={() => setStartDateAfter('')}
+                      label={`From: ${formatDateShort(filters.startDateAfter)}`}
+                      onRemove={() => filters.setStartDateAfter('')}
                     />
                   )}
-                  {startDateBefore && (
+                  {filters.startDateBefore && (
                     <FilterChip
-                      label={`To: ${formatDateShort(startDateBefore)}`}
-                      onRemove={() => setStartDateBefore('')}
+                      label={`To: ${formatDateShort(filters.startDateBefore)}`}
+                      onRemove={() => filters.setStartDateBefore('')}
                     />
                   )}
-                  {childAge !== undefined && (
+                  {filters.childAge !== undefined && (
                     <FilterChip
-                      label={`Age: ${childAge}`}
-                      onRemove={() => setChildAge(undefined)}
+                      label={`Age: ${filters.childAge}`}
+                      onRemove={() => filters.setChildAge(undefined)}
                     />
                   )}
-                  {childGrade !== undefined && (
+                  {filters.childGrade !== undefined && (
                     <FilterChip
-                      label={`Grade: ${GRADE_LABELS[childGrade] || `Grade ${childGrade}`}`}
-                      onRemove={() => setChildGrade(undefined)}
+                      label={`Grade: ${GRADE_LABELS[filters.childGrade] || `Grade ${filters.childGrade}`}`}
+                      onRemove={() => filters.setChildGrade(undefined)}
                     />
                   )}
-                  {selectedCategories.map((cat) => (
+                  {filters.selectedCategories.map((cat) => (
                     <FilterChip
                       key={cat}
                       label={cat}
-                      onRemove={() => handleCategoryToggle(cat)}
+                      onRemove={() => filters.handleCategoryToggle(cat)}
                     />
                   ))}
-                  {maxPrice !== undefined && (
+                  {filters.maxPrice !== undefined && (
                     <FilterChip
-                      label={`Max: $${maxPrice}`}
-                      onRemove={() => setMaxPrice(undefined)}
+                      label={`Max: $${filters.maxPrice}`}
+                      onRemove={() => filters.setMaxPrice(undefined)}
                     />
                   )}
-                  {!hideSoldOut && (
+                  {!filters.hideSoldOut && (
                     <FilterChip
                       label="Showing sold out"
-                      onRemove={() => setHideSoldOut(true)}
+                      onRemove={() => filters.setHideSoldOut(true)}
                     />
                   )}
-                  {extendedCareOnly && (
+                  {filters.extendedCareOnly && (
                     <FilterChip
                       label="Extended care"
-                      onRemove={() => setExtendedCareOnly(false)}
+                      onRemove={() => filters.setExtendedCareOnly(false)}
                     />
                   )}
-                  {selectedOrganizations.map((orgId) => {
+                  {filters.selectedOrganizations.map((orgId) => {
                     const org = allOrganizations?.find((o) => o._id === orgId);
                     return (
                       <FilterChip
                         key={orgId}
                         label={org?.name || 'Organization'}
-                        onRemove={() => handleOrganizationToggle(orgId)}
+                        onRemove={() => filters.handleOrganizationToggle(orgId)}
                       />
                     );
                   })}
-                  {selectedLocations.map((locId) => {
+                  {filters.selectedLocations.map((locId) => {
                     const loc = allLocations?.find((l) => l._id === locId);
                     return (
                       <FilterChip
                         key={locId}
                         label={loc?.name || 'Location'}
-                        onRemove={() => handleLocationToggle(locId)}
+                        onRemove={() => filters.handleLocationToggle(locId)}
                       />
                     );
                   })}
-                  {maxDistanceMiles !== undefined && (
+                  {filters.maxDistanceMiles !== undefined && (
                     <FilterChip
-                      label={`Within ${maxDistanceMiles} mi`}
-                      onRemove={() => setMaxDistanceMiles(undefined)}
+                      label={`Within ${filters.maxDistanceMiles} mi`}
+                      onRemove={() => filters.setMaxDistanceMiles(undefined)}
                     />
                   )}
                 </div>
@@ -1051,7 +823,7 @@ export default function DiscoverPage() {
             )}
 
             {/* Results Summary & Sort */}
-            <div ref={resultsRef} className="mb-4 flex items-center justify-between scroll-mt-20">
+            <div ref={filters.resultsRef} className="mb-4 flex items-center justify-between scroll-mt-20">
               <div className="text-sm text-slate-600 dark:text-slate-400">
                 {sessions === undefined ? (
                   <span className="flex items-center gap-2">
@@ -1100,7 +872,7 @@ export default function DiscoverPage() {
               </div>
               <div className="flex items-center gap-4">
                 <button
-                  onClick={() => setShowRequestCampModal(true)}
+                  onClick={() => filters.setShowRequestCampModal(true)}
                   className="text-xs text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary-light underline underline-offset-2"
                 >
                   Can't find a camp?
@@ -1109,8 +881,8 @@ export default function DiscoverPage() {
                   <label htmlFor="discover-sort" className="text-xs text-slate-500 dark:text-slate-400">Sort:</label>
                   <select
                     id="discover-sort"
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as 'date' | 'price-low' | 'price-high' | 'spots' | 'distance')}
+                    value={filters.sortBy}
+                    onChange={(e) => filters.setSortBy(e.target.value as 'date' | 'price-low' | 'price-high' | 'spots' | 'distance')}
                     className="text-sm px-2 py-1 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300"
                   >
                     <option value="date">Start Date</option>
@@ -1171,21 +943,21 @@ export default function DiscoverPage() {
             {sessions !== undefined && filteredSessions.length === 0 && (
               <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-12 text-center">
                 <div className="text-6xl mb-4 animate-bounce motion-reduce:animate-none [animation-duration:2s]">
-                  {hasActiveFilters ? '🔍' : '🏕️'}
+                  {filters.hasActiveFilters ? '🔍' : '🏕️'}
                 </div>
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-                  {hasActiveFilters ? 'No camps match your filters' : 'No camps available yet'}
+                  {filters.hasActiveFilters ? 'No camps match your filters' : 'No camps available yet'}
                 </h3>
                 <p className="text-slate-600 dark:text-slate-400 mb-6 max-w-md mx-auto">
-                  {hasActiveFilters
+                  {filters.hasActiveFilters
                     ? 'Try removing some filters or broadening your date range to see more options.'
                     : 'Check back soon! Camp providers are adding new sessions regularly.'}
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                  {hasActiveFilters && (
+                  {filters.hasActiveFilters && (
                     <>
                       <button
-                        onClick={clearFilters}
+                        onClick={filters.clearFilters}
                         className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 flex items-center gap-2"
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -1193,20 +965,20 @@ export default function DiscoverPage() {
                         </svg>
                         Clear all filters
                       </button>
-                      {(startDateAfter || startDateBefore) && (
+                      {(filters.startDateAfter || filters.startDateBefore) && (
                         <button
                           onClick={() => {
-                            setStartDateAfter('');
-                            setStartDateBefore('');
+                            filters.setStartDateAfter('');
+                            filters.setStartDateBefore('');
                           }}
                           className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-700"
                         >
                           Remove date filter
                         </button>
                       )}
-                      {childAge !== undefined && (
+                      {filters.childAge !== undefined && (
                         <button
-                          onClick={() => setChildAge(undefined)}
+                          onClick={() => filters.setChildAge(undefined)}
                           className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-700"
                         >
                           Remove age filter
@@ -1214,7 +986,7 @@ export default function DiscoverPage() {
                       )}
                     </>
                   )}
-                  {!hasActiveFilters && (
+                  {!filters.hasActiveFilters && (
                     <Link
                       href="/"
                       className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-dark"
@@ -1228,7 +1000,7 @@ export default function DiscoverPage() {
                     Know a camp that should be listed here?
                   </p>
                   <button
-                    onClick={() => setShowRequestCampModal(true)}
+                    onClick={() => filters.setShowRequestCampModal(true)}
                     className="text-primary hover:text-primary-dark font-medium text-sm flex items-center gap-1 mx-auto"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1242,7 +1014,7 @@ export default function DiscoverPage() {
 
             {/* Sessions List or Map View */}
             {sessions !== undefined && filteredSessions.length > 0 && (
-              viewMode === 'map' ? (
+              filters.viewMode === 'map' ? (
                 <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden">
                   <MapWrapper
                     sessions={filteredSessions.map((session) => ({
@@ -1281,7 +1053,7 @@ export default function DiscoverPage() {
                       cityId={city._id}
                       isAdmin={isAdmin ?? false}
                       distanceFromHome={(session as { distanceFromHome?: number }).distanceFromHome}
-                      preSelectedChildId={selectedChildId}
+                      preSelectedChildId={filters.selectedChildId}
                     />
                   ))}
                 </div>
@@ -1298,14 +1070,14 @@ export default function DiscoverPage() {
 
       {/* Add Child Modal */}
       <AddChildModal
-        isOpen={showAddChildModal}
-        onClose={() => setShowAddChildModal(false)}
+        isOpen={filters.showAddChildModal}
+        onClose={() => filters.setShowAddChildModal(false)}
       />
 
       {/* Request Camp Modal */}
       <RequestCampModal
-        isOpen={showRequestCampModal}
-        onClose={() => setShowRequestCampModal(false)}
+        isOpen={filters.showRequestCampModal}
+        onClose={() => filters.setShowRequestCampModal(false)}
       />
     </div>
   );
@@ -1345,1420 +1117,6 @@ function BackToTopButton() {
   );
 }
 
-// Session Card Component
-function SessionCard({
-  session,
-  cityId,
-  isAdmin,
-  distanceFromHome,
-  preSelectedChildId,
-}: {
-  session: {
-    _id: Id<'sessions'>;
-    campId: Id<'camps'>;
-    locationId: Id<'locations'>;
-    organizationId: Id<'organizations'>;
-    startDate: string;
-    endDate: string;
-    dropOffTime: { hour: number; minute: number };
-    pickUpTime: { hour: number; minute: number };
-    extendedCareAvailable: boolean;
-    price: number;
-    currency: string;
-    capacity: number;
-    enrolledCount: number;
-    waitlistEnabled: boolean;
-    waitlistCount: number;
-    status: 'draft' | 'active' | 'sold_out' | 'cancelled' | 'completed';
-    externalRegistrationUrl?: string;
-    ageRequirements: {
-      minAge?: number;
-      maxAge?: number;
-      minGrade?: number;
-      maxGrade?: number;
-    };
-  };
-  cityId: Id<'cities'>;
-  isAdmin?: boolean;
-  distanceFromHome?: number;
-  preSelectedChildId?: Id<'children'> | null;
-}) {
-  const [showSaveModal, setShowSaveModal] = useState(false);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [showStyleEditor, setShowStyleEditor] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generateError, setGenerateError] = useState<string | null>(null);
-  const generateImage = useAction(api.scraping.generateImages.generateCampImage);
-  const updateCampStyle = useMutation(api.camps.mutations.updateCampImageStyle);
-
-  // Fetch related data
-  const camp = useQuery(api.camps.queries.getCamp, { campId: session.campId });
-  const organization = useQuery(api.organizations.queries.getOrganization, {
-    organizationId: session.organizationId,
-  });
-  const location = useQuery(api.locations.queries.getLocation, {
-    locationId: session.locationId,
-  });
-
-  // Format dates with day of week
-  const formatDateRange = (start: string, end: string) => {
-    const startDate = new Date(start + 'T00:00:00');
-    const endDate = new Date(end + 'T00:00:00');
-    const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const startDay = dayNames[startDate.getDay()];
-    const endDay = dayNames[endDate.getDay()];
-
-    if (start === end) {
-      return `${startDay}, ${startDate.toLocaleDateString('en-US', { ...options, year: 'numeric' })}`;
-    }
-
-    const startYear = startDate.getFullYear();
-    const endYear = endDate.getFullYear();
-
-    if (startYear === endYear) {
-      // Show days only if they're weekdays (Mon-Fri typical camp week)
-      return `${startDay} ${startDate.toLocaleDateString('en-US', options)} - ${endDay} ${endDate.toLocaleDateString('en-US', { ...options, year: 'numeric' })}`;
-    }
-
-    return `${startDay} ${startDate.toLocaleDateString('en-US', { ...options, year: 'numeric' })} - ${endDay} ${endDate.toLocaleDateString('en-US', { ...options, year: 'numeric' })}`;
-  };
-
-  // Format price
-  const formatPrice = (cents: number, currency: string) => {
-    const amount = cents / 100;
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  // Calculate camp days (weekdays only)
-  const getCampDays = (startDateStr: string, endDateStr: string): number => {
-    const start = new Date(startDateStr + 'T00:00:00');
-    const end = new Date(endDateStr + 'T00:00:00');
-    let days = 0;
-    const current = new Date(start);
-    while (current <= end) {
-      const dayOfWeek = current.getDay();
-      // Count weekdays only (Mon-Fri)
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-        days++;
-      }
-      current.setDate(current.getDate() + 1);
-    }
-    return days;
-  };
-
-  // Format duration nicely
-  const formatDuration = (days: number): string => {
-    if (days === 1) return '1 day';
-    if (days <= 5) return `${days} days`;
-    const weeks = Math.round(days / 5);
-    if (weeks === 1) return '1 week';
-    return `${weeks} weeks`;
-  };
-
-  // Get summer week number(s) for a session
-  const getSummerWeeks = (startDateStr: string, endDateStr: string): string | null => {
-    const startDate = new Date(startDateStr + 'T00:00:00');
-    const endDate = new Date(endDateStr + 'T00:00:00');
-    const year = startDate.getFullYear();
-
-    // Find first Monday of June
-    const june1 = new Date(year, 5, 1);
-    const dayOfWeek = june1.getDay();
-    const daysUntilMonday = dayOfWeek === 0 ? 1 : dayOfWeek === 1 ? 0 : 8 - dayOfWeek;
-    const summerStart = new Date(year, 5, 1 + daysUntilMonday);
-
-    // Check if dates are within summer (June-August)
-    if (startDate.getMonth() < 5 || startDate.getMonth() > 7) return null;
-
-    // Calculate week numbers
-    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
-    const startWeek = Math.floor((startDate.getTime() - summerStart.getTime()) / msPerWeek) + 1;
-    const endWeek = Math.floor((endDate.getTime() - summerStart.getTime()) / msPerWeek) + 1;
-
-    if (startWeek < 1 || startWeek > 13) return null;
-
-    if (startWeek === endWeek) {
-      return `Week ${startWeek}`;
-    }
-    return `Weeks ${startWeek}-${Math.min(endWeek, 13)}`;
-  };
-
-  // Format time (12-hour format)
-  const formatTime = (time: { hour: number; minute: number }): string => {
-    const hour12 = time.hour % 12 || 12;
-    const ampm = time.hour < 12 ? 'am' : 'pm';
-    if (time.minute === 0) {
-      return `${hour12}${ampm}`;
-    }
-    return `${hour12}:${time.minute.toString().padStart(2, '0')}${ampm}`;
-  };
-
-  // Calculate session duration and return half-day/full-day label
-  const getDayTypeLabel = (
-    dropOff: { hour: number; minute: number },
-    pickUp: { hour: number; minute: number }
-  ): { label: string; isHalfDay: boolean } => {
-    const dropOffMinutes = dropOff.hour * 60 + dropOff.minute;
-    const pickUpMinutes = pickUp.hour * 60 + pickUp.minute;
-    const durationHours = (pickUpMinutes - dropOffMinutes) / 60;
-    const hours = Math.round(durationHours);
-    // Half-day is typically less than 5 hours
-    if (durationHours < 5) {
-      return { label: `${hours}h`, isHalfDay: true };
-    }
-    return { label: `${hours}h`, isHalfDay: false };
-  };
-
-  // Format age range
-  const formatAgeRange = (requirements: typeof session.ageRequirements) => {
-    const parts: string[] = [];
-
-    if (requirements.minAge !== undefined || requirements.maxAge !== undefined) {
-      if (requirements.minAge !== undefined && requirements.maxAge !== undefined) {
-        parts.push(`Ages ${requirements.minAge}-${requirements.maxAge}`);
-      } else if (requirements.minAge !== undefined) {
-        parts.push(`Ages ${requirements.minAge}+`);
-      } else if (requirements.maxAge !== undefined) {
-        parts.push(`Ages up to ${requirements.maxAge}`);
-      }
-    }
-
-    if (requirements.minGrade !== undefined || requirements.maxGrade !== undefined) {
-      const gradeLabel = (grade: number) => {
-        if (grade === -1) return 'Pre-K';
-        if (grade === 0) return 'K';
-        return `${grade}`;
-      };
-
-      if (requirements.minGrade !== undefined && requirements.maxGrade !== undefined) {
-        parts.push(`Grades ${gradeLabel(requirements.minGrade)}-${gradeLabel(requirements.maxGrade)}`);
-      } else if (requirements.minGrade !== undefined) {
-        parts.push(`Grades ${gradeLabel(requirements.minGrade)}+`);
-      } else if (requirements.maxGrade !== undefined) {
-        parts.push(`Grades up to ${gradeLabel(requirements.maxGrade)}`);
-      }
-    }
-
-    return parts.join(' / ') || 'All ages';
-  };
-
-  // Get status info
-  const getStatusBadge = () => {
-    // No real availability data (default capacity=20, enrolled=0)
-    if (session.capacity === 20 && session.enrolledCount === 0 && session.status !== 'sold_out') {
-      return null;
-    }
-
-    if (session.status === 'sold_out' || session.enrolledCount >= session.capacity) {
-      if (session.waitlistEnabled) {
-        return {
-          label: `Waitlist (${session.waitlistCount})`,
-          className: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
-          urgent: false,
-        };
-      }
-      return {
-        label: 'Sold Out',
-        className: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-        urgent: false,
-      };
-    }
-
-    const spotsLeft = session.capacity - session.enrolledCount;
-
-    // Very low availability (1-2 spots)
-    if (spotsLeft <= 2) {
-      return {
-        label: `Only ${spotsLeft} spot${spotsLeft === 1 ? '' : 's'} left!`,
-        className: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-        urgent: true,
-      };
-    }
-
-    // Low availability (3-5 spots)
-    if (spotsLeft <= 5) {
-      return {
-        label: `${spotsLeft} spots left`,
-        className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-        urgent: false,
-      };
-    }
-
-    // Good availability (6-10 spots)
-    if (spotsLeft <= 10) {
-      return {
-        label: `${spotsLeft} spots`,
-        className: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-        urgent: false,
-      };
-    }
-
-    // Plenty available
-    return {
-      label: 'Available',
-      className: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-      urgent: false,
-    };
-  };
-
-  const statusBadge = getStatusBadge();
-
-  // Get timing badge for sessions starting soon
-  const getTimingBadge = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const startDate = new Date(session.startDate + 'T00:00:00');
-    const daysUntilStart = Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-
-    if (daysUntilStart < 0) return null; // Already started
-    if (daysUntilStart === 0) {
-      return { label: 'Starts today!', className: 'bg-surface/30 text-purple-800 dark:bg-purple-900 dark:text-purple-200', urgent: true };
-    }
-    if (daysUntilStart <= 3) {
-      return { label: `Starts in ${daysUntilStart} day${daysUntilStart === 1 ? '' : 's'}`, className: 'bg-surface/30 text-purple-800 dark:bg-purple-900 dark:text-purple-200', urgent: true };
-    }
-    if (daysUntilStart <= 14) {
-      return { label: 'Starting soon', className: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200', urgent: false };
-    }
-    return null;
-  };
-
-  const timingBadge = getTimingBadge();
-
-  // Calculate spots left
-  const spotsLeft = session.capacity - session.enrolledCount;
-  const hasAvailabilityData = !(session.capacity === 20 && session.enrolledCount === 0);
-  const isSoldOut = session.status === 'sold_out' || spotsLeft <= 0;
-
-  // Check if popular (75%+ enrolled but not sold out)
-  const enrollmentPercent = session.enrolledCount / session.capacity;
-  const isPopular = !isSoldOut && enrollmentPercent >= 0.75 && spotsLeft > 2;
-
-  // Check if budget-friendly (under $200)
-  const isBudgetFriendly = session.price < 20000; // 200 dollars in cents
-
-  // Get camp image URL (from Convex storage or fallback)
-  const campImageUrl = camp?.resolvedImageUrls?.[0] || null;
-
-  // Category-based colors for placeholder
-  const getCategoryStyle = (categories: string[] | undefined) => {
-    const category = categories?.[0]?.toLowerCase() || '';
-    const styles: Record<string, { bg: string; icon: string }> = {
-      sports: { bg: 'from-green-500 to-emerald-600', icon: '⚽' },
-      arts: { bg: 'from-purple-500 to-pink-600', icon: '🎨' },
-      stem: { bg: 'from-primary/100 to-cyan-600', icon: '🔬' },
-      technology: { bg: 'from-primary/100 to-indigo-600', icon: '💻' },
-      nature: { bg: 'from-green-600 to-teal-600', icon: '🌲' },
-      music: { bg: 'from-pink-500 to-rose-600', icon: '🎵' },
-      academic: { bg: 'from-amber-500 to-orange-600', icon: '📚' },
-      drama: { bg: 'from-red-500 to-pink-600', icon: '🎭' },
-      adventure: { bg: 'from-orange-500 to-red-600', icon: '🏕️' },
-      cooking: { bg: 'from-yellow-500 to-orange-500', icon: '👨‍🍳' },
-      dance: { bg: 'from-fuchsia-500 to-purple-600', icon: '💃' },
-    };
-    return styles[category] || { bg: 'from-slate-500 to-slate-600', icon: '🏕️' };
-  };
-
-  const categoryStyle = getCategoryStyle(camp?.categories);
-
-  // Urgency indicator class based on spots left
-  const getUrgencyClass = () => {
-    if (isSoldOut) return '';
-    if (spotsLeft <= 2) return 'ring-2 ring-red-400 dark:ring-red-500';
-    if (spotsLeft <= 5) return 'ring-2 ring-orange-400 dark:ring-orange-500';
-    return '';
-  };
-
-  return (
-    <>
-      <div className={`bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden transition-all duration-200 ${
-        isSoldOut
-          ? 'opacity-60 grayscale-[30%]'
-          : 'hover:shadow-lg hover:-translate-y-0.5'
-      } ${getUrgencyClass()}`}>
-        {/* Camp Image or Category Placeholder */}
-        <div className="relative h-48 overflow-hidden group">
-          {campImageUrl ? (
-            <>
-              {/* Shimmer background shows through while image loads */}
-              <div className="absolute inset-0 bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 dark:from-slate-700 dark:via-slate-600 dark:to-slate-700 animate-pulse motion-reduce:animate-none" />
-              <img
-                src={campImageUrl}
-                alt={camp?.name || 'Camp'}
-                className="relative w-full h-full object-cover"
-                loading="lazy"
-                decoding="async"
-                onError={(e) => {
-                  // On error, hide image and show placeholder
-                  e.currentTarget.style.display = 'none';
-                }}
-              />
-              {/* Admin: Regenerate and Edit Style Buttons (shows on hover) */}
-              {isAdmin && camp && (
-                <div className="absolute bottom-14 right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setShowStyleEditor(true);
-                    }}
-                    className="px-2 py-1 bg-black/70 text-white text-xs font-medium rounded shadow hover:bg-black/90 flex items-center gap-1"
-                    title="Edit image style"
-                  >
-                    <PencilIcon />
-                  </button>
-                  <button
-                    onClick={async (e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setIsGenerating(true);
-                      setGenerateError(null);
-                      try {
-                        const result = await generateImage({ campId: camp._id });
-                        if (!result.success) {
-                          setGenerateError(result.error || 'Failed to generate image');
-                        }
-                      } catch (err) {
-                        setGenerateError(err instanceof Error ? err.message : 'Unknown error');
-                      } finally {
-                        setIsGenerating(false);
-                      }
-                    }}
-                    disabled={isGenerating}
-                    className="px-2 py-1 bg-black/70 text-white text-xs font-medium rounded shadow hover:bg-black/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-                    title="Regenerate AI image"
-                  >
-                    {isGenerating ? (
-                      <>
-                        <SpinnerIcon />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <SparklesIcon />
-                        Regenerate
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className={`w-full h-full bg-gradient-to-br ${categoryStyle.bg} flex items-center justify-center`}>
-              <span className="text-4xl opacity-50">{categoryStyle.icon}</span>
-              {/* Admin: Generate Image Button */}
-              {isAdmin && camp && (
-                <button
-                  onClick={async (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setIsGenerating(true);
-                    setGenerateError(null);
-                    try {
-                      const result = await generateImage({ campId: camp._id });
-                      if (!result.success) {
-                        setGenerateError(result.error || 'Failed to generate image');
-                      }
-                    } catch (err) {
-                      setGenerateError(err instanceof Error ? err.message : 'Unknown error');
-                    } finally {
-                      setIsGenerating(false);
-                    }
-                  }}
-                  disabled={isGenerating}
-                  className="absolute bottom-14 right-2 z-10 px-2 py-1 bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 text-xs font-medium rounded shadow hover:bg-white dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-                  title="Generate AI image for this camp"
-                >
-                  {isGenerating ? (
-                    <>
-                      <SpinnerIcon />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <SparklesIcon />
-                      Generate
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-          )}
-          {generateError && (
-            <div className="absolute bottom-2 left-2 right-14 px-2 py-1 bg-red-500/90 text-white text-xs rounded truncate">
-              {generateError}
-            </div>
-          )}
-          {/* Gradient overlay for badge readability */}
-          <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/30 to-transparent pointer-events-none" />
-          {/* Status badges overlay */}
-          <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
-            {statusBadge && (
-              <span
-                className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadge.className} ${statusBadge.urgent ? 'animate-pulse motion-reduce:animate-none' : ''}`}
-              >
-                {statusBadge.label}
-              </span>
-            )}
-            {timingBadge && (
-              <span
-                className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${timingBadge.className} ${timingBadge.urgent ? 'animate-pulse motion-reduce:animate-none' : ''}`}
-              >
-                {timingBadge.label}
-              </span>
-            )}
-            {isPopular && (
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200">
-                🔥 Popular
-              </span>
-            )}
-            {isBudgetFriendly && !isSoldOut && (
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
-                💰 Budget-friendly
-              </span>
-            )}
-          </div>
-          {/* Bottom gradient overlay for camp name */}
-          <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
-          {/* Camp name and org logo overlay */}
-          <div className="absolute bottom-0 left-0 right-0 p-3">
-            <div className="flex items-end gap-2">
-              {organization?.logoUrl && (
-                <div className="w-10 h-10 rounded-lg bg-white dark:bg-slate-800 shadow-md flex items-center justify-center overflow-hidden flex-shrink-0">
-                  <OrgLogo url={organization.logoUrl} name={organization.name} size="md" />
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <Link
-                  href={`/session/${session._id}`}
-                  className="text-base font-semibold text-white hover:text-white/70 hover:underline line-clamp-1 drop-shadow-md"
-                >
-                  {camp?.name ?? 'Loading...'}
-                </Link>
-                <p className="text-xs text-white/80 line-clamp-1 drop-shadow-sm">
-                  {organization?.name ?? 'Loading...'}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-4">
-          {/* Categories and description */}
-          <div className="mb-3">
-            {camp?.categories && camp.categories.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-1">
-                {camp.categories.slice(0, 3).map((cat) => {
-                  const icons: Record<string, string> = {
-                    sports: '⚽',
-                    arts: '🎨',
-                    stem: '🔬',
-                    nature: '🌲',
-                    music: '🎵',
-                    academic: '📚',
-                    drama: '🎭',
-                    adventure: '🏔️',
-                    cooking: '🍳',
-                    dance: '💃',
-                  };
-                  const icon = icons[cat.toLowerCase()] || '';
-                  return (
-                    <span
-                      key={cat}
-                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
-                    >
-                      {icon && <span className="text-[10px]">{icon}</span>}
-                      {cat}
-                    </span>
-                  );
-                })}
-              </div>
-            )}
-            {camp?.description && (
-              <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mt-2">
-                {camp.description}
-              </p>
-            )}
-          </div>
-
-        {/* Spots Left Bar */}
-        {!isSoldOut && hasAvailabilityData && (
-          <div
-            className="mb-4 cursor-help"
-            title={`${spotsLeft <= 3 ? 'Very limited spots - register soon!' : spotsLeft <= 5 ? 'Limited spots remaining' : 'Good availability'}`}
-          >
-            <div className="flex items-center justify-between text-xs mb-1">
-              <span className="text-slate-600 dark:text-slate-400">
-                {spotsLeft} of {session.capacity} spots left
-              </span>
-              <span className="text-slate-500 dark:text-slate-500">
-                {Math.round((session.enrolledCount / session.capacity) * 100)}% full
-              </span>
-            </div>
-            <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all ${
-                  spotsLeft <= 3
-                    ? 'bg-red-500'
-                    : spotsLeft <= 5
-                    ? 'bg-yellow-500'
-                    : 'bg-green-500'
-                }`}
-                style={{ width: `${(session.enrolledCount / session.capacity) * 100}%` }}
-              />
-            </div>
-          </div>
-        )}
-
-        <div className="space-y-2 mb-4">
-          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-            <CalendarIcon />
-            <span>
-              {formatDateRange(session.startDate, session.endDate)}
-              <span className="text-slate-500 dark:text-slate-500 ml-1">
-                ({formatDuration(getCampDays(session.startDate, session.endDate))})
-              </span>
-              {(() => {
-                const weekLabel = getSummerWeeks(session.startDate, session.endDate);
-                if (!weekLabel) return null;
-                return (
-                  <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-                    {weekLabel}
-                  </span>
-                );
-              })()}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-            <ClockIcon />
-            <span>
-              {formatTime(session.dropOffTime)} - {formatTime(session.pickUpTime)}
-              {(() => {
-                const dayType = getDayTypeLabel(session.dropOffTime, session.pickUpTime);
-                return (
-                  <span
-                    className={`ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
-                      dayType.isHalfDay
-                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                        : 'bg-primary/20 text-primary-dark dark:bg-primary-dark/30 dark:text-primary-light'
-                    }`}
-                  >
-                    {dayType.label}
-                  </span>
-                );
-              })()}
-              {session.extendedCareAvailable && (
-                <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                  +Extended care
-                </span>
-              )}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-            <DollarIcon />
-            <span>
-              {formatPrice(session.price, session.currency)}
-              {(() => {
-                const days = getCampDays(session.startDate, session.endDate);
-                if (days > 1) {
-                  const perDay = Math.round(session.price / days);
-                  return (
-                    <span className="text-slate-500 dark:text-slate-500 ml-1">
-                      ({formatPrice(perDay, session.currency)}/day)
-                    </span>
-                  );
-                }
-                return null;
-              })()}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-            <UsersIcon />
-            <span>{formatAgeRange(session.ageRequirements)}</span>
-          </div>
-          {location && (
-            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-              <LocationIcon />
-              <span className="line-clamp-1 flex-1">
-                {location.name}
-                {location.address?.city && ` - ${location.address.city}`}
-              </span>
-              {distanceFromHome !== undefined && (
-                <span className="flex-shrink-0 text-primary dark:text-primary-light font-medium">
-                  {distanceFromHome} mi
-                </span>
-              )}
-              {location.address && (
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                    `${location.address.street}, ${location.address.city}, ${location.address.state} ${location.address.zip}`
-                  )}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-shrink-0 text-primary dark:text-primary-light hover:text-primary-dark dark:hover:text-white/60"
-                  title="View on map"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <MapPinIcon />
-                </a>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          {session.externalRegistrationUrl ? (
-            <>
-              <a
-                href={session.externalRegistrationUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 px-4 py-2 bg-green-600 text-white text-center text-sm font-medium rounded-md hover:bg-green-700 flex items-center justify-center gap-1"
-              >
-                Register
-                <ExternalLinkIcon className="w-3.5 h-3.5" />
-              </a>
-              <Link
-                href={`/session/${session._id}`}
-                className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-md hover:bg-slate-50 dark:hover:bg-slate-700"
-                title="View details"
-              >
-                <InfoIcon />
-              </Link>
-            </>
-          ) : (
-            <Link
-              href={`/session/${session._id}`}
-              className="flex-1 px-4 py-2 bg-primary text-white text-center text-sm font-medium rounded-md hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-            >
-              View Details
-            </Link>
-          )}
-          <button
-            onClick={() => setShowSaveModal(true)}
-            className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-            title="Save for later"
-            aria-label="Save for later"
-          >
-            <HeartIcon />
-          </button>
-        </div>
-        </div>
-      </div>
-
-      {/* Save Modal */}
-      {showSaveModal && (
-        <SaveSessionModal
-          sessionId={session._id}
-          campName={camp?.name ?? 'Camp'}
-          onClose={() => setShowSaveModal(false)}
-          onPaywallHit={() => setShowUpgradeModal(true)}
-          preSelectedChildId={preSelectedChildId}
-          ageRequirements={session.ageRequirements}
-        />
-      )}
-
-      {/* Upgrade Modal */}
-      <UpgradeModal
-        isOpen={showUpgradeModal}
-        onClose={() => setShowUpgradeModal(false)}
-      />
-
-      {/* Style Editor Modal */}
-      {showStyleEditor && camp && (
-        <StyleEditorModal
-          campId={camp._id}
-          campName={camp.name}
-          currentStyle={camp.imageStylePrompt}
-          onClose={() => setShowStyleEditor(false)}
-          onSave={async (style) => {
-            await updateCampStyle({ campId: camp._id, imageStylePrompt: style || undefined });
-            setShowStyleEditor(false);
-          }}
-        />
-      )}
-    </>
-  );
-}
-
-// Save Session Modal
-function SaveSessionModal({
-  sessionId,
-  campName,
-  onClose,
-  onPaywallHit,
-  preSelectedChildId,
-  ageRequirements,
-}: {
-  sessionId: Id<'sessions'>;
-  campName: string;
-  onClose: () => void;
-  onPaywallHit: () => void;
-  preSelectedChildId?: Id<'children'> | null;
-  ageRequirements: {
-    minAge?: number;
-    maxAge?: number;
-    minGrade?: number;
-    maxGrade?: number;
-  };
-}) {
-  const [selectedChildIds, setSelectedChildIds] = useState<Set<Id<'children'>>>(new Set());
-  const [notes, setNotes] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [initialized, setInitialized] = useState(false);
-
-  const children = useQuery(api.children.queries.listChildren);
-  const markInterested = useMutation(api.registrations.mutations.markInterested);
-
-  // Check if a child is eligible based on age/grade requirements
-  const checkEligibility = (child: { birthdate: string; currentGrade?: number }): { eligible: boolean; reason?: string } => {
-    const age = getChildAge(child.birthdate);
-    const grade = child.currentGrade;
-
-    // Check age requirements
-    if (age !== null) {
-      if (ageRequirements.minAge !== undefined && age < ageRequirements.minAge) {
-        return { eligible: false, reason: `Too young (${age}y, needs ${ageRequirements.minAge}+)` };
-      }
-      if (ageRequirements.maxAge !== undefined && age > ageRequirements.maxAge) {
-        return { eligible: false, reason: `Too old (${age}y, max ${ageRequirements.maxAge})` };
-      }
-    }
-
-    // Check grade requirements
-    if (grade !== undefined) {
-      if (ageRequirements.minGrade !== undefined && grade < ageRequirements.minGrade) {
-        const minGradeLabel = ageRequirements.minGrade === 0 ? 'K' : `${ageRequirements.minGrade}`;
-        const childGradeLabel = grade === 0 ? 'K' : grade < 0 ? 'Pre-K' : `${grade}`;
-        return { eligible: false, reason: `Grade too low (${childGradeLabel}, needs ${minGradeLabel}+)` };
-      }
-      if (ageRequirements.maxGrade !== undefined && grade > ageRequirements.maxGrade) {
-        const maxGradeLabel = ageRequirements.maxGrade === 0 ? 'K' : `${ageRequirements.maxGrade}`;
-        const childGradeLabel = grade === 0 ? 'K' : `${grade}`;
-        return { eligible: false, reason: `Grade too high (${childGradeLabel}, max ${maxGradeLabel})` };
-      }
-    }
-
-    return { eligible: true };
-  };
-
-  // Initialize selection when children load - pre-select the filtered child if eligible
-  useEffect(() => {
-    if (children && !initialized) {
-      const initialSelection = new Set<Id<'children'>>();
-
-      // If there's a pre-selected child and they're eligible, select them
-      if (preSelectedChildId) {
-        const preSelectedChild = children.find(c => c._id === preSelectedChildId);
-        if (preSelectedChild) {
-          const { eligible } = checkEligibility(preSelectedChild);
-          if (eligible) {
-            initialSelection.add(preSelectedChildId);
-          }
-        }
-      }
-
-      setSelectedChildIds(initialSelection);
-      setInitialized(true);
-    }
-  }, [children, preSelectedChildId, initialized]);
-
-  const toggleChild = (childId: Id<'children'>) => {
-    setSelectedChildIds(prev => {
-      const next = new Set(prev);
-      if (next.has(childId)) {
-        next.delete(childId);
-      } else {
-        next.add(childId);
-      }
-      return next;
-    });
-  };
-
-  // Close on Escape key
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !success) {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
-  }, [onClose, success]);
-
-  const handleSave = async () => {
-    if (selectedChildIds.size === 0) {
-      setError('Please select at least one child');
-      return;
-    }
-
-    try {
-      setError(null);
-      setIsSaving(true);
-
-      // Save for each selected child
-      const childIdArray = Array.from(selectedChildIds);
-      for (const childId of childIdArray) {
-        await markInterested({
-          childId,
-          sessionId,
-          notes: notes || undefined,
-        });
-      }
-
-      setSuccess(true);
-      setTimeout(() => {
-        onClose();
-      }, 1500);
-    } catch (err) {
-      // Check for paywall error - ConvexError has data property
-      console.log('Save error:', err);
-
-      // Handle ConvexError with structured data
-      if (err instanceof ConvexError) {
-        const data = err.data as { type?: string; code?: string } | undefined;
-        console.log('ConvexError data:', data);
-        if (data?.type === 'PAYWALL') {
-          console.log('Paywall detected via ConvexError, showing upgrade modal');
-          onClose();
-          onPaywallHit();
-          return;
-        }
-      }
-
-      // Fallback: check error message for legacy support
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      if (errorMessage.includes('PAYWALL:')) {
-        console.log('Paywall detected via message, showing upgrade modal');
-        onClose();
-        onPaywallHit();
-        return;
-      }
-
-      setError(errorMessage || 'Failed to save session');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  return (
-    <div
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget && !success) {
-          onClose();
-        }
-      }}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="save-camp-modal-title"
-    >
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 id="save-camp-modal-title" className="text-lg font-semibold text-slate-900 dark:text-white">
-            Save {campName}
-          </h3>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-            aria-label="Close"
-          >
-            <CloseIcon />
-          </button>
-        </div>
-
-        {success ? (
-          <div role="status" className="text-center py-8">
-            <div className="relative w-16 h-16 mx-auto mb-4">
-              <svg
-                className="w-16 h-16 text-pink-500 animate-bounce motion-reduce:animate-none"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-20 h-20 rounded-full bg-pink-500/20 animate-ping motion-reduce:animate-none" />
-              </div>
-            </div>
-            <p className="text-lg font-medium text-slate-900 dark:text-white">Saved!</p>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              This session has been added to your list.
-            </p>
-          </div>
-        ) : (
-          <>
-            {error && (
-              <div role="alert" className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm">
-                {error}
-              </div>
-            )}
-
-            {children === undefined ? (
-              <div className="py-8 text-center text-slate-500">Loading children...</div>
-            ) : children.length === 0 ? (
-              <div className="py-8 text-center">
-                <p className="text-slate-600 dark:text-slate-400 mb-4">
-                  You need to add a child to your family first.
-                </p>
-                <Link
-                  href="/onboarding"
-                  className="text-primary hover:text-primary-dark font-medium"
-                >
-                  Add a child
-                </Link>
-              </div>
-            ) : (
-              <>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    Select Children
-                  </label>
-                  <div className="space-y-2">
-                    {children.map((child) => {
-                      const { eligible, reason } = checkEligibility(child);
-                      const isSelected = selectedChildIds.has(child._id);
-
-                      return (
-                        <label
-                          key={child._id}
-                          className={`flex items-center gap-3 p-3 rounded-md border ${
-                            !eligible
-                              ? 'cursor-not-allowed opacity-60 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800'
-                              : isSelected
-                                ? 'cursor-pointer border-primary bg-primary/10 dark:bg-primary-dark/30'
-                                : 'cursor-pointer border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            value={child._id}
-                            checked={isSelected}
-                            disabled={!eligible}
-                            onChange={() => eligible && toggleChild(child._id)}
-                            className="sr-only"
-                          />
-                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
-                            !eligible
-                              ? 'border-slate-300 dark:border-slate-600 bg-slate-200 dark:bg-slate-700'
-                              : isSelected
-                                ? 'border-primary bg-primary'
-                                : 'border-slate-300 dark:border-slate-500'
-                          }`}>
-                            {isSelected && (
-                              <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                              </svg>
-                            )}
-                          </div>
-                          <div className="w-10 h-10 bg-slate-200 dark:bg-slate-600 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 font-medium flex-shrink-0">
-                            {child.firstName[0]}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className={`font-medium ${!eligible ? 'text-slate-500 dark:text-slate-400' : 'text-slate-900 dark:text-white'}`}>
-                              {child.firstName} {child.lastName}
-                            </p>
-                            {child.birthdate && (
-                              <p className="text-xs text-slate-500 dark:text-slate-400">
-                                {calculateDisplayAge(child.birthdate)}
-                              </p>
-                            )}
-                            {!eligible && reason && (
-                              <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
-                                {reason}
-                              </p>
-                            )}
-                          </div>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="mb-6">
-                  <label htmlFor="save-session-notes" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    Notes (optional)
-                  </label>
-                  <textarea
-                    id="save-session-notes"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="e.g., Check carpool options, ask about early drop-off..."
-                    rows={2}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 resize-none"
-                  />
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={onClose}
-                    className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    disabled={isSaving}
-                    className="flex-1 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isSaving ? 'Saving...' : 'Save'}
-                  </button>
-                </div>
-              </>
-            )}
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// Helper function
-function getChildAge(birthdate: string): number | null {
-  if (!birthdate) return null;
-  const birth = new Date(birthdate);
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const monthDiff = today.getMonth() - birth.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-    age--;
-  }
-  return age;
-}
-
-function calculateDisplayAge(birthdate: string): string {
-  const birth = new Date(birthdate);
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const monthDiff = today.getMonth() - birth.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-    age--;
-  }
-  return `${age} years old`;
-}
-
-// Date helpers for quick filters
-function getThisWeekDates() {
-  const today = new Date();
-  const dayOfWeek = today.getDay();
-  const start = new Date(today);
-  start.setDate(today.getDate() - dayOfWeek + 1); // Monday
-  const end = new Date(start);
-  end.setDate(start.getDate() + 6); // Sunday
-  return {
-    start: start.toISOString().split('T')[0],
-    end: end.toISOString().split('T')[0],
-  };
-}
-
-function getNextWeekDates() {
-  const today = new Date();
-  const dayOfWeek = today.getDay();
-  const start = new Date(today);
-  start.setDate(today.getDate() - dayOfWeek + 8); // Next Monday
-  const end = new Date(start);
-  end.setDate(start.getDate() + 6); // Next Sunday
-  return {
-    start: start.toISOString().split('T')[0],
-    end: end.toISOString().split('T')[0],
-  };
-}
-
-function isThisWeekSelected(startDate: string, endDate: string): boolean {
-  const { start, end } = getThisWeekDates();
-  return startDate === start && endDate === end;
-}
-
-function isNextWeekSelected(startDate: string, endDate: string): boolean {
-  const { start, end } = getNextWeekDates();
-  return startDate === start && endDate === end;
-}
-
-// Quick date filter button component
-function QuickDateButton({
-  label,
-  onClick,
-  isActive,
-}: {
-  label: string;
-  onClick: () => void;
-  isActive: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`px-2 py-1 text-xs rounded-md font-medium transition-colors ${
-        isActive
-          ? 'bg-primary text-white'
-          : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
-
-// Filter chip component for active filters display
-function FilterChip({
-  label,
-  onRemove,
-}: {
-  label: string;
-  onRemove: () => void;
-}) {
-  return (
-    <span className="inline-flex items-center gap-1 px-2 py-1 bg-primary/20 dark:bg-primary-dark/30 text-primary-dark dark:text-white/60 rounded-full text-xs font-medium transition-transform hover:scale-105">
-      {label}
-      <button
-        onClick={onRemove}
-        className="ml-0.5 hover:text-primary-dark dark:hover:text-white/80 transition-colors"
-        title="Remove filter"
-        aria-label={`Remove ${label} filter`}
-      >
-        ×
-      </button>
-    </span>
-  );
-}
-
-// Format date for display in filter chips
-function formatDateShort(dateStr: string): string {
-  const date = new Date(dateStr + 'T00:00:00');
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-// Icons
-function SettingsIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-      />
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-      />
-    </svg>
-  );
-}
-
-function FilterIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-      />
-    </svg>
-  );
-}
-
-function EmptyIcon() {
-  return (
-    <svg className="w-16 h-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={1.5}
-        d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-    </svg>
-  );
-}
-
-function CalendarIcon() {
-  return (
-    <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-      />
-    </svg>
-  );
-}
-
-function ClockIcon() {
-  return (
-    <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-    </svg>
-  );
-}
-
-function DollarIcon() {
-  return (
-    <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-    </svg>
-  );
-}
-
-function UsersIcon() {
-  return (
-    <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
-      />
-    </svg>
-  );
-}
-
-function LocationIcon() {
-  return (
-    <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-      />
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-      />
-    </svg>
-  );
-}
-
-function MapPinIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-      />
-    </svg>
-  );
-}
-
-function HeartIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-      />
-    </svg>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg className="w-12 h-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-    </svg>
-  );
-}
-
-function SparklesIcon() {
-  return (
-    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
-      />
-    </svg>
-  );
-}
-
-function ExternalLinkIcon({ className = 'w-4 h-4' }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-      />
-    </svg>
-  );
-}
-
-function InfoIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-    </svg>
-  );
-}
-
-function SpinnerIcon() {
-  return (
-    <svg className="w-3 h-3 animate-spin motion-reduce:animate-none" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-      <circle
-        className="opacity-25"
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        strokeWidth="4"
-      />
-      <path
-        className="opacity-75"
-        fill="currentColor"
-        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-      />
-    </svg>
-  );
-}
 
 function ShareSearchButton() {
   const [copied, setCopied] = useState(false);
@@ -2806,157 +1164,5 @@ function ShareSearchButton() {
         </>
       )}
     </button>
-  );
-}
-
-function PencilIcon() {
-  return (
-    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-      />
-    </svg>
-  );
-}
-
-function ListIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M4 6h16M4 10h16M4 14h16M4 18h16"
-      />
-    </svg>
-  );
-}
-
-function MapIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-      />
-    </svg>
-  );
-}
-
-// Style Editor Modal for admins
-function StyleEditorModal({
-  campId,
-  campName,
-  currentStyle,
-  onClose,
-  onSave,
-}: {
-  campId: Id<'camps'>;
-  campName: string;
-  currentStyle?: string;
-  onClose: () => void;
-  onSave: (style: string | undefined) => Promise<void>;
-}) {
-  const [style, setStyle] = useState(currentStyle || '');
-  const [isSaving, setIsSaving] = useState(false);
-
-  const presetStyles = [
-    'Vibrant watercolor with wet-on-wet technique. Dramatic low angle looking up. Golden hour sunlight streaming through. Frozen mid-action, peak moment captured.',
-    'Polished digital painting like Pixar concept art. Wide cinematic shot with rule of thirds. Bright overcast day, soft even lighting. Genuine laughter and joy visible.',
-    'Rich oil painting with visible impasto brushstrokes. Over-the-shoulder perspective, intimate. Dappled light filtering through trees. Curious discovery moment.',
-    'Studio Ghibli inspired animation style. Bird\'s eye view showing the whole activity. Magic hour glow, long shadows. Playful chaos and movement.',
-    'Editorial illustration style for New York Times. Dynamic diagonal composition. Dramatic rim lighting from behind. Intense concentration and focus.',
-    'Nostalgic Norman Rockwell style illustration. Symmetrical framing with central focus. Warm indoor lighting with soft shadows. Collaborative teamwork moment.',
-    'Crisp digital art, trending on artstation. Dutch angle adding energy. High key bright and airy. Triumphant achievement expression.',
-    'Dreamy soft pastel artwork with chalky texture. Close-up on hands and activity, shallow depth of field. Natural window light, cozy. Peaceful flow state.',
-  ];
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      await onSave(style.trim() || undefined);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-lg w-full p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-            Edit Image Style: {campName}
-          </h3>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-          >
-            <CloseIcon />
-          </button>
-        </div>
-
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Custom Style Prompt
-          </label>
-          <textarea
-            value={style}
-            onChange={(e) => setStyle(e.target.value)}
-            placeholder="e.g., Style: watercolor painting, soft colors, impressionistic..."
-            rows={3}
-            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
-          />
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Leave empty to use auto-generated style based on camp ID
-          </p>
-        </div>
-
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Preset Styles
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {presetStyles.map((preset, i) => (
-              <button
-                key={i}
-                onClick={() => setStyle(preset)}
-                className="px-2 py-1 text-xs bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded hover:bg-slate-200 dark:hover:bg-slate-600"
-              >
-                {preset.replace('Style: ', '').split(',')[0]}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => {
-              setStyle('');
-            }}
-            className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700"
-          >
-            Reset
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="flex-1 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark disabled:opacity-50"
-          >
-            {isSaving ? 'Saving...' : 'Save'}
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }

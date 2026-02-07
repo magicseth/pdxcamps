@@ -1,18 +1,7 @@
-import { query, QueryCtx } from "../_generated/server";
+import { query } from "../_generated/server";
 import { v } from "convex/values";
-import { getFamily } from "../lib/auth";
 import { Doc } from "../_generated/dataModel";
-
-const ADMIN_EMAILS = ["seth@magicseth.com"];
-
-/**
- * Check if the current user is an admin by looking up their family record
- */
-async function checkIsAdmin(ctx: QueryCtx): Promise<boolean> {
-  const family = await getFamily(ctx);
-  if (!family) return false;
-  return ADMIN_EMAILS.includes(family.email);
-}
+import { checkIsAdmin } from "../lib/adminAuth";
 
 /**
  * Check if the current user is an admin

@@ -107,8 +107,8 @@ function SourcesManagementContent() {
   });
 
   // Mutations
-  const toggleSourceActive = useMutation(api.scraping.mutations.toggleSourceActive);
-  const createScrapeJob = useMutation(api.scraping.mutations.createScrapeJob);
+  const toggleSourceActive = useMutation(api.scraping.sources.toggleSourceActive);
+  const createScrapeJob = useMutation(api.scraping.jobs.createScrapeJob);
 
   const handleToggleActive = async (sourceId: Id<'scrapeSources'>, currentActive: boolean) => {
     try {

@@ -59,6 +59,19 @@ crons.interval(
 // );
 
 // ============================================
+// PLANNER AGGREGATES
+// ============================================
+
+// Recompute weekly availability counts every 30 minutes
+// Keeps planner grid session counts fresh without per-request computation
+crons.interval(
+  "recompute weekly availability",
+  { minutes: 30 },
+  internal.planner.aggregates.recomputeAll,
+  {}
+);
+
+// ============================================
 // MAINTENANCE CRONS
 // ============================================
 
@@ -107,6 +120,15 @@ crons.daily(
   {}
 );
 
+// Source recovery - check disabled 404 sources weekly (Saturday 5 AM PST / 1 PM UTC)
+// Re-enables sources whose URLs have come back online
+crons.weekly(
+  "source recovery check",
+  { dayOfWeek: "saturday", hourUTC: 13, minuteUTC: 0 },
+  internal.scraping.sourceRecovery.checkDisabledSources,
+  {}
+);
+
 // Clean up old scrape data weekly (keep 30 days)
 // Runs on Sunday at midnight PST (8 AM UTC)
 // Uncomment to enable:
@@ -123,7 +145,16 @@ crons.daily(
 crons.daily(
   "deduplicate sessions",
   { hourUTC: 12, minuteUTC: 0 },
-  internal.dataCleanup.autoDeduplicateSessions,
+  internal.cleanup.sessions.autoDeduplicateSessions,
+  {}
+);
+
+// Cross-source duplicate detection - runs daily at 4:30 AM PST (12:30 PM UTC)
+// Detects sessions from different sources that appear to be duplicates (alert-only, no auto-merge)
+crons.daily(
+  "cross-source duplicate detection",
+  { hourUTC: 12, minuteUTC: 30 },
+  internal.scraping.deduplication.detectAndAlertCrossSourceDuplicates,
   {}
 );
 

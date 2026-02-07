@@ -1,5 +1,6 @@
-import { internalMutation } from "../_generated/server";
+import { internalMutation, internalQuery } from "../_generated/server";
 import { v } from "convex/values";
+import { Id } from "../_generated/dataModel";
 
 /**
  * Update scraper health metrics after a scrape attempt
@@ -222,6 +223,98 @@ export const cleanupOldScrapeData = internalMutation({
  * Reset scraper health metrics
  * Called after major scraper regeneration
  */
+// 10E: Auto-trigger scraper regeneration helpers
+// ============================================
+
+/**
+ * Query sources where scraperHealth.needsRegeneration === true
+ * Used by runScheduledScrapes to auto-trigger regeneration requests.
+ */
+export const getSourcesNeedingRegeneration = internalQuery({
+  args: {},
+  handler: async (ctx): Promise<
+    Array<{
+      _id: Id<"scrapeSources">;
+      name: string;
+      url: string;
+      cityId: Id<"cities">;
+    }>
+  > => {
+    const activeSources = await ctx.db
+      .query("scrapeSources")
+      .withIndex("by_is_active", (q) => q.eq("isActive", true))
+      .collect();
+
+    return activeSources
+      .filter((source) => source.scraperHealth.needsRegeneration === true)
+      .map((source) => ({
+        _id: source._id,
+        name: source.name,
+        url: source.url,
+        cityId: source.cityId,
+      }));
+  },
+});
+
+/**
+ * Create a scraper development request for a source that needs regeneration.
+ * Skips if a pending/in_progress request already exists for this source.
+ */
+export const createRegenerationRequest = internalMutation({
+  args: {
+    sourceId: v.id("scrapeSources"),
+    sourceName: v.string(),
+    sourceUrl: v.string(),
+    cityId: v.id("cities"),
+  },
+  handler: async (ctx, args) => {
+    const existingBySource = await ctx.db
+      .query("scraperDevelopmentRequests")
+      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .collect();
+
+    const hasActiveRequest = existingBySource.some(
+      (r) =>
+        r.status === "pending" ||
+        r.status === "in_progress" ||
+        r.status === "testing"
+    );
+
+    if (hasActiveRequest) {
+      return null;
+    }
+
+    const existingByUrl = await ctx.db
+      .query("scraperDevelopmentRequests")
+      .withIndex("by_source_url", (q) => q.eq("sourceUrl", args.sourceUrl))
+      .first();
+
+    if (
+      existingByUrl &&
+      (existingByUrl.status === "pending" ||
+        existingByUrl.status === "in_progress" ||
+        existingByUrl.status === "testing")
+    ) {
+      return null;
+    }
+
+    const requestId = await ctx.db.insert("scraperDevelopmentRequests", {
+      sourceName: args.sourceName,
+      sourceUrl: args.sourceUrl,
+      cityId: args.cityId,
+      sourceId: args.sourceId,
+      requestedBy: "auto-regeneration",
+      requestedAt: Date.now(),
+      status: "pending",
+      scraperVersion: 0,
+      notes:
+        "Auto-created: scraper flagged for regeneration due to consecutive failures or zero results",
+    });
+
+    return requestId;
+  },
+});
+
 export const resetScraperHealth = internalMutation({
   args: {
     sourceId: v.id("scrapeSources"),

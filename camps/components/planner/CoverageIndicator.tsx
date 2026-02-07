@@ -2,7 +2,8 @@
 
 import { OrgLogo } from '../shared/OrgLogo';
 
-export type CoverageStatus = 'full' | 'partial' | 'gap' | 'tentative' | 'event' | 'school';
+import type { CoverageStatus } from '../../lib/types';
+export type { CoverageStatus };
 
 interface CoverageIndicatorProps {
   status: CoverageStatus;

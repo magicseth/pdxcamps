@@ -20,6 +20,7 @@ import { components } from "./_generated/api";
 import { StripeSubscriptions } from "@convex-dev/stripe";
 import { v } from "convex/values";
 import Stripe from "stripe";
+import { FREE_SAVED_CAMPS_LIMIT } from "./lib/paywall";
 
 // Initialize Stripe client
 const stripeClient = new StripeSubscriptions(components.stripe, {});
@@ -45,11 +46,11 @@ const TEST_PRICES = {
 const isTestMode = () => process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_");
 const PRICES = isTestMode() ? TEST_PRICES : LIVE_PRICES;
 
-// Free tier limits
+// Free tier limits (maxSavedCamps sourced from convex/lib/paywall.ts)
 export const FREE_LIMITS = {
   maxChildren: Infinity, // Unlimited children in free tier
   maxWeeks: 4,
-  maxSavedCamps: 5,
+  maxSavedCamps: FREE_SAVED_CAMPS_LIMIT,
 };
 
 /**

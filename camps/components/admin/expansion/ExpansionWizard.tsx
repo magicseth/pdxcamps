@@ -11,7 +11,7 @@ interface ExpansionWizardProps {
   onInitialize: () => Promise<void>;
   onStartDomainCheck: (domains: string[]) => Promise<string>; // Returns workflow ID
   onSelectDomain: (domain: string) => Promise<void>;
-  onPurchaseDomain: (domain: string, price: string) => Promise<{ success: boolean; orderId?: string; error?: string }>;
+  onPurchaseDomain: (domain: string, price?: string) => Promise<{ success: boolean; orderId?: string; error?: string }>;
   onSetupDns: (domain: string) => Promise<{ success: boolean; zoneId?: string; nameservers?: string[]; error?: string }>;
   onCreateCity: (cityData: {
     name: string;
@@ -137,15 +137,12 @@ export function ExpansionWizard({
       setError('Please select a domain first');
       return;
     }
-    if (!selectedDomainPrice) {
-      setError('No price available - please check domain availability first');
-      return;
-    }
 
     setLoading(true);
     setError(null);
     try {
-      const result = await onPurchaseDomain(selectedDomain, selectedDomainPrice);
+      // Pass the price if we have it, otherwise the backend will fetch it
+      const result = await onPurchaseDomain(selectedDomain, selectedDomainPrice || '');
       if (!result.success) {
         setError(result.error || 'Purchase failed');
         return;
@@ -494,6 +491,7 @@ export function ExpansionWizard({
                 </h4>
                 <DomainChecker
                   marketKey={market.key}
+                  marketName={market.name}
                   suggestedDomains={market.suggestedDomains}
                   selectedDomain={selectedDomain}
                   onStartCheck={onStartDomainCheck}

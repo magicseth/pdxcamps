@@ -121,10 +121,10 @@ function ControlCenterContent() {
   });
 
   // Mutations
-  const toggleSourceActive = useMutation(api.scraping.mutations.toggleSourceActive);
-  const createScrapeJob = useMutation(api.scraping.mutations.createScrapeJob);
-  const updateSourceDetails = useMutation(api.scraping.mutations.updateSourceDetails);
-  const deleteSourceWithData = useMutation(api.scraping.mutations.deleteSourceWithData);
+  const toggleSourceActive = useMutation(api.scraping.sources.toggleSourceActive);
+  const createScrapeJob = useMutation(api.scraping.jobs.createScrapeJob);
+  const updateSourceDetails = useMutation(api.scraping.sources.updateSourceDetails);
+  const deleteSourceWithData = useMutation(api.scraping.sources.deleteSourceWithData);
 
   // Update URL when state changes
   const updateUrl = (tab: TabFilter, sourceId: string | null, search: string, cityId: string | null) => {
@@ -664,7 +664,7 @@ function SourceDetailPanel({
 
   const submitFeedback = useMutation(api.scraping.development.submitScraperFeedbackFromSource);
   const refreshLogo = useMutation(api.scraping.mutations.refreshSourceLogo);
-  const reopenSource = useMutation(api.scraping.mutations.reopenSource);
+  const reopenSource = useMutation(api.scraping.sources.reopenSource);
 
   const health = getHealthIndicatorFn(source.scraperHealth);
 

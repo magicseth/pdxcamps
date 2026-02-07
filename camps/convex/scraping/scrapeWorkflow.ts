@@ -241,13 +241,59 @@ export const markJobCompleted = internalMutation({
     sessionsUpdated: v.number(),
   },
   handler: async (ctx, args) => {
+    const now = Date.now();
+
     await ctx.db.patch(args.jobId, {
       status: "completed",
-      completedAt: Date.now(),
+      completedAt: now,
       sessionsFound: args.sessionsFound,
       sessionsCreated: args.sessionsCreated,
       sessionsUpdated: args.sessionsUpdated,
     });
+
+    // 10B: Track zero-result scrapes and alert
+    const job = await ctx.db.get(args.jobId);
+    if (!job) return;
+
+    const source = await ctx.db.get(job.sourceId);
+    if (!source) return;
+
+    if (args.sessionsFound === 0) {
+      const prevZeroCount = source.scraperHealth.consecutiveZeroResults ?? 0;
+      const newZeroCount = prevZeroCount + 1;
+
+      // Create warning alert on zero results
+      await ctx.db.insert("scraperAlerts", {
+        sourceId: job.sourceId,
+        alertType: "zero_results",
+        message: `Scraper "${source.name}" returned 0 sessions (${newZeroCount} consecutive) — may need attention`,
+        severity: "warning",
+        createdAt: now,
+        acknowledgedAt: undefined,
+        acknowledgedBy: undefined,
+      });
+
+      // After 3 consecutive zero-result completions, flag for regeneration
+      const needsRegeneration = newZeroCount >= 3 || source.scraperHealth.needsRegeneration;
+
+      await ctx.db.patch(job.sourceId, {
+        scraperHealth: {
+          ...source.scraperHealth,
+          consecutiveZeroResults: newZeroCount,
+          needsRegeneration,
+        },
+      });
+    } else {
+      // Reset consecutive zero results on non-zero result
+      if ((source.scraperHealth.consecutiveZeroResults ?? 0) > 0) {
+        await ctx.db.patch(job.sourceId, {
+          scraperHealth: {
+            ...source.scraperHealth,
+            consecutiveZeroResults: 0,
+          },
+        });
+      }
+    }
   },
 });
 

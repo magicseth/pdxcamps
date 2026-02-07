@@ -186,7 +186,7 @@ export const seedMarket = action({
         // Create scrape source if it doesn't exist
         if (!sourceId) {
           sourceId = await ctx.runMutation(
-            api.scraping.mutations.createScrapeSourceSimple,
+            api.scraping.sources.createScrapeSourceSimple,
             {
               name,
               url: camp.url,

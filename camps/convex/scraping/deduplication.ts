@@ -245,3 +245,220 @@ export function generateDedupeKey(
   const normalizedName = name.toLowerCase().trim().replace(/\s+/g, " ");
   return `${sourceId}:${normalizedName}:${startDate}`;
 }
+
+// ============================================
+// 10F: Cross-source duplicate detection
+// ============================================
+
+/**
+ * A cross-source duplicate group: sessions from different sources
+ * that appear to represent the same camp session.
+ */
+interface CrossSourceDuplicate {
+  organizationId: string;
+  startDate: string;
+  sessions: Array<{
+    sessionId: string;
+    sourceId: string;
+    campName: string;
+    similarityScore: number;
+  }>;
+}
+
+/**
+ * Find sessions from DIFFERENT sources under the same organization
+ * that share a start date and have >80% name similarity.
+ *
+ * Returns groups of potential duplicates for manual review.
+ * Does NOT auto-merge -- this is informational only.
+ */
+export const findCrossSourceDuplicates = internalQuery({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args): Promise<CrossSourceDuplicate[]> => {
+    const maxResults = args.limit ?? 50;
+
+    // Get all active sessions that have a sourceId
+    const sessions = await ctx.db
+      .query("sessions")
+      .withIndex("by_status", (q) => q.eq("status", "active"))
+      .collect();
+
+    // Group sessions by organizationId + startDate
+    const groups = new Map<
+      string,
+      Array<{
+        sessionId: string;
+        sourceId: string;
+        campName: string;
+        organizationId: string;
+        startDate: string;
+      }>
+    >();
+
+    for (const session of sessions) {
+      if (!session.sourceId || !session.organizationId) continue;
+
+      const key = `${session.organizationId}:${session.startDate}`;
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key)!.push({
+        sessionId: session._id,
+        sourceId: session.sourceId,
+        campName: session.campName || "",
+        organizationId: session.organizationId,
+        startDate: session.startDate,
+      });
+    }
+
+    const duplicates: CrossSourceDuplicate[] = [];
+
+    // For each group, check for sessions from DIFFERENT sources with similar names
+    for (const [, groupSessions] of groups) {
+      // Need at least 2 sessions to have duplicates
+      if (groupSessions.length < 2) continue;
+
+      // Check all pairs for cross-source name similarity
+      const matchedIndices = new Set<number>();
+      const crossSourceMatches: Array<{
+        sessionId: string;
+        sourceId: string;
+        campName: string;
+        similarityScore: number;
+      }> = [];
+
+      for (let i = 0; i < groupSessions.length; i++) {
+        for (let j = i + 1; j < groupSessions.length; j++) {
+          // Must be from different sources
+          if (groupSessions[i].sourceId === groupSessions[j].sourceId) continue;
+
+          const sim = similarity(
+            groupSessions[i].campName,
+            groupSessions[j].campName
+          );
+
+          if (sim > 0.8) {
+            if (!matchedIndices.has(i)) {
+              matchedIndices.add(i);
+              crossSourceMatches.push({
+                sessionId: groupSessions[i].sessionId,
+                sourceId: groupSessions[i].sourceId,
+                campName: groupSessions[i].campName,
+                similarityScore: sim,
+              });
+            }
+            if (!matchedIndices.has(j)) {
+              matchedIndices.add(j);
+              crossSourceMatches.push({
+                sessionId: groupSessions[j].sessionId,
+                sourceId: groupSessions[j].sourceId,
+                campName: groupSessions[j].campName,
+                similarityScore: sim,
+              });
+            }
+          }
+        }
+      }
+
+      if (crossSourceMatches.length >= 2) {
+        duplicates.push({
+          organizationId: groupSessions[0].organizationId,
+          startDate: groupSessions[0].startDate,
+          sessions: crossSourceMatches,
+        });
+
+        if (duplicates.length >= maxResults) break;
+      }
+    }
+
+    return duplicates;
+  },
+});
+
+/**
+ * Detect cross-source duplicates and create alerts for review.
+ * Called by the daily dedup cron. Does NOT auto-merge -- only logs and alerts.
+ */
+export const detectAndAlertCrossSourceDuplicates = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    // Inline the cross-source detection logic (can't call internalQuery from mutation)
+    const sessions = await ctx.db
+      .query("sessions")
+      .withIndex("by_status", (q) => q.eq("status", "active"))
+      .collect();
+
+    // Group sessions by organizationId + startDate
+    const groups = new Map<
+      string,
+      Array<{
+        sessionId: string;
+        sourceId: string;
+        campName: string;
+        organizationId: string;
+        startDate: string;
+      }>
+    >();
+
+    for (const session of sessions) {
+      if (!session.sourceId || !session.organizationId) continue;
+
+      const key = `${session.organizationId}:${session.startDate}`;
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key)!.push({
+        sessionId: session._id,
+        sourceId: session.sourceId,
+        campName: session.campName || "",
+        organizationId: session.organizationId,
+        startDate: session.startDate,
+      });
+    }
+
+    let totalDuplicateGroups = 0;
+
+    for (const [, groupSessions] of groups) {
+      if (groupSessions.length < 2) continue;
+
+      let hasCrossSourceDupe = false;
+      for (let i = 0; i < groupSessions.length && !hasCrossSourceDupe; i++) {
+        for (let j = i + 1; j < groupSessions.length && !hasCrossSourceDupe; j++) {
+          if (groupSessions[i].sourceId === groupSessions[j].sourceId) continue;
+          const sim = similarity(
+            groupSessions[i].campName,
+            groupSessions[j].campName
+          );
+          if (sim > 0.8) {
+            hasCrossSourceDupe = true;
+          }
+        }
+      }
+
+      if (hasCrossSourceDupe) {
+        totalDuplicateGroups++;
+      }
+    }
+
+    if (totalDuplicateGroups > 0) {
+      console.log(
+        `[CrossSourceDedup] Found ${totalDuplicateGroups} cross-source duplicate groups`
+      );
+
+      // Create a single summary alert (not one per group)
+      await ctx.db.insert("scraperAlerts", {
+        sourceId: undefined,
+        alertType: "cross_source_duplicates",
+        message: `Found ${totalDuplicateGroups} potential cross-source duplicate session groups. Use findCrossSourceDuplicates query to review.`,
+        severity: "info",
+        createdAt: Date.now(),
+        acknowledgedAt: undefined,
+        acknowledgedBy: undefined,
+      });
+    }
+
+    return { duplicateGroups: totalDuplicateGroups };
+  },
+});

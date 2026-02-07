@@ -64,7 +64,7 @@ function SourceDetailContent() {
   const sessionsCount = sessionsData?.totalCount ?? 0;
 
   const updateNotes = useMutation(api.scraping.mutations.updateParsingNotes);
-  const flagForRescan = useMutation(api.scraping.mutations.flagForRescan);
+  const flagForRescan = useMutation(api.scraping.jobs.flagForRescan);
   const addAdditionalUrl = useMutation(api.scraping.mutations.addAdditionalUrl);
   const removeAdditionalUrl = useMutation(api.scraping.mutations.removeAdditionalUrl);
 

@@ -189,6 +189,7 @@ export default function SavedCampsPage() {
 
   const isPremium = subscription?.isPremium ?? false;
   const savedCount = savedCamps ? savedCamps.interested.length + savedCamps.waitlisted.length : 0;
+  // Must match FREE_SAVED_CAMPS_LIMIT in convex/lib/paywall.ts
   const FREE_LIMIT = 5;
 
   const handleMarkRegistered = async (registrationId: Id<"registrations">) => {

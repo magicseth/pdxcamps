@@ -478,11 +478,17 @@ export const populateDevRequestsCityId = mutation({
 export const recalculateSourceSessionCounts = mutation({
   args: {
     dryRun: v.optional(v.boolean()),
+    batchSize: v.optional(v.number()),
+    cursor: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const dryRun = args.dryRun ?? true;
+    const batchSize = args.batchSize ?? 10;
+    const cursorIndex = args.cursor ?? 0;
 
     const sources = await ctx.db.query("scrapeSources").collect();
+    const batch = sources.slice(cursorIndex, cursorIndex + batchSize);
+
     const updates: Array<{
       sourceId: string;
       sourceName: string;
@@ -492,8 +498,7 @@ export const recalculateSourceSessionCounts = mutation({
       newActiveCount: number;
     }> = [];
 
-    for (const source of sources) {
-      // Count actual sessions for this source
+    for (const source of batch) {
       const sessions = await ctx.db
         .query("sessions")
         .withIndex("by_source", (q) => q.eq("sourceId", source._id))
@@ -502,7 +507,6 @@ export const recalculateSourceSessionCounts = mutation({
       const sessionCount = sessions.length;
       const activeSessionCount = sessions.filter(s => s.status === "active").length;
 
-      // Only include if counts differ
       if (sessionCount !== (source.sessionCount ?? 0) || activeSessionCount !== (source.activeSessionCount ?? 0)) {
         updates.push({
           sourceId: source._id,
@@ -515,32 +519,31 @@ export const recalculateSourceSessionCounts = mutation({
       }
     }
 
-    if (dryRun) {
-      return {
-        dryRun: true,
-        totalSources: sources.length,
-        wouldUpdate: updates.length,
-        sampleUpdates: updates.slice(0, 20).map(u => ({
-          name: u.sourceName,
-          old: `${u.oldCount} (${u.oldActiveCount} active)`,
-          new: `${u.newCount} (${u.newActiveCount} active)`,
-        })),
-      };
+    if (!dryRun) {
+      for (const update of updates) {
+        await ctx.db.patch(update.sourceId as any, {
+          sessionCount: update.newCount,
+          activeSessionCount: update.newActiveCount,
+          lastSessionsFoundAt: update.newCount > 0 ? Date.now() : undefined,
+        });
+      }
     }
 
-    // Apply updates
-    for (const update of updates) {
-      await ctx.db.patch(update.sourceId as any, {
-        sessionCount: update.newCount,
-        activeSessionCount: update.newActiveCount,
-        lastSessionsFoundAt: update.newCount > 0 ? Date.now() : undefined,
-      });
-    }
+    const nextCursor = cursorIndex + batchSize;
+    const isDone = nextCursor >= sources.length;
 
     return {
-      dryRun: false,
+      dryRun,
+      processed: batch.length,
       totalSources: sources.length,
       updated: updates.length,
+      sampleUpdates: updates.slice(0, 10).map(u => ({
+        name: u.sourceName,
+        old: `${u.oldCount} (${u.oldActiveCount} active)`,
+        new: `${u.newCount} (${u.newActiveCount} active)`,
+      })),
+      isDone,
+      nextCursor: isDone ? undefined : nextCursor,
     };
   },
 });

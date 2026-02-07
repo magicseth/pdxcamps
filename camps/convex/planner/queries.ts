@@ -11,6 +11,7 @@ import {
   calculateDistance,
   isAgeInRange,
   isGradeInRange,
+  resolveCampName,
   SummerWeek,
 } from "../lib/helpers";
 
@@ -33,7 +34,6 @@ export interface ChildWeekCoverage {
   childName: string;
   status: CoverageStatus;
   coveredDays: number;
-  availableSessionCount?: number; // Number of available sessions for gaps
   registrations: {
     registrationId: Id<"registrations">;
     sessionId: Id<"sessions">;
@@ -83,7 +83,6 @@ export const getSummerCoverage = query({
         q.eq("familyId", family._id).eq("isActive", true)
       )
       .collect();
-
     if (children.length === 0) {
       return [];
     }
@@ -131,35 +130,31 @@ export const getSummerCoverage = query({
     const activeRegistrations = registrations.filter(
       (r) => r.status !== "cancelled"
     );
-
     // Fetch all sessions for the registrations
     const sessionIds = [...new Set(activeRegistrations.map((r) => r.sessionId))];
     const sessionsRaw = await Promise.all(sessionIds.map((id) => ctx.db.get(id)));
     const sessions = sessionsRaw.filter((s): s is Doc<"sessions"> => s !== null);
     const sessionMap = new Map(sessions.map((s) => [s._id, s]));
-
     // Fetch camp names only for sessions that don't have denormalized data
     const sessionsNeedingCamps = sessions.filter((s) => !s.campName);
     const campIds = [...new Set(sessionsNeedingCamps.map((s) => s.campId))];
     const campsRaw = await Promise.all(campIds.map((id) => ctx.db.get(id)));
     const camps = campsRaw.filter((c): c is Doc<"camps"> => c !== null);
     const campMap = new Map(camps.map((c) => [c._id, c]));
-
     // Fetch organization logos for sessions
     const orgIds = [...new Set(sessions.map((s) => s.organizationId))];
     const orgsRaw = await Promise.all(orgIds.map((id) => ctx.db.get(id)));
     const orgs = orgsRaw.filter((o): o is Doc<"organizations"> => o !== null);
     const orgMap = new Map(orgs.map((o) => [o._id, o]));
-
-    // Resolve org logos
+    // Resolve org logos in parallel
     const orgLogoUrls = new Map<string, string | null>();
-    for (const org of orgs) {
-      if (org.logoStorageId) {
-        const url = await ctx.storage.getUrl(org.logoStorageId);
-        orgLogoUrls.set(org._id, url);
-      }
-    }
-
+    const orgsWithLogos = orgs.filter((org) => org.logoStorageId);
+    await Promise.all(
+      orgsWithLogos.map(async (org) => {
+          const url = await ctx.storage.getUrl(org.logoStorageId!);
+          orgLogoUrls.set(org._id, url);
+        })
+    );
     // Get all active family events
     const familyEvents = await ctx.db
       .query("familyEvents")
@@ -172,35 +167,8 @@ export const getSummerCoverage = query({
     const summerEvents = familyEvents.filter((e) =>
       doDateRangesOverlap(e.startDate, e.endDate, summerStart, summerEnd)
     );
-
-    // Get all active sessions in the family's city for counting available options
-    const allActiveSessions = await ctx.db
-      .query("sessions")
-      .withIndex("by_city_and_status", (q) =>
-        q.eq("cityId", family.primaryCityId).eq("status", "active")
-      )
-      .collect();
-
-    // Filter to sessions that overlap summer and have spots available
-    const availableSummerSessions = allActiveSessions.filter((s) => {
-      const hasSpots = s.capacity > s.enrolledCount;
-      const overlapsSummer = doDateRangesOverlap(
-        s.startDate,
-        s.endDate,
-        summerStart,
-        summerEnd
-      );
-      return hasSpots && overlapsSummer;
-    });
-
-    // Pre-compute child ages for efficiency
-    const childAges = new Map<string, number>();
-    for (const child of children) {
-      childAges.set(child._id, calculateAge(child.birthdate));
-    }
-
-    // Build coverage for each week
-    return weeks.map((week) => {
+    // Build coverage for each week (session counts loaded separately for speed)
+    const result = weeks.map((week) => {
       const childCoverage: ChildWeekCoverage[] = children.map((child) => {
         // Check if this week is within the child's summer range
         const childRange = childSummerRanges.get(child._id);
@@ -220,7 +188,6 @@ export const getSummerCoverage = query({
             childName: child.firstName,
             status: "school" as CoverageStatus,
             coveredDays: 0,
-            availableSessionCount: undefined,
             registrations: [],
             events: [],
           };
@@ -243,7 +210,7 @@ export const getSummerCoverage = query({
             if (overlappingDays === 0) return null;
 
             // Use denormalized campName if available, otherwise look up
-            const campName = session.campName ?? campMap.get(session.campId)?.name ?? "Unknown Camp";
+            const campName = resolveCampName(session, campMap);
             const org = orgMap.get(session.organizationId);
             const orgLogoUrl = orgLogoUrls.get(session.organizationId) ?? null;
             return {
@@ -311,39 +278,11 @@ export const getSummerCoverage = query({
           status = "gap";
         }
 
-        // Count available sessions for gaps
-        let availableSessionCount: number | undefined;
-        if (status === "gap" || status === "partial" || status === "tentative") {
-          const childAge = childAges.get(child._id) ?? 0;
-          const childGrade = child.currentGrade;
-
-          availableSessionCount = availableSummerSessions.filter((s) => {
-            // Check if session overlaps this week
-            const overlaps = doDateRangesOverlap(
-              s.startDate,
-              s.endDate,
-              week.startDate,
-              week.endDate
-            );
-            if (!overlaps) return false;
-
-            // Check age/grade eligibility
-            const ageOk = isAgeInRange(childAge, s.ageRequirements);
-            const gradeOk =
-              childGrade === undefined ||
-              childGrade === null ||
-              isGradeInRange(childGrade, s.ageRequirements);
-
-            return ageOk && gradeOk;
-          }).length;
-        }
-
         return {
           childId: child._id,
           childName: child.firstName,
           status,
           coveredDays,
-          availableSessionCount,
           registrations: childRegistrations,
           events: childEvents,
         };
@@ -358,6 +297,7 @@ export const getSummerCoverage = query({
         ),
       };
     });
+    return result;
   },
 });
 
@@ -436,14 +376,16 @@ export const getWeekDetail = query({
     const allOrgs = allOrgsRaw.filter((o): o is Doc<"organizations"> => o !== null);
     const orgMap = new Map(allOrgs.map((o) => [o._id, o]));
 
-    // Resolve organization logo URLs
+    // Resolve organization logo URLs in parallel
     const orgLogoUrls = new Map<string, string | null>();
-    for (const org of allOrgs) {
-      if (org.logoStorageId) {
-        const url = await ctx.storage.getUrl(org.logoStorageId);
-        orgLogoUrls.set(org._id, url);
-      }
-    }
+    await Promise.all(
+      allOrgs
+        .filter((org) => org.logoStorageId)
+        .map(async (org) => {
+          const url = await ctx.storage.getUrl(org.logoStorageId!);
+          orgLogoUrls.set(org._id, url);
+        })
+    );
 
     // Get family events
     const familyEvents = await ctx.db
@@ -500,7 +442,7 @@ export const getWeekDetail = query({
                 extendedCareDetails: session.extendedCareDetails,
               },
               camp: {
-                name: session.campName ?? camp?.name ?? "Unknown Camp",
+                name: resolveCampName(session, campMap),
                 categories: session.campCategories ?? camp?.categories ?? [],
               },
               location: session.locationName || location
@@ -652,7 +594,7 @@ export const getWeekDetail = query({
               // Use denormalized fields when available
               return {
                 sessionId: s._id,
-                campName: s.campName ?? availCampMap.get(s.campId)?.name ?? "Unknown Camp",
+                campName: resolveCampName(s, availCampMap),
                 organizationName: s.organizationName ?? availOrgMap.get(s.organizationId)?.name ?? "Unknown",
                 startDate: s.startDate,
                 endDate: s.endDate,
@@ -858,7 +800,7 @@ export const searchSessionsByWeek = query({
         distanceFromHome,
         camp: {
           _id: s.campId,
-          name: s.campName ?? camp?.name ?? "Unknown Camp",
+          name: resolveCampName(s, campMap),
           categories: s.campCategories ?? camp?.categories ?? [],
         },
         location: {

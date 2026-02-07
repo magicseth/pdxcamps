@@ -1,4 +1,5 @@
 import { mutation } from "../_generated/server";
+import { internal } from "../_generated/api";
 import { v } from "convex/values";
 import { ageRangeValidator, timeValidator, sessionStatusValidator } from "../lib/validators";
 
@@ -202,6 +203,17 @@ export const updateSessionStatus = mutation({
     await ctx.db.patch(args.sessionId, {
       status: args.status,
     });
+
+    // Refresh planner availability when status changes affect availability
+    const wasAvailable = session.status === "active";
+    const nowAvailable = args.status === "active";
+    if (wasAvailable !== nowAvailable) {
+      const currentYear = new Date().getFullYear();
+      await ctx.scheduler.runAfter(0, internal.planner.aggregates.recomputeForCity, {
+        cityId: session.cityId,
+        year: currentYear,
+      });
+    }
 
     return args.sessionId;
   },

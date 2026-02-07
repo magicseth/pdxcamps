@@ -1,9 +1,12 @@
 import { mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { requireFamily } from "../lib/auth";
+import { enforceSavedCampLimit } from "../lib/paywall";
 
 /**
  * Add a custom camp (not in our database) for a child
+ *
+ * PAYWALL: Counts toward the free-tier saved camp limit alongside registrations.
  */
 export const addCustomCamp = mutation({
   args: {
@@ -34,6 +37,10 @@ export const addCustomCamp = mutation({
     if (!child || child.familyId !== family._id) {
       throw new Error("Child not found");
     }
+
+    // === PAYWALL CHECK ===
+    await enforceSavedCampLimit(ctx, family._id, "add_custom_camp");
+    // === END PAYWALL CHECK ===
 
     const customCampId = await ctx.db.insert("customCamps", {
       familyId: family._id,

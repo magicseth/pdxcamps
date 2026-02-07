@@ -57,18 +57,27 @@ export const getActiveSourcesForCheck = internalQuery({
  * Find sources where >50% of sessions have $0 price.
  */
 export const findSourcesWithHighZeroPriceRatio = internalQuery({
-  args: {},
+  args: {
+    cursor: v.optional(v.number()),
+    batchSize: v.optional(v.number()),
+  },
   handler: async (
-    ctx
-  ): Promise<
-    Array<{
+    ctx,
+    args
+  ): Promise<{
+    results: Array<{
       sourceId: Id<"scrapeSources">;
       sourceName: string;
       zeroPriceCount: number;
       totalCount: number;
       zeroPriceRatio: number;
-    }>
-  > => {
+    }>;
+    isDone: boolean;
+    nextCursor?: number;
+  }> => {
+    const batchSize = args.batchSize ?? 5;
+    const cursorIndex = args.cursor ?? 0;
+
     const results: Array<{
       sourceId: Id<"scrapeSources">;
       sourceName: string;
@@ -77,39 +86,43 @@ export const findSourcesWithHighZeroPriceRatio = internalQuery({
       zeroPriceRatio: number;
     }> = [];
 
-    // Get all active sources
+    // Get active sources in batches
     const sources = await ctx.db
       .query("scrapeSources")
       .withIndex("by_is_active", (q) => q.eq("isActive", true))
       .collect();
 
-    for (const source of sources) {
-      // Get all sessions for this source
-      const sessions = await ctx.db
-        .query("sessions")
-        .withIndex("by_source", (q) => q.eq("sourceId", source._id))
-        .collect();
+    const batch = sources.slice(cursorIndex, cursorIndex + batchSize);
 
-      if (sessions.length === 0) {
-        continue;
+    for (const source of batch) {
+      // Only count — don't load full session documents
+      let totalCount = 0;
+      let zeroPriceCount = 0;
+      for await (const session of ctx.db
+        .query("sessions")
+        .withIndex("by_source", (q) => q.eq("sourceId", source._id))) {
+        totalCount++;
+        if (session.price === 0) zeroPriceCount++;
       }
 
-      // Count zero-price sessions
-      const zeroPriceCount = sessions.filter((s) => s.price === 0).length;
-      const zeroPriceRatio = zeroPriceCount / sessions.length;
+      if (totalCount === 0) continue;
 
+      const zeroPriceRatio = zeroPriceCount / totalCount;
       if (zeroPriceRatio > ZERO_PRICE_THRESHOLD) {
         results.push({
           sourceId: source._id,
           sourceName: source.name,
           zeroPriceCount,
-          totalCount: sessions.length,
+          totalCount,
           zeroPriceRatio,
         });
       }
     }
 
-    return results;
+    const nextCursor = cursorIndex + batchSize;
+    const isDone = nextCursor >= sources.length;
+
+    return { results, isDone, nextCursor: isDone ? undefined : nextCursor };
   },
 });
 

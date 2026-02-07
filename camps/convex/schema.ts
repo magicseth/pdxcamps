@@ -1,27 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-
-// Shared validators
-const ageRangeValidator = v.object({
-  minAge: v.optional(v.number()),
-  maxAge: v.optional(v.number()),
-  minGrade: v.optional(v.number()), // K=0, 1st=1, Pre-K=-1
-  maxGrade: v.optional(v.number()),
-});
-
-const timeValidator = v.object({
-  hour: v.number(), // 0-23
-  minute: v.number(), // 0-59
-});
-
-const addressValidator = v.object({
-  street: v.string(),
-  city: v.string(),
-  state: v.string(),
-  zip: v.string(),
-  latitude: v.optional(v.number()),
-  longitude: v.optional(v.number()),
-});
+import { ageRangeValidator, timeValidator, addressValidator } from "./lib/validators";
 
 export default defineSchema({
   // ============ GEOGRAPHY ============
@@ -269,6 +248,20 @@ export default defineSchema({
     .index("by_location", ["locationId"])
     .index("by_source", ["sourceId"])
     .index("by_status", ["status"]),
+
+  // ============ PRE-COMPUTED AGGREGATES ============
+
+  // Pre-computed available session counts per week per age.
+  // One document per (city, year). Recomputed after scrapes and periodically.
+  // Makes planner grid load instantly instead of querying thousands of sessions.
+  weeklyAvailability: defineTable({
+    cityId: v.id("cities"),
+    year: v.number(),
+    // { [weekStart: string]: { [age: string]: number } }
+    // e.g. { "2025-06-02": { "5": 12, "6": 15, "7": 15, ... } }
+    counts: v.any(),
+    updatedAt: v.number(),
+  }).index("by_city_year", ["cityId", "year"]),
 
   // ============ FAMILY EVENTS (Planner) ============
 
@@ -642,6 +635,7 @@ export default defineSchema({
       successRate: v.number(),
       lastError: v.optional(v.string()),
       needsRegeneration: v.boolean(),
+      consecutiveZeroResults: v.optional(v.number()),
     }),
 
     scrapeFrequencyHours: v.number(),
@@ -1014,7 +1008,11 @@ export default defineSchema({
       v.literal("scraper_degraded"),
       v.literal("high_change_volume"),
       v.literal("scraper_needs_regeneration"),
-      v.literal("new_sources_pending")
+      v.literal("new_sources_pending"),
+      v.literal("zero_results"),
+      v.literal("rate_limited"),
+      v.literal("source_recovered"),
+      v.literal("cross_source_duplicates")
     ),
     message: v.string(),
     severity: v.union(

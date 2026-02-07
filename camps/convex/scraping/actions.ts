@@ -66,13 +66,13 @@ export const executeScrape = action({
     }
 
     // 2. Create a job record
-    const jobId = await ctx.runMutation(api.scraping.mutations.createScrapeJob, {
+    const jobId = await ctx.runMutation(api.scraping.jobs.createScrapeJob, {
       sourceId: args.sourceId,
       triggeredBy: args.triggeredBy,
     });
 
     // 3. Start the job
-    await ctx.runMutation(api.scraping.mutations.startScrapeJob, {
+    await ctx.runMutation(api.scraping.jobs.startScrapeJob, {
       jobId,
     });
 
@@ -100,7 +100,7 @@ export const executeScrape = action({
 
       // 5. Store raw data
       const rawJson = JSON.stringify(rawDataAccumulator);
-      await ctx.runMutation(api.scraping.mutations.storeRawData, {
+      await ctx.runMutation(api.scraping.data.storeRawData, {
         jobId,
         rawJson,
       });
@@ -128,7 +128,7 @@ export const executeScrape = action({
         error instanceof Error ? error.message : "Unknown error";
 
       // Mark job as failed
-      await ctx.runMutation(api.scraping.mutations.failScrapeJob, {
+      await ctx.runMutation(api.scraping.jobs.failScrapeJob, {
         jobId,
         errorMessage,
       });
@@ -360,7 +360,7 @@ export const processScrapedData = action({
 
                 if (changes.length > 0) {
                   for (const change of changes) {
-                    await ctx.runMutation(api.scraping.mutations.recordChange, {
+                    await ctx.runMutation(api.scraping.data.recordChange, {
                       jobId: args.jobId,
                       sessionId: existingSession._id,
                       changeType: change.type,
@@ -373,7 +373,7 @@ export const processScrapedData = action({
               } else {
                 sessionsCreated++;
 
-                await ctx.runMutation(api.scraping.mutations.recordChange, {
+                await ctx.runMutation(api.scraping.data.recordChange, {
                   jobId: args.jobId,
                   sessionId: undefined,
                   changeType: "session_added",
@@ -420,7 +420,7 @@ export const processScrapedData = action({
     }
 
     // 6. Update job completion stats
-    await ctx.runMutation(api.scraping.mutations.completeScrapeJob, {
+    await ctx.runMutation(api.scraping.jobs.completeScrapeJob, {
       jobId: args.jobId,
       sessionsFound,
       sessionsCreated,
@@ -553,12 +553,12 @@ export const internalExecuteScrape = internalAction({
       };
     }
 
-    const jobId = await ctx.runMutation(api.scraping.mutations.createScrapeJob, {
+    const jobId = await ctx.runMutation(api.scraping.jobs.createScrapeJob, {
       sourceId: args.sourceId,
       triggeredBy: args.triggeredBy,
     });
 
-    await ctx.runMutation(api.scraping.mutations.startScrapeJob, { jobId });
+    await ctx.runMutation(api.scraping.jobs.startScrapeJob, { jobId });
 
     const config = source.scraperConfig;
     if (!config) {
@@ -588,7 +588,7 @@ export const internalExecuteScrape = internalAction({
       }
 
       const rawJson = JSON.stringify(rawDataAccumulator);
-      await ctx.runMutation(api.scraping.mutations.storeRawData, { jobId, rawJson });
+      await ctx.runMutation(api.scraping.data.storeRawData, { jobId, rawJson });
 
       await ctx.runMutation(internal.scraping.internal.updateScraperHealth, {
         sourceId: args.sourceId,
@@ -609,7 +609,7 @@ export const internalExecuteScrape = internalAction({
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
 
-      await ctx.runMutation(api.scraping.mutations.failScrapeJob, { jobId, errorMessage });
+      await ctx.runMutation(api.scraping.jobs.failScrapeJob, { jobId, errorMessage });
       await ctx.runMutation(internal.scraping.internal.scheduleNextScrape, {
         sourceId: args.sourceId,
       });
@@ -629,10 +629,41 @@ export const internalExecuteScrape = internalAction({
 /**
  * Run scheduled scrapes for all sources due
  * This action is meant to be called by a cron job
+ *
+ * Also checks for sources needing scraper regeneration (10E)
+ * and creates development requests for them if none exist.
  */
 export const runScheduledScrapes = internalAction({
   args: {},
   handler: async (ctx) => {
+    // 10E: Auto-trigger scraper regeneration for sources that need it
+    try {
+      const sourcesNeedingRegen = await ctx.runQuery(
+        internal.scraping.internal.getSourcesNeedingRegeneration,
+        {}
+      );
+
+      for (const source of sourcesNeedingRegen) {
+        try {
+          await ctx.runMutation(
+            internal.scraping.internal.createRegenerationRequest,
+            {
+              sourceId: source._id,
+              sourceName: source.name,
+              sourceUrl: source.url,
+              cityId: source.cityId,
+            }
+          );
+          console.log(`[Scheduler] Created regeneration request for "${source.name}"`);
+        } catch (error) {
+          // Ignore errors (e.g., if request already exists)
+          console.log(`[Scheduler] Skipped regeneration for "${source.name}": ${error instanceof Error ? error.message : String(error)}`);
+        }
+      }
+    } catch (error) {
+      console.error("[Scheduler] Error checking regeneration needs:", error);
+    }
+
     const dueForScrape = await ctx.runQuery(
       api.scraping.queries.getSourcesDueForScrape,
       {}
@@ -679,3 +710,7 @@ export const runScheduledScrapes = internalAction({
     };
   },
 });
+
+// ============================================
+// 10E: getSourcesNeedingRegeneration and createRegenerationRequest
+// moved to convex/scraping/internal.ts (Node.js files can only export actions)

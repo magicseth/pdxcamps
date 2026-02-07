@@ -6,85 +6,23 @@ import { useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
 import { CoverageStatus } from './CoverageIndicator';
+import { DEFAULT_CHILD_COLORS } from '../../lib/constants';
+import type { ChildCoverage, WeekData, RegistrationClickData, EventClickData } from '../../lib/types';
 
-interface ChildCoverage {
-  childId: Id<'children'>;
-  childName: string;
-  status: CoverageStatus;
-  coveredDays: number;
-  availableSessionCount?: number;
-  registrations: {
-    registrationId: string;
-    sessionId: string;
-    campName: string;
-    organizationName?: string;
-    organizationLogoUrl?: string | null;
-    status: string;
-    registrationUrl?: string | null;
-  }[];
-  events: {
-    eventId: Id<'familyEvents'>;
-    title: string;
-  }[];
-}
-
-interface WeekData {
-  week: {
-    weekNumber: number;
-    startDate: string;
-    endDate: string;
-    monthName: string;
-    label: string;
-  };
-  childCoverage: ChildCoverage[];
-  hasGap: boolean;
-  hasFamilyEvent: boolean;
-}
-
-export interface RegistrationClickData {
-  registrationId: string;
-  sessionId: string;
-  childId: Id<'children'>;
-  childName: string;
-  campName: string;
-  organizationName?: string;
-  organizationLogoUrl?: string | null;
-  status: string;
-  weekLabel: string;
-  registrationUrl?: string | null;
-}
-
-export interface EventClickData {
-  eventId: Id<'familyEvents'>;
-  title: string;
-  childId: Id<'children'>;
-  childName: string;
-  weekLabel: string;
-}
-
-// Default child colors matching app vibe
-const DEFAULT_CHILD_COLORS = [
-  '#5B9BD5', // Sky
-  '#7CB887', // Sage
-  '#E8927C', // Coral
-  '#9B8DC5', // Lavender
-  '#5DADE2', // Ocean
-  '#D4A574', // Sand
-  '#82C4C3', // Seafoam
-  '#C9A0DC', // Orchid
-];
+export type { RegistrationClickData, EventClickData };
 
 interface PlannerGridProps {
   coverage: WeekData[];
   children: { _id: Id<'children'>; firstName: string; birthdate?: string; currentGrade?: number; color?: string; shareToken?: string }[];
   citySlug?: string;
+  sessionCounts?: Record<string, Record<string, number>> | null; // { weekStart: { childId: count } }
   onGapClick?: (weekStart: string, weekEnd: string, childId: Id<'children'>) => void;
   onRegistrationClick?: (data: RegistrationClickData) => void;
   onEventClick?: (data: EventClickData) => void;
   onAddChild?: () => void;
 }
 
-export function PlannerGrid({ coverage, children, citySlug, onGapClick, onRegistrationClick, onEventClick, onAddChild }: PlannerGridProps) {
+export function PlannerGrid({ coverage, children, citySlug, sessionCounts, onGapClick, onRegistrationClick, onEventClick, onAddChild }: PlannerGridProps) {
   const generateShareToken = useMutation(api.children.mutations.generateShareToken);
   const [generatingToken, setGeneratingToken] = useState<Id<'children'> | null>(null);
   const [copiedChildId, setCopiedChildId] = useState<Id<'children'> | null>(null);
@@ -269,6 +207,8 @@ export function PlannerGrid({ coverage, children, citySlug, onGapClick, onRegist
                               week={week}
                               childId={child._id}
                               childName={child.firstName}
+                              childGrade={child.currentGrade}
+                              availableSessionCount={sessionCounts?.[week.week.startDate]?.[child._id]}
                               isCurrentWeek={current}
                               isPastWeek={past}
                               citySlug={citySlug}
@@ -420,6 +360,8 @@ export function PlannerGrid({ coverage, children, citySlug, onGapClick, onRegist
                       week={week}
                       childId={child._id}
                       childName={child.firstName}
+                      childGrade={child.currentGrade}
+                      availableSessionCount={sessionCounts?.[week.week.startDate]?.[child._id]}
                       isCurrentWeek={current}
                       isPastWeek={past}
                       isMonthStart={monthStartDates.has(week.week.startDate)}
@@ -473,6 +415,8 @@ interface CoverageCellProps {
   week: WeekData;
   childId: Id<'children'>;
   childName: string;
+  childGrade?: number;
+  availableSessionCount?: number;
   isCurrentWeek: boolean;
   isPastWeek: boolean;
   isMonthStart?: boolean;
@@ -482,14 +426,14 @@ interface CoverageCellProps {
   onEventClick?: (data: EventClickData) => void;
 }
 
-function CoverageCell({ data, week, childId, childName, isCurrentWeek, isPastWeek, isMonthStart, citySlug, onGapClick, onRegistrationClick, onEventClick }: CoverageCellProps) {
+function CoverageCell({ data, week, childId, childName, childGrade, availableSessionCount, isCurrentWeek, isPastWeek, isMonthStart, citySlug, onGapClick, onRegistrationClick, onEventClick }: CoverageCellProps) {
   const status = data?.status || 'gap';
   const hasEvent = data?.events && data.events.length > 0;
   const hasRegistration = data?.registrations && data.registrations.length > 0;
   const campName = data?.registrations?.[0]?.campName;
   const eventTitle = data?.events?.[0]?.title;
   const logoUrl = data?.registrations?.[0]?.organizationLogoUrl;
-  const availableCount = data?.availableSessionCount;
+  const availableCount = availableSessionCount;
 
   const tdClass = `border-b border-slate-100 dark:border-slate-700/50 p-0 ${
     isMonthStart ? 'border-l border-l-slate-300 dark:border-l-slate-600' : 'border-l border-l-slate-100 dark:border-l-slate-700/50'
@@ -583,7 +527,7 @@ function CoverageCell({ data, week, childId, childName, isCurrentWeek, isPastWee
     return (
       <td className={tdClass}>
         <Link
-          href={citySlug ? `/discover/${citySlug}?from=${week.week.startDate}&to=${week.week.endDate}` : `/planner/week/${week.week.startDate}`}
+          href={citySlug ? `/discover/${citySlug}?from=${week.week.startDate}&to=${week.week.endDate}&childId=${childId}${childGrade !== undefined ? `&grade=${childGrade}` : ''}` : `/planner/week/${week.week.startDate}`}
           className="block w-full h-full hover:bg-accent/20 dark:hover:bg-accent/30 transition-colors"
         >
           {cellContent}

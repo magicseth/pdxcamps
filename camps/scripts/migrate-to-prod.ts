@@ -233,7 +233,7 @@ async function migrateScrapeSources() {
       console.log(`  ⏭️  Source "${source.name}" already exists in prod`);
       idMap.scrapeSources.set(source._id, existingSources._id);
     } else {
-      const prodId = await prodClient.mutation(api.scraping.mutations.createScrapeSource, {
+      const prodId = await prodClient.mutation(api.scraping.sources.createScrapeSource, {
         organizationId: prodOrgId as Id<"organizations"> | undefined,
         cityId: prodCityId as Id<"cities">,
         name: source.name,

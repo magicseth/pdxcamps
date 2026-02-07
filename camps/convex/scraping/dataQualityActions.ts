@@ -104,10 +104,27 @@ export const runDataQualityChecks = internalAction({
       }
     }
 
-    // Check 4: Sources with high percentage of zero-price sessions
-    const zeroPriceIssues = await ctx.runQuery(
-      internal.scraping.dataQualityChecks.findSourcesWithHighZeroPriceRatio
-    );
+    // Check 4: Sources with high percentage of zero-price sessions (paginated)
+    let zeroPriceCursor: number | undefined = 0;
+    const zeroPriceIssues: Array<{
+      sourceId: Id<"scrapeSources">;
+      sourceName: string;
+      zeroPriceCount: number;
+      totalCount: number;
+      zeroPriceRatio: number;
+    }> = [];
+    while (zeroPriceCursor !== undefined) {
+      const page: {
+        results: typeof zeroPriceIssues;
+        isDone: boolean;
+        nextCursor?: number;
+      } = await ctx.runQuery(
+        internal.scraping.dataQualityChecks.findSourcesWithHighZeroPriceRatio,
+        { cursor: zeroPriceCursor }
+      );
+      zeroPriceIssues.push(...page.results);
+      zeroPriceCursor = page.nextCursor;
+    }
 
     for (const issue of zeroPriceIssues) {
       issues.push({

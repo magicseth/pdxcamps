@@ -64,7 +64,9 @@ export const applyCampCategories = internalMutation({
       );
     }
 
-    console.log(`[ApplyCategories] Updated ${updatedCamps}, skipped ${skippedMissing} missing`);
+    if (skippedMissing > 0) {
+      console.log(`[ApplyCategories] ${skippedMissing} camps not found (deleted?)`);
+    }
     return { updatedCamps, updatedSessions, citiesRecomputed: cityIdsToRecompute.size };
   },
 });

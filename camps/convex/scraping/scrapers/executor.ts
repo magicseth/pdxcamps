@@ -95,18 +95,18 @@ export const executeScraper = action({
       }
 
       // Create and start scrape job record
-      const jobId = await ctx.runMutation(api.scraping.mutations.createScrapeJob, {
+      const jobId = await ctx.runMutation(api.scraping.jobs.createScrapeJob, {
         sourceId: args.sourceId,
         triggeredBy: "executor",
       });
 
       // Start the job
-      await ctx.runMutation(api.scraping.mutations.startScrapeJob, {
+      await ctx.runMutation(api.scraping.jobs.startScrapeJob, {
         jobId,
       });
 
       // Store raw data
-      await ctx.runMutation(api.scraping.mutations.storeRawData, {
+      await ctx.runMutation(api.scraping.data.storeRawData, {
         jobId,
         rawJson: JSON.stringify({
           result,
@@ -116,7 +116,7 @@ export const executeScraper = action({
       });
 
       // Mark job complete
-      await ctx.runMutation(api.scraping.mutations.completeScrapeJob, {
+      await ctx.runMutation(api.scraping.jobs.completeScrapeJob, {
         jobId,
         sessionsFound: result.sessions.length,
         sessionsCreated: 0, // Will be updated when sessions are imported
@@ -443,7 +443,7 @@ export const saveScraperCode = action({
     }
 
     // Save the code to the source
-    await ctx.runMutation(api.scraping.mutations.updateScraperCode, {
+    await ctx.runMutation(api.scraping.scraperConfig.updateScraperCode, {
       sourceId: args.sourceId,
       code: args.code,
     });
@@ -664,14 +664,14 @@ ${parsingNotes}
 
       // If sourceId provided, create job and store results
       if (args.sourceId) {
-        const jobId = await ctx.runMutation(api.scraping.mutations.createScrapeJob, {
+        const jobId = await ctx.runMutation(api.scraping.jobs.createScrapeJob, {
           sourceId: args.sourceId,
           triggeredBy: "stagehand",
         });
 
-        await ctx.runMutation(api.scraping.mutations.startScrapeJob, { jobId });
+        await ctx.runMutation(api.scraping.jobs.startScrapeJob, { jobId });
 
-        await ctx.runMutation(api.scraping.mutations.storeRawData, {
+        await ctx.runMutation(api.scraping.data.storeRawData, {
           jobId,
           rawJson: JSON.stringify({
             result,
@@ -681,7 +681,7 @@ ${parsingNotes}
           }),
         });
 
-        await ctx.runMutation(api.scraping.mutations.completeScrapeJob, {
+        await ctx.runMutation(api.scraping.jobs.completeScrapeJob, {
           jobId,
           sessionsFound: sessions.length,
           sessionsCreated: 0,
@@ -813,7 +813,7 @@ export const scrapeSource = action({
 
     // Clear rescan flag if set
     if (source.needsRescan) {
-      await ctx.runMutation(api.scraping.mutations.clearRescanFlag, {
+      await ctx.runMutation(api.scraping.jobs.clearRescanFlag, {
         sourceId: args.sourceId,
       });
     }
@@ -908,7 +908,7 @@ export const executeScraperForJob = internalAction({
     }
 
     // Store raw data
-    await ctx.runMutation(api.scraping.mutations.storeRawData, {
+    await ctx.runMutation(api.scraping.data.storeRawData, {
       jobId: args.jobId,
       rawJson: JSON.stringify({
         result,
