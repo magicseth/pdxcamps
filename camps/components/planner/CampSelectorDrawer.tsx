@@ -5,7 +5,7 @@ import { useQuery } from 'convex/react';
 import Link from 'next/link';
 import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
-import { CATEGORIES } from '../../lib/constants';
+import { CATEGORIES, DEFAULT_CHILD_COLORS } from '../../lib/constants';
 import { SessionCard } from '../discover/SessionCard';
 
 interface CampSelectorDrawerProps {
@@ -15,6 +15,7 @@ interface CampSelectorDrawerProps {
   weekEnd: string;
   childId: Id<'children'>;
   childName: string;
+  childColor?: string;
   childAge?: number;
   childGrade?: number;
   cityId: Id<'cities'>;
@@ -38,10 +39,12 @@ export function CampSelectorDrawer({
   weekEnd,
   childId,
   childName,
+  childColor,
   childAge,
   childGrade,
   cityId,
 }: CampSelectorDrawerProps) {
+  const avatarColor = childColor || DEFAULT_CHILD_COLORS[0];
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedOrg, setSelectedOrg] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
@@ -160,13 +163,21 @@ export function CampSelectorDrawer({
         {/* Header */}
         <div className="flex-shrink-0 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center justify-between p-4">
-            <div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                Find a Camp
-              </h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                {formatDateRange(weekStart, weekEnd)} for {childName}
-              </p>
+            <div className="flex items-center gap-3">
+              <span
+                className="w-10 h-10 rounded-full flex items-center justify-center text-white text-lg font-bold flex-shrink-0"
+                style={{ backgroundColor: avatarColor }}
+              >
+                {childName[0]}
+              </span>
+              <div>
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                  Find a Camp for {childName}
+                </h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  {formatDateRange(weekStart, weekEnd)}
+                </p>
+              </div>
             </div>
             <button
               onClick={onClose}

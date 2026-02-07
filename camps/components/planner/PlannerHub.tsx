@@ -33,7 +33,7 @@ export function PlannerHub({
 }: {
   user: User | null;
   onSignOut: () => void;
-  children: { _id: Id<'children'>; firstName: string; lastName?: string; birthdate?: string; currentGrade?: number; shareToken?: string }[];
+  children: { _id: Id<'children'>; firstName: string; lastName?: string; birthdate?: string; currentGrade?: number; color?: string; shareToken?: string }[];
   cities: { _id: Id<'cities'>; slug: string; name: string }[];
 }) {
   const market = useMarket();
@@ -61,6 +61,7 @@ export function PlannerHub({
     weekEnd: string;
     childId: Id<'children'>;
     childName: string;
+    childColor?: string;
     childAge?: number;
     childGrade?: number;
   } | null>(null);
@@ -294,6 +295,7 @@ export function PlannerHub({
       weekEnd,
       childId,
       childName: child.firstName,
+      childColor: child.color,
       childAge: age,
       childGrade: child.currentGrade,
     });
@@ -720,6 +722,7 @@ export function PlannerHub({
           weekEnd={selectedGap.weekEnd}
           childId={selectedGap.childId}
           childName={selectedGap.childName}
+          childColor={selectedGap.childColor}
           childAge={selectedGap.childAge}
           childGrade={selectedGap.childGrade}
           cityId={defaultCity._id}
