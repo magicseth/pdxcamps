@@ -44,6 +44,7 @@ import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
 import { CATEGORIES, DEFAULT_CHILD_COLORS } from '../../lib/constants';
 import { SessionCard } from '../discover/SessionCard';
+import { OrgFilterChip } from '../shared/OrgFilterChip';
 
 interface CampSelectorDrawerProps {
   isOpen: boolean;
@@ -137,7 +138,7 @@ export function CampSelectorDrawer({
         orgs.set(session.organizationId, {
           id: session.organizationId,
           name: session.organizationName || 'Unknown',
-          logoUrl: undefined,
+          logoUrl: (session as any).organizationLogoUrl,
           count: 0,
         });
       }
@@ -257,21 +258,19 @@ export function CampSelectorDrawer({
           {organizations.length > 0 && (
             <div className="px-4 pb-3 flex flex-wrap gap-1.5">
               {organizations.slice(0, 8).map(org => (
-                <button
+                <OrgFilterChip
                   key={org.id}
+                  id={org.id}
+                  name={org.name}
+                  logoUrl={org.logoUrl}
+                  count={org.count}
+                  isSelected={selectedOrg === org.id}
                   onClick={() => {
                     setSelectedOrg(selectedOrg === org.id ? null : org.id);
                     setSelectedLocation(null);
                   }}
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                    selectedOrg === org.id
-                      ? 'bg-primary text-white'
-                      : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-                  }`}
-                >
-                  <span className="truncate max-w-[100px]">{org.name}</span>
-                  <AnimatedCount count={org.count} />
-                </button>
+                  size="sm"
+                />
               ))}
             </div>
           )}

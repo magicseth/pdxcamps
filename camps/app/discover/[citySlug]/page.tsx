@@ -7,6 +7,7 @@ import { useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Id } from '../../../convex/_generated/dataModel';
 import { OrgLogo } from '../../../components/shared/OrgLogo';
+import { OrgFilterChip } from '../../../components/shared/OrgFilterChip';
 import { BottomNav } from '../../../components/shared/BottomNav';
 import { MapWrapper, MapSession } from '../../../components/map';
 import { AddChildModal } from '../../../components/planner/AddChildModal';
@@ -682,28 +683,15 @@ export default function DiscoverPage() {
                   }).map((org) => {
                     const sessionCount = sessionCountsByOrg.get(org._id) || 0;
                     return (
-                      <button
+                      <OrgFilterChip
                         key={org._id}
+                        id={org._id}
+                        name={org.name}
+                        logoUrl={org.logoUrl}
+                        count={sessionCount}
+                        isSelected={filters.selectedOrganizations.includes(org._id)}
                         onClick={() => filters.handleOrganizationToggle(org._id)}
-                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                          filters.selectedOrganizations.includes(org._id)
-                            ? 'bg-primary text-white'
-                            : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
-                        }`}
-                      >
-                        <OrgLogo url={org.logoUrl} name={org.name} size="xs" />
-                        {org.name}
-                        <span className={`text-xs ${
-                          filters.selectedOrganizations.includes(org._id)
-                            ? 'text-white/70'
-                            : 'text-slate-400 dark:text-slate-500'
-                        }`}>
-                          {sessionCount}
-                        </span>
-                        {filters.selectedOrganizations.includes(org._id) && (
-                          <span className="ml-1">✕</span>
-                        )}
-                      </button>
+                      />
                     );
                   })}
                 </div>

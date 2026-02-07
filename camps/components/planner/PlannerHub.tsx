@@ -17,6 +17,7 @@ import { RequestCampModal } from '../../components/discover/RequestCampModal';
 import { BottomNav } from '../shared/BottomNav';
 import { SharePlanModal } from './SharePlanModal';
 import { AppHeader } from '../shared/AppHeader';
+import { OrgFilterChip } from '../shared/OrgFilterChip';
 import { useMarket } from '../../hooks/useMarket';
 import { QueryErrorBoundary } from '../shared/QueryErrorBoundary';
 import { PlusIcon, SearchIcon } from '../shared/icons';
@@ -428,33 +429,16 @@ export function PlannerHub({
           {availableOrgs.length > 0 && (
             <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide">
               {availableOrgs.map(org => (
-                <button
+                <OrgFilterChip
                   key={org.id}
+                  id={org.id}
+                  name={org.name}
+                  logoUrl={org.logoUrl}
+                  isSelected={selectedOrgs.includes(org.id)}
                   onClick={() => toggleOrg(org.id)}
-                  title={org.name}
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0 transition-colors whitespace-nowrap ${
-                    selectedOrgs.includes(org.id)
-                      ? 'bg-primary text-white ring-1 ring-primary'
-                      : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-                  }`}
-                >
-                  {org.logoUrl ? (
-                    <img
-                      src={org.logoUrl}
-                      alt=""
-                      className={`w-4 h-4 rounded-full object-contain flex-shrink-0 ${
-                        selectedOrgs.includes(org.id) ? 'bg-white/90' : 'bg-white'
-                      }`}
-                    />
-                  ) : (
-                    <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold flex-shrink-0 ${
-                      selectedOrgs.includes(org.id) ? 'bg-white/20 text-white' : 'bg-slate-300 dark:bg-slate-500 text-white'
-                    }`}>
-                      {org.name[0]}
-                    </span>
-                  )}
-                  <span className="max-w-[120px] truncate">{org.name}</span>
-                </button>
+                  showCount={false}
+                  size="sm"
+                />
               ))}
               {selectedOrgs.length > 0 && (
                 <button

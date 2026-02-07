@@ -102,6 +102,30 @@ export const findExistingSessions = internalQuery({
 });
 
 /**
+ * Find an existing camp by organization and normalized name.
+ * Used to avoid creating duplicate camp records for grade/age variants.
+ */
+export const findExistingCamp = internalQuery({
+  args: {
+    organizationId: v.id("organizations"),
+    name: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const camps = await ctx.db
+      .query("camps")
+      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .collect();
+
+    for (const camp of camps) {
+      if (similarity(camp.name, args.name) > 0.8) {
+        return camp;
+      }
+    }
+    return null;
+  },
+});
+
+/**
  * Update an existing session with new scraped data
  */
 export const updateExistingSession = internalMutation({
@@ -175,7 +199,7 @@ export const updateExistingSession = internalMutation({
  * Normalize a session name by stripping grade/age suffixes
  * e.g. "Pottery Studio (Grades 3-5)" → "pottery studio"
  */
-function normalizeName(name: string): string {
+export function normalizeName(name: string): string {
   return (name || "")
     .toLowerCase()
     .replace(/\s*\(grades?\s*[\d\-kK]+\s*(?:-\s*[\d\-kK]+)?\)\s*$/i, "")

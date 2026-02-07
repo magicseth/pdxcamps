@@ -22,6 +22,7 @@ import type * as cities_actions from "../cities/actions.js";
 import type * as cities_mutations from "../cities/mutations.js";
 import type * as cities_queries from "../cities/queries.js";
 import type * as cleanup from "../cleanup.js";
+import type * as cleanup_campDedup from "../cleanup/campDedup.js";
 import type * as cleanup_categorize from "../cleanup/categorize.js";
 import type * as cleanup_locations from "../cleanup/locations.js";
 import type * as cleanup_organizations from "../cleanup/organizations.js";
@@ -139,6 +140,7 @@ declare const fullApi: ApiFromModules<{
   "cities/mutations": typeof cities_mutations;
   "cities/queries": typeof cities_queries;
   cleanup: typeof cleanup;
+  "cleanup/campDedup": typeof cleanup_campDedup;
   "cleanup/categorize": typeof cleanup_categorize;
   "cleanup/locations": typeof cleanup_locations;
   "cleanup/organizations": typeof cleanup_organizations;

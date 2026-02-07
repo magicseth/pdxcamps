@@ -432,23 +432,46 @@ export const importFromJob = action({
       for (const [themeKey, sessions] of sessionsByTheme) {
         const firstSession = sessions[0];
 
-        // Create camp
-        const campId = await ctx.runMutation(
-          api.scraping.importMutations.createCamp,
-          {
-            organizationId,
-            name: firstSession.name,
-            description: firstSession.description || `${firstSession.name} camp`,
-            categories: firstSession.category ? [firstSession.category] : ["General"],
-            minAge: firstSession.minAge,
-            maxAge: firstSession.maxAge,
-            minGrade: firstSession.minGrade,
-            maxGrade: firstSession.maxGrade,
-            website: firstSession.registrationUrl,
-            imageUrls: firstSession.imageUrls,
-          }
+        // Strip grade/age suffixes for the camp-level name
+        // e.g. "Archery Rangers (Grades 3-5)" → "Archery Rangers"
+        const campBaseName = firstSession.name
+          .replace(/\s*\(grades?\s*[\d\-kK]+\s*(?:-\s*[\d\-kK]+)?\)\s*$/i, "")
+          .replace(/\s*\(ages?\s*\d+\s*(?:-\s*\d+)?\)\s*$/i, "")
+          .trim();
+
+        // Check if this camp already exists for this org
+        const existingCamp = await ctx.runQuery(
+          internal.scraping.deduplication.findExistingCamp,
+          { organizationId, name: campBaseName }
         );
-        campsCreated++;
+
+        let campId: Id<"camps">;
+        if (existingCamp) {
+          campId = existingCamp._id;
+        } else {
+          // Compute widest age/grade range across all sessions in this theme group
+          const allMinAges = sessions.map(s => s.minAge).filter((v): v is number => v !== undefined);
+          const allMaxAges = sessions.map(s => s.maxAge).filter((v): v is number => v !== undefined);
+          const allMinGrades = sessions.map(s => s.minGrade).filter((v): v is number => v !== undefined);
+          const allMaxGrades = sessions.map(s => s.maxGrade).filter((v): v is number => v !== undefined);
+
+          campId = await ctx.runMutation(
+            api.scraping.importMutations.createCamp,
+            {
+              organizationId,
+              name: campBaseName,
+              description: firstSession.description || `${campBaseName} camp`,
+              categories: firstSession.category ? [firstSession.category] : ["General"],
+              minAge: allMinAges.length > 0 ? Math.min(...allMinAges) : undefined,
+              maxAge: allMaxAges.length > 0 ? Math.max(...allMaxAges) : undefined,
+              minGrade: allMinGrades.length > 0 ? Math.min(...allMinGrades) : undefined,
+              maxGrade: allMaxGrades.length > 0 ? Math.max(...allMaxGrades) : undefined,
+              website: firstSession.registrationUrl,
+              imageUrls: firstSession.imageUrls,
+            }
+          );
+          campsCreated++;
+        }
 
         // Create sessions for this camp
         // Note: sessions are already enriched and expanded from pre-processing

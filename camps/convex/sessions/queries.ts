@@ -101,35 +101,33 @@ export const searchSessions = query({
     const locations = await Promise.all(locationIds.map((id) => ctx.db.get(id)));
     const locationMap = new Map(locations.filter(Boolean).map((loc) => [loc!._id, loc!]));
 
-    // Fetch organizations for sessions missing organizationName (backfill for older sessions)
-    const sessionsNeedingOrgName = sessions.filter((s) => !s.organizationName);
-    const orgIdsToFetch = [...new Set(sessionsNeedingOrgName.map((s) => s.organizationId))];
-    const orgs = await Promise.all(orgIdsToFetch.map((id) => ctx.db.get(id)));
+    // Fetch all organizations for name backfill and logo URLs
+    const allOrgIds = [...new Set(sessions.map((s) => s.organizationId))];
+    const orgs = await Promise.all(allOrgIds.map((id) => ctx.db.get(id)));
     const orgMap = new Map(orgs.filter(Boolean).map((org) => [org!._id, org!]));
 
     // Calculate distance if home coordinates provided
     const hasHomeCoords = args.homeLatitude !== undefined && args.homeLongitude !== undefined;
 
-    // Add location coordinates and distance to each session
+    // Add location coordinates, distance, and org logo to each session
     type SessionWithLocationAndDistance = typeof sessions[number] & {
       distanceFromHome?: number;
       locationLatitude?: number;
       locationLongitude?: number;
+      organizationLogoUrl?: string;
     };
 
     let enrichedSessions: SessionWithLocationAndDistance[] = sessions.map((session) => {
       const location = locationMap.get(session.locationId);
+      const org = orgMap.get(session.organizationId);
 
       // Backfill organizationName if missing
-      let organizationName = session.organizationName;
-      if (!organizationName) {
-        const org = orgMap.get(session.organizationId);
-        organizationName = org?.name;
-      }
+      const organizationName = session.organizationName || org?.name;
 
       const result: SessionWithLocationAndDistance = {
         ...session,
         organizationName,
+        organizationLogoUrl: org?.logoUrl,
         locationLatitude: location?.latitude,
         locationLongitude: location?.longitude,
       };
