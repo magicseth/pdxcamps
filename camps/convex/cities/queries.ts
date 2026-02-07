@@ -114,6 +114,17 @@ export const getCityBySlugInternal = internalQuery({
 });
 
 /**
+ * Internal: Get any city that has an icon stored (for fallback)
+ */
+export const getAnyCityWithIcon = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const cities = await ctx.db.query("cities").collect();
+    return cities.find(c => c.iconStorageId) || null;
+  },
+});
+
+/**
  * Internal: Get city by domain for HTTP route
  */
 export const getCityByDomainInternal = internalQuery({

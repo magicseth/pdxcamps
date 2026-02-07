@@ -31,23 +31,34 @@ http.route({
       slug: citySlug,
     });
 
-    if (!city || !city.iconStorageId) {
-      // Return 404 - frontend should fall back to default icon
-      return new Response('Icon not found', { status: 404 });
+    // Try the requested city's icon from storage
+    if (city?.iconStorageId) {
+      const blob = await ctx.storage.get(city.iconStorageId);
+      if (blob) {
+        return new Response(blob, {
+          headers: {
+            'Content-Type': 'image/png',
+            'Cache-Control': 'public, max-age=86400',
+          },
+        });
+      }
     }
 
-    // Get the blob from storage
-    const blob = await ctx.storage.get(city.iconStorageId);
-    if (!blob) {
-      return new Response('Icon file not found', { status: 404 });
+    // Fall back: try to find any city with an icon to serve as default
+    const defaultCity = await ctx.runQuery(internal.cities.queries.getAnyCityWithIcon);
+    if (defaultCity?.iconStorageId) {
+      const blob = await ctx.storage.get(defaultCity.iconStorageId);
+      if (blob) {
+        return new Response(blob, {
+          headers: {
+            'Content-Type': 'image/png',
+            'Cache-Control': 'public, max-age=3600',
+          },
+        });
+      }
     }
 
-    return new Response(blob, {
-      headers: {
-        'Content-Type': 'image/png',
-        'Cache-Control': 'public, max-age=86400', // Cache for 24 hours
-      },
-    });
+    return new Response('Icon not found', { status: 404 });
   }),
 });
 

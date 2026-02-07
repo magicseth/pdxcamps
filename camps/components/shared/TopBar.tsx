@@ -14,10 +14,8 @@ interface TopBarProps {
 export function TopBar({ title }: TopBarProps) {
   const market = useMarket();
 
-  // Use Convex storage if available, otherwise static path
-  const iconUrl = market.iconStorageId
-    ? `${CONVEX_SITE_URL}/city-icon/${market.slug}`
-    : `${market.iconPath}/apple-icon.png`;
+  // Always serve from Convex HTTP action for dynamic city support
+  const iconUrl = `${CONVEX_SITE_URL}/city-icon/${market.slug}`;
 
   return (
     <header className="sticky top-0 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3 z-20">
@@ -30,7 +28,7 @@ export function TopBar({ title }: TopBarProps) {
             height={192}
             className="h-8 w-8"
             priority
-            unoptimized={!!market.iconStorageId}
+            unoptimized
           />
           <span className="font-bold text-lg text-slate-900 dark:text-white">{market.tagline}</span>
         </Link>

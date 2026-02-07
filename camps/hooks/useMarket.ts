@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '../convex/_generated/api';
-import { getMarketFromHostname, getMarketBySlug, type Market, DEFAULT_MARKET } from '../lib/markets';
+import { getMarketFromHostname, type Market, DEFAULT_MARKET } from '../lib/markets';
 
 // Re-export Market type for convenience
 export type { Market };

@@ -21,15 +21,10 @@ const geistMono = Geist_Mono({
 const CONVEX_SITE_URL = process.env.NEXT_PUBLIC_CONVEX_SITE_URL || 'https://deafening-schnauzer-923.convex.site';
 
 /**
- * Get icon URL for a city - uses Convex storage if available, falls back to static
+ * Get icon URL for a city - always uses Convex HTTP action for dynamic serving
  */
-function getIconUrl(city: { slug: string; iconStorageId?: string }): string {
-  if (city.iconStorageId) {
-    // Serve from Convex HTTP action
-    return `${CONVEX_SITE_URL}/city-icon/${city.slug}`;
-  }
-  // Fallback to static icons (first part of slug, e.g., "san" from "san-francisco-bay-area")
-  return `/icons/${city.slug.split('-')[0]}/icon.png`;
+function getIconUrl(slug: string): string {
+  return `${CONVEX_SITE_URL}/city-icon/${slug}`;
 }
 
 /**
@@ -71,18 +66,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const host = headersList.get('host') || 'localhost';
   const market = await getMarketSSR(host);
 
-  // Use Convex storage URL if icon is stored there, otherwise static path
-  const iconUrl = market.iconStorageId
-    ? `${CONVEX_SITE_URL}/city-icon/${market.slug}`
-    : `${market.iconPath}/icon.png`;
-
-  const icon192Url = market.iconStorageId
-    ? `${CONVEX_SITE_URL}/city-icon/${market.slug}` // Same URL, browser will cache
-    : `${market.iconPath}/icon-192.png`;
-
-  const appleIconUrl = market.iconStorageId
-    ? `${CONVEX_SITE_URL}/city-icon/${market.slug}`
-    : `${market.iconPath}/apple-icon.png`;
+  // Always serve icons from Convex HTTP action for dynamic city support
+  const iconUrl = getIconUrl(market.slug);
 
   return {
     title: {
@@ -93,10 +78,10 @@ export async function generateMetadata(): Promise<Metadata> {
     icons: {
       icon: [
         { url: iconUrl, sizes: '32x32', type: 'image/png' },
-        { url: icon192Url, sizes: '192x192', type: 'image/png' },
+        { url: iconUrl, sizes: '192x192', type: 'image/png' },
       ],
       apple: [
-        { url: appleIconUrl, sizes: '180x180', type: 'image/png' },
+        { url: iconUrl, sizes: '180x180', type: 'image/png' },
       ],
     },
     openGraph: {
