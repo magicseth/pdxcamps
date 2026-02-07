@@ -162,7 +162,7 @@ function ClusterLayer({
     <>
       {clusters.map((cluster) => {
         const [longitude, latitude] = cluster.geometry.coordinates;
-        const { cluster: isCluster, point_count: pointCount } = cluster.properties;
+        const { cluster: isCluster, point_count: pointCount } = cluster.properties as { cluster: boolean; point_count?: number };
 
         if (isCluster) {
           return (
@@ -170,7 +170,7 @@ function ClusterLayer({
               key={`cluster-${cluster.id}`}
               latitude={latitude}
               longitude={longitude}
-              pointCount={pointCount}
+              pointCount={pointCount ?? 0}
               onClick={() => handleClusterClick(cluster.id as number, latitude, longitude)}
             />
           );
