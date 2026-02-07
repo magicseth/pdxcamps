@@ -127,6 +127,93 @@ export const listOrganizationsPaginated = query({
 });
 
 /**
+ * Get organization detail page data by slug
+ * Includes camps and upcoming sessions
+ */
+export const getOrganizationDetail = query({
+  args: {
+    slug: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Get organization by slug
+    const org = await ctx.db
+      .query("organizations")
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .unique();
+
+    if (!org) return null;
+
+    // Resolve logo URL
+    let resolvedLogoUrl: string | null = null;
+    if (org.logoStorageId) {
+      resolvedLogoUrl = await ctx.storage.getUrl(org.logoStorageId);
+    }
+
+    // Get camps for this organization
+    const camps = await ctx.db
+      .query("camps")
+      .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
+      .collect();
+
+    // Get active camps only
+    const activeCamps = camps.filter((c) => c.isActive);
+
+    // Get upcoming sessions for these camps
+    const today = new Date().toISOString().split("T")[0];
+    const sessions = await ctx.db
+      .query("sessions")
+      .withIndex("by_organization_and_status", (q) =>
+        q.eq("organizationId", org._id).eq("status", "active")
+      )
+      .collect();
+
+    // Filter to future sessions and sort by date
+    const upcomingSessions = sessions
+      .filter((s) => s.startDate >= today)
+      .sort((a, b) => a.startDate.localeCompare(b.startDate))
+      .slice(0, 20);
+
+    // Enrich sessions with camp info
+    const campMap = new Map(camps.map((c) => [c._id, c]));
+    const enrichedSessions = upcomingSessions.map((session) => {
+      const camp = campMap.get(session.campId);
+      return {
+        ...session,
+        campName: camp?.name || "Unknown Camp",
+        campSlug: camp?.slug,
+        categories: camp?.categories || [],
+      };
+    });
+
+    // Get locations for this org
+    const locations = await ctx.db
+      .query("locations")
+      .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
+      .collect();
+
+    return {
+      ...org,
+      resolvedLogoUrl,
+      camps: activeCamps.map((c) => ({
+        _id: c._id,
+        name: c.name,
+        slug: c.slug,
+        description: c.description,
+        categories: c.categories,
+        ageRequirements: c.ageRequirements,
+      })),
+      upcomingSessions: enrichedSessions,
+      locations: locations.filter((l) => l.isActive),
+      stats: {
+        campCount: activeCamps.length,
+        sessionCount: sessions.length,
+        locationCount: locations.filter((l) => l.isActive).length,
+      },
+    };
+  },
+});
+
+/**
  * Get organizations with logos for landing page showcase
  */
 export const getOrganizationsWithLogos = query({
