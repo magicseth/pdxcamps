@@ -213,52 +213,27 @@ export function PlannerTutorial({
         let top: number;
         let left = Math.max(16, Math.min(viewportRect.left + viewportRect.width / 2 - tooltipWidth / 2, window.innerWidth - tooltipWidth - 16));
 
+        const tooltipH = 200; // estimated max tooltip height
+        const minTop = 16; // never go above this
+
         if (step.placement === 'below') {
           top = viewportRect.bottom + HIGHLIGHT_PAD + 12;
           // If tooltip would go off-screen bottom, flip above
-          if (top + 200 > window.innerHeight) {
-            top = viewportRect.top - HIGHLIGHT_PAD - 12;
-            setTooltipStyle({
-              position: 'fixed',
-              top: `${top}px`,
-              left: `${left}px`,
-              width: `${tooltipWidth}px`,
-              transform: 'translateY(-100%)',
-            });
-            return;
+          if (top + tooltipH > window.innerHeight) {
+            top = Math.max(minTop, viewportRect.top - HIGHLIGHT_PAD - 12 - tooltipH);
           }
         } else if (step.placement === 'above') {
-          top = viewportRect.top - HIGHLIGHT_PAD - 12;
+          top = viewportRect.top - HIGHLIGHT_PAD - 12 - tooltipH;
           // If above goes off-screen, flip below
-          if (top < 80) {
+          if (top < minTop) {
             top = viewportRect.bottom + HIGHLIGHT_PAD + 12;
-            setTooltipStyle({
-              position: 'fixed',
-              top: `${top}px`,
-              left: `${left}px`,
-              width: `${tooltipWidth}px`,
-            });
-            return;
           }
-          setTooltipStyle({
-            position: 'fixed',
-            top: `${top}px`,
-            left: `${left}px`,
-            width: `${tooltipWidth}px`,
-            transform: 'translateY(-100%)',
-          });
-          return;
         } else {
-          top = window.innerHeight / 2;
-          setTooltipStyle({
-            position: 'fixed',
-            top: `${top}px`,
-            left: `${left}px`,
-            width: `${tooltipWidth}px`,
-            transform: 'translateY(-50%)',
-          });
-          return;
+          top = Math.max(minTop, (window.innerHeight - tooltipH) / 2);
         }
+
+        // Final clamp: never let tooltip go above viewport
+        top = Math.max(minTop, top);
 
         setTooltipStyle({
           position: 'fixed',

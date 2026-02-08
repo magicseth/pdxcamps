@@ -85,7 +85,7 @@ export function LandingPage() {
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/20 rounded-full blur-3xl" />
 
           <div className="relative max-w-6xl mx-auto px-4 py-20 md:py-28">
-            <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div className="grid md:grid-cols-[1fr,340px] gap-10 items-start">
             <div>
               {/* Social proof badge */}
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm border border-slate-200 mb-8">
