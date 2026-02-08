@@ -305,7 +305,7 @@ export function DemoPlanner({ sessions, organizations }: DemoPlannerProps) {
       <p className="text-center text-sm font-medium text-slate-500 mb-3 uppercase tracking-wider">
         Example summer plan
       </p>
-      <div className="max-w-5xl mx-auto rounded-xl border border-slate-200 shadow-lg bg-white overflow-hidden hover:shadow-xl transition-shadow pointer-events-none">
+      <div className="max-w-5xl mx-auto rounded-xl border border-slate-200 shadow-lg bg-white overflow-hidden hover:shadow-xl transition-shadow">
         {/* Filter chips bar */}
         {orgs.length > 0 && <FilterChipsBar organizations={orgs} />}
 
