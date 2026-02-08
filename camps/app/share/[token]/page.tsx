@@ -3,7 +3,7 @@
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import Link from 'next/link';
-import { use, useEffect } from 'react';
+import { use, useEffect, useState } from 'react';
 import { useMarket } from '@/hooks/useMarket';
 
 export default function SharedPlanPage({ params }: { params: Promise<{ token: string }> }) {
@@ -160,9 +160,12 @@ export default function SharedPlanPage({ params }: { params: Promise<{ token: st
           ))}
         </div>
 
+        {/* Share Buttons */}
+        <ShareButtons token={token} childName={plan.childName} familyName={plan.familyName} />
+
         {/* CTA Section */}
         <div className="bg-gradient-to-br from-accent/10 to-accent/5 border-2 border-accent/30 rounded-2xl p-8 text-center">
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">Plan Your Family's Summer Too!</h2>
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">Plan Your Family&apos;s Summer Too!</h2>
           <p className="text-slate-600 mb-6 max-w-md mx-auto">
             Join thousands of {market.name} families using {market.tagline} to organize their summer. Find camps near
             you, coordinate with friends, and never miss a deadline.
@@ -185,6 +188,90 @@ export default function SharedPlanPage({ params }: { params: Promise<{ token: st
           </p>
         </div>
       </footer>
+    </div>
+  );
+}
+
+function ShareButtons({ token, childName, familyName }: { token: string; childName: string; familyName: string }) {
+  const [copied, setCopied] = useState(false);
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : ``;
+  const shareText = `Check out ${childName}'s summer camp plan from the ${familyName} family!`;
+
+  const handleNativeShare = async () => {
+    try {
+      await navigator.share({
+        title: `${childName}'s Summer Plan`,
+        text: shareText,
+        url: shareUrl,
+      });
+    } catch {
+      // User cancelled or not supported
+    }
+  };
+
+  const handleCopyLink = async () => {
+    await navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleEmail = () => {
+    const subject = encodeURIComponent(`${childName}'s Summer Camp Plan`);
+    const body = encodeURIComponent(`${shareText}\n\n${shareUrl}`);
+    window.open(`mailto:?subject=${subject}&body=${body}`);
+  };
+
+  const handleSMS = () => {
+    const body = encodeURIComponent(`${shareText} ${shareUrl}`);
+    window.open(`sms:?body=${body}`);
+  };
+
+  const supportsNativeShare = typeof navigator !== 'undefined' && !!navigator.share;
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-xl p-6 mb-8">
+      <p className="text-sm font-medium text-slate-700 text-center mb-4">Share this plan</p>
+      <div className="flex items-center justify-center gap-3 flex-wrap">
+        {supportsNativeShare && (
+          <button
+            onClick={handleNativeShare}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+            Share
+          </button>
+        )}
+        <button
+          onClick={handleCopyLink}
+          className="inline-flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+        >
+          {copied ? (
+            <>
+              <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+              Copied!
+            </>
+          ) : (
+            <>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
+              Copy Link
+            </>
+          )}
+        </button>
+        <button
+          onClick={handleEmail}
+          className="inline-flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+          Email
+        </button>
+        <button
+          onClick={handleSMS}
+          className="inline-flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+          Text
+        </button>
+      </div>
     </div>
   );
 }

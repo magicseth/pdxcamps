@@ -103,8 +103,15 @@ export default function UpgradePage() {
         </div>
 
         {/* Single Pricing Card */}
-        <div className="bg-gradient-to-br from-primary to-surface-dark rounded-2xl shadow-lg p-8 text-white">
-          <div className="text-center mb-6">
+        <div className="relative bg-gradient-to-br from-primary to-surface-dark rounded-2xl shadow-lg p-8 text-white">
+          {/* Most Popular Badge */}
+          <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+            <span className="px-4 py-1 bg-accent text-white text-sm font-bold rounded-full shadow-md">
+              Most Popular
+            </span>
+          </div>
+
+          <div className="text-center mb-6 mt-2">
             <div className="flex items-baseline justify-center gap-1">
               <span className="text-5xl font-bold">{pricing.price}</span>
               {pricing.period && <span className="text-white/70 text-xl">{pricing.period}</span>}
@@ -112,12 +119,12 @@ export default function UpgradePage() {
             <p className="text-white/70 mt-2">{pricing.description}</p>
           </div>
 
-          <ul className="space-y-3 mb-8">
-            <FeatureItem>Unlimited children</FeatureItem>
-            <FeatureItem>All 12 weeks of summer</FeatureItem>
-            <FeatureItem>Unlimited saved camps</FeatureItem>
-            <FeatureItem>Registration deadline alerts</FeatureItem>
-            <FeatureItem>Export to calendar</FeatureItem>
+          <ul className="space-y-3 mb-6">
+            <FeatureItem>All 12 weeks — see your complete summer at a glance</FeatureItem>
+            <FeatureItem>Unlimited saved camps — bookmark every option</FeatureItem>
+            <FeatureItem>Deadline alerts — never miss registration</FeatureItem>
+            <FeatureItem>Unlimited children — plan for the whole family</FeatureItem>
+            <FeatureItem>Calendar export — sync with Google, Apple, Outlook</FeatureItem>
           </ul>
 
           <button
@@ -127,6 +134,27 @@ export default function UpgradePage() {
           >
             {loading ? 'Loading...' : pricing.ctaText}
           </button>
+
+          <p className="text-center text-white/60 text-sm mt-3">
+            {pricing.variant === 'weekly' ? 'Cancel anytime, no questions asked' : 'Full summer access — one payment, zero stress'}
+          </p>
+        </div>
+
+        {/* Urgency Line */}
+        <div className="mt-6 text-center">
+          <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">
+            Popular camps fill up fast — plan your whole summer now
+          </p>
+        </div>
+
+        {/* Social Proof / Testimonial */}
+        <div className="mt-6 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+          <blockquote className="text-slate-700 dark:text-slate-300 text-center italic">
+            &ldquo;This saved me hours of spreadsheet chaos. I found camps I didn&apos;t even know existed and had our whole summer planned in one evening.&rdquo;
+          </blockquote>
+          <p className="text-center text-sm text-slate-500 dark:text-slate-400 mt-3">
+            — Portland parent, Summer 2025
+          </p>
         </div>
 
         {/* Free tier comparison */}

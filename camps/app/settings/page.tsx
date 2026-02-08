@@ -95,8 +95,8 @@ function SettingsContent() {
       {/* Subscription */}
       <SubscriptionSection />
 
-      {/* Referrals - hidden until referral program launches */}
-      {/* <ReferralSection /> */}
+      {/* Referrals */}
+      <ReferralSection />
 
       {/* Account Actions */}
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">

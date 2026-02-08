@@ -79,6 +79,13 @@ export default function DiscoverPage() {
   // Fetch user's children for quick filter
   const myChildren = useQuery(api.children.queries.listChildren);
 
+  // Fetch subscription to show saved camp progress
+  const subscription = useQuery(api.subscriptions.getSubscription);
+  const savedCamps = useQuery(api.registrations.queries.getSavedCamps);
+  const isPremium = subscription?.isPremium ?? false;
+  const savedCount = savedCamps ? savedCamps.interested.length + savedCamps.waitlisted.length : 0;
+  const FREE_LIMIT = 5;
+
   // Fetch family data for home address
   const family = useQuery(api.families.queries.getCurrentFamily);
   const homeLatitude = family?.homeAddress?.latitude;
@@ -270,6 +277,10 @@ export default function DiscoverPage() {
               </Link>
               <div className="h-6 w-px bg-slate-200 dark:bg-slate-700"></div>
               <h1 className="text-lg font-bold text-slate-900 dark:text-white">Discover Camps</h1>
+              {/* Saved camp progress for free users */}
+              {!isPremium && subscription !== undefined && savedCount > 0 && (
+                <SavedCampProgress count={savedCount} limit={FREE_LIMIT} />
+              )}
             </div>
             <div className="flex items-center gap-3">
               {/* View Mode Toggle */}
@@ -1224,5 +1235,35 @@ function ShareSearchButton() {
         </>
       )}
     </button>
+  );
+}
+
+function SavedCampProgress({ count, limit }: { count: number; limit: number }) {
+  const atLimit = count >= limit;
+  const nearLimit = count >= limit - 1;
+
+  if (atLimit) {
+    return (
+      <Link
+        href="/upgrade"
+        className="text-xs font-medium px-2 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+      >
+        {count}/{limit} saved — Upgrade
+      </Link>
+    );
+  }
+
+  if (nearLimit) {
+    return (
+      <span className="text-xs font-medium px-2 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+        {count}/{limit} camps saved
+      </span>
+    );
+  }
+
+  return (
+    <span className="text-xs font-medium px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400">
+      {count}/{limit} camps saved
+    </span>
   );
 }
