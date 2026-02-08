@@ -65,7 +65,7 @@ export function CampMap({ citySlug, cityName }: CampMapProps) {
   }));
 
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden border border-slate-200 shadow-lg bg-slate-100" style={{ aspectRatio: '4/3' }}>
+    <div className="relative w-full max-w-[240px] rounded-2xl overflow-hidden border border-slate-200 shadow-lg bg-slate-100" style={{ aspectRatio: '3/4' }}>
       {/* OSM iframe — handles its own tile rendering and projection */}
       <iframe
         src={bboxUrl}

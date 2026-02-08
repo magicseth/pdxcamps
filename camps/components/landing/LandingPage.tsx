@@ -116,7 +116,7 @@ export function LandingPage() {
                 <span className="text-primary">Without losing your mind.</span>
               </h1>
 
-              <div className="mt-2">
+              <div className="mt-2 flex justify-center md:justify-end">
                 <CampMap citySlug={market.slug} cityName={market.name} />
               </div>
             </div>
