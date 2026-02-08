@@ -748,19 +748,26 @@ function StepCard({ number, title, description }: { number: number; title: strin
 
 function FAQItem({ question, answer }: { question: string; answer: string }) {
   const [isOpen, setIsOpen] = useState(false);
+  const id = question.replace(/\s+/g, '-').toLowerCase().slice(0, 30);
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
       <button
         onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
+        aria-controls={`faq-${id}`}
         className="w-full px-6 py-4 text-left flex items-center justify-between gap-4 hover:bg-slate-50 transition-colors"
       >
         <span className="font-medium text-slate-900">{question}</span>
-        <span className={`text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}>
+        <span className={`text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} aria-hidden="true">
           <ChevronDownIcon />
         </span>
       </button>
-      {isOpen && <div className="px-6 pb-4 text-slate-600">{answer}</div>}
+      {isOpen && (
+        <div id={`faq-${id}`} role="region" aria-label={question} className="px-6 pb-4 text-slate-600">
+          {answer}
+        </div>
+      )}
     </div>
   );
 }
