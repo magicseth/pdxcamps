@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/admin/', '/api/', '/onboarding/', '/settings'],
+        disallow: ['/admin/', '/api/', '/onboarding/', '/settings', '/calendar', '/saved', '/friends', '/planner/', '/sign-in', '/sign-up'],
       },
     ],
     sitemap: 'https://pdxcamps.com/sitemap.xml',
