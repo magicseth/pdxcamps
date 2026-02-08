@@ -1048,4 +1048,15 @@ export default defineSchema({
     .index('by_source', ['sourceId'])
     .index('by_unacknowledged', ['acknowledgedAt'])
     .index('by_severity', ['severity']),
+
+  // ============ USER FEEDBACK ============
+
+  feedback: defineTable({
+    familyId: v.optional(v.id('families')), // Optional - anonymous feedback allowed
+    email: v.optional(v.string()), // For logged-in users
+    message: v.string(),
+    page: v.optional(v.string()), // Where the feedback was submitted from
+    userAgent: v.optional(v.string()),
+    createdAt: v.number(),
+  }).index('by_family', ['familyId']),
 });

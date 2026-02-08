@@ -498,3 +498,106 @@ export const listCampsWithoutImages = action({
     };
   },
 });
+
+/**
+ * Internal action that generates a prompt (via Claude) and image (via FAL) for a single camp.
+ * Used by the backfill workflow so prompt generation happens inside workflow steps
+ * instead of being pre-computed (which would time out for large batches).
+ */
+export const generatePromptAndImage = internalAction({
+  args: {
+    campId: v.id('camps'),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
+    success: boolean;
+    campName: string;
+    error?: string;
+  }> => {
+    try {
+      const camp = await ctx.runQuery(api.camps.queries.getCamp, { campId: args.campId });
+      if (!camp) {
+        return { success: false, campName: 'unknown', error: 'Camp not found' };
+      }
+
+      // Skip if camp already has images (may have been processed by an earlier step)
+      if (camp.imageStorageIds && camp.imageStorageIds.length > 0) {
+        console.log(`[Backfill] Skipping ${camp.name} — already has images`);
+        return { success: true, campName: camp.name };
+      }
+
+      const organization = await ctx.runQuery(api.organizations.queries.getOrganization, {
+        organizationId: camp.organizationId,
+      });
+
+      const prompt = await generatePrompt({
+        _id: camp._id as string,
+        name: camp.name,
+        description: camp.description,
+        categories: camp.categories,
+        ageRequirements: camp.ageRequirements,
+        organizationName: organization?.name,
+      });
+
+      console.log(`[Backfill] Generated prompt for ${camp.name}, calling FAL...`);
+
+      const result = await ctx.runAction(internal.scraping.generateImages.generateSingleImage, {
+        campId: args.campId,
+        campName: camp.name,
+        prompt,
+      });
+
+      return {
+        success: result.success,
+        campName: camp.name,
+        error: result.error,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      return { success: false, campName: args.campId, error: message };
+    }
+  },
+});
+
+/**
+ * Start the backfill workflow: download scraped URLs then generate for the rest.
+ * Queues ALL camps needing images — prompt generation happens inside workflow steps,
+ * rate-limited by maxParallelism: 3.
+ * Callable from crons or the dashboard.
+ */
+export const startBackfill = internalAction({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
+    workflowId: string;
+    campsQueued: number;
+  }> => {
+    const limit = args.limit ?? 10000;
+
+    // Get camps needing AI generation (no URLs and no stored images)
+    const result = await ctx.runQuery(api.camps.queries.listCampsNeedingImageGeneration, { limit });
+
+    const campIds = result.camps.map((c) => c._id);
+    console.log(
+      `[Backfill] Found ${result.total} total camps needing generation, queueing ${campIds.length}`,
+    );
+
+    // Start the backfill workflow — prompt generation happens inside each step
+    const workflowId = await workflow.start(
+      ctx,
+      internal.scraping.imageWorkflow.backfillImagesWorkflow,
+      { downloadLimit: limit, campIds },
+    );
+
+    return {
+      workflowId: workflowId as string,
+      campsQueued: campIds.length,
+    };
+  },
+});

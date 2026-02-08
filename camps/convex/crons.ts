@@ -62,6 +62,19 @@ crons.interval('scrape scheduler', { minutes: 15 }, internal.scraping.actions.ru
 crons.interval('recompute weekly availability', { minutes: 30 }, internal.planner.aggregates.recomputeAll, {});
 
 // ============================================
+// IMAGE BACKFILL CRONS
+// ============================================
+
+// Backfill camp images every 6 hours
+// Downloads scraped image URLs, then generates AI images for camps without any
+crons.interval(
+  'backfill camp images',
+  { hours: 6 },
+  internal.scraping.generateImages.startBackfill,
+  {},
+);
+
+// ============================================
 // MAINTENANCE CRONS
 // ============================================
 

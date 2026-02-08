@@ -669,24 +669,24 @@ export const sendReferralCreditEarnedEmail = internalAction({
 
     const progressMessage =
       creditsRemaining > 0
-        ? `You've earned ${args.creditsEarned} of ${args.maxCredits} free months. Refer ${creditsRemaining} more friend${creditsRemaining !== 1 ? 's' : ''} to max out your rewards!`
-        : `You've earned all ${args.maxCredits} free months! Thanks for spreading the word.`;
+        ? `You've earned ${args.creditsEarned} of ${args.maxCredits} free weeks. Refer ${creditsRemaining} more friend${creditsRemaining !== 1 ? 's' : ''} to max out your rewards!`
+        : `You've earned all ${args.maxCredits} free weeks! Thanks for spreading the word.`;
 
     const result = await resend.sendEmail(ctx, {
       from: `${brandName} <${fromEmail}>`,
       to: [args.to],
-      subject: `🎉 You earned a free month on ${brandName}!`,
+      subject: `🎉 You earned a free week on ${brandName}!`,
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #ecfdf5, #d1fae5); border-radius: 12px; padding: 24px; margin-bottom: 24px; text-align: center;">
             <p style="font-size: 48px; margin: 0 0 8px 0;">🎉</p>
-            <h1 style="color: #065f46; margin: 0 0 8px 0; font-size: 24px;">You earned a free month!</h1>
+            <h1 style="color: #065f46; margin: 0 0 8px 0; font-size: 24px;">You earned a free week!</h1>
             <p style="color: #047857; margin: 0;">A friend you referred just signed up for ${brandName}</p>
           </div>
 
           <p>Hi ${args.displayName},</p>
 
-          <p>Great news! Someone you referred just created their account on ${brandName}. As a thank you, we've added a free month credit to your account.</p>
+          <p>Great news! Someone you referred just created their account on ${brandName}. As a thank you, we've added a free week credit to your account.</p>
 
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 24px 0;">
             <p style="margin: 0; color: #475569;">${progressMessage}</p>
@@ -695,7 +695,7 @@ export const sendReferralCreditEarnedEmail = internalAction({
           ${
             creditsRemaining > 0
               ? `
-          <p>Keep sharing your referral link to earn more free months:</p>
+          <p>Keep sharing your referral link to earn more free weeks:</p>
           `
               : `
           <p>Even though you've maxed out your rewards, we'd love it if you kept sharing! Every family you refer is another family discovering amazing summer camps for their kids.</p>
@@ -716,11 +716,11 @@ export const sendReferralCreditEarnedEmail = internalAction({
       text: `
 Hi ${args.displayName},
 
-Great news! Someone you referred just created their account on ${brandName}. As a thank you, we've added a free month credit to your account.
+Great news! Someone you referred just created their account on ${brandName}. As a thank you, we've added a free week credit to your account.
 
 ${progressMessage}
 
-${creditsRemaining > 0 ? `Keep sharing your referral link to earn more free months: https://${domain}/settings` : `Even though you've maxed out your rewards, we'd love it if you kept sharing! Every family you refer is another family discovering amazing summer camps for their kids.\n\nKeep spreading the camp love: https://${domain}/settings`}
+${creditsRemaining > 0 ? `Keep sharing your referral link to earn more free weeks: https://${domain}/settings` : `Even though you've maxed out your rewards, we'd love it if you kept sharing! Every family you refer is another family discovering amazing summer camps for their kids.\n\nKeep spreading the camp love: https://${domain}/settings`}
 
 Thanks for helping other families discover ${brandName}!
 
@@ -735,7 +735,7 @@ https://${domain}
 
 /**
  * Send referral program email (scheduled for day 3 after signup)
- * Encourages users to invite friends for free months
+ * Encourages users to invite friends for free weeks
  */
 export const sendReferralEmail = internalAction({
   args: {
@@ -755,7 +755,7 @@ export const sendReferralEmail = internalAction({
     const result = await resend.sendEmail(ctx, {
       from: `${brandName} <${fromEmail}>`,
       to: [args.to],
-      subject: `Get free months on ${brandName} — invite friends!`,
+      subject: `Get free weeks on ${brandName} — invite friends!`,
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
           <p>Hi ${args.displayName},</p>
@@ -766,10 +766,10 @@ export const sendReferralEmail = internalAction({
 
           <div style="background: linear-gradient(135deg, #ecfdf5, #d1fae5); border: 2px solid #6ee7b7; border-radius: 12px; padding: 24px; margin: 24px 0; text-align: center;">
             <p style="font-size: 18px; font-weight: bold; color: #065f46; margin: 0 0 8px 0;">
-              🎁 Get 1 free month for each friend who signs up
+              🎁 Get 1 free week for each friend who signs up
             </p>
             <p style="color: #047857; margin: 0;">
-              (Up to 3 free months total!)
+              (Up to 8 free weeks total!)
             </p>
           </div>
 
@@ -779,7 +779,7 @@ export const sendReferralEmail = internalAction({
             <a href="${referralUrl}" style="color: #0369a1; word-break: break-all;">${referralUrl}</a>
           </div>
 
-          <p>Just share this link with friends. When they sign up and start using ${brandName}, you'll automatically get credit for a free month.</p>
+          <p>Just share this link with friends. When they sign up and start using ${brandName}, you'll automatically get credit for a free week.</p>
 
           <p style="text-align: center; margin: 32px 0;">
             <a href="${referralUrl}" style="display: inline-block; padding: 14px 28px; background-color: #16a34a; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">Copy & Share Your Link</a>
@@ -800,12 +800,12 @@ Quick question: do you know other parents planning summer camps for their kids?
 
 Share ${brandName} with them and you'll both win:
 
-🎁 Get 1 free month for each friend who signs up (up to 3 free months total!)
+🎁 Get 1 free week for each friend who signs up (up to 8 free weeks total!)
 
 Your personal referral link:
 ${referralUrl}
 
-Just share this link with friends. When they sign up and start using ${brandName}, you'll automatically get credit for a free month.
+Just share this link with friends. When they sign up and start using ${brandName}, you'll automatically get credit for a free week.
 
 Happy planning (and sharing)!
 

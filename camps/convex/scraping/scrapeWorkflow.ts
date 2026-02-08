@@ -78,6 +78,13 @@ export const scrapeSourceWorkflow = workflow.define({
         { retry: false },
       );
 
+      // Download scraped image URLs for newly imported camps
+      await step.runAction(
+        internal.scraping.populateCampImages.internalPopulateImages,
+        { limit: 5 },
+        { retry: false },
+      );
+
       return {
         success: true,
         sessionsFound: result.sessionsFound,

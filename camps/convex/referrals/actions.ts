@@ -6,9 +6,9 @@ import { v } from 'convex/values';
 import Stripe from 'stripe';
 
 /**
- * Amount of referral credit in cents ($5 = 1 month)
+ * Amount of referral credit in cents ($1.25 = 1 week)
  */
-const REFERRAL_CREDIT_AMOUNT_CENTS = 500;
+const REFERRAL_CREDIT_AMOUNT_CENTS = 125;
 
 /**
  * Apply referral credits when a user subscribes.
@@ -44,7 +44,7 @@ export const applyReferralCredits = internalAction({
           customer: args.stripeCustomerId,
           amount: -REFERRAL_CREDIT_AMOUNT_CENTS,
           currency: 'usd',
-          description: 'Referral credit - 1 month free',
+          description: 'Referral credit - 1 week free',
         });
       }
 

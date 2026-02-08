@@ -45,6 +45,7 @@ import type * as expansion_mutations from "../expansion/mutations.js";
 import type * as expansion_queries from "../expansion/queries.js";
 import type * as families_mutations from "../families/mutations.js";
 import type * as families_queries from "../families/queries.js";
+import type * as feedback from "../feedback.js";
 import type * as http from "../http.js";
 import type * as lib_adminAuth from "../lib/adminAuth.js";
 import type * as lib_auth from "../lib/auth.js";
@@ -167,6 +168,7 @@ declare const fullApi: ApiFromModules<{
   "expansion/queries": typeof expansion_queries;
   "families/mutations": typeof families_mutations;
   "families/queries": typeof families_queries;
+  feedback: typeof feedback;
   http: typeof http;
   "lib/adminAuth": typeof lib_adminAuth;
   "lib/auth": typeof lib_auth;

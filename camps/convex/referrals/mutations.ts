@@ -6,7 +6,7 @@ import { requireFamily } from '../lib/auth';
 /**
  * Maximum referral credits a user can earn
  */
-export const MAX_REFERRAL_CREDITS = 3;
+export const MAX_REFERRAL_CREDITS = 8;
 
 /**
  * Generate a unique referral code for the current user.

@@ -62,7 +62,7 @@ export function ReferralSection() {
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
       <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">Refer Friends</h2>
       <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-        Share your link, get 1 free month per friend who signs up (max {maxCredits}).
+        Share your link, get 1 free week per friend who signs up (max {maxCredits}).
       </p>
 
       {!hasCode ? (
@@ -104,7 +104,7 @@ export function ReferralSection() {
             <div className="flex justify-between text-sm">
               <span className="text-slate-600 dark:text-slate-400">Your referrals</span>
               <span className="font-medium text-slate-900 dark:text-white">
-                {creditsEarned}/{maxCredits} months earned
+                {creditsEarned}/{maxCredits} weeks earned
               </span>
             </div>
             <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">

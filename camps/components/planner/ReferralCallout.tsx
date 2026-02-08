@@ -62,11 +62,11 @@ export function ReferralCallout() {
         <div className="flex items-center gap-3">
           <span className="text-xl">🎁</span>
           <div>
-            <p className="text-sm font-medium text-slate-900 dark:text-white">Invite friends, earn free months</p>
+            <p className="text-sm font-medium text-slate-900 dark:text-white">Invite friends, earn free weeks</p>
             <p className="text-xs text-slate-600 dark:text-slate-400">
               {referralInfo.creditsEarned > 0
                 ? `${referralInfo.creditsEarned}/${referralInfo.maxCredits} earned - share more to max out!`
-                : `Get 1 free month for each friend who signs up (max ${referralInfo.maxCredits})`}
+                : `Get 1 free week for each friend who signs up (max ${referralInfo.maxCredits})`}
             </p>
           </div>
         </div>

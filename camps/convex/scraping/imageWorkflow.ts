@@ -79,5 +79,69 @@ export const generateImagesWorkflow = workflow.define({
   },
 });
 
+/**
+ * Backfill workflow: download scraped URLs first, then generate for the rest.
+ *
+ * Step 1 — download any scraped imageUrls into Convex storage
+ * Step 2 — for each camp, generate prompt (Claude) + image (FAL) as a workflow step
+ *
+ * Prompt generation is deferred into each step so startBackfill doesn't time out.
+ * The workflow manager's maxParallelism: 3 rate-limits concurrent FAL/Claude calls.
+ */
+export const backfillImagesWorkflow = workflow.define({
+  args: {
+    downloadLimit: v.number(),
+    campIds: v.array(v.id('camps')),
+  },
+  returns: v.object({
+    downloaded: v.object({
+      campsProcessed: v.number(),
+      imagesStored: v.number(),
+    }),
+    generated: v.object({
+      completed: v.number(),
+      failed: v.number(),
+    }),
+  }),
+  handler: async (
+    step,
+    args,
+  ): Promise<{
+    downloaded: { campsProcessed: number; imagesStored: number };
+    generated: { completed: number; failed: number };
+  }> => {
+    // Step 1: Download scraped image URLs into storage
+    const downloadResult = await step.runAction(
+      internal.scraping.populateCampImages.internalPopulateImages,
+      { limit: args.downloadLimit },
+      { retry: false },
+    );
+
+    // Step 2: Generate prompt + image for each camp (rate-limited by workflow)
+    let completed = 0;
+    let failed = 0;
+
+    for (const campId of args.campIds) {
+      const result = await step.runAction(
+        internal.scraping.generateImages.generatePromptAndImage,
+        { campId },
+        { retry: true },
+      );
+
+      if (result.success) {
+        completed++;
+      } else {
+        failed++;
+        console.log(`[Backfill] Failed: ${result.campName} — ${result.error}`);
+      }
+    }
+
+    return {
+      downloaded: downloadResult,
+      generated: { completed, failed },
+    };
+  },
+});
+
 // Re-export for use in other files
 export { vWorkflowId };

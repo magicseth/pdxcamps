@@ -6,7 +6,7 @@
  * Downloads images from camp imageUrls and stores them in Convex storage.
  */
 
-import { action } from '../_generated/server';
+import { action, internalAction } from '../_generated/server';
 import { api } from '../_generated/api';
 import { v } from 'convex/values';
 import { Id } from '../_generated/dataModel';
@@ -115,6 +115,56 @@ export const populateAllCampImages = action({
       imagesStored,
       errors: errors.slice(0, 20),
     };
+  },
+});
+
+/**
+ * Internal version of populateAllCampImages — callable from workflows and crons.
+ * Downloads scraped imageUrls into Convex storage for camps that have URLs but no stored images.
+ */
+export const internalPopulateImages = internalAction({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
+    campsProcessed: number;
+    imagesStored: number;
+  }> => {
+    const limit = args.limit ?? 10;
+    let campsProcessed = 0;
+    let imagesStored = 0;
+
+    const campsNeedingImages = await ctx.runQuery(api.camps.queries.listCampsNeedingImageDownload, { limit });
+
+    console.log(`[CampImages] Internal: Found ${campsNeedingImages.length} camps needing image downloads`);
+
+    for (const camp of campsNeedingImages) {
+      console.log(`[CampImages] Internal: Processing: ${camp.name}`);
+      campsProcessed++;
+
+      const storageIds: Id<'_storage'>[] = [];
+
+      for (const url of (camp.imageUrls || []).slice(0, 3)) {
+        const result = await downloadAndStoreImage(ctx, url);
+        if (result.storageId) {
+          storageIds.push(result.storageId);
+          imagesStored++;
+        }
+      }
+
+      if (storageIds.length > 0) {
+        await ctx.runMutation(api.camps.mutations.updateCampImages, {
+          campId: camp._id,
+          imageStorageIds: storageIds,
+        });
+      }
+    }
+
+    console.log(`[CampImages] Internal: Done — ${campsProcessed} camps, ${imagesStored} images stored`);
+    return { campsProcessed, imagesStored };
   },
 });
 

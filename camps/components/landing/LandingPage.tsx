@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { api } from '../../convex/_generated/api';
 import { useMarket, type Market } from '../../hooks/useMarket';
+import { DemoPlanner } from './DemoPlanner';
 
 // Convex HTTP actions URL for serving dynamic assets
 const CONVEX_SITE_URL = process.env.NEXT_PUBLIC_CONVEX_SITE_URL || 'https://deafening-schnauzer-923.convex.site';
@@ -146,11 +147,7 @@ export function LandingPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircleIcon className="w-5 h-5 text-green-500" />
-                  <span>Free forever for families</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircleIcon className="w-5 h-5 text-green-500" />
-                  <span>Data updated daily</span>
+                  <span>Camps updated daily</span>
                 </div>
               </div>
             </div>
@@ -289,6 +286,9 @@ export function LandingPage() {
                 friends, and see your whole summer in one view.
               </p>
             </div>
+
+            {/* Interactive demo planner */}
+            <DemoPlanner sessions={featuredSessions} organizations={organizationsWithLogos} />
 
             {/* Feature grid - parent benefits focused */}
             <div className="grid md:grid-cols-3 gap-8">
