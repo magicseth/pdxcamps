@@ -12,6 +12,8 @@ interface TutorialStep {
   target: string | null;
   /** Where to place the tooltip relative to the highlighted element */
   placement: 'below' | 'above' | 'center';
+  /** If true, skip this step when the target element isn't found */
+  optional?: boolean;
 }
 
 const steps: TutorialStep[] = [
@@ -21,7 +23,7 @@ const steps: TutorialStep[] = [
       'This is your planner. Each row is one of your kids, and each column is a week from June through August.',
     emoji: '📅',
     target: 'grid',
-    placement: 'above',
+    placement: 'below',
   },
   {
     title: 'Spot the gaps',
@@ -30,6 +32,7 @@ const steps: TutorialStep[] = [
     emoji: '🎨',
     target: 'gap',
     placement: 'below',
+    optional: true,
   },
   {
     title: 'Tap a gap to fill it',
@@ -38,6 +41,7 @@ const steps: TutorialStep[] = [
     emoji: '👆',
     target: 'gap',
     placement: 'below',
+    optional: true,
   },
   {
     title: 'Filter by interest',
@@ -88,8 +92,10 @@ export function PlannerTutorial({
   const [exiting, setExiting] = useState(false);
   const [spotlight, setSpotlight] = useState<SpotlightRect | null>(null);
   const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({});
+  const [activeSteps, setActiveSteps] = useState<TutorialStep[]>(steps);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const highlightedElRef = useRef<HTMLElement | null>(null);
+  const boostedParentsRef = useRef<{ el: HTMLElement; origZIndex: string }[]>([]);
 
   useEffect(() => {
     try {
@@ -97,14 +103,36 @@ export function PlannerTutorial({
     } catch {
       return;
     }
-    const timer = setTimeout(() => setVisible(true), 1000);
+    // Filter out optional steps whose targets don't exist in the DOM
+    const timer = setTimeout(() => {
+      const available = steps.filter((step) => {
+        if (!step.optional) return true;
+        if (!step.target) return true;
+        return !!document.querySelector(`[data-tutorial="${step.target}"]`);
+      });
+      setActiveSteps(available);
+      setVisible(true);
+    }, 1000);
     return () => clearTimeout(timer);
+  }, []);
+
+  /** Clean up z-index boosts on parent stacking contexts */
+  const cleanupBoostedParents = useCallback(() => {
+    for (const { el, origZIndex } of boostedParentsRef.current) {
+      if (origZIndex) {
+        el.style.zIndex = origZIndex;
+      } else {
+        el.style.removeProperty('z-index');
+      }
+    }
+    boostedParentsRef.current = [];
   }, []);
 
   // Position spotlight and tooltip when step changes
   const positionSpotlight = useCallback(() => {
     if (!visible) return;
-    const step = steps[currentStep];
+    const step = activeSteps[currentStep];
+    if (!step) return;
 
     // Clean up previous highlight
     if (highlightedElRef.current) {
@@ -114,6 +142,7 @@ export function PlannerTutorial({
       highlightedElRef.current.style.removeProperty('border-radius');
       highlightedElRef.current = null;
     }
+    cleanupBoostedParents();
 
     if (!step.target) {
       setSpotlight(null);
@@ -145,7 +174,7 @@ export function PlannerTutorial({
         };
         setSpotlight(spotRect);
 
-        // Lift element above overlay
+        // Lift element above overlay — also boost any ancestor stacking contexts
         highlightedElRef.current = el;
         const computedPos = window.getComputedStyle(el).position;
         if (computedPos === 'static') {
@@ -154,6 +183,18 @@ export function PlannerTutorial({
         el.style.zIndex = '51';
         el.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.2)';
         el.style.borderRadius = '8px';
+
+        // Walk up ancestors and boost any that create stacking contexts (e.g. sticky header)
+        let parent = el.parentElement;
+        while (parent && parent !== document.body) {
+          const style = window.getComputedStyle(parent);
+          const zIndex = style.zIndex;
+          if (zIndex !== 'auto' && parseInt(zIndex, 10) < 51) {
+            boostedParentsRef.current.push({ el: parent, origZIndex: parent.style.zIndex });
+            parent.style.zIndex = '51';
+          }
+          parent = parent.parentElement;
+        }
 
         // Position tooltip
         const viewportRect = el.getBoundingClientRect();
@@ -217,7 +258,7 @@ export function PlannerTutorial({
         });
       }, 350); // wait for scroll
     });
-  }, [visible, currentStep]);
+  }, [visible, currentStep, activeSteps, cleanupBoostedParents]);
 
   useEffect(() => {
     positionSpotlight();
@@ -240,6 +281,7 @@ export function PlannerTutorial({
       highlightedElRef.current.style.removeProperty('border-radius');
       highlightedElRef.current = null;
     }
+    cleanupBoostedParents();
     setExiting(true);
     try {
       localStorage.setItem(TUTORIAL_SEEN_KEY, 'true');
@@ -251,17 +293,17 @@ export function PlannerTutorial({
       setExiting(false);
       onDismiss?.();
     }, 300);
-  }, [onDismiss]);
+  }, [onDismiss, cleanupBoostedParents]);
 
   const next = useCallback(() => {
-    if (currentStep < steps.length - 1) {
+    if (currentStep < activeSteps.length - 1) {
       setCurrentStep((s) => s + 1);
     } else {
       // User completed the tutorial (clicked "Share Now")
       dismiss();
       onComplete?.();
     }
-  }, [currentStep, dismiss, onComplete]);
+  }, [currentStep, activeSteps.length, dismiss, onComplete]);
 
   const prev = useCallback(() => {
     if (currentStep > 0) setCurrentStep((s) => s - 1);
@@ -287,8 +329,9 @@ export function PlannerTutorial({
 
   if (!visible) return null;
 
-  const step = steps[currentStep];
-  const isLast = currentStep === steps.length - 1;
+  const step = activeSteps[currentStep];
+  const isLast = currentStep === activeSteps.length - 1;
+  if (!step) return null;
 
   return (
     <div
@@ -311,7 +354,7 @@ export function PlannerTutorial({
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
           {/* Progress dots */}
           <div className="flex items-center justify-center gap-1.5 pt-4 pb-1">
-            {steps.map((_, i) => (
+            {activeSteps.map((_, i) => (
               <button
                 key={i}
                 onClick={() => setCurrentStep(i)}
