@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { useMarket } from '../../hooks/useMarket';
 import { CalendarIcon, SearchIcon, FriendsIcon } from './icons';
 
@@ -12,6 +14,7 @@ interface BottomNavProps {
 export function BottomNav({ citySlug }: BottomNavProps) {
   const pathname = usePathname();
   const market = useMarket();
+  const pendingRequests = useQuery(api.social.queries.listPendingFriendRequests);
 
   // Use explicit prop or detect from hostname (e.g., boscamps.com -> boston)
   const effectiveCitySlug = citySlug ?? market.slug;
@@ -20,6 +23,8 @@ export function BottomNav({ citySlug }: BottomNavProps) {
     if (path === '/') return pathname === '/';
     return pathname.startsWith(path);
   };
+
+  const pendingCount = pendingRequests?.received?.length ?? 0;
 
   return (
     <nav
@@ -35,7 +40,13 @@ export function BottomNav({ citySlug }: BottomNavProps) {
           icon={<SearchIcon />}
           label="Discover"
         />
-        <NavLink href="/friends" active={isActive('/friends')} icon={<FriendsIcon />} label="Friends" />
+        <NavLink
+          href="/friends"
+          active={isActive('/friends')}
+          icon={<FriendsIcon />}
+          label="Friends"
+          badge={pendingCount}
+        />
       </div>
     </nav>
   );
@@ -46,11 +57,13 @@ function NavLink({
   active,
   icon,
   label,
+  badge,
 }: {
   href: string;
   active: boolean;
   icon: React.ReactNode;
   label: string;
+  badge?: number;
 }) {
   return (
     <Link
@@ -68,7 +81,17 @@ function NavLink({
           aria-hidden="true"
         />
       )}
-      {icon}
+      <span className="relative">
+        {icon}
+        {badge !== undefined && badge > 0 && (
+          <span
+            className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full"
+            aria-label={`${badge} pending request${badge !== 1 ? 's' : ''}`}
+          >
+            {badge > 9 ? '9+' : badge}
+          </span>
+        )}
+      </span>
       <span className="text-xs font-medium">{label}</span>
     </Link>
   );
