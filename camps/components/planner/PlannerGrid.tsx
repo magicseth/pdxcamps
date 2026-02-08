@@ -871,6 +871,9 @@ function CoverageCell({
             alt={campName || ''}
             title={campName || 'Camp'}
             className="w-6 h-6 rounded object-contain"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
           />
           <StatusBadge />
         </div>

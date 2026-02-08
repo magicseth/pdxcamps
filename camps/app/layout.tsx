@@ -96,15 +96,15 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     openGraph: {
       title: market.tagline,
-      description: `Discover and organize summer camps for your kids in ${market.name}`,
+      description: `Find camps near you, coordinate with friends, and plan your kids' entire summer in one place. Free for ${market.name} families.`,
       type: 'website',
       locale: 'en_US',
       siteName: market.tagline,
     },
     twitter: {
-      card: 'summary',
+      card: 'summary_large_image',
       title: market.tagline,
-      description: `Discover and organize summer camps for your kids in ${market.name}`,
+      description: `Find camps near you, coordinate with friends, and plan your kids' entire summer in one place. Free for ${market.name} families.`,
     },
     robots: {
       index: true,

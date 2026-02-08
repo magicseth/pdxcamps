@@ -243,6 +243,20 @@ export function GroupedSessionCard({
                 }}
               />
             </>
+          ) : organization?.logoUrl ? (
+            <div className={`w-full h-full bg-gradient-to-br ${categoryStyle.bg} flex items-center justify-center`}>
+              <div className="w-24 h-24 bg-white rounded-xl shadow-sm flex items-center justify-center p-3">
+                <img
+                  src={organization.logoUrl}
+                  alt={organization.name}
+                  className="max-w-full max-h-full object-contain"
+                  onError={(e) => {
+                    const parent = e.currentTarget.parentElement;
+                    if (parent) parent.innerHTML = `<span class="text-4xl opacity-50">${categoryStyle.icon}</span>`;
+                  }}
+                />
+              </div>
+            </div>
           ) : (
             <div className={`w-full h-full bg-gradient-to-br ${categoryStyle.bg} flex items-center justify-center`}>
               <span className="text-4xl opacity-50">{categoryStyle.icon}</span>
