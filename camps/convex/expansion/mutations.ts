@@ -162,7 +162,13 @@ export const createCityForMarket = mutation({
       .unique();
 
     if (existingCity) {
-      throw new Error(`City with slug "${args.slug}" already exists`);
+      // Idempotent: if city already exists, link it and continue
+      await ctx.db.patch(record._id, {
+        cityId: existingCity._id,
+        status: 'city_created',
+        updatedAt: Date.now(),
+      });
+      return { cityId: existingCity._id, success: true };
     }
 
     // Create the city (include icon if already selected in expansion workflow)

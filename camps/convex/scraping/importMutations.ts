@@ -6,8 +6,23 @@
  */
 
 import { mutation, internalMutation } from '../_generated/server';
+import { internal } from '../_generated/api';
 import { v } from 'convex/values';
 import { sessionsBySourceAggregate } from '../lib/sessionAggregate';
+
+/**
+ * Update session aggregate count - scheduled separately to avoid write conflicts
+ * when multiple sessions are created concurrently.
+ */
+export const updateSessionAggregate = internalMutation({
+  args: { sessionId: v.id('sessions') },
+  handler: async (ctx, args) => {
+    const doc = await ctx.db.get(args.sessionId);
+    if (doc) {
+      await sessionsBySourceAggregate.insert(ctx, doc);
+    }
+  },
+});
 
 /**
  * Create an organization
@@ -169,16 +184,8 @@ export const createSession = mutation({
       lastScrapedAt: Date.now(),
     });
 
-    // Update aggregate count for this source (non-blocking - don't fail if aggregate errors)
-    try {
-      const doc = await ctx.db.get(sessionId);
-      if (doc) {
-        await sessionsBySourceAggregate.insert(ctx, doc);
-      }
-    } catch (e) {
-      // Aggregate update failed - log but don't break session creation
-      console.warn(`Failed to update session aggregate: ${e}`);
-    }
+    // Schedule aggregate update separately to avoid write conflicts
+    await ctx.scheduler.runAfter(0, internal.scraping.importMutations.updateSessionAggregate, { sessionId });
 
     return sessionId;
   },
@@ -251,16 +258,8 @@ export const createSessionWithCompleteness = internalMutation({
       dataSource: args.dataSource,
     });
 
-    // Update aggregate count for this source (non-blocking - don't fail if aggregate errors)
-    try {
-      const doc = await ctx.db.get(sessionId);
-      if (doc) {
-        await sessionsBySourceAggregate.insert(ctx, doc);
-      }
-    } catch (e) {
-      // Aggregate update failed - log but don't break session creation
-      console.warn(`Failed to update session aggregate: ${e}`);
-    }
+    // Schedule aggregate update separately to avoid write conflicts
+    await ctx.scheduler.runAfter(0, internal.scraping.importMutations.updateSessionAggregate, { sessionId });
 
     return sessionId;
   },
