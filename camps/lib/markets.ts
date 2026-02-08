@@ -73,6 +73,20 @@ export const MARKETS: Market[] = [
     iconPath: '/icons/sfb',
     themeColor: '#f97316', // Orange for Golden Gate
   },
+  {
+    slug: 'seattle',
+    name: 'Seattle',
+    tagline: 'Seattle Camp Guide',
+    region: 'Greater Seattle Area',
+    domains: ['seattlecampguide.com', 'www.seattlecampguide.com'],
+    emoji: '☕',
+    popularOrgs: 'Pacific Science Center, Woodland Park Zoo, Seattle Parks',
+    neighborhoods: 'Seattle, Bellevue, Redmond, Kirkland, Bothell',
+    testimonialAttribution: 'Seattle parent of 2',
+    madeIn: 'Seattle',
+    iconPath: '/icons/sea',
+    themeColor: '#059669', // Green for evergreens
+  },
 ];
 
 export const DEFAULT_MARKET = MARKETS[0]; // Portland as fallback

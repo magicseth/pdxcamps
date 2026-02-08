@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '../convex/_generated/api';
 import { getMarketFromHostname, type Market, DEFAULT_MARKET } from '../lib/markets';
@@ -9,14 +9,15 @@ import { getMarketFromHostname, type Market, DEFAULT_MARKET } from '../lib/marke
 export type { Market };
 
 /**
- * Hook to get the current market based on the hostname
- * First checks the database (cities table), then falls back to static config
+ * Hook to get the current market based on the hostname.
+ * Uses useState with lazy init so the hostname is resolved on the
+ * very first client render, avoiding a Portland → correct-city flash.
  */
 export function useMarket(): Market {
-  const hostname = useMemo(() => {
+  const [hostname] = useState(() => {
     if (typeof window === 'undefined') return '';
     return window.location.hostname.split(':')[0].toLowerCase();
-  }, []);
+  });
 
   // Query city by domain from database
   const city = useQuery(
