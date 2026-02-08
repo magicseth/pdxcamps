@@ -487,7 +487,7 @@ export default function SavedCampsPage() {
 
         {!hasAnySaved ? (
           <div className="text-center py-12">
-            <div className="text-4xl mb-4">💭</div>
+            <div className="text-4xl mb-4" aria-hidden="true">💭</div>
             <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">No camps saved yet</h2>
             <p className="text-slate-600 dark:text-slate-400 mb-6">
               Browse camps and tap the heart to save them for later

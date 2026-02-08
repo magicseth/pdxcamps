@@ -1093,7 +1093,7 @@ function ChildrenSection({
 
       {children.length === 0 ? (
         <div className="text-center py-8 px-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-          <div className="text-4xl mb-3">👨‍👩‍👧‍👦</div>
+          <div className="text-4xl mb-3" aria-hidden="true">👨‍👩‍👧‍👦</div>
           <p className="text-slate-600 dark:text-slate-400 mb-4">
             No children added yet. Add your children to start planning camps!
           </p>

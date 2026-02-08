@@ -39,7 +39,7 @@ export default function SharedPlanPage({ params }: { params: Promise<{ token: st
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
         <div className="text-center max-w-md">
-          <div className="text-6xl mb-4">🔒</div>
+          <div className="text-6xl mb-4" aria-hidden="true">🔒</div>
           <h1 className="text-2xl font-bold text-slate-900 mb-2">Plan Not Found</h1>
           <p className="text-slate-600 mb-6">This plan link may have expired or been removed.</p>
           <Link

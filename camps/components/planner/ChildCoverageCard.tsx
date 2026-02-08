@@ -206,7 +206,7 @@ export function ChildCoverageCard({
           {availableCamps.length > 0 ? (
             <GroupedCampList camps={availableCamps} onSaveForChild={onSaveForChild} />
           ) : (
-            <div className="text-xs text-slate-500 py-2">No camps match filters</div>
+            <div className="text-xs text-slate-500 py-2">No camps match current filters. Try broadening your search.</div>
           )}
         </div>
       )}

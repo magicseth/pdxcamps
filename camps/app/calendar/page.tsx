@@ -451,7 +451,7 @@ function CalendarContent() {
       {/* Empty State */}
       {filteredRegistrations.length === 0 && (
         <div className="text-center py-16 px-4">
-          <div className="text-6xl mb-4">📅</div>
+          <div className="text-6xl mb-4" aria-hidden="true">📅</div>
           <h3 className="text-xl font-semibold mb-2">No camps scheduled</h3>
           <p className="text-slate-600 dark:text-slate-400 mb-6 max-w-md mx-auto">
             {selectedStatuses.size === 0

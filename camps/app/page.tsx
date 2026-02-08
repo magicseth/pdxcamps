@@ -86,7 +86,7 @@ function OnboardingPrompt({
       <AppHeader user={user} onSignOut={onSignOut} />
       <main className="flex-1 flex items-center justify-center p-8">
         <div className="text-center max-w-md">
-          <div className="text-6xl mb-6">👨‍👩‍👧‍👦</div>
+          <div className="text-6xl mb-6" aria-hidden="true">👨‍👩‍👧‍👦</div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
             {hasFamily ? 'Add your children' : "Welcome! Let's get started"}
           </h1>
