@@ -281,6 +281,11 @@ export function GroupedSessionCard({
                 Some sold out
               </span>
             )}
+            {!isSoldOut && availabilitySummary.totalAvailable > 0 && availabilitySummary.totalAvailable <= 5 && (
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 animate-pulse motion-reduce:animate-none">
+                {availabilitySummary.totalAvailable} spot{availabilitySummary.totalAvailable !== 1 ? 's' : ''} left
+              </span>
+            )}
           </div>
           {/* Bottom gradient overlay for camp name */}
           <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
