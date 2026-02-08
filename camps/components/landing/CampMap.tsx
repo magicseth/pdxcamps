@@ -66,13 +66,19 @@ export function CampMap({ citySlug, cityName }: CampMapProps) {
 
   return (
     <div className="relative w-full rounded-2xl overflow-hidden border border-slate-200 shadow-lg bg-slate-100" style={{ aspectRatio: '3/4' }}>
-      {/* OSM iframe — handles its own tile rendering and projection */}
+      {/* OSM iframe — scaled up and shifted to crop out zoom controls in top-left */}
       <iframe
         src={bboxUrl}
-        className="absolute inset-0 w-full h-full border-0"
+        className="absolute border-0"
         title={`Camp locations in ${cityName}`}
         loading="lazy"
-        style={{ pointerEvents: 'none' }}
+        style={{
+          pointerEvents: 'none',
+          top: '-15%',
+          left: '-10%',
+          width: '120%',
+          height: '120%',
+        }}
       />
 
       {/* Dot overlay — uses Mercator-corrected percentages matching the iframe's projection */}
@@ -87,8 +93,8 @@ export function CampMap({ citySlug, cityName }: CampMapProps) {
               transform: 'translate(-50%, -50%)',
             }}
           >
-            <span className="absolute w-4 h-4 -m-1 rounded-full bg-primary/25 animate-ping" />
-            <span className="relative block w-3 h-3 rounded-full bg-primary border-2 border-white shadow-md" />
+            <span className="absolute w-4 h-4 -m-1 rounded-full bg-primary/15 animate-pulse" />
+            <span className="relative block w-2.5 h-2.5 rounded-full bg-primary/80 border border-white shadow-sm" />
           </div>
         ))}
       </div>

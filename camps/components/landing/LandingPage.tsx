@@ -122,7 +122,7 @@ export function LandingPage() {
                 <span className="text-primary">Without losing your mind.</span>
               </h1>
 
-              <div className="hidden lg:block flex-shrink-0 w-[280px]">
+              <div className="flex-shrink-0 w-[220px] lg:w-[280px]">
                 <CampMap citySlug={market.slug} cityName={market.name} />
               </div>
             </div>
