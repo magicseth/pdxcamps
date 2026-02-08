@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import { fetchQuery } from 'convex/nextjs';
 import './globals.css';
 import { ConvexClientProvider } from '@/components/ConvexClientProvider';
+import { FeedbackButton } from '@/components/shared/FeedbackButton';
 import { getMarketFromHostname, DEFAULT_MARKET, type Market } from '@/lib/markets';
 import { api } from '@/convex/_generated/api';
 
@@ -69,8 +70,16 @@ export async function generateMetadata(): Promise<Metadata> {
   const host = headersList.get('host') || 'localhost';
   const market = await getMarketSSR(host);
 
-  // Always serve icons from Convex HTTP action for dynamic city support
-  const iconUrl = getIconUrl(market.slug);
+  // Use Convex HTTP action if the city has a stored icon, otherwise fall back to static files
+  const iconUrl = market.iconStorageId
+    ? getIconUrl(market.slug)
+    : `${market.iconPath}/icon.png`;
+  const icon192Url = market.iconStorageId
+    ? getIconUrl(market.slug)
+    : `${market.iconPath}/icon-192.png`;
+  const appleIconUrl = market.iconStorageId
+    ? getIconUrl(market.slug)
+    : `${market.iconPath}/apple-icon.png`;
 
   return {
     title: {
@@ -81,9 +90,9 @@ export async function generateMetadata(): Promise<Metadata> {
     icons: {
       icon: [
         { url: iconUrl, sizes: '32x32', type: 'image/png' },
-        { url: iconUrl, sizes: '192x192', type: 'image/png' },
+        { url: icon192Url, sizes: '192x192', type: 'image/png' },
       ],
-      apple: [{ url: iconUrl, sizes: '180x180', type: 'image/png' }],
+      apple: [{ url: appleIconUrl, sizes: '180x180', type: 'image/png' }],
     },
     openGraph: {
       title: market.tagline,
@@ -116,7 +125,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ConvexClientProvider>{children}</ConvexClientProvider>
+        <ConvexClientProvider>
+          {children}
+          <FeedbackButton />
+        </ConvexClientProvider>
       </body>
     </html>
   );
