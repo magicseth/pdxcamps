@@ -144,10 +144,13 @@ export default defineSchema({
     isActive: v.boolean(),
     // Contact extraction tracking - prevents retrying the same orgs
     contactExtractionAttemptedAt: v.optional(v.number()),
+    // Directory discovery tracking
+    discoveredFromDirectoryId: v.optional(v.id('directories')),
   })
     .index('by_slug', ['slug'])
     .index('by_is_active', ['isActive'])
-    .index('by_email', ['email']),
+    .index('by_email', ['email'])
+    .index('by_directory', ['discoveredFromDirectoryId']),
 
   camps: defineTable({
     organizationId: v.id('organizations'),
@@ -440,6 +443,41 @@ export default defineSchema({
     .index('by_owner', ['ownerFamilyId'])
     .index('by_shared_with', ['sharedWithFamilyId']),
 
+  // ============ DIRECTORIES (First-class pipeline entities) ============
+
+  directories: defineTable({
+    cityId: v.id('cities'),
+    name: v.string(), // "ActivityHero Portland"
+    url: v.string(),
+    domain: v.string(), // "activityhero.com"
+    directoryType: v.union(
+      v.literal('aggregator'),
+      v.literal('municipal'),
+      v.literal('curated_list'),
+      v.literal('search_result'),
+    ),
+    linkPattern: v.optional(v.string()), // Regex for filtering links
+    baseUrlFilter: v.optional(v.string()),
+    status: v.union(
+      v.literal('discovered'),
+      v.literal('crawling'),
+      v.literal('crawled'),
+      v.literal('failed'),
+      v.literal('excluded'),
+    ),
+    linksFound: v.optional(v.number()),
+    orgsExtracted: v.optional(v.number()),
+    lastCrawledAt: v.optional(v.number()),
+    crawlError: v.optional(v.string()),
+    discoveredFrom: v.optional(v.string()), // "market_discovery", "manual", "known_list"
+    discoveryTaskId: v.optional(v.id('marketDiscoveryTasks')),
+    createdAt: v.number(),
+  })
+    .index('by_city', ['cityId'])
+    .index('by_city_and_status', ['cityId', 'status'])
+    .index('by_domain', ['domain'])
+    .index('by_url', ['url']),
+
   // ============ DISCOVERY PIPELINE ============
 
   // Candidate camp sources discovered via web search
@@ -717,12 +755,16 @@ export default defineSchema({
     closureReason: v.optional(v.string()), // Why this source was marked closed
     closedAt: v.optional(v.number()), // When it was marked closed
     closedBy: v.optional(v.string()), // "daemon" or admin user ID
+
+    // Directory tracking
+    directoryId: v.optional(v.id('directories')),
   })
     .index('by_organization', ['organizationId'])
     .index('by_city', ['cityId'])
     .index('by_next_scheduled_scrape', ['nextScheduledScrape'])
     .index('by_is_active', ['isActive'])
-    .index('by_url', ['url']),
+    .index('by_url', ['url'])
+    .index('by_directory', ['directoryId']),
 
   // Pending sessions for review (incomplete or failed validation)
   // ============ SCRAPER DEVELOPMENT ============
@@ -1223,6 +1265,21 @@ export default defineSchema({
     .index('by_status', ['status'])
     .index('by_org', ['organizationId'])
     .index('by_camp', ['campId']),
+
+  // ============ CHURN TRACKING ============
+
+  // ============ PARTNER APPLICATIONS ============
+
+  partnerApplications: defineTable({
+    organizationName: v.string(),
+    contactName: v.string(),
+    email: v.string(),
+    organizationType: v.string(), // PTA, school, nonprofit, other
+    message: v.optional(v.string()),
+    status: v.union(v.literal('pending'), v.literal('approved'), v.literal('rejected')),
+    createdAt: v.number(),
+  })
+    .index('by_email', ['email']),
 
   // ============ CHURN TRACKING ============
 
