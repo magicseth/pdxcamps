@@ -52,6 +52,33 @@ export const listAllLocations = query({
 });
 
 /**
+ * Get location coordinates for a city (lightweight, for map display)
+ */
+export const getLocationCoordinates = query({
+  args: {
+    citySlug: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const city = await ctx.db
+      .query('cities')
+      .withIndex('by_slug', (q) => q.eq('slug', args.citySlug))
+      .unique();
+    if (!city) return [];
+
+    const locations = await ctx.db
+      .query('locations')
+      .withIndex('by_city_and_active', (q) => q.eq('cityId', city._id).eq('isActive', true))
+      .collect();
+
+    return locations.map((loc) => ({
+      lat: loc.latitude,
+      lng: loc.longitude,
+      name: loc.name,
+    }));
+  },
+});
+
+/**
  * Get a location by ID
  */
 export const getLocation = query({

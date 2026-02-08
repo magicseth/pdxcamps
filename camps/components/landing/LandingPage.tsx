@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { api } from '../../convex/_generated/api';
 import { useMarket, type Market } from '../../hooks/useMarket';
 import { DemoPlanner } from './DemoPlanner';
+import { CampMap } from './CampMap';
 
 // Convex HTTP actions URL for serving dynamic assets
 const CONVEX_SITE_URL = process.env.NEXT_PUBLIC_CONVEX_SITE_URL || 'https://deafening-schnauzer-923.convex.site';
@@ -84,7 +85,8 @@ export function LandingPage() {
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/20 rounded-full blur-3xl" />
 
           <div className="relative max-w-6xl mx-auto px-4 py-20 md:py-28">
-            <div className="max-w-3xl">
+            <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div>
               {/* Social proof badge */}
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm border border-slate-200 mb-8">
                 <div className="flex -space-x-2">
@@ -150,6 +152,17 @@ export function LandingPage() {
                   <span>Camps updated daily</span>
                 </div>
               </div>
+            </div>
+
+            {/* Map - shows camp locations to convey "local" */}
+            <div className="hidden md:block">
+              <CampMap citySlug={market.slug} cityName={market.name} />
+            </div>
+            </div>
+
+            {/* Map on mobile - below hero */}
+            <div className="md:hidden mt-8">
+              <CampMap citySlug={market.slug} cityName={market.name} />
             </div>
           </div>
         </section>

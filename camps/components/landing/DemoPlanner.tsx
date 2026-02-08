@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import { Id } from '../../convex/_generated/dataModel';
 import { PlannerGrid } from '../planner/PlannerGrid';
 import { OrgFilterChip } from '../shared/OrgFilterChip';
@@ -296,16 +296,39 @@ function Legend() {
 
 export function DemoPlanner({ sessions, organizations }: DemoPlannerProps) {
   const orgs = organizations ?? [];
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   const coverage = useMemo(() => buildDemoCoverage(sessions ?? []), [sessions]);
   const sessionCounts = useMemo(() => buildSessionCounts(), []);
+
+  // Convert native title attributes to data-tooltip for styled tooltips
+  useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el) return;
+    // Run once after render to swap title -> data-tooltip
+    const swap = () => {
+      el.querySelectorAll('[title]').forEach((node) => {
+        const title = node.getAttribute('title');
+        if (title) {
+          node.setAttribute('data-tooltip', title);
+          node.removeAttribute('title');
+        }
+      });
+    };
+    // Small delay to let PlannerGrid render
+    const timer = setTimeout(swap, 100);
+    return () => clearTimeout(timer);
+  }, [coverage]);
 
   return (
     <div className="mt-12 mb-4">
       <p className="text-center text-sm font-medium text-slate-500 mb-3 uppercase tracking-wider">
         Example summer plan
       </p>
-      <div className="max-w-5xl mx-auto rounded-xl border border-slate-200 shadow-lg bg-white overflow-hidden hover:shadow-xl transition-shadow">
+      <div
+        ref={wrapperRef}
+        className="max-w-5xl mx-auto rounded-xl border border-slate-200 shadow-lg bg-white overflow-hidden hover:shadow-xl transition-shadow"
+      >
         {/* Filter chips bar */}
         {orgs.length > 0 && <FilterChipsBar organizations={orgs} />}
 
@@ -324,6 +347,53 @@ export function DemoPlanner({ sessions, organizations }: DemoPlannerProps) {
         Your whole summer at a glance — <span className="text-green-600 font-medium">green</span> means covered,{' '}
         <span className="text-accent-dark font-medium">orange</span> means find a camp
       </p>
+
+      {/* Styled tooltip CSS */}
+      <style jsx global>{`
+        [data-tooltip] {
+          position: relative;
+        }
+        [data-tooltip]::after {
+          content: attr(data-tooltip);
+          position: absolute;
+          bottom: calc(100% + 8px);
+          left: 50%;
+          transform: translateX(-50%) scale(0.95);
+          padding: 6px 12px;
+          background: #1e293b;
+          color: white;
+          font-size: 12px;
+          font-weight: 500;
+          line-height: 1.4;
+          border-radius: 8px;
+          white-space: nowrap;
+          pointer-events: none;
+          opacity: 0;
+          transition: opacity 0.15s ease, transform 0.15s ease;
+          z-index: 10;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        [data-tooltip]::before {
+          content: '';
+          position: absolute;
+          bottom: calc(100% + 2px);
+          left: 50%;
+          transform: translateX(-50%);
+          border: 5px solid transparent;
+          border-top-color: #1e293b;
+          pointer-events: none;
+          opacity: 0;
+          transition: opacity 0.15s ease;
+          z-index: 10;
+        }
+        [data-tooltip]:hover::after {
+          opacity: 1;
+          transform: translateX(-50%) scale(1);
+        }
+        [data-tooltip]:hover::before {
+          opacity: 1;
+        }
+      `}</style>
     </div>
   );
 }
