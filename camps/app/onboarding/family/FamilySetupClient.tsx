@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { useRouter } from 'next/navigation';
@@ -30,6 +30,14 @@ export default function FamilySetupClient({ referralCode, inviteToken }: FamilyS
   const [calendarSharingDefault, setCalendarSharingDefault] = useState<CalendarSharingDefault>('friends_only');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    posthog.capture('onboarding_started', {
+      has_referral_code: !!referralCode,
+      has_invite_token: !!inviteToken,
+      market: market.slug,
+    });
+  }, []);
 
   // Redirect if user already has a family
   if (existingFamily !== undefined && existingFamily !== null) {

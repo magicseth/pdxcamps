@@ -2,6 +2,7 @@
  * Admin migrations for data cleanup and updates
  */
 import { mutation, query, internalMutation } from '../_generated/server';
+import { internal } from '../_generated/api';
 import { v } from 'convex/values';
 
 /**
@@ -1019,6 +1020,233 @@ export const fixSessionCityIds = mutation({
       dryRun: false,
       totalSessions: sessions.length,
       fixed: fixes.length,
+    };
+  },
+});
+
+/**
+ * Clean up all zombie pending jobs (no workflow, older than threshold)
+ * and create fresh jobs for all active sources that need scraping.
+ */
+export const cleanupZombieJobsAndKickAll = mutation({
+  args: {
+    dryRun: v.optional(v.boolean()),
+    citySlug: v.optional(v.string()), // Optional: only kick a specific city
+  },
+  handler: async (ctx, args) => {
+    const dryRun = args.dryRun ?? false;
+    const now = Date.now();
+    const FIFTEEN_MINUTES = 15 * 60 * 1000;
+
+    // Find all pending jobs older than 15 minutes with no workflow
+    const pendingJobs = await ctx.db
+      .query('scrapeJobs')
+      .withIndex('by_status', (q) => q.eq('status', 'pending'))
+      .collect();
+
+    const zombieJobs = pendingJobs.filter((j) => {
+      const age = now - j._creationTime;
+      return age > FIFTEEN_MINUTES && !(j as Record<string, unknown>).workflowId;
+    });
+
+    if (!dryRun) {
+      for (const job of zombieJobs) {
+        await ctx.db.patch(job._id, {
+          status: 'failed',
+          completedAt: now,
+          errorMessage: 'Cleaned up zombie pending job (no workflow started)',
+        });
+      }
+    }
+
+    // Find sources to kick off
+    let sources;
+    if (args.citySlug) {
+      const city = await ctx.db
+        .query('cities')
+        .withIndex('by_slug', (q) => q.eq('slug', args.citySlug!))
+        .first();
+      if (!city) return { dryRun, zombieJobsCleaned: zombieJobs.length, jobsCreated: 0, error: 'City not found' };
+      sources = await ctx.db
+        .query('scrapeSources')
+        .withIndex('by_city', (q) => q.eq('cityId', city._id))
+        .collect();
+    } else {
+      sources = await ctx.db
+        .query('scrapeSources')
+        .withIndex('by_is_active', (q) => q.eq('isActive', true))
+        .collect();
+    }
+
+    const activeSources = sources.filter((s) => s.isActive && s.scraperCode);
+
+    let jobsCreated = 0;
+    if (!dryRun) {
+      for (const source of activeSources) {
+        // Check no existing pending/running job
+        const existingPending = await ctx.db
+          .query('scrapeJobs')
+          .withIndex('by_source_and_status', (q) => q.eq('sourceId', source._id).eq('status', 'pending'))
+          .first();
+        const existingRunning = await ctx.db
+          .query('scrapeJobs')
+          .withIndex('by_source_and_status', (q) => q.eq('sourceId', source._id).eq('status', 'running'))
+          .first();
+
+        if (!existingPending && !existingRunning) {
+          const jobId = await ctx.db.insert('scrapeJobs', {
+            sourceId: source._id,
+            status: 'pending',
+            triggeredBy: 'kickoff-all',
+            retryCount: 0,
+          });
+
+          const jitterMs = 100 + Math.floor(Math.random() * 4000);
+          await ctx.scheduler.runAfter(jitterMs, internal.scraping.scrapeWorkflow.startWorkflowForJob, {
+            jobId,
+            sourceId: source._id,
+          });
+
+          jobsCreated++;
+        }
+      }
+    }
+
+    return {
+      dryRun,
+      zombieJobsCleaned: zombieJobs.length,
+      activeSources: activeSources.length,
+      jobsCreated,
+    };
+  },
+});
+
+/**
+ * Diagnostic: Check global job states
+ */
+export const checkGlobalJobs = query({
+  args: {},
+  handler: async (ctx) => {
+    const pendingJobs = await ctx.db
+      .query('scrapeJobs')
+      .withIndex('by_status', (q) => q.eq('status', 'pending'))
+      .collect();
+    const runningJobs = await ctx.db
+      .query('scrapeJobs')
+      .withIndex('by_status', (q) => q.eq('status', 'running'))
+      .collect();
+
+    // Get source info for each
+    const sourceCache = new Map();
+    const getSource = async (id: string) => {
+      if (!sourceCache.has(id)) sourceCache.set(id, await ctx.db.get(id as never));
+      return sourceCache.get(id);
+    };
+
+    const pendingDetails = await Promise.all(
+      pendingJobs.slice(0, 20).map(async (j) => {
+        const source = await getSource(j.sourceId as string);
+        return {
+          jobId: j._id,
+          sourceName: source?.name || 'unknown',
+          cityId: source?.cityId || 'unknown',
+          triggeredBy: j.triggeredBy,
+          workflowId: (j as Record<string, unknown>).workflowId || null,
+          createdAt: new Date(j._creationTime).toISOString(),
+        };
+      }),
+    );
+
+    const runningDetails = await Promise.all(
+      runningJobs.slice(0, 20).map(async (j) => {
+        const source = await getSource(j.sourceId as string);
+        return {
+          jobId: j._id,
+          sourceName: source?.name || 'unknown',
+          cityId: source?.cityId || 'unknown',
+          triggeredBy: j.triggeredBy,
+          workflowId: (j as Record<string, unknown>).workflowId || null,
+          startedAt: j.startedAt ? new Date(j.startedAt).toISOString() : null,
+        };
+      }),
+    );
+
+    return {
+      pendingCount: pendingJobs.length,
+      runningCount: runningJobs.length,
+      pendingDetails,
+      runningDetails,
+    };
+  },
+});
+
+/**
+ * Diagnostic: Check job states for a city
+ */
+export const checkCityJobs = query({
+  args: { citySlug: v.string() },
+  handler: async (ctx, args) => {
+    const city = await ctx.db
+      .query('cities')
+      .withIndex('by_slug', (q) => q.eq('slug', args.citySlug))
+      .first();
+    if (!city) return { error: 'City not found' };
+
+    const sources = await ctx.db
+      .query('scrapeSources')
+      .withIndex('by_city', (q) => q.eq('cityId', city._id))
+      .collect();
+    const sourceIds = new Set(sources.map((s) => s._id));
+
+    const allJobs = await ctx.db.query('scrapeJobs').collect();
+    const cityJobs = allJobs.filter((j) => sourceIds.has(j.sourceId));
+
+    const byStatus: Record<string, number> = {};
+    let withWorkflow = 0;
+    let withoutWorkflow = 0;
+    const sampleJobs: Array<Record<string, unknown>> = [];
+
+    for (const job of cityJobs) {
+      byStatus[job.status] = (byStatus[job.status] || 0) + 1;
+      if ((job as Record<string, unknown>).workflowId) withWorkflow++;
+      else withoutWorkflow++;
+      if (sampleJobs.length < 5) {
+        sampleJobs.push({
+          id: job._id,
+          status: job.status,
+          triggeredBy: job.triggeredBy,
+          workflowId: (job as Record<string, unknown>).workflowId || null,
+          startedAt: job.startedAt,
+          completedAt: job.completedAt,
+          errorMessage: job.errorMessage,
+        });
+      }
+    }
+
+    // Count sessions via camps for this city's organizations
+    const orgs = await ctx.db.query('organizations').collect();
+    const cityOrgs = orgs.filter((o) => o.cityIds?.includes(city._id));
+    const camps = await ctx.db.query('camps').collect();
+    const cityCamps = camps.filter((c) => cityOrgs.some((o) => o._id === c.organizationId));
+    let sessionCount = 0;
+    for (const camp of cityCamps.slice(0, 50)) {
+      const campSessions = await ctx.db
+        .query('sessions')
+        .withIndex('by_camp', (q) => q.eq('campId', camp._id))
+        .take(100);
+      sessionCount += campSessions.length;
+    }
+
+    return {
+      city: city.name,
+      totalJobs: cityJobs.length,
+      byStatus,
+      withWorkflow,
+      withoutWorkflow,
+      sampleJobs,
+      cityOrgs: cityOrgs.length,
+      cityCamps: cityCamps.length,
+      sessionCount,
     };
   },
 });

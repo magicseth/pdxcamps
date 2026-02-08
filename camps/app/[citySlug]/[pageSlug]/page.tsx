@@ -86,6 +86,12 @@ async function fetchSeoSessions(cityId: string, page: SeoPageConfig) {
     case 'time':
       args.timeOfDay = filter.timeOfDay;
       break;
+    case 'startsWithinDays':
+      args.startsWithinDays = filter.days;
+      break;
+    case 'extendedCare':
+      args.extendedCare = true;
+      break;
   }
 
   return await fetchQuery(api.sessions.seoQueries.getSessionsForSeoPage, args as any);
@@ -207,5 +213,9 @@ function getFilterLabel(page: SeoPageConfig): string {
       return page.filter.label;
     case 'free':
       return 'Free';
+    case 'startsWithinDays':
+      return page.filter.label;
+    case 'extendedCare':
+      return page.filter.label;
   }
 }

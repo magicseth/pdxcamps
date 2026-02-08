@@ -987,16 +987,39 @@ function CancelSubscriptionModal({
   onManageBilling: () => Promise<void>;
 }) {
   const [isLoading, setIsLoading] = useState(false);
+  const [step, setStep] = useState<'offer' | 'survey'>('offer');
+  const [selectedReason, setSelectedReason] = useState('');
+  const [feedback, setFeedback] = useState('');
+  const recordChurn = useMutation(api.churn.mutations.recordChurnReason);
+
+  const cancelReasons = [
+    { value: 'too_expensive', label: 'Too expensive' },
+    { value: 'not_using_enough', label: 'Not using it enough' },
+    { value: 'summer_over', label: 'Summer is over' },
+    { value: 'found_alternative', label: 'Found an alternative' },
+    { value: 'missing_features', label: 'Missing features I need' },
+    { value: 'other', label: 'Other' },
+  ];
 
   const handleDowngrade = async () => {
-    // Redirect to a special checkout for $3/month plan
-    // For now, direct to billing portal where they can switch plans
     setIsLoading(true);
     await onManageBilling();
   };
 
   const handleCancel = async () => {
+    if (step === 'offer') {
+      setStep('survey');
+      return;
+    }
+
+    // Record the reason, then redirect to billing portal
     setIsLoading(true);
+    if (selectedReason) {
+      await recordChurn({
+        reason: selectedReason,
+        feedback: feedback || undefined,
+      });
+    }
     await onManageBilling();
   };
 
@@ -1009,51 +1032,116 @@ function CancelSubscriptionModal({
       aria-labelledby="cancel-modal-title"
     >
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full p-6">
-        <h3 id="cancel-modal-title" className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-          We&apos;d hate to see you go!
-        </h3>
-        <p className="text-slate-600 dark:text-slate-400 mb-6">
-          Before you cancel, would you like to switch to our discounted plan instead?
-        </p>
+        {step === 'offer' ? (
+          <>
+            <h3 id="cancel-modal-title" className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+              We&apos;d hate to see you go!
+            </h3>
+            <p className="text-slate-600 dark:text-slate-400 mb-6">
+              Before you cancel, would you like to switch to our discounted plan instead?
+            </p>
 
-        <div className="bg-gradient-to-br from-primary/10 to-surface/10 dark:from-primary-dark/20 dark:to-indigo-900/20 border border-primary/30 dark:border-primary-dark rounded-lg p-4 mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="font-semibold text-primary-dark dark:text-white/80">Lite Plan</span>
-            <span className="text-2xl font-bold text-primary dark:text-primary-light">
-              $3<span className="text-sm font-normal">/mo</span>
-            </span>
-          </div>
-          <p className="text-sm text-primary-dark dark:text-white/60">
-            Keep all your premium features at a reduced price. Same great planning tools, friendlier on the wallet.
-          </p>
-        </div>
+            <div className="bg-gradient-to-br from-primary/10 to-surface/10 dark:from-primary-dark/20 dark:to-indigo-900/20 border border-primary/30 dark:border-primary-dark rounded-lg p-4 mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-semibold text-primary-dark dark:text-white/80">Lite Plan</span>
+                <span className="text-2xl font-bold text-primary dark:text-primary-light">
+                  $3<span className="text-sm font-normal">/mo</span>
+                </span>
+              </div>
+              <p className="text-sm text-primary-dark dark:text-white/60">
+                Keep all your premium features at a reduced price. Same great planning tools, friendlier on the wallet.
+              </p>
+            </div>
 
-        <div className="space-y-3">
-          <button
-            type="button"
-            onClick={handleDowngrade}
-            disabled={isLoading}
-            className="w-full px-4 py-3 bg-primary text-white font-medium rounded-md hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? 'Loading...' : 'Switch to $3/month'}
-          </button>
-          <button
-            type="button"
-            onClick={handleCancel}
-            disabled={isLoading}
-            className="w-full px-4 py-3 text-red-600 border border-red-200 dark:border-red-800 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? 'Loading...' : 'Continue to cancel'}
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isLoading}
-            className="w-full px-4 py-3 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-          >
-            Never mind, keep my subscription
-          </button>
-        </div>
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={handleDowngrade}
+                disabled={isLoading}
+                className="w-full px-4 py-3 bg-primary text-white font-medium rounded-md hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? 'Loading...' : 'Switch to $3/month'}
+              </button>
+              <button
+                type="button"
+                onClick={handleCancel}
+                disabled={isLoading}
+                className="w-full px-4 py-3 text-red-600 border border-red-200 dark:border-red-800 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Continue to cancel
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isLoading}
+                className="w-full px-4 py-3 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              >
+                Never mind, keep my subscription
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <h3 id="cancel-modal-title" className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+              Quick question before you go
+            </h3>
+            <p className="text-slate-600 dark:text-slate-400 mb-4">
+              What&apos;s the main reason you&apos;re canceling? This helps us improve.
+            </p>
+
+            <div className="space-y-2 mb-4">
+              {cancelReasons.map((reason) => (
+                <label
+                  key={reason.value}
+                  className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                    selectedReason === reason.value
+                      ? 'border-primary bg-primary/5 dark:border-primary-light dark:bg-primary-dark/20'
+                      : 'border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/50'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="cancel-reason"
+                    value={reason.value}
+                    checked={selectedReason === reason.value}
+                    onChange={(e) => setSelectedReason(e.target.value)}
+                    className="accent-primary"
+                  />
+                  <span className="text-sm text-slate-700 dark:text-slate-300">{reason.label}</span>
+                </label>
+              ))}
+            </div>
+
+            {selectedReason && (
+              <textarea
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                placeholder="Any additional feedback? (optional)"
+                className="w-full px-3 py-2 border border-gray-200 dark:border-slate-700 rounded-lg text-sm mb-4 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                rows={2}
+              />
+            )}
+
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={handleCancel}
+                disabled={isLoading || !selectedReason}
+                className="w-full px-4 py-3 text-red-600 border border-red-200 dark:border-red-800 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? 'Processing...' : 'Cancel subscription'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setStep('offer')}
+                disabled={isLoading}
+                className="w-full px-4 py-3 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              >
+                Go back
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

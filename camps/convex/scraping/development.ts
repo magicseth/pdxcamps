@@ -5,10 +5,51 @@
  * and tracks Claude Code sessions working on them.
  */
 
-import { mutation, query, internalMutation } from '../_generated/server';
+import { mutation, query, internalMutation, MutationCtx } from '../_generated/server';
 import { v } from 'convex/values';
 import { internal } from '../_generated/api';
 import { workflow } from './scrapeWorkflow';
+import { Id } from '../_generated/dataModel';
+
+/**
+ * Create a scrape job and schedule its workflow.
+ * Use this instead of raw ctx.db.insert('scrapeJobs', ...) to ensure
+ * the workflow actually starts.
+ */
+async function createJobWithWorkflow(
+  ctx: MutationCtx,
+  sourceId: Id<'scrapeSources'>,
+  triggeredBy: string,
+): Promise<Id<'scrapeJobs'> | null> {
+  // Check for existing pending/running job
+  const existingPending = await ctx.db
+    .query('scrapeJobs')
+    .withIndex('by_source_and_status', (q) => q.eq('sourceId', sourceId).eq('status', 'pending'))
+    .first();
+  if (existingPending) return null;
+
+  const existingRunning = await ctx.db
+    .query('scrapeJobs')
+    .withIndex('by_source_and_status', (q) => q.eq('sourceId', sourceId).eq('status', 'running'))
+    .first();
+  if (existingRunning) return null;
+
+  const jobId = await ctx.db.insert('scrapeJobs', {
+    sourceId,
+    status: 'pending',
+    triggeredBy,
+    retryCount: 0,
+  });
+
+  // Schedule workflow start in a separate transaction with jitter
+  const jitterMs = 100 + Math.floor(Math.random() * 3900);
+  await ctx.scheduler.runAfter(jitterMs, internal.scraping.scrapeWorkflow.startWorkflowForJob, {
+    jobId,
+    sourceId,
+  });
+
+  return jobId;
+}
 
 /**
  * Request scraper development for a new site
@@ -419,12 +460,7 @@ export const recordTestResults = mutation({
         }
 
         // Create a scrape job to run the newly approved scraper
-        await ctx.db.insert('scrapeJobs', {
-          sourceId: sourceId,
-          status: 'pending',
-          triggeredBy: 'auto-approval',
-          startedAt: Date.now(),
-        });
+        await createJobWithWorkflow(ctx, sourceId, 'auto-approval');
       }
     }
 
@@ -494,22 +530,7 @@ export const approveScraperCode = mutation({
       });
 
       // Create a scrape job to run the newly approved scraper
-      const jobId = await ctx.db.insert('scrapeJobs', {
-        sourceId: request.sourceId,
-        status: 'pending',
-        triggeredBy: 'scraper-approval',
-        retryCount: 0,
-      });
-
-      // Start the scraping workflow
-      const workflowId = await workflow.start(ctx, internal.scraping.scrapeWorkflow.scrapeSourceWorkflow, {
-        jobId,
-        sourceId: request.sourceId,
-      });
-
-      await ctx.db.patch(jobId, {
-        workflowId: workflowId as string,
-      });
+      await createJobWithWorkflow(ctx, request.sourceId, 'scraper-approval');
     }
 
     return args.requestId;
@@ -556,12 +577,7 @@ export const bulkApproveNeedsFeedback = mutation({
           isActive: true,
         });
 
-        await ctx.db.insert('scrapeJobs', {
-          sourceId: request.sourceId,
-          status: 'pending',
-          triggeredBy: 'bulk-approval',
-          startedAt: Date.now(),
-        });
+        await createJobWithWorkflow(ctx, request.sourceId, 'bulk-approval');
         deployed++;
       }
     }
@@ -606,13 +622,8 @@ export const activateSourcesWithScrapers = mutation({
       activated++;
 
       // Create a scrape job
-      await ctx.db.insert('scrapeJobs', {
-        sourceId: source._id,
-        status: 'pending',
-        triggeredBy: 'bulk-activation',
-        startedAt: Date.now(),
-      });
-      jobsCreated++;
+      const bulkJobId = await createJobWithWorkflow(ctx, source._id, 'bulk-activation');
+      if (bulkJobId) jobsCreated++;
     }
 
     return {
@@ -689,15 +700,10 @@ export const deployCompletedScrapers = mutation({
         }
 
         // Create scrape job
-        await ctx.db.insert('scrapeJobs', {
-          sourceId: source._id,
-          status: 'pending',
-          triggeredBy: 'retroactive-deployment',
-          startedAt: Date.now(),
-        });
+        const retro1JobId = await createJobWithWorkflow(ctx, source._id, 'retroactive-deployment');
 
         deployed++;
-        jobsCreated++;
+        if (retro1JobId) jobsCreated++;
         results.push(`Deployed to existing source: ${source.name}`);
       } else {
         // Need to create source - find or create organization first
@@ -746,15 +752,10 @@ export const deployCompletedScrapers = mutation({
         await ctx.db.patch(request._id, { sourceId });
 
         // Create scrape job
-        await ctx.db.insert('scrapeJobs', {
-          sourceId,
-          status: 'pending',
-          triggeredBy: 'retroactive-deployment',
-          startedAt: Date.now(),
-        });
+        const retro2JobId = await createJobWithWorkflow(ctx, sourceId, 'retroactive-deployment');
 
         deployed++;
-        jobsCreated++;
+        if (retro2JobId) jobsCreated++;
         results.push(`Created new source: ${request.sourceName}`);
       }
     }
@@ -830,15 +831,10 @@ export const syncScrapersToSources = mutation({
       }
 
       // Create scrape job
-      await ctx.db.insert('scrapeJobs', {
-        sourceId: source._id,
-        status: 'pending',
-        triggeredBy: 'scraper-sync',
-        startedAt: Date.now(),
-      });
+      const syncJobId = await createJobWithWorkflow(ctx, source._id, 'scraper-sync');
 
       synced++;
-      jobsCreated++;
+      if (syncJobId) jobsCreated++;
       results.push(`Synced: ${source.name}`);
     }
 
@@ -959,13 +955,8 @@ export const fixAndDeployBrokenRequests = mutation({
       }
 
       // Create scrape job
-      await ctx.db.insert('scrapeJobs', {
-        sourceId: source!._id,
-        status: 'pending',
-        triggeredBy: 'fix-and-deploy',
-        startedAt: Date.now(),
-      });
-      jobsCreated++;
+      const fixJobId = await createJobWithWorkflow(ctx, source!._id, 'fix-and-deploy');
+      if (fixJobId) jobsCreated++;
     }
 
     return {

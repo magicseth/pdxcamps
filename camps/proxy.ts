@@ -1,31 +1,45 @@
 import { authkitMiddleware } from '@workos-inc/authkit-nextjs';
+import { NextRequest } from 'next/server';
 
-// Determine redirect URI based on environment
-const getRedirectUri = () => {
-  // Check for explicit env var first
-  if (process.env.WORKOS_REDIRECT_URI) {
-    return process.env.WORKOS_REDIRECT_URI;
-  }
-  // Netlify production
-  if (process.env.URL) {
-    return `${process.env.URL}/callback`;
-  }
-  // Vercel
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}/callback`;
-  }
-  // Default for local dev
-  return 'http://localhost:3000/callback';
-};
+const UNAUTHENTICATED_PATHS = [
+  '/',
+  '/sign-in',
+  '/sign-up',
+  '/share/:path*',
+  '/discover/:path*',
+  '/invite/:path*',
+  '/terms',
+  '/privacy',
+  '/blog/:path*',
+  '/:citySlug/:pageSlug',
+  '/:citySlug/neighborhoods',
+  '/:citySlug/neighborhoods/:neighborhoodSlug',
+];
 
-export default authkitMiddleware({
-  eagerAuth: true,
-  middlewareAuth: {
-    enabled: true,
-    unauthenticatedPaths: ['/', '/sign-in', '/sign-up', '/share/:path*', '/discover/:path*', '/invite/:path*', '/terms', '/privacy'],
-  },
-  redirectUri: getRedirectUri(),
-});
+/**
+ * Dynamic middleware that computes the redirectUri per-request based on the
+ * actual hostname. This is critical for multi-market deployments where a single
+ * Netlify site serves multiple domains (pdxcamps.com, seacamps.com, etc.).
+ *
+ * Without this, Netlify's process.env.URL (the primary domain) would be used
+ * for ALL auth redirects, sending users to the wrong site after sign-in.
+ */
+export default async function middleware(request: NextRequest) {
+  const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || '';
+  const protocol = host.includes('localhost') ? 'http' : 'https';
+  const redirectUri = `${protocol}://${host}/callback`;
+
+  const handler = authkitMiddleware({
+    eagerAuth: true,
+    middlewareAuth: {
+      enabled: true,
+      unauthenticatedPaths: UNAUTHENTICATED_PATHS,
+    },
+    redirectUri,
+  });
+
+  return handler(request, {} as never);
+}
 
 export const config = {
   matcher: [

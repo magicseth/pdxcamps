@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import Link from 'next/link';
 
 interface SeoSession {
@@ -112,53 +114,64 @@ export function SeoPageClient({
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       {/* Hero Section */}
-      <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+      <header className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
         <div className="max-w-5xl mx-auto px-4 py-8 sm:py-12">
           {/* Breadcrumb */}
-          <nav aria-label="Breadcrumb" className="mb-4 text-sm text-slate-500 dark:text-slate-400">
+          <nav aria-label="Breadcrumb" className="mb-4 text-sm text-slate-400">
             <ol className="flex items-center gap-1.5 flex-wrap">
               <li>
-                <Link href="/" className="hover:text-primary">
+                <Link href="/" className="hover:text-white transition-colors">
                   Home
                 </Link>
               </li>
               <li aria-hidden="true">/</li>
               <li>
-                <Link href={discoverHref} className="hover:text-primary">
+                <Link href={discoverHref} className="hover:text-white transition-colors">
                   {cityName} Camps
                 </Link>
               </li>
               <li aria-hidden="true">/</li>
-              <li className="text-slate-700 dark:text-slate-200 font-medium" aria-current="page">
+              <li className="text-white font-medium" aria-current="page">
                 {filterLabel}
               </li>
             </ol>
           </nav>
 
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white mb-4">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-4">
             {title.replace(/ \| Summer \d{4}$/, '')}
           </h1>
 
-          <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-3xl leading-relaxed">
+          <p className="text-base sm:text-lg text-slate-300 max-w-3xl leading-relaxed">
             {intro}
           </p>
 
           {/* Quick stats */}
           {totalCount > 0 && (
-            <div className="mt-6 flex flex-wrap gap-4 text-sm">
-              <StatBadge label="Programs" value={totalCount.toString()} />
-              <StatBadge label="Organizations" value={stats.organizationCount.toString()} />
+            <div className="mt-6 flex flex-wrap gap-3 text-sm">
+              <div className="px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white font-medium">
+                <span className="font-semibold">{totalCount}</span>{' '}
+                <span className="text-xs opacity-75">Programs</span>
+              </div>
+              <div className="px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white font-medium">
+                <span className="font-semibold">{stats.organizationCount}</span>{' '}
+                <span className="text-xs opacity-75">Organizations</span>
+              </div>
               {stats.availableCount > 0 && (
-                <StatBadge label="With spots" value={stats.availableCount.toString()} accent />
+                <div className="px-3 py-1.5 rounded-full bg-green-500/20 backdrop-blur-sm border border-green-400/30 text-green-300 font-medium">
+                  <span className="font-semibold">{stats.availableCount}</span>{' '}
+                  <span className="text-xs opacity-75">With spots</span>
+                </div>
               )}
               {stats.minPrice > 0 && (
-                <StatBadge
-                  label="Price range"
-                  value={`$${Math.round(stats.minPrice / 100)} - $${Math.round(stats.maxPrice / 100)}`}
-                />
+                <div className="px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white font-medium">
+                  <span className="font-semibold">${Math.round(stats.minPrice / 100)} - ${Math.round(stats.maxPrice / 100)}</span>{' '}
+                  <span className="text-xs opacity-75">Price range</span>
+                </div>
               )}
               {stats.minPrice === 0 && stats.maxPrice === 0 && (
-                <StatBadge label="Price" value="Free" accent />
+                <div className="px-3 py-1.5 rounded-full bg-green-500/20 backdrop-blur-sm border border-green-400/30 text-green-300 font-medium">
+                  <span className="font-semibold">Free</span>
+                </div>
               )}
             </div>
           )}
@@ -229,28 +242,38 @@ export function SeoPageClient({
           </div>
         )}
 
-        {/* CTA */}
-        <div className="mt-10 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-6 sm:p-8 text-center">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
-            Plan your whole summer
-          </h2>
-          <p className="text-slate-600 dark:text-slate-300 mb-4 max-w-lg mx-auto">
-            Use our free planner to map out every week of summer. Add kids, track camps, and fill
-            the gaps -- all in one place.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link
-              href="/"
-              className="px-6 py-2.5 bg-primary text-white font-medium rounded-lg hover:bg-primary-dark transition-colors"
-            >
-              Open Summer Planner
-            </Link>
-            <Link
-              href={discoverHref}
-              className="px-6 py-2.5 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-medium rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-            >
-              Browse All Camps
-            </Link>
+        {/* CTA + Email Capture */}
+        <div className="mt-10 grid sm:grid-cols-2 gap-6">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
+              Plan your whole summer
+            </h2>
+            <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">
+              Map out every week. Add kids, track camps, and fill the gaps — all free.
+            </p>
+            <div className="flex flex-col gap-2">
+              <Link
+                href="/"
+                className="px-5 py-2.5 bg-primary text-white font-medium rounded-lg hover:bg-primary-dark transition-colors text-center text-sm"
+              >
+                Open Summer Planner
+              </Link>
+              <Link
+                href={discoverHref}
+                className="px-5 py-2.5 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-medium rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-center text-sm"
+              >
+                Browse All Camps
+              </Link>
+            </div>
+          </div>
+          <div className="bg-gradient-to-br from-primary/5 to-accent/5 dark:from-primary/10 dark:to-accent/10 rounded-xl border border-primary/20 p-6">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-1">
+              Get weekly updates for {cityName}
+            </h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+              New sessions, price drops, and spots opening up — straight to your inbox.
+            </p>
+            <SeoEmailCapture citySlug={citySlug} cityName={cityName} pageSlug={pageSlug} />
           </div>
         </div>
 
@@ -289,29 +312,6 @@ export function SeoPageClient({
           <span className="text-slate-700 dark:text-slate-200">{filterLabel}</span>
         </nav>
       </footer>
-    </div>
-  );
-}
-
-function StatBadge({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: string;
-  accent?: boolean;
-}) {
-  return (
-    <div
-      className={`px-3 py-1.5 rounded-full text-sm font-medium ${
-        accent
-          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-          : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
-      }`}
-    >
-      <span className="font-semibold">{value}</span>{' '}
-      <span className="text-xs opacity-75">{label}</span>
     </div>
   );
 }
@@ -528,5 +528,60 @@ function SeoSessionCard({ session }: { session: SeoSession }) {
         </div>
       </div>
     </article>
+  );
+}
+
+function SeoEmailCapture({
+  citySlug,
+  cityName,
+  pageSlug,
+}: {
+  citySlug: string;
+  cityName: string;
+  pageSlug: string;
+}) {
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  const captureEmail = useMutation(api.leads.mutations.captureEmail);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setStatus('submitting');
+    try {
+      await captureEmail({ email: email.trim(), citySlug, source: `seo-${pageSlug}` });
+      setStatus('success');
+      setEmail('');
+    } catch {
+      setStatus('error');
+    }
+  };
+
+  if (status === 'success') {
+    return (
+      <p className="text-green-700 dark:text-green-400 font-medium py-2">
+        You&apos;re on the list! We&apos;ll send you updates for {cityName}.
+      </p>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex gap-2">
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="your@email.com"
+        required
+        className="flex-1 px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400"
+      />
+      <button
+        type="submit"
+        disabled={status === 'submitting'}
+        className="px-5 py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark disabled:opacity-50 transition-colors whitespace-nowrap"
+      >
+        {status === 'submitting' ? 'Joining...' : 'Sign Up'}
+      </button>
+    </form>
   );
 }

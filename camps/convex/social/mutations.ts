@@ -1,4 +1,4 @@
-import { mutation } from '../_generated/server';
+import { mutation, internalMutation } from '../_generated/server';
 import { v } from 'convex/values';
 import { internal } from '../_generated/api';
 import { requireFamily, getFamily } from '../lib/auth';
@@ -122,6 +122,17 @@ export const sendFriendRequest = mutation({
           status: 'accepted',
           acceptedAt: Date.now(),
         });
+
+        // Notify both parties about the auto-accepted friendship
+        await ctx.scheduler.runAfter(0, internal.social.mutations.sendFriendAcceptedEmail, {
+          accepterFamilyId: family._id,
+          recipientFamilyId: existingAsAddressee.requesterId,
+        });
+        await ctx.scheduler.runAfter(0, internal.social.mutations.sendFriendAcceptedEmail, {
+          accepterFamilyId: addressee._id,
+          recipientFamilyId: family._id,
+        });
+
         return existingAsAddressee._id;
       }
       if (existingAsAddressee.status === 'accepted') {
@@ -170,6 +181,12 @@ export const acceptFriendRequest = mutation({
     await ctx.db.patch(args.friendshipId, {
       status: 'accepted',
       acceptedAt: Date.now(),
+    });
+
+    // Send acceptance email to the requester
+    await ctx.scheduler.runAfter(0, internal.social.mutations.sendFriendAcceptedEmail, {
+      accepterFamilyId: family._id,
+      recipientFamilyId: friendship.requesterId,
     });
 
     return args.friendshipId;
@@ -500,5 +517,71 @@ export const revokeCalendarShare = mutation({
     });
 
     return args.shareId;
+  },
+});
+
+/**
+ * Send "friend request accepted" email notification.
+ * Called internally when a friend request is accepted (manually or auto-accepted).
+ * Includes kid first names so the recipient knows whose calendars they can view.
+ */
+export const sendFriendAcceptedEmail = internalMutation({
+  args: {
+    accepterFamilyId: v.id('families'),
+    recipientFamilyId: v.id('families'),
+  },
+  handler: async (ctx, args) => {
+    const accepter = await ctx.db.get(args.accepterFamilyId);
+    const recipient = await ctx.db.get(args.recipientFamilyId);
+    if (!accepter || !recipient) return;
+
+    // Get accepter's children names to include in email
+    const children = await ctx.db
+      .query('children')
+      .withIndex('by_family', (q) => q.eq('familyId', accepter._id))
+      .collect();
+    const activeChildren = children.filter((c) => c.isActive);
+    const kidNames = activeChildren.map((c) => c.firstName);
+
+    // Get city/brand info from the recipient's city
+    const city = await ctx.db.get(recipient.primaryCityId);
+    const brandName = city?.brandName || 'PDX Camps';
+    const domain = city?.domain || 'pdxcamps.com';
+
+    const kidLine =
+      kidNames.length > 0
+        ? `<p>${accepter.displayName}'s kids: <strong>${kidNames.join(', ')}</strong></p>`
+        : '';
+
+    await ctx.scheduler.runAfter(0, internal.email.sendEmail, {
+      to: recipient.email,
+      subject: `${accepter.displayName} accepted your friend request on ${brandName}!`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
+          <p>Hi ${recipient.displayName},</p>
+
+          <p>Great news! <strong>${accepter.displayName}</strong> accepted your friend request on ${brandName}.</p>
+
+          ${kidLine}
+
+          <p>Now you can:</p>
+          <ul>
+            <li>Share your camp calendars with each other</li>
+            <li>See which camps your friend's kids are signed up for</li>
+            <li>Coordinate schedules so your kids can go to camp together</li>
+          </ul>
+
+          <p style="text-align: center; margin: 24px 0;">
+            <a href="https://${domain}/friends" style="display: inline-block; padding: 14px 28px; background-color: #E5A33B; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">View Your Friends</a>
+          </p>
+
+          <p style="color: #666; font-size: 14px; margin-top: 24px; border-top: 1px solid #eee; padding-top: 16px;">
+            — The ${brandName} Team<br/>
+            <a href="https://${domain}" style="color: #E5A33B;">${domain}</a>
+          </p>
+        </div>
+      `,
+      text: `Hi ${recipient.displayName},\n\nGreat news! ${accepter.displayName} accepted your friend request on ${brandName}.\n\n${kidNames.length > 0 ? `${accepter.displayName}'s kids: ${kidNames.join(', ')}\n\n` : ''}Now you can share camp calendars, see each other's camp schedules, and coordinate so your kids can go to camp together.\n\nView your friends: https://${domain}/friends\n\n— The ${brandName} Team\nhttps://${domain}`,
+    });
   },
 });

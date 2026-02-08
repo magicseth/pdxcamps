@@ -1,7 +1,7 @@
 'use node';
 
-import { action } from '../_generated/server';
-import { api } from '../_generated/api';
+import { action, internalAction } from '../_generated/server';
+import { api, internal } from '../_generated/api';
 import { v } from 'convex/values';
 
 // Porkbun API types
@@ -697,6 +697,117 @@ export const createNetlifyDnsZone = action({
 });
 
 /**
+ * List DNS records for a Netlify DNS zone
+ */
+export const listNetlifyDnsRecords = action({
+  args: { zoneId: v.string() },
+  handler: async (_, args): Promise<{
+    success: boolean;
+    records?: Array<{ id: string; type: string; hostname: string; value: string; ttl?: number; priority?: number }>;
+    error?: string;
+  }> => {
+    const token = process.env.NETLIFY_ACCESS_TOKEN;
+    if (!token) return { success: false, error: 'Netlify access token not configured' };
+
+    try {
+      const response = await fetch(
+        `https://api.netlify.com/api/v1/dns_zones/${args.zoneId}/dns_records`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (!response.ok) return { success: false, error: `API error: ${response.status}` };
+
+      const records = await response.json();
+      return {
+        success: true,
+        records: records.map((r: Record<string, unknown>) => ({
+          id: r.id,
+          type: r.type,
+          hostname: r.hostname,
+          value: r.value,
+          ttl: r.ttl,
+          priority: r.priority,
+        })),
+      };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  },
+});
+
+/**
+ * Delete a DNS record from a Netlify DNS zone
+ */
+export const deleteNetlifyDnsRecord = action({
+  args: { zoneId: v.string(), recordId: v.string() },
+  handler: async (_, args): Promise<{ success: boolean; error?: string }> => {
+    const token = process.env.NETLIFY_ACCESS_TOKEN;
+    if (!token) return { success: false, error: 'Netlify access token not configured' };
+
+    try {
+      const response = await fetch(
+        `https://api.netlify.com/api/v1/dns_zones/${args.zoneId}/dns_records/${args.recordId}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (!response.ok) {
+        const text = await response.text();
+        return { success: false, error: `API error: ${response.status} - ${text}` };
+      }
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  },
+});
+
+/**
+ * Remove a domain from a specific Netlify site
+ */
+export const removeDomainFromNetlifySite = action({
+  args: {
+    siteId: v.string(),
+    domain: v.string(),
+  },
+  handler: async (_, args): Promise<{ success: boolean; error?: string }> => {
+    const token = process.env.NETLIFY_ACCESS_TOKEN;
+    if (!token) return { success: false, error: 'Netlify access token not configured' };
+
+    try {
+      const getResponse = await fetch(`https://api.netlify.com/api/v1/sites/${args.siteId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!getResponse.ok) {
+        return { success: false, error: `Failed to get site info: ${getResponse.status}` };
+      }
+
+      const site = await getResponse.json();
+      const currentAliases: string[] = site.domain_aliases || [];
+      const newAliases = currentAliases.filter(
+        (a) => a !== args.domain && a !== `www.${args.domain}`,
+      );
+
+      const patchResponse = await fetch(`https://api.netlify.com/api/v1/sites/${args.siteId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ domain_aliases: newAliases }),
+      });
+
+      if (!patchResponse.ok) {
+        const errorText = await patchResponse.text();
+        return { success: false, error: `Failed to remove domain: ${patchResponse.status} - ${errorText}` };
+      }
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  },
+});
+
+/**
  * Add a custom domain to the Netlify site
  * This connects the domain to the project so Netlify serves it
  */
@@ -837,9 +948,10 @@ export const listNetlifyDnsZones = action({
 
       const zones = await response.json();
       return {
-        zones: zones.map((z: { id: string; name: string }) => ({
+        zones: zones.map((z: { id: string; name: string; dns_servers?: string[] }) => ({
           id: z.id,
           name: z.name,
+          nameservers: z.dns_servers,
         })),
       };
     } catch (error) {
@@ -1298,6 +1410,60 @@ export const checkResendDomainStatus = action({
   },
 });
 
+/**
+ * List all Resend domains with their records and status
+ */
+export const listResendDomains = action({
+  args: {},
+  handler: async (): Promise<{
+    success: boolean;
+    domains?: Array<{
+      id: string;
+      name: string;
+      status: string;
+      records?: Array<{ type: string; name: string; value: string; status: string; priority?: number }>;
+    }>;
+    error?: string;
+  }> => {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      return { success: false, error: 'RESEND_API_KEY not configured' };
+    }
+
+    const { Resend } = await import('resend');
+    const resend = new Resend(apiKey);
+
+    try {
+      const { data, error } = await resend.domains.list();
+      if (error) return { success: false, error: error.message };
+      if (!data) return { success: false, error: 'No data returned' };
+
+      // Get records for each domain
+      const domains = await Promise.all(
+        data.data.map(async (d) => {
+          const detail = await resend.domains.get(d.id);
+          return {
+            id: d.id,
+            name: d.name,
+            status: d.status,
+            records: detail.data?.records?.map((r) => ({
+              type: r.type,
+              name: r.name,
+              value: r.value,
+              status: r.status,
+              priority: r.priority ?? undefined,
+            })),
+          };
+        }),
+      );
+
+      return { success: true, domains };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  },
+});
+
 // ============ NETLIFY DNS RECORD MANAGEMENT ============
 
 /**
@@ -1551,5 +1717,95 @@ export const ensureAllCityDomainsConfigured = action({
     }
 
     return { processed: results };
+  },
+});
+
+// ============================================
+// WORKFLOW HELPERS
+// ============================================
+
+/**
+ * Find first available domain from a list and purchase it.
+ * Used by the market launch workflow.
+ */
+export const findAndPurchaseDomain = internalAction({
+  args: {
+    marketKey: v.string(),
+    suggestedDomains: v.array(v.string()),
+  },
+  handler: async (ctx, args): Promise<{ success: boolean; domain?: string; error?: string }> => {
+    const apiKey = process.env.PORKBUN_API_KEY;
+    const secretApiKey = process.env.PORKBUN_SECRET_API_KEY;
+
+    if (!apiKey || !secretApiKey) {
+      return { success: false, error: 'Porkbun API credentials not configured' };
+    }
+
+    for (const domain of args.suggestedDomains) {
+      try {
+        // Check availability
+        const checkResponse = await fetch('https://porkbun.com/api/json/v3/domain/checkAvailability', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            secretapikey: secretApiKey,
+            apikey: apiKey,
+            domain,
+          }),
+        });
+
+        const checkData = await checkResponse.json();
+
+        if (checkData.status === 'SUCCESS' && checkData.yourPrice) {
+          console.log(`[${args.marketKey}] Domain ${domain} available at $${checkData.yourPrice}`);
+
+          // Select domain
+          await ctx.runMutation(api.expansion.mutations.selectDomain, {
+            marketKey: args.marketKey,
+            domain,
+          });
+
+          // Purchase it
+          const purchaseResponse = await fetch('https://porkbun.com/api/json/v3/domain/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              secretapikey: secretApiKey,
+              apikey: apiKey,
+              domain,
+            }),
+          });
+
+          const purchaseData = await purchaseResponse.json();
+
+          if (purchaseData.status === 'SUCCESS') {
+            // Record purchase
+            await ctx.runMutation(api.expansion.mutations.recordDomainPurchase, {
+              marketKey: args.marketKey,
+              domain,
+              porkbunOrderId: purchaseData.orderId?.toString(),
+            });
+
+            // Also add to domains array
+            await ctx.runMutation(api.expansion.mutations.addDomain, {
+              marketKey: args.marketKey,
+              domain,
+              orderId: purchaseData.orderId?.toString(),
+              makePrimary: true,
+            });
+
+            return { success: true, domain };
+          } else {
+            console.log(`[${args.marketKey}] Purchase failed for ${domain}: ${purchaseData.message}`);
+          }
+        } else {
+          console.log(`[${args.marketKey}] Domain ${domain} not available`);
+        }
+      } catch (error) {
+        console.error(`[${args.marketKey}] Error checking ${domain}:`, error instanceof Error ? error.message : error);
+      }
+    }
+
+    return { success: false, error: `None of ${args.suggestedDomains.length} suggested domains were available` };
   },
 });

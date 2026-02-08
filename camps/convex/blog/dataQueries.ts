@@ -117,3 +117,40 @@ export const getRecentSessions = internalQuery({
     }));
   },
 });
+
+export const getRecentSessionsByCity = internalQuery({
+  args: { daysBack: v.number(), cityId: v.string() },
+  handler: async (ctx, args) => {
+    const cutoff = Date.now() - args.daysBack * 24 * 60 * 60 * 1000;
+
+    const sessions = await ctx.db
+      .query('sessions')
+      .withIndex('by_city_and_status', (q) =>
+        q.eq('cityId', args.cityId as any).eq('status', 'active'),
+      )
+      .collect();
+
+    const recent = sessions.filter((s) => s._creationTime > cutoff);
+
+    return recent.map((s) => ({
+      campName: s.campName ?? 'Unknown Camp',
+      orgName: s.organizationName ?? 'Unknown Org',
+      price: s.price,
+      startDate: s.startDate,
+      endDate: s.endDate,
+      ageMin: s.ageRequirements.minAge,
+      ageMax: s.ageRequirements.maxAge,
+      categories: s.campCategories ?? [],
+    }));
+  },
+});
+
+export const getActiveCities = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db
+      .query('cities')
+      .withIndex('by_is_active', (q) => q.eq('isActive', true))
+      .collect();
+  },
+});

@@ -19,7 +19,9 @@ export interface SeoPageConfig {
     | { type: 'age'; minAge: number; maxAge: number; label: string }
     | { type: 'price'; maxPriceCents: number; label: string }
     | { type: 'time'; timeOfDay: 'morning' | 'afternoon' | 'fullday'; label: string }
-    | { type: 'free' };
+    | { type: 'free' }
+    | { type: 'startsWithinDays'; days: number; label: string }
+    | { type: 'extendedCare'; label: string };
 }
 
 // ---- Category pages ----
@@ -231,11 +233,50 @@ const timePages: SeoPageConfig[] = [
   },
 ];
 
+// ---- Urgency / timing pages ----
+
+const urgencyPages: SeoPageConfig[] = [
+  {
+    slug: 'camps-this-week',
+    title: 'Camps Starting This Week in {city} | Summer {year}',
+    description:
+      'Summer camps starting this week in {city}. Last-minute options still available for {year}.',
+    intro:
+      "Need something for this week? These camps in {city} start in the next 7 days and still have spots. It's not too late -- some of the best camp experiences happen when you jump in last minute. We update this page daily so you always see what's currently available.",
+    filter: { type: 'startsWithinDays', days: 7, label: 'Starting This Week' },
+  },
+  {
+    slug: 'last-minute-camps',
+    title: 'Last-Minute Summer Camps in {city} | Summer {year}',
+    description:
+      'Last-minute summer camps with open spots in {city} for {year}. Find available camps starting in the next 2 weeks.',
+    intro:
+      "Plans fell through? Kid bored already? These camps in {city} start within the next two weeks and still have spots available. We check availability regularly so you can find real openings, not phantom listings. Sort by start date to see what's coming up soonest.",
+    filter: { type: 'startsWithinDays', days: 14, label: 'Last Minute' },
+  },
+];
+
+// ---- Special feature pages ----
+
+const featurePages: SeoPageConfig[] = [
+  {
+    slug: 'camps-with-extended-care',
+    title: 'Camps with Extended Care in {city} | Summer {year}',
+    description:
+      'Summer camps in {city} with before and after care options. Extended hours for working parents.',
+    intro:
+      "Need early drop-off or late pick-up? These camps in {city} offer extended care options beyond the normal camp hours. Perfect for working parents who need coverage from 7-8am through 5-6pm. Extended care is sometimes included in the price and sometimes an add-on, so check each listing for details.",
+    filter: { type: 'extendedCare', label: 'Extended Care' },
+  },
+];
+
 export const SEO_PAGES: SeoPageConfig[] = [
   ...categoryPages,
   ...agePages,
   ...pricePages,
   ...timePages,
+  ...urgencyPages,
+  ...featurePages,
 ];
 
 /** Look up a page config by slug */

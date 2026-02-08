@@ -165,30 +165,51 @@ interface PostTopic {
   filter?: string;
 }
 
+/**
+ * Generate a city-aware slug and title from a topic template.
+ * Replaces {city} and {citySlug} placeholders.
+ */
+function cityTopic(topic: PostTopic, citySlug: string, cityName: string): PostTopic {
+  const year = new Date().getFullYear().toString();
+  return {
+    ...topic,
+    slug: topic.slug
+      .replace(/\{citySlug\}/g, citySlug)
+      .replace(/\{year\}/g, year),
+    title: topic.title
+      .replace(/\{city\}/g, cityName)
+      .replace(/\{year\}/g, year),
+    prompt: topic.prompt
+      .replace(/\{city\}/g, cityName)
+      .replace(/\{year\}/g, year),
+    tags: topic.tags.map((t) => t.replace(/\{citySlug\}/g, citySlug).replace(/\{year\}/g, year)),
+  };
+}
+
 const POST_TOPICS: PostTopic[] = [
   {
-    slug: 'complete-guide-summer-camps-portland-2025',
-    title: 'The Complete Guide to Summer Camps in Portland 2025',
+    slug: 'complete-guide-summer-camps-{citySlug}-{year}',
+    title: 'The Complete Guide to Summer Camps in {city} {year}',
     category: 'guide',
-    tags: ['portland', 'summer-camps', 'guide', '2025'],
-    prompt: `Write a comprehensive guide to summer camps in Portland for 2025. Cover:
+    tags: ['{citySlug}', 'summer-camps', 'guide', '{year}'],
+    prompt: `Write a comprehensive guide to summer camps in {city} for {year}. Cover:
 - How many organizations and sessions are available (use real numbers)
 - Price range overview (reference real min/max/avg)
 - Category breakdown (which types of camps are most popular)
 - Top organizations by volume
 - Age range availability
 - Tips for planning (when to register, how to fill the whole summer)
-- Brief mention of PDX Camps as a tool for comparing and planning
+- Brief mention of the site as a tool for comparing and planning
 
 End with a CTA to browse all camps on the site.`,
   },
   {
-    slug: 'best-stem-technology-camps-portland',
-    title: 'Best STEM & Technology Camps in Portland',
+    slug: 'best-stem-technology-camps-{citySlug}',
+    title: 'Best STEM & Technology Camps in {city}',
     category: 'stem',
-    tags: ['portland', 'stem', 'technology', 'coding', 'robotics'],
+    tags: ['{citySlug}', 'stem', 'technology', 'coding', 'robotics'],
     filter: 'stem',
-    prompt: `Write about STEM and technology camps in Portland. Cover:
+    prompt: `Write about STEM and technology camps in {city}. Cover:
 - Overview of STEM camp options (count from real data)
 - Highlight specific organizations running STEM camps (name real ones)
 - Price comparison across STEM providers
@@ -199,12 +220,12 @@ End with a CTA to browse all camps on the site.`,
 End with a CTA to browse STEM camps using our filter.`,
   },
   {
-    slug: 'affordable-summer-camps-under-300-portland',
-    title: 'Affordable Summer Camps Under $300/Week in Portland',
+    slug: 'affordable-summer-camps-under-300-{citySlug}',
+    title: 'Affordable Summer Camps Under $300/Week in {city}',
     category: 'budget',
-    tags: ['portland', 'affordable', 'budget', 'cheap'],
+    tags: ['{citySlug}', 'affordable', 'budget', 'cheap'],
     filter: 'budget',
-    prompt: `Write about budget-friendly summer camps in Portland. Cover:
+    prompt: `Write about budget-friendly summer camps in {city}. Cover:
 - How many camps are available under $300/week
 - Free camp options (if any)
 - Best-value organizations
@@ -215,12 +236,12 @@ End with a CTA to browse STEM camps using our filter.`,
 End with a CTA to use our price filters.`,
   },
   {
-    slug: 'full-day-summer-camps-working-parents-portland',
-    title: 'Full-Day Summer Camps for Working Parents in Portland',
+    slug: 'full-day-summer-camps-working-parents-{citySlug}',
+    title: 'Full-Day Summer Camps for Working Parents in {city}',
     category: 'guide',
-    tags: ['portland', 'full-day', 'working-parents', 'extended-care'],
+    tags: ['{citySlug}', 'full-day', 'working-parents', 'extended-care'],
     filter: 'fullday',
-    prompt: `Write about full-day camps for working parents. Cover:
+    prompt: `Write about full-day camps for working parents in {city}. Cover:
 - How many full-day options exist (8am+ dropoff, 4pm+ pickup)
 - Extended care availability
 - Organizations with the best schedules for working parents
@@ -231,12 +252,12 @@ End with a CTA to use our price filters.`,
 End with a CTA to browse full-day camps.`,
   },
   {
-    slug: 'summer-camps-little-kids-ages-4-6-portland',
-    title: 'Summer Camps for Little Kids (Ages 4-6) in Portland',
+    slug: 'summer-camps-little-kids-ages-4-6-{citySlug}',
+    title: 'Summer Camps for Little Kids (Ages 4-6) in {city}',
     category: 'age-guide',
-    tags: ['portland', 'preschool', 'kindergarten', 'young-kids', 'ages-4-6'],
+    tags: ['{citySlug}', 'preschool', 'kindergarten', 'young-kids', 'ages-4-6'],
     filter: 'young',
-    prompt: `Write about camps for young children ages 4-6. Cover:
+    prompt: `Write about camps for young children ages 4-6 in {city}. Cover:
 - How many camps accept this age range
 - Half-day vs full-day options for little ones
 - What to look for (staff ratios, program structure)
@@ -247,50 +268,50 @@ End with a CTA to browse full-day camps.`,
 End with a CTA to filter camps by age.`,
   },
   {
-    slug: 'outdoor-nature-camps-portland',
-    title: 'Outdoor & Nature Camps in Portland',
+    slug: 'outdoor-nature-camps-{citySlug}',
+    title: 'Outdoor & Nature Camps in {city}',
     category: 'outdoor',
-    tags: ['portland', 'outdoor', 'nature', 'hiking', 'adventure'],
+    tags: ['{citySlug}', 'outdoor', 'nature', 'hiking', 'adventure'],
     filter: 'outdoor',
-    prompt: `Write about outdoor and nature camps in Portland. Cover:
+    prompt: `Write about outdoor and nature camps in {city}. Cover:
 - Count of outdoor/nature camp options
 - Real organizations running outdoor programs
 - Types of outdoor activities (hiking, creek play, gardening, wildlife)
-- Portland's unique advantage for outdoor camps (Forest Park, etc.)
+- The area's unique advantages for outdoor camps
 - Price ranges for outdoor programs
 - What to pack for outdoor camp
 
 End with a CTA to browse outdoor camps.`,
   },
   {
-    slug: 'art-music-creative-camps-portland',
-    title: 'Art, Music & Creative Camps in Portland',
+    slug: 'art-music-creative-camps-{citySlug}',
+    title: 'Art, Music & Creative Camps in {city}',
     category: 'arts',
-    tags: ['portland', 'art', 'music', 'creative', 'drama', 'dance'],
+    tags: ['{citySlug}', 'art', 'music', 'creative', 'drama', 'dance'],
     filter: 'arts',
-    prompt: `Write about arts and creative camps in Portland. Cover:
+    prompt: `Write about arts and creative camps in {city}. Cover:
 - Count of arts camps (art, music, drama, dance, cooking combined)
 - Real organizations with arts programs
 - Different types: visual arts, music, theater, dance, cooking
 - Price ranges across creative camps
 - What kids take home / perform at the end
-- Portland's creative community as a backdrop
+- The city's creative community as a backdrop
 
 End with a CTA to browse arts camps.`,
   },
   {
-    slug: 'how-to-plan-kids-summer-without-losing-your-mind',
-    title: "How to Plan Your Kid's Summer Without Losing Your Mind",
+    slug: 'how-to-plan-kids-summer-{citySlug}',
+    title: "How to Plan Your Kid's Summer in {city} Without Losing Your Mind",
     category: 'tips',
-    tags: ['planning', 'tips', 'summer', 'parents'],
-    prompt: `Write a practical, relatable guide for parents planning summer camp schedules. Cover:
+    tags: ['{citySlug}', 'planning', 'tips', 'summer', 'parents'],
+    prompt: `Write a practical, relatable guide for parents in {city} planning summer camp schedules. Cover:
 - The overwhelm of summer planning (empathize)
 - Step-by-step approach to filling the summer
 - How to use week-by-week view to spot gaps
 - Mixing camp types to keep things interesting
 - Coordinating with working parent schedules
-- How PDX Camps helps (browse, compare, track registrations, share with friends)
-- Real stats about how many options are available
+- How the camp planning tool helps (browse, compare, track registrations, share with friends)
+- Real stats about how many options are available in {city}
 
 This should be product-focused but genuinely helpful. Show how the planner tool solves real problems.`,
   },
@@ -306,17 +327,21 @@ export const generatePost = internalAction({
     publish: v.optional(v.boolean()),
   },
   handler: async (ctx, args): Promise<{ postId: string; slug: string }> => {
-    const topic = POST_TOPICS[args.topicIndex];
-    if (!topic) {
+    const rawTopic = POST_TOPICS[args.topicIndex];
+    if (!rawTopic) {
       throw new Error(`Invalid topic index: ${args.topicIndex}`);
     }
 
     // Get city
     const citySlug = args.citySlug ?? 'portland';
-    const city: { _id: string; name: string } | null = await ctx.runQuery(internal.blog.dataQueries.getCityBySlug, { slug: citySlug });
+    const city: { _id: string; name: string; brandName?: string; domain?: string } | null = await ctx.runQuery(internal.blog.dataQueries.getCityBySlug, { slug: citySlug });
     if (!city) {
       throw new Error(`City not found: ${citySlug}`);
     }
+
+    const topic = cityTopic(rawTopic, citySlug, city.name);
+    const brandName = city.brandName ?? 'Camp Guide';
+    const domain = city.domain ?? 'pdxcamps.com';
 
     console.log(`Generating blog post: "${topic.title}" for ${city.name}`);
 
@@ -334,7 +359,7 @@ export const generatePost = internalAction({
       messages: [
         {
           role: 'user',
-          content: `You are writing a blog post for PDX Camps (pdxcamps.com), a free summer camp planning tool for Portland families. Your tone is that of a knowledgeable local parent helping other parents -- warm, practical, slightly informal but not cringey. You are NOT generic AI content. You are a real person who knows Portland and has actually used these camps.
+          content: `You are writing a blog post for ${brandName} (${domain}), a free summer camp planning tool for ${city.name} families. Your tone is that of a knowledgeable local parent helping other parents -- warm, practical, slightly informal but not cringey. You are NOT generic AI content. You are a real person who knows ${city.name} and has actually used these camps.
 
 IMPORTANT RULES:
 - Reference REAL camp names, organizations, and prices from the data below
@@ -397,7 +422,7 @@ ${content.slice(0, 500)}`,
       cityId: city._id as any,
       category: topic.category,
       tags: topic.tags,
-      metaTitle: `${topic.title} | PDX Camps`,
+      metaTitle: `${topic.title} | ${brandName}`,
       metaDescription,
       generatedBy: 'claude',
       publish: args.publish ?? true,
@@ -441,62 +466,105 @@ export const generateAllPosts = action({
 });
 
 /**
+ * Generate all blog posts for ALL active cities.
+ * Loops through each city and generates the full post set.
+ */
+export const generateAllPostsForAllCities = action({
+  args: {
+    publish: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args): Promise<Array<{ citySlug: string; results: Array<{ slug: string; success: boolean; error?: string }> }>> => {
+    const cities: Array<{ slug: string; name: string }> = await ctx.runQuery(internal.blog.dataQueries.getActiveCities);
+
+    const allResults: Array<{ citySlug: string; results: Array<{ slug: string; success: boolean; error?: string }> }> = [];
+
+    for (const city of cities) {
+      console.log(`\n=== Generating posts for ${city.name} ===`);
+      const results: Array<{ slug: string; success: boolean; error?: string }> = [];
+
+      for (let i = 0; i < POST_TOPICS.length; i++) {
+        try {
+          await ctx.runAction(internal.blog.actions.generatePost, {
+            topicIndex: i,
+            citySlug: city.slug,
+            publish: args.publish ?? true,
+          });
+          const resolved = cityTopic(POST_TOPICS[i], city.slug, city.name);
+          results.push({ slug: resolved.slug, success: true });
+          console.log(`[${city.name}] [${i + 1}/${POST_TOPICS.length}] Generated: ${resolved.slug}`);
+        } catch (error) {
+          const errMsg = error instanceof Error ? error.message : 'Unknown error';
+          results.push({ slug: POST_TOPICS[i].slug, success: false, error: errMsg });
+          console.error(`[${city.name}] [${i + 1}/${POST_TOPICS.length}] Failed:`, errMsg);
+        }
+      }
+
+      allResults.push({ citySlug: city.slug, results });
+    }
+
+    return allResults;
+  },
+});
+
+/**
  * Generate a "New Camps This Week" post from recently scraped data.
- * Called by weekly cron.
+ * Called by weekly cron. Generates per-city weekly updates for all active cities.
  */
 export const generateWeeklyUpdate = internalAction({
   args: {},
-  handler: async (ctx): Promise<{ success?: boolean; skipped?: boolean; reason?: string; count?: number; slug?: string; sessionsCount?: number }> => {
-    // Get sessions added in the past 7 days
-    const recentSessions: Array<{
-      campName: string;
-      orgName: string;
-      price: number;
-      startDate: string;
-      endDate: string;
-      ageMin?: number;
-      ageMax?: number;
-      categories: string[];
-    }> = await ctx.runQuery(internal.blog.dataQueries.getRecentSessions, {
-      daysBack: 7,
-    });
+  handler: async (ctx): Promise<{ results: Array<{ citySlug: string; success?: boolean; skipped?: boolean; reason?: string; sessionsCount?: number; slug?: string }> }> => {
+    const cities: Array<{ _id: string; slug: string; name: string; brandName?: string; domain?: string }> = await ctx.runQuery(internal.blog.dataQueries.getActiveCities);
+    const results: Array<{ citySlug: string; success?: boolean; skipped?: boolean; reason?: string; sessionsCount?: number; slug?: string }> = [];
 
-    if (recentSessions.length < 3) {
-      console.log(`Only ${recentSessions.length} new sessions this week, skipping blog post`);
-      return { skipped: true, reason: 'too_few_sessions', count: recentSessions.length };
-    }
+    for (const city of cities) {
+      try {
+        const recentSessions: Array<{
+          campName: string;
+          orgName: string;
+          price: number;
+          startDate: string;
+          endDate: string;
+          ageMin?: number;
+          ageMax?: number;
+          categories: string[];
+        }> = await ctx.runQuery(internal.blog.dataQueries.getRecentSessionsByCity, {
+          daysBack: 7,
+          cityId: city._id,
+        });
 
-    // Get city (Portland for now)
-    const city: { _id: string; name: string } | null = await ctx.runQuery(internal.blog.dataQueries.getCityBySlug, { slug: 'portland' });
-    if (!city) {
-      throw new Error('Portland city not found');
-    }
+        if (recentSessions.length < 3) {
+          console.log(`[${city.name}] Only ${recentSessions.length} new sessions this week, skipping`);
+          results.push({ citySlug: city.slug, skipped: true, reason: 'too_few_sessions', sessionsCount: recentSessions.length });
+          continue;
+        }
 
-    // Build summary of new camps
-    const orgCounts: Record<string, number> = {};
-    const catCounts: Record<string, number> = {};
-    for (const s of recentSessions) {
-      orgCounts[s.orgName] = (orgCounts[s.orgName] || 0) + 1;
-      for (const cat of s.categories || []) {
-        catCounts[cat] = (catCounts[cat] || 0) + 1;
-      }
-    }
+        const brandName = city.brandName ?? 'Camp Guide';
+        const domain = city.domain ?? 'pdxcamps.com';
 
-    const now = new Date();
-    const weekStr = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-    const slug = `new-camps-added-${now.toISOString().split('T')[0]}`;
-    const title = `New Camps Added This Week - ${weekStr}`;
+        const orgCounts: Record<string, number> = {};
+        const catCounts: Record<string, number> = {};
+        for (const s of recentSessions) {
+          orgCounts[s.orgName] = (orgCounts[s.orgName] || 0) + 1;
+          for (const cat of s.categories || []) {
+            catCounts[cat] = (catCounts[cat] || 0) + 1;
+          }
+        }
 
-    const dataContext = `NEW SESSIONS ADDED IN PAST 7 DAYS:
+        const now = new Date();
+        const weekStr = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        const slug = `new-camps-added-${city.slug}-${now.toISOString().split('T')[0]}`;
+        const title = `New Camps Added in ${city.name} This Week - ${weekStr}`;
+
+        const dataContext = `NEW SESSIONS ADDED IN PAST 7 DAYS FOR ${city.name.toUpperCase()}:
 - Total new sessions: ${recentSessions.length}
 - Organizations: ${Object.entries(orgCounts)
-      .sort((a, b) => b[1] - a[1])
-      .map(([name, count]) => `${name} (${count})`)
-      .join(', ')}
+          .sort((a, b) => b[1] - a[1])
+          .map(([name, count]) => `${name} (${count})`)
+          .join(', ')}
 - Categories: ${Object.entries(catCounts)
-      .sort((a, b) => b[1] - a[1])
-      .map(([cat, count]) => `${cat} (${count})`)
-      .join(', ')}
+          .sort((a, b) => b[1] - a[1])
+          .map(([cat, count]) => `${cat} (${count})`)
+          .join(', ')}
 
 SAMPLE NEW SESSIONS:
 ${recentSessions
@@ -504,14 +572,14 @@ ${recentSessions
   .map((s) => `- "${s.campName}" by ${s.orgName} | ${formatPrice(s.price)} | ${s.startDate}-${s.endDate} | Ages ${s.ageMin ?? '?'}-${s.ageMax ?? '?'}`)
   .join('\n')}`;
 
-    const anthropic = client();
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 2000,
-      messages: [
-        {
-          role: 'user',
-          content: `You are writing a weekly update blog post for PDX Camps (pdxcamps.com). Tone: knowledgeable local parent. Quick, scannable, useful.
+        const anthropic = client();
+        const response = await anthropic.messages.create({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 2000,
+          messages: [
+            {
+              role: 'user',
+              content: `You are writing a weekly update blog post for ${brandName} (${domain}), a summer camp planning tool for ${city.name} families. Tone: knowledgeable local parent. Quick, scannable, useful.
 
 ${dataContext}
 
@@ -523,30 +591,35 @@ Write a short blog post (400-600 words) covering:
 - CTA to check out the new options
 
 Use markdown. Do NOT include the title as H1. Keep it punchy and useful.`,
-        },
-      ],
-    });
+            },
+          ],
+        });
 
-    const content = response.content.find((c) => c.type === 'text')?.text || '';
+        const content = response.content.find((c) => c.type === 'text')?.text || '';
+        const excerpt = `${recentSessions.length} new camp sessions added in ${city.name} this week from ${Object.keys(orgCounts).length} organizations.`;
 
-    const excerpt = `${recentSessions.length} new camp sessions added this week from ${Object.keys(orgCounts).length} organizations.`;
+        await ctx.runMutation(internal.blog.mutations.create, {
+          title,
+          slug,
+          content,
+          excerpt,
+          cityId: city._id as any,
+          category: 'weekly-update',
+          tags: [city.slug, 'weekly-update', 'new-camps'],
+          metaTitle: `${title} | ${brandName}`,
+          metaDescription: excerpt,
+          generatedBy: 'claude',
+          publish: true,
+        });
 
-    await ctx.runMutation(internal.blog.mutations.create, {
-      title,
-      slug,
-      content,
-      excerpt,
-      cityId: city._id as any,
-      category: 'weekly-update',
-      tags: ['portland', 'weekly-update', 'new-camps'],
-      metaTitle: `${title} | PDX Camps`,
-      metaDescription: excerpt,
-      generatedBy: 'claude',
-      publish: true,
-    });
+        console.log(`[${city.name}] Weekly update generated: ${slug}`);
+        results.push({ citySlug: city.slug, success: true, slug, sessionsCount: recentSessions.length });
+      } catch (error) {
+        console.error(`[${city.name}] Weekly update failed:`, error instanceof Error ? error.message : error);
+        results.push({ citySlug: city.slug, success: false, reason: error instanceof Error ? error.message : 'Unknown error' });
+      }
+    }
 
-    console.log(`Weekly update generated: ${slug}`);
-
-    return { success: true, slug, sessionsCount: recentSessions.length };
+    return { results };
   },
 });

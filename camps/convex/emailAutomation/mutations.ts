@@ -18,6 +18,7 @@ export const recordAutomatedEmail = internalMutation({
       v.literal('weekly_digest'),
       v.literal('summer_countdown'),
       v.literal('paywall_nudge'),
+      v.literal('near_paywall_nudge'),
       v.literal('camp_request_fulfilled'),
     ),
     emailId: v.optional(v.string()),

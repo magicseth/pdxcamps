@@ -12,6 +12,7 @@ import { BottomNav } from '../../../components/shared/BottomNav';
 import { MapWrapper, MapSession } from '../../../components/map';
 import { AddChildModal } from '../../../components/planner/AddChildModal';
 import { RequestCampModal } from '../../../components/discover/RequestCampModal';
+import { EmailCapture } from '../../../components/shared/EmailCapture';
 import { SessionCard } from '../../../components/discover/SessionCard';
 import { GroupedSessionCard, SessionGroup } from '../../../components/discover/GroupedSessionCard';
 import { FilterChip } from '../../../components/discover/FilterControls';
@@ -55,6 +56,14 @@ export default function DiscoverPage() {
 
   // Fetch city data
   const city = useQuery(api.cities.queries.getCityBySlug, { slug: citySlug });
+
+  // Track page view
+  useEffect(() => {
+    posthog.capture('discover_viewed', {
+      city_slug: citySlug,
+      market: market.slug,
+    });
+  }, [citySlug]);
 
   // Update document title
   useEffect(() => {
@@ -1186,6 +1195,13 @@ export default function DiscoverPage() {
           </main>
         </div>
       </div>
+
+      {/* Email Capture CTA */}
+      {city && (
+        <div className="max-w-2xl mx-auto px-4 pb-6">
+          <EmailCapture source="discover" citySlug={citySlug} cityName={city.name} />
+        </div>
+      )}
 
       <BottomNav citySlug={citySlug} />
 

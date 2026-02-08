@@ -998,6 +998,7 @@ export default defineSchema({
       v.literal('weekly_digest'),
       v.literal('summer_countdown'),
       v.literal('paywall_nudge'),
+      v.literal('near_paywall_nudge'),
       v.literal('camp_request_fulfilled'),
     ),
     sentAt: v.number(),
@@ -1118,6 +1119,24 @@ export default defineSchema({
     .index('by_unacknowledged', ['acknowledgedAt'])
     .index('by_severity', ['severity']),
 
+  // ============ REVIEWS ============
+
+  reviews: defineTable({
+    familyId: v.id('families'),
+    campId: v.id('camps'),
+    sessionId: v.optional(v.id('sessions')),
+    rating: v.number(), // 1-5
+    title: v.optional(v.string()),
+    body: v.optional(v.string()),
+    yearAttended: v.optional(v.number()),
+    isVerified: v.boolean(), // true if family had a registration for this camp
+    status: v.union(v.literal('published'), v.literal('pending'), v.literal('rejected')),
+    createdAt: v.number(),
+  })
+    .index('by_camp', ['campId'])
+    .index('by_family', ['familyId'])
+    .index('by_camp_and_status', ['campId', 'status']),
+
   // ============ USER FEEDBACK ============
 
   feedback: defineTable({
@@ -1128,6 +1147,24 @@ export default defineSchema({
     userAgent: v.optional(v.string()),
     createdAt: v.number(),
   }).index('by_family', ['familyId']),
+
+  // ============ LEAD CAPTURES ============
+
+  leadCaptures: defineTable({
+    email: v.string(),
+    citySlug: v.string(),
+    source: v.string(), // e.g., 'discover', 'homepage'
+    interests: v.optional(v.array(v.string())),
+    status: v.union(v.literal('pending'), v.literal('subscribed'), v.literal('converted')),
+    createdAt: v.number(),
+    convertedFamilyId: v.optional(v.id('families')),
+    // Lead nurture drip tracking
+    nurtureEmailsSent: v.optional(v.number()), // 0, 1, 2, or 3
+    lastNurtureEmailAt: v.optional(v.number()),
+  })
+    .index('by_email', ['email'])
+    .index('by_city_slug', ['citySlug'])
+    .index('by_status', ['status']),
 
   // ============ BLOG ============
 
@@ -1156,4 +1193,45 @@ export default defineSchema({
     .index('by_status_and_published', ['status', 'publishedAt'])
     .index('by_city', ['cityId'])
     .index('by_category', ['category']),
+
+  // ============ ORG DASHBOARD ============
+
+  orgClaims: defineTable({
+    organizationId: v.id('organizations'),
+    email: v.string(),
+    claimToken: v.string(),
+    status: v.union(v.literal('pending'), v.literal('verified'), v.literal('rejected')),
+    verifiedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index('by_org', ['organizationId'])
+    .index('by_email', ['email'])
+    .index('by_token', ['claimToken']),
+
+  // ============ FEATURED LISTINGS ============
+
+  featuredListings: defineTable({
+    organizationId: v.id('organizations'),
+    campId: v.optional(v.id('camps')),
+    tier: v.union(v.literal('featured'), v.literal('spotlight')),
+    startsAt: v.number(),
+    expiresAt: v.number(),
+    stripePaymentId: v.optional(v.string()),
+    status: v.union(v.literal('active'), v.literal('expired'), v.literal('pending')),
+    createdAt: v.number(),
+  })
+    .index('by_status', ['status'])
+    .index('by_org', ['organizationId'])
+    .index('by_camp', ['campId']),
+
+  // ============ CHURN TRACKING ============
+
+  churnReasons: defineTable({
+    familyId: v.id('families'),
+    reason: v.string(),
+    feedback: v.optional(v.string()),
+    canceledAt: v.number(),
+    winbackEmailsSent: v.number(),
+  })
+    .index('by_family', ['familyId']),
 });

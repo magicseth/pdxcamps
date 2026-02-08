@@ -45,8 +45,15 @@ export function LandingPage() {
     citySlug: market.slug,
   });
 
-  // Count stats
-  const campCount = organizationsWithLogos?.length ? organizationsWithLogos.length * 3 : 100; // Rough estimate
+  const landingStats = useQuery(api.sessions.queries.getLandingStats, {
+    citySlug: market.slug,
+  });
+
+  // Use real stats from the database
+  const sessionCount = landingStats?.sessionCount ?? 0;
+  const orgCount = landingStats?.orgCount ?? (organizationsWithLogos?.length ?? 0);
+  const familyCount = landingStats?.familyCount ?? 0;
+  const campCount = orgCount > 0 ? orgCount : 100;
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -97,21 +104,29 @@ export function LandingPage() {
 
           <div className="relative max-w-6xl mx-auto px-4 py-20 md:py-28">
             {/* Social proof badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm border border-slate-200 mb-8">
-              <div className="flex -space-x-2">
-                {organizationsWithLogos?.slice(0, 4).map((org, i) => (
-                  <div
-                    key={org._id}
-                    className="w-6 h-6 rounded-full bg-white border-2 border-white overflow-hidden shadow-sm"
-                  >
-                    {org.logoUrl && <img src={org.logoUrl} alt="" className="w-full h-full object-contain" />}
-                  </div>
-                ))}
+            <div className="flex flex-wrap items-center gap-3 mb-8">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm border border-slate-200">
+                <div className="flex -space-x-2">
+                  {organizationsWithLogos?.slice(0, 4).map((org, i) => (
+                    <div
+                      key={org._id}
+                      className="w-6 h-6 rounded-full bg-white border-2 border-white overflow-hidden shadow-sm"
+                    >
+                      {org.logoUrl && <img src={org.logoUrl} alt="" className="w-full h-full object-contain" />}
+                    </div>
+                  ))}
+                </div>
+                <span className="text-sm text-slate-600">
+                  <span className="font-semibold text-slate-900">{sessionCount > 0 ? `${sessionCount} sessions` : `${campCount}+ camps`}</span> from {orgCount > 0 ? orgCount : campCount}+ {market.name} organizations
+                </span>
               </div>
-              <span className="text-sm text-slate-600">
-                <span className="font-semibold text-slate-900">{campCount}+ camps</span> from trusted {market.name}{' '}
-                organizations
-              </span>
+              {familyCount > 10 && (
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 rounded-full shadow-sm border border-green-200">
+                  <span className="text-sm text-green-700">
+                    <span className="font-semibold">{familyCount.toLocaleString()} families</span> planning their summer
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Headline + Map side by side on desktop, stacked on mobile */}
@@ -144,6 +159,10 @@ export function LandingPage() {
               <div className="flex items-center gap-2">
                 <CheckCircleIcon className="w-5 h-5 text-green-500" />
                 <span>No credit card required</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircleIcon className="w-5 h-5 text-green-500" />
+                <span>Setup takes 2 minutes</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircleIcon className="w-5 h-5 text-green-500" />

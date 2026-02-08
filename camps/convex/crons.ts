@@ -22,28 +22,31 @@ crons.interval(
 
 // Daily re-engagement check at 10 AM PST (6 PM UTC)
 // Sends "X new camps added" email to users inactive 7+ days
+// Uses durable workflows for per-family retry and rate limiting
 crons.daily(
   'daily re-engagement check',
   { hourUTC: 18, minuteUTC: 0 },
-  internal.emailAutomation.actions.processReEngagement,
+  internal.emailAutomation.workflows.startReEngagementBatch,
   {},
 );
 
 // Weekly digest every Monday at 8 AM PST (4 PM UTC)
 // Sends planning update with new camps, saved camp status, filling up alerts
+// Uses durable workflows for per-family retry and rate limiting
 crons.weekly(
   'weekly digest email',
   { dayOfWeek: 'monday', hourUTC: 16, minuteUTC: 0 },
-  internal.emailAutomation.actions.processWeeklyDigest,
+  internal.emailAutomation.workflows.startWeeklyDigestBatch,
   {},
 );
 
 // Summer countdown every Monday at 9 AM PST (5 PM UTC), Feb-May only
 // Sends "X weeks until summer" with real stats
+// Uses durable workflows for per-family retry and rate limiting
 crons.weekly(
   'summer countdown email',
   { dayOfWeek: 'monday', hourUTC: 17, minuteUTC: 0 },
-  internal.emailAutomation.actions.processSummerCountdown,
+  internal.emailAutomation.workflows.startSummerCountdownBatch,
   {},
 );
 
@@ -202,6 +205,18 @@ crons.weekly(
   'weekly blog update',
   { dayOfWeek: 'monday', hourUTC: 15, minuteUTC: 0 },
   internal.blog.actions.generateWeeklyUpdate,
+  {},
+);
+
+// ============================================
+// FEATURED LISTINGS CRONS
+// ============================================
+
+// Expire featured listings daily at midnight PST (8 AM UTC)
+crons.daily(
+  'expire featured listings',
+  { hourUTC: 8, minuteUTC: 0 },
+  internal.featured.mutations.expireFeaturedListings,
   {},
 );
 

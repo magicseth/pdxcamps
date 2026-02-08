@@ -21,6 +21,7 @@ import { OrgFilterChip } from '../shared/OrgFilterChip';
 import { useMarket } from '../../hooks/useMarket';
 import { QueryErrorBoundary } from '../shared/QueryErrorBoundary';
 import { PlusIcon, SearchIcon } from '../shared/icons';
+import posthog from 'posthog-js';
 import {
   generateSummerWeeks,
   type SummerWeek,
@@ -82,6 +83,14 @@ export function PlannerHub({
     childAge?: number;
     childGrade?: number;
   } | null>(null);
+
+  useEffect(() => {
+    posthog.capture('planner_viewed', {
+      market: market.slug,
+      children_count: children.length,
+      year: selectedYear,
+    });
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams();

@@ -96,7 +96,7 @@ export async function generateMetadata(): Promise<Metadata> {
       default: market.tagline,
       template: `%s | ${market.tagline}`,
     },
-    description: `Discover and organize summer camps for your kids in ${market.name}`,
+    description: `Find and organize summer camps for your kids in ${market.name}. Compare dates, prices, and ages for hundreds of programs. Free for ${market.name} families — Summer ${new Date().getFullYear()}.`,
     icons: {
       icon: [
         { url: iconUrl, sizes: '32x32', type: 'image/png' },

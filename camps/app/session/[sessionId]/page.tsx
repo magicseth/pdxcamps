@@ -11,6 +11,7 @@ import { BottomNav } from '../../../components/shared/BottomNav';
 import { useMarket } from '../../../hooks/useMarket';
 
 import { GRADE_LABELS } from '../../../lib/constants';
+import posthog from 'posthog-js';
 import {
   CalendarIcon,
   CalendarPlusIcon,
@@ -67,6 +68,18 @@ export default function SessionDetailPage() {
       .sort((a, b) => a.startDate.localeCompare(b.startDate))
       .slice(0, 3);
   }, [otherSessions, sessionId]);
+
+  // Track session view
+  useEffect(() => {
+    if (session?.camp?.name) {
+      posthog.capture('session_viewed', {
+        session_id: sessionId,
+        camp_name: session.camp.name,
+        organization: session.organization?.name,
+        market: market.slug,
+      });
+    }
+  }, [session?.camp?.name]);
 
   // Update document title with camp name
   useEffect(() => {

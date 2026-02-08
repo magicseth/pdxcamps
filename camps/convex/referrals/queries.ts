@@ -43,6 +43,41 @@ export const getReferralInfo = query({
 });
 
 /**
+ * Check if the current user was referred (for referee reward display).
+ * Returns the referral status and whether they're eligible for a discount.
+ */
+export const getMyReferralStatus = query({
+  args: {},
+  handler: async (ctx) => {
+    const family = await getFamily(ctx);
+    if (!family) return null;
+
+    if (!family.referredByCode) {
+      return { wasReferred: false, referrerName: null };
+    }
+
+    // Look up who referred them
+    const referral = await ctx.db
+      .query('referrals')
+      .withIndex('by_code', (q) => q.eq('referralCode', family.referredByCode!))
+      .first();
+
+    let referrerName: string | null = null;
+    if (referral) {
+      const referrerFamily = await ctx.db.get(referral.referrerFamilyId);
+      if (referrerFamily) {
+        referrerName = referrerFamily.displayName;
+      }
+    }
+
+    return {
+      wasReferred: true,
+      referrerName,
+    };
+  },
+});
+
+/**
  * Get a list of referral events for the current user (as referrer).
  */
 export const listReferralEvents = query({

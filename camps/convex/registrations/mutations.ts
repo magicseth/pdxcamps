@@ -99,6 +99,13 @@ export const markInterested = mutation({
       notes: args.notes,
     });
 
+    // Trigger near-paywall nudge check (async, separate transaction)
+    await ctx.scheduler.runAfter(
+      0,
+      internal.emailAutomation.behavioralTriggers.checkNearPaywallTrigger,
+      { familyId: family._id },
+    );
+
     return registrationId;
   },
 });

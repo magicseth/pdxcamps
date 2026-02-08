@@ -8,6 +8,7 @@ import posthog from 'posthog-js';
 
 export function ReferralSection() {
   const referralInfo = useQuery(api.referrals.queries.getReferralInfo);
+  const referralEvents = useQuery(api.referrals.queries.listReferralEvents);
   const generateCode = useMutation(api.referrals.mutations.generateReferralCode);
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -124,6 +125,26 @@ export function ReferralSection() {
               </p>
             )}
           </div>
+
+          {/* Referral Activity */}
+          {referralEvents && referralEvents.length > 0 && (
+            <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
+              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Recent Activity</h3>
+              <div className="space-y-2">
+                {referralEvents.slice(0, 5).map((event, i) => (
+                  <div key={i} className="flex items-center gap-2 text-sm">
+                    <span className={`w-2 h-2 rounded-full ${event.status === 'completed' ? 'bg-green-500' : 'bg-yellow-400'}`} />
+                    <span className="text-slate-600 dark:text-slate-400">
+                      {event.status === 'completed' ? 'Friend joined' : 'Pending signup'}
+                    </span>
+                    <span className="text-slate-400 dark:text-slate-500 text-xs ml-auto">
+                      {new Date(event.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

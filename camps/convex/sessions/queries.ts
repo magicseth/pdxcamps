@@ -387,3 +387,39 @@ export const getFeaturedSessions = query({
     return enrichedSessions.filter((s): s is NonNullable<typeof s> => s !== null);
   },
 });
+
+/**
+ * Get public landing page stats for a city (session count, org count, family count).
+ * Used for social proof on the landing page.
+ */
+export const getLandingStats = query({
+  args: {
+    citySlug: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const city = await ctx.db
+      .query('cities')
+      .withIndex('by_slug', (q) => q.eq('slug', args.citySlug))
+      .unique();
+
+    if (!city) return { sessionCount: 0, orgCount: 0, familyCount: 0 };
+
+    const sessions = await ctx.db
+      .query('sessions')
+      .withIndex('by_city_and_status', (q) => q.eq('cityId', city._id).eq('status', 'active'))
+      .collect();
+
+    const orgIds = new Set(sessions.map((s) => s.organizationId));
+
+    const families = await ctx.db
+      .query('families')
+      .withIndex('by_primary_city', (q) => q.eq('primaryCityId', city._id))
+      .collect();
+
+    return {
+      sessionCount: sessions.length,
+      orgCount: orgIds.size,
+      familyCount: families.length,
+    };
+  },
+});
