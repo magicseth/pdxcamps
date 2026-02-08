@@ -55,38 +55,73 @@ export const deleteUnusedBadLocations = mutation({
  * Find locations that need geocoding (have address but default coords)
  */
 export const findLocationsNeedingGeocode = mutation({
-  args: {},
-  handler: async (ctx) => {
-    const locations = await ctx.db.query('locations').collect();
+  args: {
+    citySlug: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Build a set of city center coordinates to detect "not really geocoded" locations
+    const cities = await ctx.db.query('cities').collect();
+    const cityCenters = new Map<string, { lat: number; lng: number; name: string; state: string }>();
+    for (const city of cities) {
+      if (city.centerLatitude && city.centerLongitude) {
+        cityCenters.set(city._id, {
+          lat: city.centerLatitude,
+          lng: city.centerLongitude,
+          name: city.name,
+          state: city.state ?? '',
+        });
+      }
+    }
+
+    let locations;
+    if (args.citySlug) {
+      const city = cities.find((c) => c.slug === args.citySlug);
+      if (!city) return { count: 0, locations: [] };
+      locations = await ctx.db
+        .query('locations')
+        .withIndex('by_city_and_active', (q) => q.eq('cityId', city._id).eq('isActive', true))
+        .collect();
+    } else {
+      locations = await ctx.db.query('locations').collect();
+    }
 
     const needsGeocode: Array<{
       id: string;
       name: string;
       address: string;
+      nearCity: string;
     }> = [];
 
     for (const location of locations) {
-      // Has default Portland coords
-      const hasDefaultCoords =
-        Math.abs(location.latitude - 45.5152) < 0.001 && Math.abs(location.longitude - -122.6784) < 0.001;
+      const cityCenter = cityCenters.get(location.cityId);
 
-      // Has a real address (not TBD)
-      const hasRealAddress =
-        location.address?.street &&
-        location.address.street !== 'TBD' &&
-        location.address.street !== '' &&
-        !location.address.street.includes('TBD');
+      // Check if coords are at city center (within ~100m) or at zero
+      const atCityCenter = cityCenter &&
+        Math.abs(location.latitude - cityCenter.lat) < 0.001 &&
+        Math.abs(location.longitude - cityCenter.lng) < 0.001;
+      const atZero = location.latitude === 0 && location.longitude === 0;
 
-      if (hasDefaultCoords && hasRealAddress) {
-        const addr = location.address!;
-        const fullAddress = [addr.street, addr.city, addr.state, addr.zip].filter(Boolean).join(', ');
+      if (!atCityCenter && !atZero) continue;
 
-        needsGeocode.push({
-          id: location._id,
-          name: location.name,
-          address: fullAddress,
-        });
+      // Build the best geocode query we can
+      const addr = location.address;
+      const hasRealAddress = addr?.street && addr.street !== 'TBD' && addr.street !== '';
+      const nearCity = cityCenter ? `${cityCenter.name}, ${cityCenter.state}` : '';
+
+      let geocodeAddress: string;
+      if (hasRealAddress) {
+        geocodeAddress = [addr!.street, addr!.city, addr!.state, addr!.zip].filter(Boolean).join(', ');
+      } else {
+        // Use location name as the query (e.g. "Clark University")
+        geocodeAddress = location.name;
       }
+
+      needsGeocode.push({
+        id: location._id,
+        name: location.name,
+        address: geocodeAddress,
+        nearCity,
+      });
     }
 
     return {
@@ -102,11 +137,13 @@ export const findLocationsNeedingGeocode = mutation({
 export const batchGeocodeLocations = action({
   args: {
     limit: v.optional(v.number()),
+    citySlug: v.optional(v.string()),
   },
   handler: async (
     ctx,
     args,
   ): Promise<{
+    total: number;
     processed: number;
     succeeded: number;
     failed: number;
@@ -115,8 +152,10 @@ export const batchGeocodeLocations = action({
     const limit = args.limit ?? 50;
 
     // Get locations needing geocoding
-    const result: { count: number; locations: Array<{ id: string; name: string; address: string }> } =
-      await ctx.runMutation(api.cleanup.locations.findLocationsNeedingGeocode, {});
+    const result: { count: number; locations: Array<{ id: string; name: string; address: string; nearCity: string }> } =
+      await ctx.runMutation(api.cleanup.locations.findLocationsNeedingGeocode, {
+        citySlug: args.citySlug,
+      });
     const locations = result.locations.slice(0, limit);
 
     let succeeded = 0;
@@ -125,9 +164,10 @@ export const batchGeocodeLocations = action({
 
     for (const loc of locations) {
       try {
-        // Geocode the address
+        // Geocode the address with city bias
         const geocoded = await ctx.runAction(api.lib.geocoding.geocodeQuery, {
           query: loc.address,
+          nearCity: loc.nearCity || undefined,
         });
 
         if (geocoded && geocoded.latitude && geocoded.longitude) {
@@ -142,6 +182,9 @@ export const batchGeocodeLocations = action({
           failed++;
           errors.push(`No result for: ${loc.name}`);
         }
+
+        // Rate limit: 200ms between requests
+        await new Promise((resolve) => setTimeout(resolve, 200));
       } catch (e) {
         failed++;
         const msg = e instanceof Error ? e.message : String(e);
@@ -150,6 +193,7 @@ export const batchGeocodeLocations = action({
     }
 
     return {
+      total: result.count,
       processed: locations.length,
       succeeded,
       failed,

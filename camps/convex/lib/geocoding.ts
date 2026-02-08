@@ -25,53 +25,79 @@ export const geocodeQuery = action({
     state?: string;
     zip?: string;
   } | null> => {
-    const apiKey = process.env.OPENCAGE_API_KEY;
-    if (!apiKey) {
-      console.warn('OPENCAGE_API_KEY not set, skipping geocoding');
-      return null;
-    }
-
     // Add city context if provided
     let searchQuery = args.query;
     if (args.nearCity && !args.query.toLowerCase().includes(args.nearCity.toLowerCase())) {
       searchQuery = `${args.query}, ${args.nearCity}`;
     }
 
-    const encodedQuery = encodeURIComponent(searchQuery);
-    const url = `https://api.opencagedata.com/geocode/v1/json?q=${encodedQuery}&key=${apiKey}&countrycode=us&limit=1`;
+    const apiKey = process.env.OPENCAGE_API_KEY;
 
+    // Try OpenCage first if key is available, otherwise use Nominatim
+    if (apiKey) {
+      const encodedQuery = encodeURIComponent(searchQuery);
+      const url = `https://api.opencagedata.com/geocode/v1/json?q=${encodedQuery}&key=${apiKey}&countrycode=us&limit=1`;
+
+      try {
+        const response = await fetch(url);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.results && data.results.length > 0) {
+            const result = data.results[0];
+            const components = result.components;
+            const houseNumber = components.house_number || '';
+            const road = components.road || components.street || '';
+            const street = houseNumber && road ? `${houseNumber} ${road}` : road || '';
+
+            return {
+              latitude: result.geometry.lat,
+              longitude: result.geometry.lng,
+              formattedAddress: result.formatted,
+              street: street || undefined,
+              city: components.city || components.town || components.village || components.suburb || undefined,
+              state: components.state_code || components.state || undefined,
+              zip: components.postcode || undefined,
+            };
+          }
+        }
+      } catch (error) {
+        console.warn('OpenCage geocoding error:', error);
+      }
+    }
+
+    // Fallback: Nominatim (free, no API key needed)
     try {
-      const response = await fetch(url);
+      const encodedQuery = encodeURIComponent(searchQuery);
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodedQuery}&countrycodes=us&format=json&limit=1&addressdetails=1`;
+
+      const response = await fetch(url, {
+        headers: { 'User-Agent': 'CampGuide/1.0' },
+      });
+
       if (!response.ok) {
-        console.warn(`Geocoding failed: ${response.statusText}`);
+        console.warn(`Nominatim geocoding failed: ${response.statusText}`);
         return null;
       }
 
       const data = await response.json();
-
-      if (data.results && data.results.length > 0) {
-        const result = data.results[0];
-        const components = result.components;
-
-        // Build street address from components
-        const houseNumber = components.house_number || '';
-        const road = components.road || components.street || '';
-        const street = houseNumber && road ? `${houseNumber} ${road}` : road || '';
+      if (data && data.length > 0) {
+        const result = data[0];
+        const addr = result.address || {};
 
         return {
-          latitude: result.geometry.lat,
-          longitude: result.geometry.lng,
-          formattedAddress: result.formatted,
-          street: street || undefined,
-          city: components.city || components.town || components.village || components.suburb || undefined,
-          state: components.state_code || components.state || undefined,
-          zip: components.postcode || undefined,
+          latitude: parseFloat(result.lat),
+          longitude: parseFloat(result.lon),
+          formattedAddress: result.display_name,
+          street: addr.house_number && addr.road ? `${addr.house_number} ${addr.road}` : addr.road || undefined,
+          city: addr.city || addr.town || addr.village || undefined,
+          state: addr.state || undefined,
+          zip: addr.postcode || undefined,
         };
       }
 
       return null;
     } catch (error) {
-      console.warn('Geocoding error:', error);
+      console.warn('Nominatim geocoding error:', error);
       return null;
     }
   },

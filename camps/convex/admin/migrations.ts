@@ -679,6 +679,157 @@ export const fixLocationCityIds = mutation({
 });
 
 /**
+ * Fix locations with wrong address.city (e.g. "Portland" for Boston locations).
+ * Uses the geocoded data or falls back to the city record's name/state.
+ */
+export const fixLocationAddressCity = mutation({
+  args: {
+    dryRun: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const dryRun = args.dryRun ?? true;
+
+    const portlandCity = await ctx.db
+      .query('cities')
+      .withIndex('by_slug', (q) => q.eq('slug', 'portland'))
+      .first();
+
+    const locations = await ctx.db.query('locations').collect();
+    const cities = await ctx.db.query('cities').collect();
+    const cityMap = new Map(cities.map((c) => [c._id, c]));
+
+    const fixes: { id: string; name: string; oldCity: string; newCity: string }[] = [];
+
+    for (const loc of locations) {
+      // Skip Portland locations
+      if (portlandCity && loc.cityId === portlandCity._id) continue;
+
+      const addrCity = loc.address?.city;
+      const addrState = loc.address?.state;
+
+      // Check if address says Portland/OR when it shouldn't
+      if (addrCity === 'Portland' || addrState === 'OR') {
+        const city = cityMap.get(loc.cityId);
+        if (!city) continue;
+
+        const newCity = city.name;
+        const newState = city.state ?? '';
+
+        fixes.push({
+          id: loc._id,
+          name: loc.name,
+          oldCity: `${addrCity}, ${addrState}`,
+          newCity: `${newCity}, ${newState}`,
+        });
+
+        if (!dryRun) {
+          await ctx.db.patch(loc._id, {
+            address: {
+              ...loc.address!,
+              city: newCity,
+              state: newState,
+            },
+          });
+        }
+      }
+    }
+
+    if (dryRun) {
+      return {
+        dryRun: true,
+        totalLocations: locations.length,
+        locationsNeedingFix: fixes.length,
+        sampleFixes: fixes.slice(0, 10).map((f) => ({
+          name: f.name,
+          oldCity: f.oldCity,
+          newCity: f.newCity,
+        })),
+      };
+    }
+
+    return { dryRun: false, fixed: fixes.length };
+  },
+});
+
+/**
+ * Fix locations with Portland-area coordinates that belong to a different city.
+ * Resets them to their city's center coordinates so the map shows the right area.
+ */
+export const fixLocationCoordinates = mutation({
+  args: {
+    dryRun: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const dryRun = args.dryRun ?? true;
+
+    // Portland center area: lat ~45.3-45.7, lng ~-122.8 to -122.5
+    const PORTLAND_LAT_MIN = 45.2;
+    const PORTLAND_LAT_MAX = 45.8;
+    const PORTLAND_LNG_MIN = -123.0;
+    const PORTLAND_LNG_MAX = -122.3;
+
+    const portlandCity = await ctx.db
+      .query('cities')
+      .withIndex('by_slug', (q) => q.eq('slug', 'portland'))
+      .first();
+
+    const locations = await ctx.db.query('locations').collect();
+    const cities = await ctx.db.query('cities').collect();
+    const cityMap = new Map(cities.map((c) => [c._id, c]));
+
+    const fixes: { id: string; name: string; cityName: string; oldLat: number; oldLng: number; newLat: number; newLng: number }[] = [];
+
+    for (const loc of locations) {
+      // Skip Portland locations - their coords are correct
+      if (portlandCity && loc.cityId === portlandCity._id) continue;
+
+      // Check if coordinates are in Portland area
+      const inPortland =
+        loc.latitude >= PORTLAND_LAT_MIN && loc.latitude <= PORTLAND_LAT_MAX &&
+        loc.longitude >= PORTLAND_LNG_MIN && loc.longitude <= PORTLAND_LNG_MAX;
+
+      if (inPortland) {
+        const city = cityMap.get(loc.cityId);
+        if (city?.centerLatitude && city?.centerLongitude) {
+          fixes.push({
+            id: loc._id,
+            name: loc.name,
+            cityName: city.name,
+            oldLat: loc.latitude,
+            oldLng: loc.longitude,
+            newLat: city.centerLatitude,
+            newLng: city.centerLongitude,
+          });
+        }
+      }
+    }
+
+    if (dryRun) {
+      return {
+        dryRun: true,
+        totalLocations: locations.length,
+        locationsNeedingFix: fixes.length,
+        sampleFixes: fixes.slice(0, 10).map((f) => ({
+          name: f.name,
+          city: f.cityName,
+          oldCoords: `${f.oldLat.toFixed(4)}, ${f.oldLng.toFixed(4)}`,
+          newCoords: `${f.newLat.toFixed(4)}, ${f.newLng.toFixed(4)}`,
+        })),
+      };
+    }
+
+    for (const fix of fixes) {
+      await ctx.db.patch(fix.id as any, {
+        latitude: fix.newLat,
+        longitude: fix.newLng,
+      });
+    }
+
+    return { dryRun: false, fixed: fixes.length };
+  },
+});
+
+/**
  * Fix sessions that have wrong cityId based on their source's cityId.
  * This fixes Boston sessions that were incorrectly assigned Portland's cityId.
  */
