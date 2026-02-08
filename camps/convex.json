@@ -32,7 +32,8 @@
           "https://dencamps.com/callback",
           "https://phxcamps.com/callback",
           "https://alldallascamps.com/callback",
-          "https://atxcamps.com/callback"
+          "https://atxcamps.com/callback",
+          "https://mixcamps.com/callback"
         ],
         "appHomepageUrl": "https://pdxcamps.com",
         "corsOrigins": [
@@ -52,7 +53,9 @@
           "https://alldallascamps.com",
           "https://www.alldallascamps.com",
           "https://atxcamps.com",
-          "https://www.atxcamps.com"
+          "https://www.atxcamps.com",
+          "https://mixcamps.com",
+          "https://www.mixcamps.com"
         ]
       }
     }

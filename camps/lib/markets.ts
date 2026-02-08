@@ -87,6 +87,20 @@ export const MARKETS: Market[] = [
     iconPath: '/icons/sea',
     themeColor: '#059669', // Green for evergreens
   },
+  {
+    slug: 'mix',
+    name: 'Mix Camps',
+    tagline: 'Mix Camps',
+    region: 'Nationwide',
+    domains: ['mixcamps.com', 'www.mixcamps.com'],
+    emoji: '',
+    popularOrgs: '',
+    neighborhoods: '',
+    testimonialAttribution: '',
+    madeIn: '',
+    iconPath: '/icons/mix',
+    themeColor: '#2563eb',
+  },
 ];
 
 export const DEFAULT_MARKET = MARKETS[0]; // Portland as fallback

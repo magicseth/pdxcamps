@@ -114,19 +114,25 @@ export const createLocation = mutation({
     longitude: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    // Look up city for defaults instead of hardcoding Portland
+    const city = await ctx.db.get(args.cityId);
+    const fallbackLat = city?.centerLatitude ?? 0;
+    const fallbackLng = city?.centerLongitude ?? 0;
+    const fallbackCity = city?.name ?? 'Unknown';
+    const fallbackState = city?.state ?? '';
+
     return ctx.db.insert('locations', {
       organizationId: args.organizationId,
       name: args.name,
       address: {
         street: args.street || 'TBD',
-        city: args.city || 'Portland',
-        state: args.state || 'OR',
-        zip: args.zip || '97201',
+        city: args.city || fallbackCity,
+        state: args.state || fallbackState,
+        zip: args.zip || '',
       },
       cityId: args.cityId,
-      // Use provided coordinates or fall back to Portland city center
-      latitude: args.latitude ?? 45.5152,
-      longitude: args.longitude ?? -122.6784,
+      latitude: args.latitude ?? fallbackLat,
+      longitude: args.longitude ?? fallbackLng,
       isActive: true,
     });
   },

@@ -8,6 +8,7 @@ import Image from 'next/image';
 import { api } from '../../convex/_generated/api';
 import { useMarket, type Market } from '../../hooks/useMarket';
 import { CampMap } from './CampMap';
+import { MixLandingPage } from './MixLandingPage';
 
 const DemoPlanner = dynamic(() => import('./DemoPlanner').then((mod) => ({ default: mod.DemoPlanner })), {
   loading: () => (
@@ -30,6 +31,10 @@ function getIconUrl(market: Market): string {
 
 export function LandingPage() {
   const market = useMarket();
+
+  if (market.slug === 'mix') {
+    return <MixLandingPage />;
+  }
 
   const featuredSessions = useQuery(api.sessions.queries.getFeaturedSessions, {
     citySlug: market.slug,

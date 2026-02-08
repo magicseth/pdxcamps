@@ -43,17 +43,17 @@ function parseLocationString(location: string): {
 } {
   if (!location) return {};
 
-  // Common Oregon zip code pattern at the end
-  const zipMatch = location.match(/\b(97\d{3})\b/);
+  // US zip code pattern (5 digits)
+  const zipMatch = location.match(/\b(\d{5})\b/);
   const zip = zipMatch?.[1];
 
-  // State pattern - look for OR, Oregon
-  const stateMatch = location.match(/\b(OR|Oregon)\b/i);
-  const state = stateMatch ? 'OR' : undefined;
+  // State pattern - look for common 2-letter state abbreviations or full names
+  const stateMatch = location.match(/\b(OR|Oregon|MA|Massachusetts|WA|Washington|CO|Colorado|CA|California)\b/i);
+  const state = stateMatch ? stateMatch[1].toUpperCase().slice(0, 2) : undefined;
 
-  // City pattern - look for Portland or common PDX cities
+  // City pattern - look for common US cities
   const cityPattern =
-    /\b(Portland|Beaverton|Lake Oswego|Tigard|Tualatin|Gresham|Hillsboro|Vancouver|Milwaukie|Clackamas|Oregon City|West Linn|Wilsonville)\b/i;
+    /\b(Portland|Beaverton|Lake Oswego|Tigard|Tualatin|Gresham|Hillsboro|Vancouver|Milwaukie|Clackamas|Oregon City|West Linn|Wilsonville|Boston|Cambridge|Brookline|Newton|Somerville|Quincy|Wellesley|Needham|Seattle|Bellevue|Redmond|Kirkland|Bothell|Tacoma|Denver|Aurora|Lakewood|Littleton|Boulder|San Francisco|Oakland|Berkeley|Palo Alto)\b/i;
   const cityMatch = location.match(cityPattern);
   const city = cityMatch?.[1];
 
@@ -368,6 +368,12 @@ export const importFromJob = action({
         };
       }
 
+      // Look up city details for geocoding context (avoid hardcoding Portland)
+      const cityDoc = await ctx.runQuery(api.cities.queries.getCityById, { cityId });
+      const cityName = cityDoc?.name ?? 'Portland';
+      const cityState = cityDoc?.state ?? 'OR';
+      const nearCity = `${cityName}, ${cityState}`;
+
       // Create or get organization
       let organizationId: Id<'organizations'>;
 
@@ -539,7 +545,7 @@ export const importFromJob = action({
                 // Build a geocode query from available data
                 let geocodeQuery = '';
                 if (session.locationAddress?.street) {
-                  geocodeQuery = `${session.locationAddress.street}, ${session.locationAddress.city || 'Portland'}, ${session.locationAddress.state || 'OR'} ${session.locationAddress.zip || ''}`;
+                  geocodeQuery = `${session.locationAddress.street}, ${session.locationAddress.city || cityName}, ${session.locationAddress.state || cityState} ${session.locationAddress.zip || ''}`;
                 } else if (session.location && session.location !== 'Main Location') {
                   geocodeQuery = session.location;
                 }
@@ -547,7 +553,7 @@ export const importFromJob = action({
                 if (geocodeQuery) {
                   const geocodeResult = await ctx.runAction(api.lib.geocoding.geocodeQuery, {
                     query: geocodeQuery,
-                    nearCity: 'Portland, OR',
+                    nearCity,
                   });
 
                   if (geocodeResult) {

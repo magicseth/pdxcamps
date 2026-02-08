@@ -608,6 +608,77 @@ export const fixZeroPriceSessions = mutation({
 });
 
 /**
+ * Fix locations that have wrong cityId based on their organization's cityIds.
+ * Locations were created with Portland defaults regardless of actual city.
+ */
+export const fixLocationCityIds = mutation({
+  args: {
+    dryRun: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const dryRun = args.dryRun ?? true;
+
+    const locations = await ctx.db.query('locations').collect();
+    const fixes: { locationId: string; name: string; oldCityId: string; newCityId: string; orgName: string }[] = [];
+
+    // Build org city map
+    const orgs = await ctx.db.query('organizations').collect();
+    const orgCityMap = new Map<string, { cityId: string; name: string }>();
+    for (const org of orgs) {
+      if (org.cityIds && org.cityIds.length > 0) {
+        orgCityMap.set(org._id, { cityId: org.cityIds[0], name: org.name });
+      }
+    }
+
+    for (const loc of locations) {
+      if (!loc.organizationId) continue;
+      const orgData = orgCityMap.get(loc.organizationId);
+      if (!orgData) continue;
+
+      // If the org's primary city differs from location's city, fix it
+      if (loc.cityId !== orgData.cityId) {
+        fixes.push({
+          locationId: loc._id,
+          name: loc.name,
+          oldCityId: loc.cityId,
+          newCityId: orgData.cityId,
+          orgName: orgData.name,
+        });
+      }
+    }
+
+    if (dryRun) {
+      const cities = await ctx.db.query('cities').collect();
+      const cityNames = new Map(cities.map((c) => [c._id, c.name]));
+
+      return {
+        dryRun: true,
+        totalLocations: locations.length,
+        locationsNeedingFix: fixes.length,
+        sampleFixes: fixes.slice(0, 10).map((f) => ({
+          location: f.name,
+          org: f.orgName,
+          oldCity: cityNames.get(f.oldCityId as any) || f.oldCityId,
+          newCity: cityNames.get(f.newCityId as any) || f.newCityId,
+        })),
+      };
+    }
+
+    for (const fix of fixes) {
+      await ctx.db.patch(fix.locationId as any, {
+        cityId: fix.newCityId as any,
+      });
+    }
+
+    return {
+      dryRun: false,
+      totalLocations: locations.length,
+      fixed: fixes.length,
+    };
+  },
+});
+
+/**
  * Fix sessions that have wrong cityId based on their source's cityId.
  * This fixes Boston sessions that were incorrectly assigned Portland's cityId.
  */
