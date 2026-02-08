@@ -8,10 +8,9 @@ function replaceRedirectUriBasedOnHostname(request: NextRequest) {
   }
   return `https://${hostname}/callback`;
 }
-function handleAuthWithAfterPatchingProcessEnv(request: NextRequest) {
+export function handleAuthWithAfterPatchingProcessEnv(request: NextRequest) {
   process.env.NEXT_PUBLIC_WORKOS_REDIRECT_URI = replaceRedirectUriBasedOnHostname(request);
   process.env.WORKOS_REDIRECT_URI = replaceRedirectUriBasedOnHostname(request);
-  return handleAuth();
+  return handleAuth()(request);
 }
-
 export const GET = handleAuthWithAfterPatchingProcessEnv;
