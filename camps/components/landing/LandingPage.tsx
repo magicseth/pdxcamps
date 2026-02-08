@@ -176,7 +176,7 @@ export function LandingPage() {
                     className="flex-shrink-0 flex flex-col items-center gap-2 grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition-all duration-300 group"
                   >
                     <div className="h-12 w-28 flex items-center justify-center">
-                      <img src={org.logoUrl!} alt={org.name} className="max-h-full max-w-full object-contain" />
+                      <img src={org.logoUrl!} alt={org.name} loading="lazy" className="max-h-full max-w-full object-contain" />
                     </div>
                     <span className="text-xs text-slate-500 group-hover:text-slate-700 transition-colors text-center whitespace-nowrap max-w-[112px] truncate">
                       {org.name}
@@ -190,7 +190,7 @@ export function LandingPage() {
                     className="flex-shrink-0 flex flex-col items-center gap-2 grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition-all duration-300 group"
                   >
                     <div className="h-12 w-28 flex items-center justify-center">
-                      <img src={org.logoUrl!} alt={org.name} className="max-h-full max-w-full object-contain" />
+                      <img src={org.logoUrl!} alt={org.name} loading="lazy" className="max-h-full max-w-full object-contain" />
                     </div>
                     <span className="text-xs text-slate-500 group-hover:text-slate-700 transition-colors text-center whitespace-nowrap max-w-[112px] truncate">
                       {org.name}
@@ -848,6 +848,7 @@ function SessionShowcaseCard({
           <img
             src={session.imageUrl}
             alt={session.campName}
+            loading="lazy"
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
           />
         ) : (
@@ -872,6 +873,7 @@ function SessionShowcaseCard({
             <img
               src={session.organizationLogoUrl}
               alt={session.organizationName || 'Organization'}
+              loading="lazy"
               className="w-full h-full object-contain p-1"
             />
           </div>
