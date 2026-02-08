@@ -162,7 +162,15 @@ export const createCityForMarket = mutation({
       .unique();
 
     if (existingCity) {
-      // Idempotent: if city already exists, link it and continue
+      // Idempotent: if city already exists, link it and patch missing fields
+      await ctx.db.patch(existingCity._id, {
+        ...(args.domain && !existingCity.domain ? { domain: args.domain } : {}),
+        ...(args.brandName && !existingCity.brandName ? { brandName: args.brandName } : {}),
+        ...(args.fromEmail && !existingCity.fromEmail ? { fromEmail: args.fromEmail } : {}),
+        ...(record.selectedIconStorageId && !existingCity.iconStorageId
+          ? { iconStorageId: record.selectedIconStorageId }
+          : {}),
+      });
       await ctx.db.patch(record._id, {
         cityId: existingCity._id,
         status: 'city_created',

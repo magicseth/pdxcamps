@@ -207,6 +207,10 @@ export const updateCity = mutation({
     brandName: v.optional(v.string()),
     domain: v.optional(v.string()),
     fromEmail: v.optional(v.string()),
+    centerLatitude: v.optional(v.number()),
+    centerLongitude: v.optional(v.number()),
+    timezone: v.optional(v.string()),
+    state: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const city = await ctx.db.get(args.cityId);
@@ -219,6 +223,10 @@ export const updateCity = mutation({
     if (args.brandName !== undefined) updates.brandName = args.brandName;
     if (args.domain !== undefined) updates.domain = args.domain;
     if (args.fromEmail !== undefined) updates.fromEmail = args.fromEmail;
+    if (args.centerLatitude !== undefined) updates.centerLatitude = args.centerLatitude;
+    if (args.centerLongitude !== undefined) updates.centerLongitude = args.centerLongitude;
+    if (args.timezone !== undefined) updates.timezone = args.timezone;
+    if (args.state !== undefined) updates.state = args.state;
 
     await ctx.db.patch(args.cityId, updates);
 
