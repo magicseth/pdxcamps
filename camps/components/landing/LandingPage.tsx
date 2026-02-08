@@ -128,8 +128,20 @@ export function LandingPage() {
               <span className="font-semibold text-slate-900">Free for {market.name} families.</span>
             </p>
 
+            {/* Trust indicators - above CTA for maximum visibility */}
+            <div className="flex flex-wrap items-center gap-6 text-sm text-slate-500 mb-6">
+              <div className="flex items-center gap-2">
+                <CheckCircleIcon className="w-5 h-5 text-green-500" />
+                <span>No credit card required</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircleIcon className="w-5 h-5 text-green-500" />
+                <span>Camps updated daily</span>
+              </div>
+            </div>
+
             {/* CTA buttons */}
-            <div className="flex flex-wrap gap-4 mb-12">
+            <div className="flex flex-wrap gap-4">
               <a
                 href="/sign-up"
                 className="group px-8 py-4 text-lg font-semibold bg-accent text-white rounded-xl hover:bg-accent-dark shadow-lg shadow-accent/25 transition-all hover:shadow-xl hover:shadow-accent/30 hover:-translate-y-0.5"
@@ -143,18 +155,6 @@ export function LandingPage() {
               >
                 Browse All Camps
               </a>
-            </div>
-
-            {/* Trust indicators */}
-            <div className="flex flex-wrap items-center gap-6 text-sm text-slate-500">
-              <div className="flex items-center gap-2">
-                <CheckCircleIcon className="w-5 h-5 text-green-500" />
-                <span>No credit card required</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircleIcon className="w-5 h-5 text-green-500" />
-                <span>Camps updated daily</span>
-              </div>
             </div>
           </div>
         </section>
