@@ -104,8 +104,8 @@ export function LandingPage() {
             </div>
 
             {/* Headline + Map side by side on desktop, stacked on mobile */}
-            <div className="grid lg:grid-cols-[1fr,240px] gap-8 items-center mb-8">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 leading-tight">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-8 mb-8">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 leading-tight lg:flex-1 lg:min-w-0">
                 Give your kids
                 <br />
                 <span className="relative">
@@ -116,7 +116,7 @@ export function LandingPage() {
                 <span className="text-primary">Without losing your mind.</span>
               </h1>
 
-              <div className="hidden lg:flex justify-end">
+              <div className="hidden lg:block flex-shrink-0 w-[280px]">
                 <CampMap citySlug={market.slug} cityName={market.name} />
               </div>
             </div>
