@@ -121,13 +121,17 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const headersList = await headers();
+  const host = headersList.get('host') || 'localhost';
+  const market = await getMarketSSR(host);
+
   return (
-    <html lang="en">
+    <html lang="en" data-market-slug={market.slug}>
       <head>
         <link rel="dns-prefetch" href="https://deafening-schnauzer-923.convex.cloud" />
         <link rel="preconnect" href="https://deafening-schnauzer-923.convex.cloud" crossOrigin="anonymous" />
