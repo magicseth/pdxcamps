@@ -129,6 +129,34 @@ export default function RootLayout({
           {children}
           <FeedbackButton />
         </ConvexClientProvider>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'WebApplication',
+              name: 'PDX Camps',
+              url: 'https://pdxcamps.com',
+              description:
+                'Discover and organize summer camps for your kids. Browse programs, compare schedules, coordinate with friends, and plan your entire summer in one place.',
+              applicationCategory: 'LifestyleApplication',
+              operatingSystem: 'Web',
+              offers: {
+                '@type': 'Offer',
+                price: '0',
+                priceCurrency: 'USD',
+                description: 'Free to get started with up to 5 saved camps',
+              },
+              featureList: [
+                'Browse summer camps by week, category, and location',
+                'Save and compare camp sessions',
+                'Coordinate schedules with friends',
+                'Track registration deadlines',
+                'Share summer plans with family',
+              ],
+            }),
+          }}
+        />
       </body>
     </html>
   );
