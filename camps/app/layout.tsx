@@ -124,6 +124,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="dns-prefetch" href="https://deafening-schnauzer-923.convex.cloud" />
+        <link rel="preconnect" href="https://deafening-schnauzer-923.convex.cloud" crossOrigin="anonymous" />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ConvexClientProvider>
           {children}
