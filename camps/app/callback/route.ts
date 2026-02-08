@@ -11,6 +11,6 @@ function replaceRedirectUriBasedOnHostname(request: NextRequest) {
 export function handleAuthWithAfterPatchingProcessEnv(request: NextRequest) {
   process.env.NEXT_PUBLIC_WORKOS_REDIRECT_URI = replaceRedirectUriBasedOnHostname(request);
   process.env.WORKOS_REDIRECT_URI = replaceRedirectUriBasedOnHostname(request);
-  return handleAuth()(request);
+  return handleAuth({ baseURL: replaceRedirectUriBasedOnHostname(request) })(request);
 }
 export const GET = handleAuthWithAfterPatchingProcessEnv;
