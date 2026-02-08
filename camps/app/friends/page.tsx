@@ -259,7 +259,7 @@ function MyFriends() {
 
         {friends.length === 0 ? (
           <div className="text-center py-8 px-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-            <div className="text-4xl mb-3">🤝</div>
+            <div className="text-4xl mb-3" aria-hidden="true">🤝</div>
             <p className="text-gray-600 dark:text-gray-400 mb-2 font-medium">No friends yet</p>
             <p className="text-gray-500 dark:text-gray-500 text-sm">
               Connect with other families to share calendars and coordinate camp schedules. Use the form below to send a
@@ -695,7 +695,7 @@ function CalendarSharingSettings() {
 
       {myShares.length === 0 ? (
         <div className="text-center py-8 px-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-          <div className="text-4xl mb-3">📅</div>
+          <div className="text-4xl mb-3" aria-hidden="true">📅</div>
           <p className="text-gray-600 dark:text-gray-400 mb-2 font-medium">No calendar shares yet</p>
           <p className="text-gray-500 dark:text-gray-500 text-sm">
             Click &quot;Share My Calendar&quot; next to a friend&apos;s name above to let them see your camp schedule.

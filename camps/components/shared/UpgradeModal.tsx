@@ -24,7 +24,7 @@ export function UpgradeModal({ isOpen, onClose, savedCount = 4 }: UpgradeModalPr
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-6 text-white text-center">
-          <div className="text-4xl mb-2">⚠️</div>
+          <div className="text-4xl mb-2" aria-hidden="true">⚠️</div>
           <h2 className="text-xl font-bold">You&apos;ve reached the free limit</h2>
           <p className="text-white/90 text-sm mt-1">{savedCount}/{FREE_SAVED_CAMPS_LIMIT} saved camps used</p>
         </div>

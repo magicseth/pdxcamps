@@ -123,7 +123,7 @@ export function RegistrationModal({ isOpen, onClose, registration, citySlug }: R
               </div>
             ) : (
               <div className="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
-                <span className="text-2xl">🏕️</span>
+                <span className="text-2xl" aria-hidden="true">🏕️</span>
               </div>
             )}
             <div className="flex-1 min-w-0">

@@ -189,7 +189,7 @@ export function EditEventModal({ isOpen, onClose, event }: EditEventModalProps) 
         {showDeleteConfirm ? (
           <div className="p-6">
             <div className="text-center mb-6">
-              <div className="text-4xl mb-3">🗑️</div>
+              <div className="text-4xl mb-3" aria-hidden="true">🗑️</div>
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">Delete this event?</h3>
               <p className="text-sm text-slate-600 dark:text-slate-400">
                 &quot;{event.title}&quot; will be removed from your planner.

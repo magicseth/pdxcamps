@@ -158,7 +158,7 @@ export function RequestCampModal({ isOpen, onClose }: RequestCampModalProps) {
         <div className="p-6">
           {submitted ? (
             <div className="text-center py-8">
-              <div className="text-5xl mb-4">🎉</div>
+              <div className="text-5xl mb-4" aria-hidden="true">🎉</div>
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">Request Submitted!</h3>
               <p className="text-slate-600 dark:text-slate-400 mb-6">
                 We'll add this camp to our database and notify you when it's available. This usually takes 1-2 business
