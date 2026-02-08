@@ -75,7 +75,9 @@ export function RegistrationProgressBanner({
           )}
 
           {registeredCount === 0 && todoCount === 0 && waitlistCount === 0 && (
-            <span className="text-sm text-slate-500 dark:text-slate-400">No camps saved yet</span>
+            <span className="text-sm text-slate-500 dark:text-slate-400">
+              Tap a gap week to find camps
+            </span>
           )}
 
           {/* Divider */}

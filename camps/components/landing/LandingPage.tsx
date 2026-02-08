@@ -675,6 +675,12 @@ export function LandingPage() {
               <a href="/sign-up" className="hover:text-white transition-colors">
                 Get Started
               </a>
+              <a href="/terms" className="hover:text-white transition-colors">
+                Terms
+              </a>
+              <a href="/privacy" className="hover:text-white transition-colors">
+                Privacy
+              </a>
             </div>
           </div>
           <div className="border-t border-slate-800 mt-8 pt-8 text-center text-sm">

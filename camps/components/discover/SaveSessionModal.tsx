@@ -152,15 +152,10 @@ export function SaveSessionModal({
       }, 1500);
     } catch (err) {
       posthog.captureException(err);
-      // Check for paywall error - ConvexError has data property
-      console.log('Save error:', err);
-
       // Handle ConvexError with structured data
       if (err instanceof ConvexError) {
         const data = err.data as { type?: string; code?: string } | undefined;
-        console.log('ConvexError data:', data);
         if (data?.type === 'PAYWALL') {
-          console.log('Paywall detected via ConvexError, showing upgrade modal');
           posthog.capture('paywall_hit', { source: 'save_session' });
           onClose();
           onPaywallHit();
@@ -171,7 +166,6 @@ export function SaveSessionModal({
       // Fallback: check error message for legacy support
       const errorMessage = err instanceof Error ? err.message : String(err);
       if (errorMessage.includes('PAYWALL:')) {
-        console.log('Paywall detected via message, showing upgrade modal');
         posthog.capture('paywall_hit', { source: 'save_session' });
         onClose();
         onPaywallHit();
