@@ -110,7 +110,7 @@ export function LandingPage() {
             </div>
 
             {/* Headline + Map side by side on desktop, stacked on mobile */}
-            <div className="flex flex-col lg:flex-row lg:items-center gap-8 mb-8">
+            <div className="flex flex-col lg:flex-row lg:items-stretch gap-8 mb-8">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 leading-tight lg:flex-1 lg:min-w-0">
                 Give your kids
                 <br />
@@ -122,7 +122,7 @@ export function LandingPage() {
                 <span className="text-primary">Without losing your mind.</span>
               </h1>
 
-              <div className="flex-shrink-0 w-[220px] lg:w-[280px]">
+              <div className="w-full max-w-[480px] [&>div]:max-h-[300px] lg:flex-shrink-0 lg:w-[280px] lg:max-w-none lg:[&>div]:max-h-none lg:[&>div]:h-full lg:[&>div]:aspect-auto">
                 <CampMap citySlug={market.slug} cityName={market.name} />
               </div>
             </div>

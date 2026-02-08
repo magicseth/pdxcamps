@@ -9,48 +9,86 @@ interface CampMapProps {
   cityName: string;
 }
 
-// Fixed map centers and zoom per market
-const MARKET_CONFIG: Record<string, { lat: number; lng: number; zoom: number; bounds: { minLat: number; maxLat: number; minLng: number; maxLng: number } }> = {
-  portland: {
-    lat: 45.475, lng: -122.675, zoom: 11,
-    bounds: { minLat: 45.35, maxLat: 45.60, minLng: -122.85, maxLng: -122.50 },
-  },
-  boston: {
-    lat: 42.36, lng: -71.06, zoom: 12,
-    bounds: { minLat: 42.28, maxLat: 42.45, minLng: -71.20, maxLng: -70.95 },
-  },
-  denver: {
-    lat: 39.74, lng: -104.95, zoom: 11,
-    bounds: { minLat: 39.60, maxLat: 39.85, minLng: -105.10, maxLng: -104.80 },
-  },
-};
-const DEFAULT_CONFIG = MARKET_CONFIG.portland;
+function latToMercY(lat: number) {
+  const latRad = (lat * Math.PI) / 180;
+  return Math.log(Math.tan(Math.PI / 4 + latRad / 2));
+}
+
+/**
+ * Compute tight bounds from locations, filtering outliers.
+ * Uses IQR-based filtering: locations beyond 1.5x the interquartile range
+ * from the median are dropped, then adds 15% padding.
+ */
+function computeBounds(locations: { lat: number; lng: number }[]) {
+  if (locations.length === 0) return null;
+
+  const lats = locations.map((l) => l.lat).sort((a, b) => a - b);
+  const lngs = locations.map((l) => l.lng).sort((a, b) => a - b);
+
+  function filterIQR(sorted: number[]): { min: number; max: number } {
+    if (sorted.length < 4) {
+      return { min: sorted[0], max: sorted[sorted.length - 1] };
+    }
+    const q1 = sorted[Math.floor(sorted.length * 0.25)];
+    const q3 = sorted[Math.floor(sorted.length * 0.75)];
+    const iqr = q3 - q1;
+    const lower = q1 - 1.5 * iqr;
+    const upper = q3 + 1.5 * iqr;
+    const filtered = sorted.filter((v) => v >= lower && v <= upper);
+    return { min: filtered[0], max: filtered[filtered.length - 1] };
+  }
+
+  const latRange = filterIQR(lats);
+  const lngRange = filterIQR(lngs);
+
+  // Clamp to max metro-area size (~0.4 degrees lat, ~0.5 degrees lng ≈ 25-30 miles)
+  const MAX_LAT_SPAN = 0.4;
+  const MAX_LNG_SPAN = 0.5;
+  const latCenter = (latRange.min + latRange.max) / 2;
+  const lngCenter = (lngRange.min + lngRange.max) / 2;
+  const clampedLatMin = Math.max(latRange.min, latCenter - MAX_LAT_SPAN / 2);
+  const clampedLatMax = Math.min(latRange.max, latCenter + MAX_LAT_SPAN / 2);
+  const clampedLngMin = Math.max(lngRange.min, lngCenter - MAX_LNG_SPAN / 2);
+  const clampedLngMax = Math.min(lngRange.max, lngCenter + MAX_LNG_SPAN / 2);
+
+  // Add 15% padding
+  const latPad = (clampedLatMax - clampedLatMin) * 0.15 || 0.02;
+  const lngPad = (clampedLngMax - clampedLngMin) * 0.15 || 0.02;
+
+  return {
+    minLat: clampedLatMin - latPad,
+    maxLat: clampedLatMax + latPad,
+    minLng: clampedLngMin - lngPad,
+    maxLng: clampedLngMax + lngPad,
+  };
+}
 
 export function CampMap({ citySlug, cityName }: CampMapProps) {
   const locations = useQuery(api.locations.queries.getLocationCoordinates, { citySlug });
 
-  const config = MARKET_CONFIG[citySlug] || DEFAULT_CONFIG;
+  const { bounds, validLocations } = useMemo(() => {
+    if (!locations || locations.length === 0) return { bounds: null, validLocations: null };
 
-  const validLocations = useMemo(() => {
-    if (!locations) return null;
-    const { bounds } = config;
-    return locations.filter(
-      (l) => l.lat >= bounds.minLat && l.lat <= bounds.maxLat && l.lng >= bounds.minLng && l.lng <= bounds.maxLng
+    // Filter out locations with obviously bad coordinates (0,0 or null-ish)
+    const nonZero = locations.filter(
+      (l) => Math.abs(l.lat) > 1 && Math.abs(l.lng) > 1
     );
-  }, [locations, config]);
+    if (nonZero.length === 0) return { bounds: null, validLocations: null };
 
-  if (!validLocations || validLocations.length === 0) return null;
+    const b = computeBounds(nonZero);
+    if (!b) return { bounds: null, validLocations: null };
 
-  // Build OSM embed URL with the bounding box
-  const { bounds } = config;
+    // Keep only locations within the computed bounds
+    const valid = nonZero.filter(
+      (l) => l.lat >= b.minLat && l.lat <= b.maxLat && l.lng >= b.minLng && l.lng <= b.maxLng
+    );
+
+    return { bounds: b, validLocations: valid };
+  }, [locations]);
+
+  if (!bounds || !validLocations || validLocations.length === 0) return null;
+
   const bboxUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${bounds.minLng},${bounds.minLat},${bounds.maxLng},${bounds.maxLat}&layer=mapnik`;
-
-  // For dot positioning: convert lat/lng to percentage within the bounds
-  // OSM embed uses Mercator projection, so we need Mercator Y for latitude
-  function latToMercY(lat: number) {
-    const latRad = (lat * Math.PI) / 180;
-    return Math.log(Math.tan(Math.PI / 4 + latRad / 2));
-  }
 
   const mercMinY = latToMercY(bounds.minLat);
   const mercMaxY = latToMercY(bounds.maxLat);
@@ -60,29 +98,30 @@ export function CampMap({ citySlug, cityName }: CampMapProps) {
   const dots = validLocations.map((loc) => ({
     name: loc.name,
     xPct: ((loc.lng - bounds.minLng) / lngRange) * 100,
-    // Mercator Y is inverted (higher lat = higher mercY, but CSS top = 0 at top)
     yPct: ((mercMaxY - latToMercY(loc.lat)) / mercRangeY) * 100,
   }));
 
+  // Iframe is scaled 130% and shifted to crop OSM zoom controls in top-left
+  const iframeStyle = {
+    pointerEvents: 'none' as const,
+    top: '-20%',
+    left: '-15%',
+    width: '130%',
+    height: '130%',
+  };
+
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden border border-slate-200 shadow-lg bg-slate-100" style={{ aspectRatio: '3/4' }}>
-      {/* OSM iframe — scaled up and shifted to crop out zoom controls in top-left */}
+    <div className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden border border-slate-200 shadow-lg bg-slate-100">
       <iframe
         src={bboxUrl}
         className="absolute border-0"
         title={`Camp locations in ${cityName}`}
         loading="lazy"
-        style={{
-          pointerEvents: 'none',
-          top: '-15%',
-          left: '-10%',
-          width: '120%',
-          height: '120%',
-        }}
+        style={iframeStyle}
       />
 
-      {/* Dot overlay — uses Mercator-corrected percentages matching the iframe's projection */}
-      <div className="absolute inset-0" style={{ pointerEvents: 'none' }}>
+      {/* Dot overlay — must match the iframe's offset and scale */}
+      <div className="absolute" style={{ ...iframeStyle, pointerEvents: 'none' }}>
         {dots.map((dot, i) => (
           <div
             key={i}
