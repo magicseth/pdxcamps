@@ -1,0 +1,134 @@
+import { query } from '../_generated/server';
+import { v } from 'convex/values';
+
+/**
+ * Get all published blog posts, sorted by publishedAt descending.
+ * No auth required - public API for SSR.
+ */
+export const listPublished = query({
+  args: {
+    cityId: v.optional(v.id('cities')),
+    category: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = Math.min(args.limit ?? 50, 100);
+
+    let posts = await ctx.db
+      .query('blogPosts')
+      .withIndex('by_status', (q) => q.eq('status', 'published'))
+      .collect();
+
+    // Filter by city if specified
+    if (args.cityId) {
+      posts = posts.filter((p) => p.cityId === args.cityId || !p.cityId);
+    }
+
+    // Filter by category if specified
+    if (args.category) {
+      posts = posts.filter((p) => p.category === args.category);
+    }
+
+    // Sort by publishedAt descending
+    posts.sort((a, b) => (b.publishedAt ?? 0) - (a.publishedAt ?? 0));
+    posts = posts.slice(0, limit);
+
+    // Resolve hero images
+    const withImages = await Promise.all(
+      posts.map(async (post) => {
+        let heroImageUrl: string | undefined;
+        if (post.heroImageStorageId) {
+          heroImageUrl = (await ctx.storage.getUrl(post.heroImageStorageId)) ?? undefined;
+        }
+        return {
+          _id: post._id,
+          title: post.title,
+          slug: post.slug,
+          excerpt: post.excerpt,
+          heroImageUrl,
+          category: post.category,
+          tags: post.tags,
+          publishedAt: post.publishedAt,
+        };
+      }),
+    );
+
+    return withImages;
+  },
+});
+
+/**
+ * Get a single blog post by slug.
+ * No auth required - public API for SSR.
+ */
+export const getBySlug = query({
+  args: { slug: v.string() },
+  handler: async (ctx, args) => {
+    const post = await ctx.db
+      .query('blogPosts')
+      .withIndex('by_slug', (q) => q.eq('slug', args.slug))
+      .first();
+
+    if (!post || post.status !== 'published') {
+      return null;
+    }
+
+    let heroImageUrl: string | undefined;
+    if (post.heroImageStorageId) {
+      heroImageUrl = (await ctx.storage.getUrl(post.heroImageStorageId)) ?? undefined;
+    }
+
+    return {
+      ...post,
+      heroImageUrl,
+    };
+  },
+});
+
+/**
+ * Get related posts (same category, excluding current).
+ */
+export const getRelated = query({
+  args: {
+    slug: v.string(),
+    category: v.string(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 3;
+
+    const posts = await ctx.db
+      .query('blogPosts')
+      .withIndex('by_category', (q) => q.eq('category', args.category))
+      .collect();
+
+    const filtered = posts
+      .filter((p) => p.status === 'published' && p.slug !== args.slug)
+      .sort((a, b) => (b.publishedAt ?? 0) - (a.publishedAt ?? 0))
+      .slice(0, limit);
+
+    return filtered.map((p) => ({
+      _id: p._id,
+      title: p.title,
+      slug: p.slug,
+      excerpt: p.excerpt,
+      category: p.category,
+      publishedAt: p.publishedAt,
+    }));
+  },
+});
+
+/**
+ * Get all published post slugs (for sitemap / generateStaticParams).
+ */
+export const getAllSlugs = query({
+  args: {},
+  handler: async (ctx) => {
+    const posts = await ctx.db
+      .query('blogPosts')
+      .withIndex('by_status', (q) => q.eq('status', 'published'))
+      .collect();
+
+    return posts.map((p) => ({ slug: p.slug }));
+  },
+});

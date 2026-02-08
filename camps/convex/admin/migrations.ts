@@ -337,6 +337,53 @@ export const checkDevRequestsCityData = query({
 });
 
 /**
+ * Check scrape source readiness for a city
+ */
+export const checkCitySourceReadiness = query({
+  args: { citySlug: v.string() },
+  handler: async (ctx, args) => {
+    const city = await ctx.db
+      .query('cities')
+      .withIndex('by_slug', (q) => q.eq('slug', args.citySlug))
+      .first();
+    if (!city) return { error: 'City not found' };
+
+    const sources = await ctx.db.query('scrapeSources').collect();
+    const citySources = sources.filter((s) => s.cityId === city._id);
+
+    const withCode = citySources.filter((s) => s.scraperCode);
+    const withConfig = citySources.filter((s) => s.scraperConfig);
+    const withModule = citySources.filter((s) => s.scraperModule);
+    const active = citySources.filter((s) => s.isActive);
+    const scraped = citySources.filter((s) => s.lastScrapedAt);
+    const withSessions = citySources.filter((s) => (s.sessionCount ?? 0) > 0);
+    const withNextSchedule = citySources.filter((s) => s.nextScheduledScrape !== undefined);
+
+    return {
+      city: city.name,
+      totalSources: citySources.length,
+      active: active.length,
+      withScraperCode: withCode.length,
+      withScraperConfig: withConfig.length,
+      withScraperModule: withModule.length,
+      withNextSchedule: withNextSchedule.length,
+      everScraped: scraped.length,
+      withSessions: withSessions.length,
+      sampleSources: citySources.filter((s) => s.isActive).slice(0, 5).map((s) => ({
+        name: s.name,
+        isActive: s.isActive,
+        hasCode: !!s.scraperCode,
+        hasConfig: !!s.scraperConfig,
+        hasModule: !!s.scraperModule,
+        nextSchedule: s.nextScheduledScrape ? new Date(s.nextScheduledScrape).toISOString() : null,
+        lastScraped: s.lastScrapedAt ? new Date(s.lastScrapedAt).toISOString() : null,
+        sessionCount: s.sessionCount ?? 0,
+      })),
+    };
+  },
+});
+
+/**
  * Count scrapeSources by city
  */
 export const scrapeSourcesByCity = query({
@@ -826,6 +873,83 @@ export const fixLocationCoordinates = mutation({
     }
 
     return { dryRun: false, fixed: fixes.length };
+  },
+});
+
+/**
+ * Unstick scrape jobs for all sources in a given city.
+ * Finds all "pending" and "running" jobs, marks them as "failed",
+ * and resets nextScheduledScrape so sources get picked up immediately.
+ */
+export const unstickSourceJobs = mutation({
+  args: {
+    citySlug: v.string(),
+    dryRun: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const dryRun = args.dryRun ?? false;
+
+    const city = await ctx.db
+      .query('cities')
+      .withIndex('by_slug', (q) => q.eq('slug', args.citySlug))
+      .first();
+    if (!city) {
+      throw new Error(`City '${args.citySlug}' not found`);
+    }
+
+    // Find all sources for this city
+    const allSources = await ctx.db.query('scrapeSources').collect();
+    const citySources = allSources.filter((s) => s.cityId === city._id);
+
+    const now = Date.now();
+    let jobsCleaned = 0;
+    let sourcesReset = 0;
+    const details: { sourceName: string; jobsFixed: number }[] = [];
+
+    for (const source of citySources) {
+      // Find stuck pending jobs
+      const pendingJobs = await ctx.db
+        .query('scrapeJobs')
+        .withIndex('by_source_and_status', (q) => q.eq('sourceId', source._id).eq('status', 'pending'))
+        .collect();
+
+      // Find stuck running jobs
+      const runningJobs = await ctx.db
+        .query('scrapeJobs')
+        .withIndex('by_source_and_status', (q) => q.eq('sourceId', source._id).eq('status', 'running'))
+        .collect();
+
+      const stuckJobs = [...pendingJobs, ...runningJobs];
+      if (stuckJobs.length === 0) continue;
+
+      if (!dryRun) {
+        for (const job of stuckJobs) {
+          await ctx.db.patch(job._id, {
+            status: 'failed',
+            completedAt: now,
+            errorMessage: 'Cleaned up stuck job (migration: unstickSourceJobs)',
+          });
+        }
+
+        // Reset source so it gets picked up by the next scheduler run
+        await ctx.db.patch(source._id, {
+          nextScheduledScrape: now,
+        });
+      }
+
+      jobsCleaned += stuckJobs.length;
+      sourcesReset++;
+      details.push({ sourceName: source.name, jobsFixed: stuckJobs.length });
+    }
+
+    return {
+      dryRun,
+      city: city.name,
+      totalCitySources: citySources.length,
+      sourcesWithStuckJobs: sourcesReset,
+      totalJobsCleaned: jobsCleaned,
+      details: details.slice(0, 20),
+    };
   },
 });
 

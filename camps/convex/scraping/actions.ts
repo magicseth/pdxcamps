@@ -4,17 +4,8 @@ import { action, internalAction } from '../_generated/server';
 import { api, internal } from '../_generated/api';
 import { v } from 'convex/values';
 import { Id } from '../_generated/dataModel';
-
-// TODO: Add Stagehand integration
-// import { Stagehand } from "convex-stagehand";
-// import { components } from "../_generated/api";
-// import { z } from "zod";
-//
-// const stagehand = new Stagehand(components.stagehand, {
-//   browserbaseApiKey: process.env.BROWSERBASE_API_KEY!,
-//   browserbaseProjectId: process.env.BROWSERBASE_PROJECT_ID!,
-//   modelApiKey: process.env.MODEL_API_KEY!,
-// });
+import * as cheerio from 'cheerio';
+import { parseDateRange, parseTimeRange, parsePrice, parseAgeRange } from './validation';
 
 // Types for extracted session data
 interface ExtractedSession {
@@ -85,6 +76,9 @@ export const executeScrape = action({
       throw new Error('Scrape source has no scraper configuration');
     }
 
+    // Use configurable timeout from source (default 60s)
+    const timeoutMs = ((source as Record<string, unknown>).scrapeTimeoutSeconds as number ?? 60) * 1000;
+
     let allSessions: ExtractedSession[] = [];
     let pagesScraped = 0;
     const rawDataAccumulator: unknown[] = [];
@@ -92,7 +86,7 @@ export const executeScrape = action({
     try {
       // 4. Fetch URL(s) based on config
       for (const entryPoint of config.entryPoints) {
-        const result = await scrapeUrl(entryPoint.url, config);
+        const result = await scrapeUrl(entryPoint.url, config, timeoutMs);
         allSessions = allSessions.concat(result.sessions);
         pagesScraped += result.pagesScraped;
         rawDataAccumulator.push({
@@ -156,6 +150,7 @@ export const executeScrape = action({
 /**
  * Internal helper to scrape a single URL
  * This is where browser automation would happen
+ * @param timeoutMs - Configurable timeout in milliseconds (default 60000)
  */
 async function scrapeUrl(
   url: string,
@@ -178,6 +173,7 @@ async function scrapeUrl(
       selector?: string;
     };
   },
+  timeoutMs: number = 60000,
 ): Promise<{
   sessions: ExtractedSession[];
   pagesScraped: number;
@@ -218,14 +214,20 @@ async function scrapeUrl(
       },
     };
   } else {
-    // For static pages, use simple fetch
+    // For static pages, use simple fetch with configurable timeout
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
       const response = await fetch(url, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (compatible; PDXCampsBot/1.0; +https://pdxcamps.com/bot)',
           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         },
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error(`HTTP error: ${response.status} ${response.statusText}`);
@@ -255,12 +257,13 @@ async function scrapeUrl(
 }
 
 /**
- * Extract sessions from HTML using CSS selectors
- * Stub implementation - would use cheerio or similar in production
+ * Extract sessions from HTML using CSS selectors (new pipeline)
+ * Uses cheerio to parse HTML and extract session data based on config selectors.
+ * Only called when source.useNewPipeline is true.
  */
 function extractSessionsFromHtml(
-  _html: string,
-  _extraction: {
+  html: string,
+  extraction: {
     containerSelector: string;
     fields: {
       name: { selector: string };
@@ -272,18 +275,75 @@ function extractSessionsFromHtml(
     };
   },
 ): ExtractedSession[] {
-  // TODO: Implement actual HTML parsing with cheerio
-  // import * as cheerio from 'cheerio';
-  // const $ = cheerio.load(html);
-  // const containers = $(extraction.containerSelector);
-  // return containers.map((_, el) => ({
-  //   name: $(el).find(extraction.fields.name.selector).text(),
-  //   dates: parseDates($(el).find(extraction.fields.dates.selector).text()),
-  //   ...
-  // })).get();
+  const $ = cheerio.load(html);
+  const containers = $(extraction.containerSelector);
+  const sessions: ExtractedSession[] = [];
 
-  console.log('[Scraper] Would extract sessions using selectors');
-  return [];
+  containers.each((_, el) => {
+    const $el = $(el);
+
+    // Extract name (required)
+    const name = $el.find(extraction.fields.name.selector).text().trim();
+    if (!name) return; // Skip empty containers
+
+    // Extract dates
+    const dateText = $el.find(extraction.fields.dates.selector).text().trim();
+    const parsedDates = parseDateRange(dateText);
+    const dates = {
+      startDate: parsedDates?.startDate || '',
+      endDate: parsedDates?.endDate || '',
+    };
+
+    // Extract price
+    let price: number | undefined;
+    if (extraction.fields.price) {
+      const priceText = $el.find(extraction.fields.price.selector).text().trim();
+      const parsedPrice = parsePrice(priceText);
+      if (parsedPrice !== null) {
+        price = parsedPrice;
+      }
+    }
+
+    // Extract age range
+    let ageRange: { minAge?: number; maxAge?: number } | undefined;
+    if (extraction.fields.ageRange) {
+      const ageText = $el.find(extraction.fields.ageRange.selector).text().trim();
+      const parsedAge = parseAgeRange(ageText);
+      if (parsedAge) {
+        ageRange = { minAge: parsedAge.minAge, maxAge: parsedAge.maxAge };
+      }
+    }
+
+    // Extract status
+    let status: string | undefined;
+    if (extraction.fields.status) {
+      const statusText = $el.find(extraction.fields.status.selector).text().trim().toLowerCase();
+      const isSoldOut = extraction.fields.status.soldOutIndicators.some(
+        (indicator) => statusText.includes(indicator.toLowerCase()),
+      );
+      status = isSoldOut ? 'sold_out' : 'available';
+    }
+
+    // Extract registration URL
+    let registrationUrl: string | undefined;
+    if (extraction.fields.registrationUrl) {
+      const $link = $el.find(extraction.fields.registrationUrl.selector);
+      registrationUrl = $link.attr('href') || undefined;
+    }
+
+    sessions.push({
+      name,
+      dates,
+      price,
+      ageRange,
+      status,
+      registrationUrl,
+      rawHtml: $el.html() || undefined,
+    });
+  });
+
+  console.log(`[Scraper] Extracted ${sessions.length} sessions from HTML`);
+  return sessions;
 }
 
 /**
@@ -433,10 +493,12 @@ export const processScrapedData = action({
 });
 
 /**
- * Normalize extracted session data to the database format
+ * Normalize extracted session data to the database format (new pipeline)
+ * Wires up parsers from validation.ts to transform raw extracted data.
+ * Only called when source.useNewPipeline is true.
  */
 function normalizeSessionData(
-  _sessionData: ExtractedSession,
+  sessionData: ExtractedSession,
   _source: { _id: Id<'scrapeSources'>; organizationId?: Id<'organizations'> },
 ): {
   name: string;
@@ -447,26 +509,76 @@ function normalizeSessionData(
   status?: string;
   externalRegistrationUrl?: string;
 } | null {
-  // TODO: Implement actual normalization logic
-  console.log('[Processor] Would normalize session data');
-  return null;
+  // Must have a name
+  if (!sessionData.name) {
+    return null;
+  }
+
+  // Must have dates
+  let startDate = sessionData.dates?.startDate;
+  let endDate = sessionData.dates?.endDate;
+
+  if (!startDate) {
+    return null;
+  }
+
+  // Default endDate to startDate if missing
+  if (!endDate) {
+    endDate = startDate;
+  }
+
+  // Normalize price (ExtractedSession price is already in cents from parsePrice)
+  const price = sessionData.price;
+
+  // Normalize age range
+  let ageRequirements: { minAge?: number; maxAge?: number } | undefined;
+  if (sessionData.ageRange) {
+    ageRequirements = {
+      minAge: sessionData.ageRange.minAge,
+      maxAge: sessionData.ageRange.maxAge,
+    };
+  }
+
+  return {
+    name: sessionData.name.trim(),
+    startDate,
+    endDate,
+    price,
+    ageRequirements,
+    status: sessionData.status,
+    externalRegistrationUrl: sessionData.registrationUrl,
+  };
 }
 
 /**
- * Find an existing session that matches the scraped data
+ * Find an existing session that matches the scraped data (new pipeline)
+ * Delegates to the deduplication internal query for matching by source + start date + name similarity.
+ * Only called when source.useNewPipeline is true.
  */
 async function findExistingSession(
-  _ctx: unknown,
-  _sourceId: Id<'scrapeSources'>,
-  _normalizedSession: {
+  ctx: { runQuery: (...args: any[]) => Promise<any> },
+  sourceId: Id<'scrapeSources'>,
+  normalizedSession: {
     name: string;
     startDate: string;
     endDate: string;
   },
 ): Promise<{ _id: Id<'sessions'>; price: number; status: string } | null> {
-  // TODO: Implement session matching logic
-  console.log('[Processor] Would find existing session');
-  return null;
+  const existing = await ctx.runQuery(internal.scraping.deduplication.findExistingSession, {
+    sourceId,
+    name: normalizedSession.name,
+    startDate: normalizedSession.startDate,
+  });
+
+  if (!existing) return null;
+
+  // Cast the result to match expected shape
+  const session = existing as { _id: Id<'sessions'>; price?: number; status?: string };
+  return {
+    _id: session._id,
+    price: session.price ?? 0,
+    status: session.status ?? 'active',
+  };
 }
 
 /**
@@ -566,13 +678,16 @@ export const internalExecuteScrape = internalAction({
       };
     }
 
+    // Use configurable timeout from source (default 60s)
+    const internalTimeoutMs = ((source as Record<string, unknown>).scrapeTimeoutSeconds as number ?? 60) * 1000;
+
     let allSessions: ExtractedSession[] = [];
     let pagesScraped = 0;
     const rawDataAccumulator: unknown[] = [];
 
     try {
       for (const entryPoint of config.entryPoints) {
-        const result = await scrapeUrl(entryPoint.url, config);
+        const result = await scrapeUrl(entryPoint.url, config, internalTimeoutMs);
         allSessions = allSessions.concat(result.sessions);
         pagesScraped += result.pagesScraped;
         rawDataAccumulator.push({
@@ -660,13 +775,15 @@ export const runScheduledScrapes = internalAction({
     const results: Array<{
       sourceId: Id<'scrapeSources'>;
       sourceName: string;
-      success: boolean;
+      jobCreated: boolean;
       error?: string;
     }> = [];
 
+    // Create jobs for each due source — the workflow handles execution.
+    // createScrapeJob schedules the workflow via ctx.scheduler.runAfter.
     for (const source of dueForScrape) {
       try {
-        const scrapeResult = await ctx.runAction(internal.scraping.actions.internalExecuteScrape, {
+        const jobId = await ctx.runMutation(api.scraping.jobs.createScrapeJob, {
           sourceId: source._id,
           triggeredBy: 'scheduler',
         });
@@ -674,14 +791,14 @@ export const runScheduledScrapes = internalAction({
         results.push({
           sourceId: source._id,
           sourceName: source.name,
-          success: scrapeResult.success,
-          error: scrapeResult.error,
+          jobCreated: jobId !== null,
+          error: jobId === null ? 'Job already pending or running' : undefined,
         });
       } catch (error) {
         results.push({
           sourceId: source._id,
           sourceName: source.name,
-          success: false,
+          jobCreated: false,
           error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
@@ -689,8 +806,8 @@ export const runScheduledScrapes = internalAction({
 
     return {
       totalProcessed: results.length,
-      successful: results.filter((r) => r.success).length,
-      failed: results.filter((r) => !r.success).length,
+      jobsCreated: results.filter((r) => r.jobCreated).length,
+      skipped: results.filter((r) => !r.jobCreated).length,
       results,
     };
   },

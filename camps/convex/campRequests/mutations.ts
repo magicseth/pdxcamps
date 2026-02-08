@@ -120,6 +120,15 @@ export const updateRequestStatus = internalMutation({
     }
 
     await ctx.db.patch(requestId, cleanUpdates);
+
+    // Trigger "camp request fulfilled" email when status → completed
+    if (updates.status === 'completed') {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.emailAutomation.actions.sendCampRequestFulfilledEmail,
+        { requestId },
+      );
+    }
   },
 });
 

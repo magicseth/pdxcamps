@@ -55,6 +55,15 @@ export default defineSchema({
     onboardingCompletedAt: v.optional(v.number()),
     // Referral tracking - stores the code used to refer this family
     referredByCode: v.optional(v.string()),
+    // Login tracking for re-engagement emails
+    lastLoginAt: v.optional(v.number()),
+    // Email preferences for digest/marketing emails
+    emailPreferences: v.optional(
+      v.object({
+        weeklyDigest: v.boolean(),
+        marketingEmails: v.boolean(),
+      }),
+    ),
   })
     .index('by_workos_user_id', ['workosUserId'])
     .index('by_email', ['email'])
@@ -694,6 +703,16 @@ export default defineSchema({
     rescanRequestedAt: v.optional(v.number()),
     rescanReason: v.optional(v.string()),
 
+    // Feature flag: opt-in to new pipeline (HTML extraction + validation in actions.ts)
+    // Defaults to false so existing scrapers keep working via executor.ts -> import.ts
+    useNewPipeline: v.optional(v.boolean()),
+
+    // Configurable timeout for long-running scrapes (in seconds, default 60)
+    scrapeTimeoutSeconds: v.optional(v.number()),
+
+    // Circuit breaker: max consecutive failures before auto-disabling (default 10)
+    maxConsecutiveFailures: v.optional(v.number()),
+
     // Closure tracking - for sources that don't actually offer camps
     closureReason: v.optional(v.string()), // Why this source was marked closed
     closedAt: v.optional(v.number()), // When it was marked closed
@@ -971,6 +990,25 @@ export default defineSchema({
     recordedAt: v.number(),
   }).index('by_session', ['sessionId']),
 
+  // Track automated email sends (re-engagement, digest, countdown, etc.)
+  automatedEmailsSent: defineTable({
+    familyId: v.id('families'),
+    emailType: v.union(
+      v.literal('re_engagement'),
+      v.literal('weekly_digest'),
+      v.literal('summer_countdown'),
+      v.literal('paywall_nudge'),
+      v.literal('camp_request_fulfilled'),
+    ),
+    sentAt: v.number(),
+    emailId: v.optional(v.string()),
+    // Optional metadata (e.g., camp request ID, week key for dedup)
+    dedupeKey: v.optional(v.string()),
+  })
+    .index('by_family', ['familyId'])
+    .index('by_family_and_type', ['familyId', 'emailType'])
+    .index('by_family_type_dedupe', ['familyId', 'emailType', 'dedupeKey']),
+
   // ============ MARKET EXPANSION ============
 
   expansionMarkets: defineTable({
@@ -1026,6 +1064,35 @@ export default defineSchema({
     .index('by_market_key', ['marketKey'])
     .index('by_status', ['status']),
 
+  // ============ ORG OUTREACH ============
+
+  orgOutreach: defineTable({
+    organizationId: v.id('organizations'),
+    cityId: v.id('cities'),
+    emailAddress: v.string(),
+    status: v.union(
+      v.literal('pending'),
+      v.literal('sent'),
+      v.literal('opened'),
+      v.literal('replied'),
+      v.literal('bounced'),
+    ),
+    // Which email in the sequence (1, 2, or 3)
+    sequenceStep: v.number(),
+    sentAt: v.optional(v.number()),
+    emailId: v.optional(v.string()), // Resend email ID
+    followUpCount: v.number(),
+    // Track scheduling for follow-ups
+    nextFollowUpAt: v.optional(v.number()),
+    // Notes / admin context
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index('by_organization', ['organizationId'])
+    .index('by_status', ['status'])
+    .index('by_city', ['cityId'])
+    .index('by_next_follow_up', ['nextFollowUpAt']),
+
   // Admin alerts
   scraperAlerts: defineTable({
     sourceId: v.optional(v.id('scrapeSources')),
@@ -1039,6 +1106,7 @@ export default defineSchema({
       v.literal('rate_limited'),
       v.literal('source_recovered'),
       v.literal('cross_source_duplicates'),
+      v.literal('circuit_breaker'),
     ),
     message: v.string(),
     severity: v.union(v.literal('info'), v.literal('warning'), v.literal('error'), v.literal('critical')),
@@ -1060,4 +1128,32 @@ export default defineSchema({
     userAgent: v.optional(v.string()),
     createdAt: v.number(),
   }).index('by_family', ['familyId']),
+
+  // ============ BLOG ============
+
+  blogPosts: defineTable({
+    title: v.string(),
+    slug: v.string(),
+    content: v.string(), // Markdown content
+    excerpt: v.string(), // Short summary for cards
+    heroImageStorageId: v.optional(v.id('_storage')),
+    cityId: v.optional(v.id('cities')), // Optional - some posts are city-specific
+    category: v.string(), // e.g., "guide", "stem", "budget", "tips", "weekly-update"
+    tags: v.optional(v.array(v.string())),
+    publishedAt: v.optional(v.number()), // Undefined = draft
+    status: v.union(v.literal('draft'), v.literal('published'), v.literal('archived')),
+    // SEO
+    metaTitle: v.optional(v.string()),
+    metaDescription: v.optional(v.string()),
+    // Generation metadata
+    generatedBy: v.optional(v.union(v.literal('claude'), v.literal('manual'))),
+    generatedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_slug', ['slug'])
+    .index('by_status', ['status'])
+    .index('by_status_and_published', ['status', 'publishedAt'])
+    .index('by_city', ['cityId'])
+    .index('by_category', ['category']),
 });

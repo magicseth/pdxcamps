@@ -218,7 +218,12 @@ export const failScrapeJob = mutation({
       }
 
       // Auto-disable after 5 consecutive 404s - URL is broken, stop wasting resources
-      const shouldAutoDisable = is404Error && consecutive404s >= 5 && source.isActive;
+      const shouldAutoDisable404 = is404Error && consecutive404s >= 5 && source.isActive;
+
+      // Circuit breaker: auto-disable after max consecutive failures (default 10)
+      const maxFailures = (source as Record<string, unknown>).maxConsecutiveFailures as number ?? 10;
+      const shouldCircuitBreak = !isRateLimited && !is404Error && newConsecutiveFailures >= maxFailures && source.isActive;
+      const shouldAutoDisable = shouldAutoDisable404 || shouldCircuitBreak;
 
       // 10A: Exponential backoff for failing sources
       // Rate-limited: fixed 6-hour delay
@@ -250,7 +255,11 @@ export const failScrapeJob = mutation({
 
       if (shouldAutoDisable) {
         updates.isActive = false;
-        updates.closureReason = `Auto-disabled: URL returned 404 for ${consecutive404s} consecutive attempts`;
+        if (shouldCircuitBreak) {
+          updates.closureReason = `Circuit breaker: auto-disabled after ${newConsecutiveFailures} consecutive failures (limit: ${maxFailures})`;
+        } else {
+          updates.closureReason = `Auto-disabled: URL returned 404 for ${consecutive404s} consecutive attempts`;
+        }
         updates.closedAt = now;
         updates.closedBy = 'system';
       }
@@ -269,7 +278,17 @@ export const failScrapeJob = mutation({
           acknowledgedAt: undefined,
           acknowledgedBy: undefined,
         });
-      } else if (shouldAutoDisable) {
+      } else if (shouldCircuitBreak) {
+        await ctx.db.insert('scraperAlerts', {
+          sourceId: job.sourceId,
+          alertType: 'circuit_breaker',
+          message: `Circuit breaker tripped: "${source.name}" auto-disabled after ${newConsecutiveFailures} consecutive failures. Last error: ${args.errorMessage}`,
+          severity: 'error',
+          createdAt: now,
+          acknowledgedAt: undefined,
+          acknowledgedBy: undefined,
+        });
+      } else if (shouldAutoDisable404) {
         // High-priority alert for auto-disabled source
         await ctx.db.insert('scraperAlerts', {
           sourceId: job.sourceId,

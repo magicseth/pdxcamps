@@ -249,18 +249,39 @@ export const markJobCompleted = internalMutation({
       sessionsUpdated: args.sessionsUpdated,
     });
 
-    // 10B: Track zero-result scrapes and alert
     const job = await ctx.db.get(args.jobId);
     if (!job) return;
 
     const source = await ctx.db.get(job.sourceId);
     if (!source) return;
 
-    if (args.sessionsFound === 0) {
-      const prevZeroCount = source.scraperHealth.consecutiveZeroResults ?? 0;
-      const newZeroCount = prevZeroCount + 1;
+    // --- Update source health (success path) ---
+    const currentHealth = source.scraperHealth;
+    const newTotalRuns = currentHealth.totalRuns + 1;
+    const previousSuccessfulRuns = Math.round(currentHealth.successRate * currentHealth.totalRuns);
+    const newSuccessRate = (previousSuccessfulRuns + 1) / newTotalRuns;
 
-      // Create warning alert on zero results
+    const healthUpdate: Record<string, unknown> = {
+      lastSuccessAt: now,
+      lastFailureAt: currentHealth.lastFailureAt,
+      consecutiveFailures: 0, // Reset on success
+      totalRuns: newTotalRuns,
+      successRate: newSuccessRate,
+      lastError: undefined, // Clear error on success
+      needsRegeneration: false, // Clear flag on success
+    };
+
+    // Track zero-result scrapes
+    if (args.sessionsFound === 0) {
+      const prevZeroCount = currentHealth.consecutiveZeroResults ?? 0;
+      const newZeroCount = prevZeroCount + 1;
+      healthUpdate.consecutiveZeroResults = newZeroCount;
+
+      // After 3 consecutive zero-result completions, flag for regeneration
+      if (newZeroCount >= 3) {
+        healthUpdate.needsRegeneration = true;
+      }
+
       await ctx.db.insert('scraperAlerts', {
         sourceId: job.sourceId,
         alertType: 'zero_results',
@@ -270,27 +291,27 @@ export const markJobCompleted = internalMutation({
         acknowledgedAt: undefined,
         acknowledgedBy: undefined,
       });
-
-      // After 3 consecutive zero-result completions, flag for regeneration
-      const needsRegeneration = newZeroCount >= 3 || source.scraperHealth.needsRegeneration;
-
-      await ctx.db.patch(job.sourceId, {
-        scraperHealth: {
-          ...source.scraperHealth,
-          consecutiveZeroResults: newZeroCount,
-          needsRegeneration,
-        },
-      });
     } else {
-      // Reset consecutive zero results on non-zero result
-      if ((source.scraperHealth.consecutiveZeroResults ?? 0) > 0) {
-        await ctx.db.patch(job.sourceId, {
-          scraperHealth: {
-            ...source.scraperHealth,
-            consecutiveZeroResults: 0,
-          },
-        });
-      }
+      healthUpdate.consecutiveZeroResults = 0;
+    }
+
+    // --- Schedule next scrape ---
+    const frequencyMs = source.scrapeFrequencyHours * 60 * 60 * 1000;
+    const nextScheduledScrape = now + frequencyMs;
+
+    await ctx.db.patch(job.sourceId, {
+      scraperHealth: healthUpdate as typeof source.scraperHealth,
+      lastScrapedAt: now,
+      nextScheduledScrape,
+    });
+
+    // --- Recompute planner aggregates if sessions changed ---
+    if (source.cityId && (args.sessionsCreated > 0 || args.sessionsUpdated > 0)) {
+      const currentYear = new Date(now).getFullYear();
+      await ctx.scheduler.runAfter(0, internal.planner.aggregates.recomputeForCity, {
+        cityId: source.cityId,
+        year: currentYear,
+      });
     }
   },
 });
@@ -301,11 +322,162 @@ export const markJobFailed = internalMutation({
     error: v.string(),
   },
   handler: async (ctx, args) => {
+    const now = Date.now();
+
     await ctx.db.patch(args.jobId, {
       status: 'failed',
-      completedAt: Date.now(),
+      completedAt: now,
       error: args.error,
     });
+
+    // --- Update source health (failure path) ---
+    const job = await ctx.db.get(args.jobId);
+    if (!job) return;
+
+    const source = await ctx.db.get(job.sourceId);
+    if (!source) return;
+
+    const currentHealth = source.scraperHealth;
+
+    // Detect rate-limit errors (429 or "rate limit" in message)
+    const isRateLimited = /429|rate.?limit/i.test(args.error);
+    // Detect 404 errors
+    const is404Error = /404|not found/i.test(args.error);
+
+    // For rate-limited errors, don't increment consecutiveFailures
+    const newConsecutiveFailures = isRateLimited
+      ? currentHealth.consecutiveFailures
+      : currentHealth.consecutiveFailures + 1;
+    const newTotalRuns = currentHealth.totalRuns + 1;
+    const successfulRuns = Math.round(currentHealth.successRate * currentHealth.totalRuns);
+    const newSuccessRate = successfulRuns / newTotalRuns;
+
+    // Flag for regeneration if too many consecutive failures (but not for 404s or rate limits)
+    const needsRegeneration =
+      (!is404Error && !isRateLimited && newConsecutiveFailures >= 3) || currentHealth.needsRegeneration;
+
+    // Track URL status in history
+    const urlHistory = source.urlHistory || [];
+    if (is404Error) {
+      urlHistory.push({
+        url: source.url,
+        status: '404',
+        checkedAt: now,
+      });
+      while (urlHistory.length > 20) {
+        urlHistory.shift();
+      }
+    }
+
+    // Count recent consecutive 404s
+    let consecutive404s = 0;
+    for (let i = urlHistory.length - 1; i >= 0; i--) {
+      if (urlHistory[i].status === '404') {
+        consecutive404s++;
+      } else {
+        break;
+      }
+    }
+
+    // Auto-disable after 5 consecutive 404s
+    const shouldAutoDisable404 = is404Error && consecutive404s >= 5 && source.isActive;
+
+    // Circuit breaker: auto-disable after max consecutive failures (default 10)
+    const maxFailures = (source as Record<string, unknown>).maxConsecutiveFailures as number ?? 10;
+    const shouldCircuitBreak = !isRateLimited && !is404Error && newConsecutiveFailures >= maxFailures && source.isActive;
+    const shouldAutoDisable = shouldAutoDisable404 || shouldCircuitBreak;
+
+    // Exponential backoff for scheduling next scrape
+    let nextScheduledScrape: number;
+    if (isRateLimited) {
+      nextScheduledScrape = now + 6 * 60 * 60 * 1000; // 6 hours
+    } else {
+      const backoffHours = Math.min(
+        source.scrapeFrequencyHours * Math.pow(2, newConsecutiveFailures),
+        168, // cap at 1 week
+      );
+      nextScheduledScrape = now + backoffHours * 60 * 60 * 1000;
+    }
+
+    const updates: Record<string, unknown> = {
+      scraperHealth: {
+        ...currentHealth,
+        lastFailureAt: now,
+        consecutiveFailures: newConsecutiveFailures,
+        totalRuns: newTotalRuns,
+        successRate: newSuccessRate,
+        lastError: args.error,
+        needsRegeneration,
+      },
+      urlHistory,
+      nextScheduledScrape,
+    };
+
+    if (shouldAutoDisable) {
+      updates.isActive = false;
+      if (shouldCircuitBreak) {
+        updates.closureReason = `Circuit breaker: auto-disabled after ${newConsecutiveFailures} consecutive failures (limit: ${maxFailures})`;
+      } else {
+        updates.closureReason = `Auto-disabled: URL returned 404 for ${consecutive404s} consecutive attempts`;
+      }
+      updates.closedAt = now;
+      updates.closedBy = 'system';
+    }
+
+    await ctx.db.patch(job.sourceId, updates);
+
+    // Create alerts based on failure type
+    if (isRateLimited) {
+      await ctx.db.insert('scraperAlerts', {
+        sourceId: job.sourceId,
+        alertType: 'rate_limited',
+        message: `Source "${source.name}" was rate-limited. Next attempt in 6 hours.`,
+        severity: 'info',
+        createdAt: now,
+        acknowledgedAt: undefined,
+        acknowledgedBy: undefined,
+      });
+    } else if (shouldCircuitBreak) {
+      await ctx.db.insert('scraperAlerts', {
+        sourceId: job.sourceId,
+        alertType: 'circuit_breaker',
+        message: `Circuit breaker tripped: "${source.name}" auto-disabled after ${newConsecutiveFailures} consecutive failures. Last error: ${args.error}`,
+        severity: 'error',
+        createdAt: now,
+        acknowledgedAt: undefined,
+        acknowledgedBy: undefined,
+      });
+    } else if (shouldAutoDisable404) {
+      await ctx.db.insert('scraperAlerts', {
+        sourceId: job.sourceId,
+        alertType: 'scraper_disabled',
+        message: `Source "${source.name}" auto-disabled after ${consecutive404s} consecutive 404 errors. URL needs to be updated: ${source.url}`,
+        severity: 'error',
+        createdAt: now,
+        acknowledgedAt: undefined,
+        acknowledgedBy: undefined,
+      });
+    } else if (newConsecutiveFailures === 3) {
+      await ctx.db.insert('scraperAlerts', {
+        sourceId: job.sourceId,
+        alertType: 'scraper_degraded',
+        message: `Scraper "${source.name}" has failed 3 times consecutively. Last error: ${args.error}`,
+        severity: 'warning',
+        createdAt: now,
+        acknowledgedAt: undefined,
+        acknowledgedBy: undefined,
+      });
+    } else if (newConsecutiveFailures >= 5 && !is404Error) {
+      await ctx.db.insert('scraperAlerts', {
+        sourceId: job.sourceId,
+        alertType: 'scraper_needs_regeneration',
+        message: `Scraper "${source.name}" needs regeneration after ${newConsecutiveFailures} consecutive failures.`,
+        severity: 'error',
+        createdAt: now,
+        acknowledgedAt: undefined,
+        acknowledgedBy: undefined,
+      });
+    }
   },
 });
 

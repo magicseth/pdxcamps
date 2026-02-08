@@ -673,7 +673,7 @@ export function LandingPage() {
                 unoptimized={!!market.iconStorageId}
               />
               <p className="text-xs text-slate-500">
-                By {market.name} parents, for {market.name} parents
+                For {market.name} parents
               </p>
             </div>
             <div className="flex items-center gap-6 text-sm">
@@ -696,9 +696,14 @@ export function LandingPage() {
           </div>
           <div className="border-t border-slate-800 mt-8 pt-8 text-center text-sm">
             <p>
-              © {new Date().getFullYear()} {market.tagline}. Made with ☀️ in {market.name}.
+              © {new Date().getFullYear()} {market.tagline}. Made with ☀️ by parents for {market.name}.
             </p>
             <p className="text-slate-500 mt-1">We built this because we needed it too.</p>
+            <p className="text-slate-500 mt-1">
+              <a href="https://mixcamps.com" className="hover:text-white transition-colors underline">
+                Explore other cities
+              </a>
+            </p>
           </div>
         </div>
       </footer>

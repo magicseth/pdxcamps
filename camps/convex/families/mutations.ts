@@ -180,6 +180,49 @@ export const updateFamily = mutation({
 });
 
 /**
+ * Touch the lastLoginAt timestamp for the current family.
+ * Called by the frontend on app load to track engagement.
+ */
+export const touchLastLogin = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const family = await getFamily(ctx);
+    if (!family) return null;
+
+    // Only update if more than 1 hour since last touch (avoid excessive writes)
+    const oneHourAgo = Date.now() - 60 * 60 * 1000;
+    if (family.lastLoginAt && family.lastLoginAt > oneHourAgo) {
+      return family._id;
+    }
+
+    await ctx.db.patch(family._id, {
+      lastLoginAt: Date.now(),
+    });
+    return family._id;
+  },
+});
+
+/**
+ * Update email preferences for the current family.
+ */
+export const updateEmailPreferences = mutation({
+  args: {
+    weeklyDigest: v.boolean(),
+    marketingEmails: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const family = await requireFamily(ctx);
+    await ctx.db.patch(family._id, {
+      emailPreferences: {
+        weeklyDigest: args.weeklyDigest,
+        marketingEmails: args.marketingEmails,
+      },
+    });
+    return family._id;
+  },
+});
+
+/**
  * Admin: Update a family's WorkOS user ID (for migration fixes)
  */
 export const adminUpdateWorkosUserId = mutation({

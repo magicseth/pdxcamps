@@ -1,5 +1,13 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { getChildAge, formatDateShort, getThisWeekDates, getNextWeekDates } from '@/lib/dateUtils';
+import {
+  getChildAge,
+  formatDateShort,
+  getThisWeekDates,
+  getNextWeekDates,
+  calculateDisplayAge,
+  isThisWeekSelected,
+  isNextWeekSelected,
+} from '@/lib/dateUtils';
 
 describe('getChildAge', () => {
   afterEach(() => {
@@ -95,5 +103,80 @@ describe('getNextWeekDates', () => {
     const nextStart = new Date(nextWeek.start + 'T00:00:00');
     const diffDays = (nextStart.getTime() - thisStart.getTime()) / (1000 * 60 * 60 * 24);
     expect(diffDays).toBe(7);
+  });
+});
+
+describe('calculateDisplayAge', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('returns age with "years old" suffix', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2025, 7, 15, 12)); // Aug 15, 2025
+    expect(calculateDisplayAge('2015-03-10')).toBe('10 years old');
+  });
+
+  it('shows correct age before birthday', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2025, 1, 1, 12)); // Feb 1, 2025
+    expect(calculateDisplayAge('2015-03-10')).toBe('9 years old');
+  });
+
+  it('shows correct age on exact birthday', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2025, 2, 10, 12)); // Mar 10, 2025
+    expect(calculateDisplayAge('2015-03-10')).toBe('10 years old');
+  });
+
+  it('handles very young child (age 1)', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2025, 5, 15, 12)); // Jun 15, 2025
+    expect(calculateDisplayAge('2024-01-01')).toBe('1 years old');
+  });
+});
+
+describe('isThisWeekSelected', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('returns true when dates match this week', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2025, 5, 11, 12)); // Wed June 11 2025
+    const { start, end } = getThisWeekDates();
+    expect(isThisWeekSelected(start, end)).toBe(true);
+  });
+
+  it('returns false when dates do not match this week', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2025, 5, 11, 12));
+    expect(isThisWeekSelected('2025-06-16', '2025-06-22')).toBe(false);
+  });
+
+  it('returns false when only start matches', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2025, 5, 11, 12));
+    const { start } = getThisWeekDates();
+    expect(isThisWeekSelected(start, '2025-12-31')).toBe(false);
+  });
+});
+
+describe('isNextWeekSelected', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('returns true when dates match next week', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2025, 5, 11, 12)); // Wed June 11 2025
+    const { start, end } = getNextWeekDates();
+    expect(isNextWeekSelected(start, end)).toBe(true);
+  });
+
+  it('returns false when dates do not match next week', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2025, 5, 11, 12));
+    expect(isNextWeekSelected('2025-06-09', '2025-06-15')).toBe(false);
   });
 });

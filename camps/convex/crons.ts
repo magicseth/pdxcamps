@@ -17,6 +17,37 @@ crons.interval(
 );
 
 // ============================================
+// EMAIL AUTOMATION CRONS
+// ============================================
+
+// Daily re-engagement check at 10 AM PST (6 PM UTC)
+// Sends "X new camps added" email to users inactive 7+ days
+crons.daily(
+  'daily re-engagement check',
+  { hourUTC: 18, minuteUTC: 0 },
+  internal.emailAutomation.actions.processReEngagement,
+  {},
+);
+
+// Weekly digest every Monday at 8 AM PST (4 PM UTC)
+// Sends planning update with new camps, saved camp status, filling up alerts
+crons.weekly(
+  'weekly digest email',
+  { dayOfWeek: 'monday', hourUTC: 16, minuteUTC: 0 },
+  internal.emailAutomation.actions.processWeeklyDigest,
+  {},
+);
+
+// Summer countdown every Monday at 9 AM PST (5 PM UTC), Feb-May only
+// Sends "X weeks until summer" with real stats
+crons.weekly(
+  'summer countdown email',
+  { dayOfWeek: 'monday', hourUTC: 17, minuteUTC: 0 },
+  internal.emailAutomation.actions.processSummerCountdown,
+  {},
+);
+
+// ============================================
 // SCRAPING CRONS
 // ============================================
 
@@ -158,6 +189,19 @@ crons.daily(
   'cross-source duplicate detection',
   { hourUTC: 12, minuteUTC: 30 },
   internal.scraping.deduplication.detectAndAlertCrossSourceDuplicates,
+  {},
+);
+
+// ============================================
+// BLOG CONTENT CRONS
+// ============================================
+
+// Generate "New Camps This Week" blog post every Monday at 7 AM PST (3 PM UTC)
+// Only publishes if 3+ new camp sessions were added in the past week
+crons.weekly(
+  'weekly blog update',
+  { dayOfWeek: 'monday', hourUTC: 15, minuteUTC: 0 },
+  internal.blog.actions.generateWeeklyUpdate,
   {},
 );
 

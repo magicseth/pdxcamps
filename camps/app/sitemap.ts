@@ -1,7 +1,8 @@
 import { MetadataRoute } from 'next';
 import { fetchQuery } from 'convex/nextjs';
 import { api } from '../convex/_generated/api';
-import { DEFAULT_MARKET } from '../lib/markets';
+import { DEFAULT_MARKET, MARKETS } from '../lib/markets';
+import { getAllSeoSlugs } from '../lib/seoPages';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://pdxcamps.com';
@@ -48,7 +49,42 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'weekly' as const,
       priority: 0.7,
     }));
-    return [...staticRoutes, ...orgRoutes];
+
+    // SEO landing pages for each city + page type
+    const seoSlugs = getAllSeoSlugs();
+    const citySlugs = MARKETS.filter((m) => m.slug !== 'mix').map((m) => m.slug);
+    const seoRoutes: MetadataRoute.Sitemap = citySlugs.flatMap((citySlug) =>
+      seoSlugs.map((pageSlug) => ({
+        url: `${baseUrl}/${citySlug}/${pageSlug}`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly' as const,
+        priority: 0.8,
+      })),
+    );
+
+    // Blog posts
+    let blogRoutes: MetadataRoute.Sitemap = [];
+    try {
+      const blogSlugs = await fetchQuery(api.blog.queries.getAllSlugs, {});
+      blogRoutes = [
+        {
+          url: `${baseUrl}/blog`,
+          lastModified: new Date(),
+          changeFrequency: 'weekly' as const,
+          priority: 0.7,
+        },
+        ...blogSlugs.map((post) => ({
+          url: `${baseUrl}/blog/${post.slug}`,
+          lastModified: new Date(),
+          changeFrequency: 'monthly' as const,
+          priority: 0.6,
+        })),
+      ];
+    } catch {
+      // No blog posts yet
+    }
+
+    return [...staticRoutes, ...orgRoutes, ...seoRoutes, ...blogRoutes];
   } catch {
     return staticRoutes;
   }
