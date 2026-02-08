@@ -97,7 +97,7 @@ export function CampMap({ citySlug, cityName }: CampMapProps) {
 
   return (
     <div
-      className="relative w-full max-h-[300px] rounded-2xl overflow-hidden border border-slate-200 shadow-lg bg-slate-100"
+      className="relative w-full rounded-2xl overflow-hidden border border-slate-200 shadow-lg bg-slate-100"
       style={{ aspectRatio: `${mapData.vpW} / ${mapData.vpH}` }}
     >
       {/* Tile layer — positioned as percentages so they scale with the container */}

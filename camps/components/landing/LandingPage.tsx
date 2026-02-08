@@ -104,7 +104,7 @@ export function LandingPage() {
             </div>
 
             {/* Headline + Map side by side on desktop, stacked on mobile */}
-            <div className="grid md:grid-cols-[1fr,340px] gap-8 items-start mb-8">
+            <div className="grid md:grid-cols-[1fr,240px] gap-8 items-start mb-8">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 leading-tight">
                 Give your kids
                 <br />
