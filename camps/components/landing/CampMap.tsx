@@ -31,25 +31,28 @@ function fitZoom(minLat: number, maxLat: number, minLng: number, maxLng: number,
   return 1;
 }
 
+// Fixed bounding boxes per market — prevents bad geocodes from breaking the map
+const MARKET_BOUNDS: Record<string, { minLat: number; maxLat: number; minLng: number; maxLng: number }> = {
+  portland: { minLat: 45.35, maxLat: 45.60, minLng: -122.85, maxLng: -122.50 },
+  boston:   { minLat: 42.28, maxLat: 42.45, minLng: -71.20, maxLng: -70.95 },
+  denver:  { minLat: 39.60, maxLat: 39.85, minLng: -105.10, maxLng: -104.80 },
+};
+const DEFAULT_BOUNDS = { minLat: 45.35, maxLat: 45.60, minLng: -122.85, maxLng: -122.50 };
+
 export function CampMap({ citySlug, cityName }: CampMapProps) {
   const locations = useQuery(api.locations.queries.getLocationCoordinates, { citySlug });
 
   const mapData = useMemo(() => {
     if (!locations || locations.length === 0) return null;
 
-    const lats = locations.map((l) => l.lat);
-    const lngs = locations.map((l) => l.lng);
-    const minLat = Math.min(...lats);
-    const maxLat = Math.max(...lats);
-    const minLng = Math.min(...lngs);
-    const maxLng = Math.max(...lngs);
+    const bounds = MARKET_BOUNDS[citySlug] || DEFAULT_BOUNDS;
+    const { minLat: bMinLat, maxLat: bMaxLat, minLng: bMinLng, maxLng: bMaxLng } = bounds;
 
-    const padLat = Math.max((maxLat - minLat) * 0.1, 0.01);
-    const padLng = Math.max((maxLng - minLng) * 0.1, 0.01);
-    const bMinLat = minLat - padLat;
-    const bMaxLat = maxLat + padLat;
-    const bMinLng = minLng - padLng;
-    const bMaxLng = maxLng + padLng;
+    // Filter to only locations within the fixed bounds
+    const validLocations = locations.filter(
+      (l) => l.lat >= bMinLat && l.lat <= bMaxLat && l.lng >= bMinLng && l.lng <= bMaxLng
+    );
+    if (validLocations.length === 0) return null;
 
     const targetW = 1200;
     const targetH = 800;
@@ -81,7 +84,7 @@ export function CampMap({ citySlug, cityName }: CampMapProps) {
       }
     }
 
-    const dots = locations.map((loc) => ({
+    const dots = validLocations.map((loc) => ({
       name: loc.name,
       xPct: ((lngToWorldX(loc.lng, zoom) - vpX1) / vpW) * 100,
       yPct: ((latToWorldY(loc.lat, zoom) - vpY1) / vpH) * 100,
@@ -94,7 +97,7 @@ export function CampMap({ citySlug, cityName }: CampMapProps) {
 
   return (
     <div
-      className="relative w-full rounded-2xl overflow-hidden border border-slate-200 shadow-lg bg-slate-100"
+      className="relative w-full max-h-[300px] rounded-2xl overflow-hidden border border-slate-200 shadow-lg bg-slate-100"
       style={{ aspectRatio: `${mapData.vpW} / ${mapData.vpH}` }}
     >
       {/* Tile layer — positioned as percentages so they scale with the container */}
@@ -139,7 +142,7 @@ export function CampMap({ citySlug, cityName }: CampMapProps) {
 
       {/* Label */}
       <div className="absolute bottom-3 left-3 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm text-sm font-medium text-slate-700 z-10">
-        {locations!.length} camp locations across {cityName}
+        {mapData.dots.length} camp locations across {cityName}
       </div>
 
       {/* OSM attribution */}
