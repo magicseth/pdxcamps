@@ -11,11 +11,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-900">
       <div className="max-w-md w-full text-center">
-        <div className="text-6xl mb-6" aria-hidden="true">
-          <span role="img" aria-label="Warning">
-            ⚠️
-          </span>
-        </div>
+        <div className="text-6xl mb-6" aria-hidden="true">⚠️</div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-4 text-balance">Something went wrong</h1>
         <p className="text-slate-600 dark:text-slate-400 mb-8 text-pretty">
           We encountered an unexpected error. Please try again, or contact support if the problem persists.
