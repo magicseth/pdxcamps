@@ -1,10 +1,12 @@
 import { MetadataRoute } from 'next';
+import { fetchQuery } from 'convex/nextjs';
+import { api } from '../convex/_generated/api';
 import { DEFAULT_MARKET } from '../lib/markets';
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://pdxcamps.com';
 
-  return [
+  const staticRoutes: MetadataRoute.Sitemap = [
     {
       url: baseUrl,
       lastModified: new Date(),
@@ -16,18 +18,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/calendar`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/friends`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.6,
     },
     {
       url: `${baseUrl}/upgrade`,
@@ -48,4 +38,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.3,
     },
   ];
+
+  // Dynamically add organization pages
+  try {
+    const organizations = await fetchQuery(api.organizations.queries.listAllOrganizations, {});
+    const orgRoutes: MetadataRoute.Sitemap = organizations.map((org) => ({
+      url: `${baseUrl}/organization/${org.slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.7,
+    }));
+    return [...staticRoutes, ...orgRoutes];
+  } catch {
+    return staticRoutes;
+  }
 }
