@@ -44,15 +44,15 @@ export function CampMap({ citySlug, cityName }: CampMapProps) {
     const minLng = Math.min(...lngs);
     const maxLng = Math.max(...lngs);
 
-    const padLat = Math.max((maxLat - minLat) * 0.2, 0.02);
-    const padLng = Math.max((maxLng - minLng) * 0.2, 0.02);
+    const padLat = Math.max((maxLat - minLat) * 0.1, 0.01);
+    const padLng = Math.max((maxLng - minLng) * 0.1, 0.01);
     const bMinLat = minLat - padLat;
     const bMaxLat = maxLat + padLat;
     const bMinLng = minLng - padLng;
     const bMaxLng = maxLng + padLng;
 
-    const targetW = 800;
-    const targetH = 500;
+    const targetW = 1200;
+    const targetH = 800;
     const zoom = fitZoom(bMinLat, bMaxLat, bMinLng, bMaxLng, targetW, targetH);
 
     const vpX1 = lngToWorldX(bMinLng, zoom);
