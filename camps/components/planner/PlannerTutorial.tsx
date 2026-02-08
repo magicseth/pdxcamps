@@ -103,16 +103,26 @@ export function PlannerTutorial({
     } catch {
       return;
     }
-    // Filter out optional steps whose targets don't exist in the DOM
-    const timer = setTimeout(() => {
+    // Filter out optional steps whose targets don't exist in the DOM.
+    // Retry a few times since Convex data may still be loading.
+    let attempt = 0;
+    const maxAttempts = 5;
+    const checkAndShow = () => {
+      attempt++;
       const available = steps.filter((step) => {
         if (!step.optional) return true;
         if (!step.target) return true;
         return !!document.querySelector(`[data-tutorial="${step.target}"]`);
       });
+      // If optional targets are missing and we haven't exhausted retries, try again
+      if (available.length < steps.length && attempt < maxAttempts) {
+        timer = setTimeout(checkAndShow, 1000);
+        return;
+      }
       setActiveSteps(available);
       setVisible(true);
-    }, 1000);
+    };
+    let timer = setTimeout(checkAndShow, 1000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -334,20 +344,22 @@ export function PlannerTutorial({
   if (!step) return null;
 
   return (
-    <div
-      className={`fixed inset-0 z-50 transition-opacity duration-300 ${exiting ? 'opacity-0' : 'opacity-100'}`}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Planner tutorial"
-    >
-      {/* Backdrop - click to dismiss */}
-      <div className="absolute inset-0 bg-black/50" onClick={dismiss} />
+    <>
+      {/* Backdrop - separate stacking context at z-50 */}
+      <div
+        className={`fixed inset-0 z-50 bg-black/50 transition-opacity duration-300 ${exiting ? 'opacity-0' : 'opacity-100'}`}
+        onClick={dismiss}
+        aria-hidden="true"
+      />
 
-      {/* Tooltip card */}
+      {/* Tooltip card - separate stacking context at z-[52], above highlighted elements at z-51 */}
       <div
         ref={tooltipRef}
         style={tooltipStyle}
-        className={`z-[52] transition-all duration-300 ease-out ${
+        role="dialog"
+        aria-modal="true"
+        aria-label="Planner tutorial"
+        className={`fixed z-[52] transition-all duration-300 ease-out ${
           exiting ? 'scale-95 opacity-0' : 'scale-100 opacity-100'
         }`}
       >
@@ -405,7 +417,7 @@ export function PlannerTutorial({
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

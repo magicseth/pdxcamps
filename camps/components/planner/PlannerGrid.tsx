@@ -928,6 +928,7 @@ function CoverageCell({
     return (
       <td className={tdClass}>
         <Link
+          data-tutorial="gap"
           href={
             citySlug
               ? `/discover/${citySlug}?from=${week.week.startDate}&to=${week.week.endDate}&childId=${childId}${childGrade !== undefined ? `&grade=${childGrade}` : ''}`
