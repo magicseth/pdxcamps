@@ -1,4 +1,5 @@
 import { MetadataRoute } from 'next';
+import { DEFAULT_MARKET } from '../lib/markets';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://pdxcamps.com';
@@ -11,7 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1,
     },
     {
-      url: `${baseUrl}/discover/portland`,
+      url: `${baseUrl}/discover/${DEFAULT_MARKET.slug}`,
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 0.9,

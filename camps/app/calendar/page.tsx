@@ -164,6 +164,7 @@ export default function CalendarPage() {
 }
 
 function CalendarContent() {
+  const market = useMarket();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedChildId, setSelectedChildId] = useState<Id<'children'> | 'all'>('all');
   const [selectedStatuses, setSelectedStatuses] = useState<Set<RegistrationStatus>>(
@@ -459,7 +460,7 @@ function CalendarContent() {
               : "You haven't registered for any camps yet. Discover amazing summer camps for your kids!"}
           </p>
           <Link
-            href="/discover/portland"
+            href={`/discover/${market.slug}`}
             className="inline-block bg-primary text-white px-6 py-2 rounded-md font-medium hover:bg-primary-dark"
           >
             Discover Camps

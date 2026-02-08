@@ -355,7 +355,7 @@ export default function SessionDetailPage() {
           </Link>
           <ChevronRightIcon className="w-4 h-4" />
           <Link
-            href="/discover/portland"
+            href={`/discover/${market.slug}`}
             className="hover:text-slate-700 dark:hover:text-slate-300 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             Discover

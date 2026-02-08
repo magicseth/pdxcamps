@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Metadata } from 'next';
+import { DEFAULT_MARKET } from '../lib/markets';
 
 export const metadata: Metadata = {
   title: 'Page Not Found',
@@ -22,7 +23,7 @@ export default function NotFound() {
             Go to Planner
           </Link>
           <Link
-            href="/discover/portland"
+            href={`/discover/${DEFAULT_MARKET.slug}`}
             className="px-6 py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-medium rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             Discover Camps

@@ -84,6 +84,7 @@ export default function WeekDetailPage() {
 }
 
 function WeekDetailContent() {
+  const market = useMarket();
   const params = useParams();
   const router = useRouter();
   const weekStart = params.weekStart as string;
@@ -682,7 +683,7 @@ function WeekDetailContent() {
           Back to Overview
         </Link>
         <Link
-          href="/discover/portland"
+          href={`/discover/${market.slug}`}
           className="text-sm text-primary hover:text-primary-dark dark:text-primary-light flex items-center gap-1"
         >
           <SearchIcon className="w-4 h-4" />

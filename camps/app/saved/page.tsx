@@ -6,6 +6,7 @@ import { Id } from '@/convex/_generated/dataModel';
 import Link from 'next/link';
 import { useState, useMemo } from 'react';
 import confetti from 'canvas-confetti';
+import { useMarket } from '@/hooks/useMarket';
 
 function formatDate(dateStr: string) {
   const date = new Date(dateStr + 'T00:00:00');
@@ -341,6 +342,7 @@ function SectionHeader({
 }
 
 export default function SavedCampsPage() {
+  const market = useMarket();
   const savedCamps = useQuery(api.registrations.queries.getSavedCamps);
   const subscription = useQuery(api.subscriptions.getSubscription);
   const register = useMutation(api.registrations.mutations.register);
@@ -493,7 +495,7 @@ export default function SavedCampsPage() {
               Browse camps and tap the heart to save them for later
             </p>
             <Link
-              href="/discover/portland"
+              href={`/discover/${market.slug}`}
               className="inline-flex items-center px-4 py-2 bg-primary text-white font-medium rounded-lg hover:bg-primary-dark transition-colors"
             >
               Browse Camps
@@ -567,7 +569,7 @@ export default function SavedCampsPage() {
             Home
           </Link>
           <Link
-            href="/discover/portland"
+            href={`/discover/${market.slug}`}
             className="text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary-light text-sm font-medium"
           >
             Discover

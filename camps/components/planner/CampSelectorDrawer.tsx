@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery } from 'convex/react';
 import posthog from 'posthog-js';
+import { useMarket } from '../../hooks/useMarket';
 
 // Animated count component with slide-up effect
 function AnimatedCount({ count, className = '' }: { count: number; className?: string }) {
@@ -88,6 +89,7 @@ export function CampSelectorDrawer({
   initialCategories = [],
   initialOrganizationId,
 }: CampSelectorDrawerProps) {
+  const market = useMarket();
   const avatarColor = childColor || DEFAULT_CHILD_COLORS[0];
   const [selectedCategories, setSelectedCategories] = useState<string[]>(initialCategories);
   const [selectedOrg, setSelectedOrg] = useState<string | null>(initialOrganizationId ?? null);
@@ -342,7 +344,7 @@ export function CampSelectorDrawer({
                 Try adjusting your filters or check another week
               </p>
               <Link
-                href={`/discover/portland?from=${weekStart}&to=${weekEnd}&childId=${childId}`}
+                href={`/discover/${market.slug}?from=${weekStart}&to=${weekEnd}&childId=${childId}`}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-dark"
                 onClick={onClose}
               >
@@ -369,7 +371,7 @@ export function CampSelectorDrawer({
         {/* Footer with link to full discover */}
         <div className="flex-shrink-0 p-4 border-t border-slate-200 dark:border-slate-700">
           <Link
-            href={`/discover/portland?from=${weekStart}&to=${weekEnd}&childId=${childId}`}
+            href={`/discover/${market.slug}?from=${weekStart}&to=${weekEnd}&childId=${childId}`}
             className="flex items-center justify-center gap-2 w-full py-3 text-primary hover:text-primary-dark font-medium"
             onClick={onClose}
           >
