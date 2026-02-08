@@ -494,6 +494,47 @@ export const setPrimaryDomain = mutation({
 });
 
 /**
+ * Record Resend domain ID for a specific domain
+ */
+export const recordResendDomain = mutation({
+  args: {
+    marketKey: v.string(),
+    domain: v.string(),
+    resendDomainId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const record = await ctx.db
+      .query('expansionMarkets')
+      .withIndex('by_market_key', (q) => q.eq('marketKey', args.marketKey))
+      .unique();
+
+    if (!record) {
+      throw new Error(`Market not initialized: ${args.marketKey}`);
+    }
+
+    const existingDomains = record.domains || [];
+    const targetIndex = existingDomains.findIndex((d) => d.domain === args.domain);
+
+    if (targetIndex === -1) {
+      throw new Error(`Domain ${args.domain} not found for this market`);
+    }
+
+    const updatedDomains = [...existingDomains];
+    updatedDomains[targetIndex] = {
+      ...updatedDomains[targetIndex],
+      resendDomainId: args.resendDomainId,
+    };
+
+    await ctx.db.patch(record._id, {
+      domains: updatedDomains,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true };
+  },
+});
+
+/**
  * Record DNS configuration for a specific domain
  */
 export const recordDomainDnsConfiguration = mutation({

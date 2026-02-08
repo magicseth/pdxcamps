@@ -1134,6 +1134,323 @@ export const ensureDomainConfigured = action({
   },
 });
 
+// ============ RESEND DOMAIN PROVISIONING ============
+
+/**
+ * Register a domain in Resend for sending email
+ * Returns the domain ID and required DNS records (SPF, DKIM, MX)
+ */
+export const setupResendDomain = action({
+  args: {
+    domain: v.string(),
+  },
+  handler: async (
+    _,
+    args,
+  ): Promise<{
+    success: boolean;
+    domainId?: string;
+    records?: Array<{
+      type: string;
+      name: string;
+      value: string;
+      priority?: number;
+      ttl?: string;
+    }>;
+    error?: string;
+  }> => {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      return { success: false, error: 'RESEND_API_KEY not configured' };
+    }
+
+    const { Resend } = await import('resend');
+    const resend = new Resend(apiKey);
+
+    try {
+      const { data, error } = await resend.domains.create({ name: args.domain });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      if (!data) {
+        return { success: false, error: 'No data returned from Resend' };
+      }
+
+      return {
+        success: true,
+        domainId: data.id,
+        records: data.records?.map((r) => ({
+          type: r.type,
+          name: r.name,
+          value: r.value,
+          priority: r.priority ?? undefined,
+          ttl: r.ttl,
+        })),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  },
+});
+
+/**
+ * Trigger verification of a Resend domain
+ */
+export const verifyResendDomain = action({
+  args: {
+    domainId: v.string(),
+  },
+  handler: async (
+    _,
+    args,
+  ): Promise<{
+    success: boolean;
+    error?: string;
+  }> => {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      return { success: false, error: 'RESEND_API_KEY not configured' };
+    }
+
+    const { Resend } = await import('resend');
+    const resend = new Resend(apiKey);
+
+    try {
+      const { error } = await resend.domains.verify(args.domainId);
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  },
+});
+
+/**
+ * Check the verification status of a Resend domain
+ */
+export const checkResendDomainStatus = action({
+  args: {
+    domainId: v.string(),
+  },
+  handler: async (
+    _,
+    args,
+  ): Promise<{
+    success: boolean;
+    status?: string;
+    records?: Array<{
+      type: string;
+      name: string;
+      value: string;
+      status: string;
+      priority?: number;
+    }>;
+    error?: string;
+  }> => {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      return { success: false, error: 'RESEND_API_KEY not configured' };
+    }
+
+    const { Resend } = await import('resend');
+    const resend = new Resend(apiKey);
+
+    try {
+      const { data, error } = await resend.domains.get(args.domainId);
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      if (!data) {
+        return { success: false, error: 'No data returned from Resend' };
+      }
+
+      return {
+        success: true,
+        status: data.status,
+        records: data.records?.map((r) => ({
+          type: r.type,
+          name: r.name,
+          value: r.value,
+          status: r.status,
+          priority: r.priority ?? undefined,
+        })),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  },
+});
+
+// ============ NETLIFY DNS RECORD MANAGEMENT ============
+
+/**
+ * Add DNS records to a Netlify DNS zone
+ * Used to add Resend-required DKIM/SPF/MX records
+ */
+export const addNetlifyDnsRecords = action({
+  args: {
+    zoneId: v.string(),
+    records: v.array(
+      v.object({
+        type: v.string(),
+        hostname: v.string(),
+        value: v.string(),
+        priority: v.optional(v.number()),
+        ttl: v.optional(v.number()),
+      }),
+    ),
+  },
+  handler: async (
+    _,
+    args,
+  ): Promise<{
+    success: boolean;
+    created: number;
+    errors: string[];
+  }> => {
+    const token = process.env.NETLIFY_ACCESS_TOKEN;
+    if (!token) {
+      return { success: false, created: 0, errors: ['NETLIFY_ACCESS_TOKEN not configured'] };
+    }
+
+    let created = 0;
+    const errors: string[] = [];
+
+    for (const record of args.records) {
+      try {
+        const response = await fetch(
+          `https://api.netlify.com/api/v1/dns_zones/${args.zoneId}/dns_records`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              type: record.type,
+              hostname: record.hostname,
+              value: record.value,
+              priority: record.priority,
+              ttl: record.ttl || 3600,
+            }),
+          },
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          errors.push(`${record.type} ${record.hostname}: ${response.status} - ${errorText}`);
+        } else {
+          created++;
+        }
+      } catch (error) {
+        errors.push(
+          `${record.type} ${record.hostname}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        );
+      }
+    }
+
+    return {
+      success: errors.length === 0,
+      created,
+      errors,
+    };
+  },
+});
+
+// ============ EMAIL SETUP ORCHESTRATOR ============
+
+/**
+ * Full email setup for a domain:
+ * 1. Register domain in Resend
+ * 2. Add required DNS records to Netlify
+ * 3. Trigger Resend verification
+ * 4. Save Resend domain ID on the market record
+ */
+export const setupEmailForDomain = action({
+  args: {
+    marketKey: v.string(),
+    domain: v.string(),
+    netlifyZoneId: v.string(),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
+    success: boolean;
+    resendDomainId?: string;
+    dnsRecordsAdded?: number;
+    error?: string;
+  }> => {
+    // Step 1: Register domain in Resend
+    const resendResult = await ctx.runAction(api.expansion.actions.setupResendDomain, {
+      domain: args.domain,
+    });
+
+    if (!resendResult.success || !resendResult.domainId) {
+      return {
+        success: false,
+        error: `Resend domain registration failed: ${resendResult.error}`,
+      };
+    }
+
+    // Step 2: Map Resend DNS records to Netlify format and add them
+    const dnsRecords = (resendResult.records || []).map((r) => ({
+      type: r.type,
+      hostname: r.name,
+      value: r.value,
+      priority: r.priority,
+      ttl: 3600,
+    }));
+
+    if (dnsRecords.length > 0) {
+      const dnsResult = await ctx.runAction(api.expansion.actions.addNetlifyDnsRecords, {
+        zoneId: args.netlifyZoneId,
+        records: dnsRecords,
+      });
+
+      if (!dnsResult.success) {
+        // Non-fatal: DNS records may partially succeed
+        console.warn(`Some DNS records failed: ${dnsResult.errors.join(', ')}`);
+      }
+    }
+
+    // Step 3: Trigger Resend domain verification
+    await ctx.runAction(api.expansion.actions.verifyResendDomain, {
+      domainId: resendResult.domainId,
+    });
+
+    // Step 4: Save Resend domain ID on the market record
+    await ctx.runMutation(api.expansion.mutations.recordResendDomain, {
+      marketKey: args.marketKey,
+      domain: args.domain,
+      resendDomainId: resendResult.domainId,
+    });
+
+    return {
+      success: true,
+      resendDomainId: resendResult.domainId,
+      dnsRecordsAdded: dnsRecords.length,
+    };
+  },
+});
+
 /**
  * Create a city with full automation: DB record + Netlify domain setup
  * This is the preferred way to create new cities as it handles everything

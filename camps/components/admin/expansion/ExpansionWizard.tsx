@@ -35,6 +35,11 @@ interface ExpansionWizardProps {
   onSetPrimaryDomain?: (domain: string) => Promise<void>;
   onSetupDomainDns?: (domain: string) => Promise<{ success: boolean; zoneId?: string; error?: string }>;
   onProvisionSsl?: () => Promise<{ success: boolean; error?: string }>;
+  onSetupEmail?: (
+    domain: string,
+    netlifyZoneId: string,
+  ) => Promise<{ success: boolean; resendDomainId?: string; error?: string }>;
+  onCheckEmailStatus?: (domainId: string) => Promise<{ success: boolean; status?: string; error?: string }>;
 }
 
 type WizardStep = 'overview' | 'domain' | 'purchase' | 'dns' | 'city' | 'launch';
@@ -56,6 +61,8 @@ export function ExpansionWizard({
   onSetPrimaryDomain,
   onSetupDomainDns,
   onProvisionSsl,
+  onSetupEmail,
+  onCheckEmailStatus,
 }: ExpansionWizardProps) {
   const [step, setStep] = useState<WizardStep>('overview');
   const [loading, setLoading] = useState(false);
@@ -73,6 +80,9 @@ export function ExpansionWizard({
 
   // Icon generation state
   const [iconGuidance, setIconGuidance] = useState('');
+
+  // Email status per domain
+  const [emailStatuses, setEmailStatuses] = useState<Record<string, string>>({});
 
   // Determine which step we should be on based on market status
   useEffect(() => {
@@ -438,6 +448,19 @@ export function ExpansionWizard({
                               DNS OK
                             </span>
                           )}
+                          {d.resendDomainId && (
+                            <span
+                              className={`text-xs px-2 py-0.5 rounded ${
+                                emailStatuses[d.domain] === 'verified'
+                                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                                  : emailStatuses[d.domain] === 'failed'
+                                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                                    : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
+                              }`}
+                            >
+                              Email: {emailStatuses[d.domain] || 'pending'}
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-2">
                           {!d.isPrimary && onSetPrimaryDomain && (
@@ -468,6 +491,44 @@ export function ExpansionWizard({
                               className="text-xs text-purple-600 hover:underline disabled:opacity-50"
                             >
                               Setup DNS
+                            </button>
+                          )}
+                          {d.dnsConfigured && d.netlifyZoneId && !d.resendDomainId && onSetupEmail && (
+                            <button
+                              onClick={async () => {
+                                setLoading(true);
+                                setError(null);
+                                const result = await onSetupEmail(d.domain, d.netlifyZoneId!);
+                                if (!result.success) {
+                                  setError(result.error || 'Email setup failed');
+                                } else {
+                                  setEmailStatuses((prev) => ({ ...prev, [d.domain]: 'pending' }));
+                                }
+                                setLoading(false);
+                              }}
+                              disabled={loading}
+                              className="text-xs text-orange-600 hover:underline disabled:opacity-50"
+                            >
+                              Setup Email
+                            </button>
+                          )}
+                          {d.resendDomainId && onCheckEmailStatus && (
+                            <button
+                              onClick={async () => {
+                                setLoading(true);
+                                setError(null);
+                                const result = await onCheckEmailStatus(d.resendDomainId!);
+                                if (result.success && result.status) {
+                                  setEmailStatuses((prev) => ({ ...prev, [d.domain]: result.status! }));
+                                } else {
+                                  setError(result.error || 'Failed to check email status');
+                                }
+                                setLoading(false);
+                              }}
+                              disabled={loading}
+                              className="text-xs text-blue-600 hover:underline disabled:opacity-50"
+                            >
+                              Check Status
                             </button>
                           )}
                         </div>

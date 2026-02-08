@@ -76,9 +76,13 @@ function ExpansionContent() {
   // Domain check workflow
   const startDomainCheck = useMutation(api.expansion.domainWorkflow.startDomainCheck);
 
+  const recordResendDomain = useMutation(api.expansion.mutations.recordResendDomain);
+
   const purchaseDomain = useAction(api.expansion.actions.purchaseDomain);
   const setupDns = useAction(api.expansion.actions.setupDnsForDomain);
   const provisionSsl = useAction(api.expansion.actions.provisionSsl);
+  const setupEmailForDomain = useAction(api.expansion.actions.setupEmailForDomain);
+  const checkResendDomainStatus = useAction(api.expansion.actions.checkResendDomainStatus);
   const generateIcons = useAction(api.expansion.iconGeneration.generateCityIcons);
   const selectIcon = useAction(api.expansion.iconGeneration.selectCityIcon);
 
@@ -268,6 +272,16 @@ function ExpansionContent() {
               });
             }
             return result;
+          }}
+          onSetupEmail={async (domain, netlifyZoneId) => {
+            return await setupEmailForDomain({
+              marketKey: selectedMarket.key,
+              domain,
+              netlifyZoneId,
+            });
+          }}
+          onCheckEmailStatus={async (domainId) => {
+            return await checkResendDomainStatus({ domainId });
           }}
         />
       )}

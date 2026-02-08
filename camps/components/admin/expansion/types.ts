@@ -8,6 +8,7 @@ export interface DomainEntry {
   orderId?: string;
   dnsConfigured?: boolean;
   netlifyZoneId?: string;
+  resendDomainId?: string;
 }
 
 export interface MarketWithStatus {

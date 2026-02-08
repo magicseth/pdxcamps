@@ -993,6 +993,7 @@ export default defineSchema({
           orderId: v.optional(v.string()),
           dnsConfigured: v.optional(v.boolean()),
           netlifyZoneId: v.optional(v.string()),
+          resendDomainId: v.optional(v.string()),
         }),
       ),
     ),

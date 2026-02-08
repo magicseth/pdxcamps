@@ -26,10 +26,34 @@
         "redirectUris": [
           "https://boscamps.com/callback",
           "https://pdxcamps.com/callback",
-          "https://campweeks.netlify.app/callback"
+          "https://campweeks.netlify.app/callback",
+          "https://seattlecampguide.com/callback",
+          "https://sfbaycamps.com/callback",
+          "https://dencamps.com/callback",
+          "https://phxcamps.com/callback",
+          "https://alldallascamps.com/callback",
+          "https://atxcamps.com/callback"
         ],
-        "appHomepageUrl": "https://boscamps.com",
-        "corsOrigins": ["https://boscamps.com", "https://pdxcamps.com", "https://campweeks.netlify.app"]
+        "appHomepageUrl": "https://pdxcamps.com",
+        "corsOrigins": [
+          "https://boscamps.com",
+          "https://www.boscamps.com",
+          "https://pdxcamps.com",
+          "https://www.pdxcamps.com",
+          "https://campweeks.netlify.app",
+          "https://seattlecampguide.com",
+          "https://www.seattlecampguide.com",
+          "https://sfbaycamps.com",
+          "https://www.sfbaycamps.com",
+          "https://dencamps.com",
+          "https://www.dencamps.com",
+          "https://phxcamps.com",
+          "https://www.phxcamps.com",
+          "https://alldallascamps.com",
+          "https://www.alldallascamps.com",
+          "https://atxcamps.com",
+          "https://www.atxcamps.com"
+        ]
       }
     }
   }
