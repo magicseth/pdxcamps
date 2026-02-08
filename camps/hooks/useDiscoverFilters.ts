@@ -46,6 +46,7 @@ export function useDiscoverFilters(citySlug: string, searchParams: URLSearchPara
   const [maxDistanceMiles, setMaxDistanceMiles] = useState<number | undefined>(
     () => getInitialState().maxDistanceMiles,
   );
+  const [searchQuery, setSearchQuery] = useState<string>(() => searchParams.get('q') || '');
   const [sortBy, setSortBy] = useState<'date' | 'price-low' | 'price-high' | 'spots' | 'distance'>('date');
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
@@ -100,6 +101,7 @@ export function useDiscoverFilters(citySlug: string, searchParams: URLSearchPara
   // Update URL when filters change
   useEffect(() => {
     const params = new URLSearchParams();
+    if (searchQuery) params.set('q', searchQuery);
     if (startDateAfter) params.set('from', startDateAfter);
     if (startDateBefore) params.set('to', startDateBefore);
     if (selectedCategories.length > 0) params.set('categories', selectedCategories.join(','));
@@ -120,6 +122,7 @@ export function useDiscoverFilters(citySlug: string, searchParams: URLSearchPara
       router.replace(`/discover/${citySlug}${newUrl}`, { scroll: false });
     }
   }, [
+    searchQuery,
     startDateAfter,
     startDateBefore,
     selectedCategories,
@@ -142,6 +145,7 @@ export function useDiscoverFilters(citySlug: string, searchParams: URLSearchPara
   };
 
   const clearFilters = () => {
+    setSearchQuery('');
     setStartDateAfter('');
     setStartDateBefore('');
     setSelectedCategories([]);
@@ -155,6 +159,7 @@ export function useDiscoverFilters(citySlug: string, searchParams: URLSearchPara
   };
 
   const hasActiveFilters =
+    searchQuery ||
     startDateAfter ||
     startDateBefore ||
     selectedCategories.length > 0 ||
@@ -169,6 +174,7 @@ export function useDiscoverFilters(citySlug: string, searchParams: URLSearchPara
 
   // Count active filters for the badge
   const activeFilterCount =
+    (searchQuery ? 1 : 0) +
     (startDateAfter ? 1 : 0) +
     (startDateBefore ? 1 : 0) +
     selectedCategories.length +
@@ -201,6 +207,7 @@ export function useDiscoverFilters(citySlug: string, searchParams: URLSearchPara
 
   return {
     // Filter values
+    searchQuery,
     startDateAfter,
     startDateBefore,
     selectedCategories,
@@ -220,6 +227,7 @@ export function useDiscoverFilters(citySlug: string, searchParams: URLSearchPara
     viewMode,
 
     // Setters
+    setSearchQuery,
     setStartDateAfter,
     setStartDateBefore,
     setSelectedCategories,

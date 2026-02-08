@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery } from 'convex/react';
@@ -39,6 +39,7 @@ export default function DiscoverPage() {
   useEffect(() => {
     setDisplayCount(SESSIONS_PER_PAGE);
   }, [
+    filters.searchQuery,
     filters.selectedCategories,
     filters.selectedOrganizations,
     filters.selectedLocations,
@@ -63,27 +64,6 @@ export default function DiscoverPage() {
       document.title = market.tagline;
     };
   }, [city?.name]);
-
-  // Keyboard shortcuts: M for map toggle, F for filter toggle
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return;
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
-      if (e.key === 'm' || e.key === 'M') {
-        e.preventDefault();
-        filters.setViewMode(filters.viewMode === 'map' ? 'list' : 'map');
-      } else if (e.key === 'f' || e.key === 'F') {
-        e.preventDefault();
-        filters.setShowFilters(!filters.showFilters);
-      }
-    },
-    [filters],
-  );
-
-  useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeyDown]);
 
   // Fetch all organizations with session counts for filter chips
   const allOrganizations = useQuery(
@@ -152,8 +132,18 @@ export default function DiscoverPage() {
   const filteredSessions = useMemo(() => {
     if (!sessions) return [];
 
-    // Clone and sort results
-    const result = [...sessions];
+    // Client-side text search filter
+    let result = [...sessions];
+    if (filters.searchQuery) {
+      const q = filters.searchQuery.toLowerCase();
+      result = result.filter(
+        (s) =>
+          (s.campName && s.campName.toLowerCase().includes(q)) ||
+          (s.organizationName && s.organizationName.toLowerCase().includes(q)),
+      );
+    }
+
+    // Sort results
     result.sort((a, b) => {
       switch (filters.sortBy) {
         case 'date':
@@ -176,7 +166,7 @@ export default function DiscoverPage() {
     });
 
     return result;
-  }, [sessions, filters.sortBy]);
+  }, [sessions, filters.searchQuery, filters.sortBy]);
 
   // Group sessions by campId + locationId to deduplicate
   const groupedSessions: SessionGroup[] = useMemo(() => {
@@ -395,6 +385,44 @@ export default function DiscoverPage() {
                       }`}
                     >
                       Clear all {filters.activeFilterCount > 3 && `(${filters.activeFilterCount})`}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Search */}
+              <div className="mb-6">
+                <label htmlFor="discover-search" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Search
+                </label>
+                <div className="relative">
+                  <input
+                    id="discover-search"
+                    type="text"
+                    value={filters.searchQuery}
+                    onChange={(e) => filters.setSearchQuery(e.target.value)}
+                    placeholder="Camp or organization name..."
+                    className="w-full pl-9 pr-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
+                  <svg
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  {filters.searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => filters.setSearchQuery('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600"
+                      aria-label="Clear search"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
                     </button>
                   )}
                 </div>
