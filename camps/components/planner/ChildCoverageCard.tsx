@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Id } from '../../convex/_generated/dataModel';
 import { CoverageStatus } from './CoverageIndicator';
@@ -54,6 +55,8 @@ interface FamilyEvent {
 
 interface AvailableCamp {
   sessionId: Id<'sessions'>;
+  campId?: string;
+  locationId?: string;
   campName: string;
   organizationName: string;
   startDate: string;
@@ -65,6 +68,19 @@ interface AvailableCamp {
   spotsLeft: number;
   locationName: string;
   distanceFromHome?: number;
+}
+
+interface GroupedCamp {
+  campName: string;
+  organizationName: string;
+  locationName: string;
+  distanceFromHome?: number;
+  dropOffTime: { hour: number; minute: number };
+  pickUpTime: { hour: number; minute: number };
+  sessions: AvailableCamp[];
+  minPrice: number;
+  maxPrice: number;
+  currency: string;
 }
 
 interface ChildCoverageCardProps {
@@ -186,60 +202,186 @@ export function ChildCoverageCard({
             </div>
           )}
 
-          {/* Available camps - compact table */}
+          {/* Available camps - grouped and compact */}
           {availableCamps.length > 0 ? (
-            <div className="space-y-1">
-              {availableCamps.map((camp) => (
-                <div
-                  key={camp.sessionId}
-                  className="flex items-center gap-2 py-1 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded text-xs group"
-                >
-                  <a
-                    href={`/session/${camp.sessionId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 min-w-0 cursor-pointer"
-                    title="Open in new tab"
-                  >
-                    <div
-                      className="font-medium text-slate-900 dark:text-white truncate group-hover:text-primary dark:group-hover:text-primary-light"
-                      title={camp.campName}
-                    >
-                      {camp.campName}
-                      <span className="ml-1 opacity-0 group-hover:opacity-100 text-primary">↗</span>
-                    </div>
-                    <div
-                      className="text-slate-500 truncate"
-                      title={`${formatTime(camp.dropOffTime)}-${formatTime(camp.pickUpTime)} · ${camp.locationName}${camp.distanceFromHome ? ` · ${camp.distanceFromHome} mi` : ''}`}
-                    >
-                      {formatTime(camp.dropOffTime)}-{formatTime(camp.pickUpTime)} · {camp.locationName}
-                      {camp.distanceFromHome !== undefined && (
-                        <span className="ml-1 text-primary dark:text-primary-light">{camp.distanceFromHome} mi</span>
-                      )}
-                    </div>
-                  </a>
-                  <div className="text-right shrink-0">
-                    <div className="font-medium text-slate-900 dark:text-white">
-                      {formatPrice(camp.price, camp.currency)}
-                    </div>
-                    <div className="text-slate-500">{camp.spotsLeft} left</div>
-                  </div>
-                  {onSaveForChild && (
-                    <button
-                      onClick={() => onSaveForChild(camp.sessionId)}
-                      className="shrink-0 px-2 py-1 text-xs bg-primary text-white rounded hover:bg-primary-dark"
-                    >
-                      Save
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
+            <GroupedCampList camps={availableCamps} onSaveForChild={onSaveForChild} />
           ) : (
             <div className="text-xs text-slate-500 py-2">No camps match filters</div>
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function GroupedCampList({
+  camps,
+  onSaveForChild,
+}: {
+  camps: AvailableCamp[];
+  onSaveForChild?: (sessionId: Id<'sessions'>) => void;
+}) {
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+
+  const grouped = useMemo(() => {
+    const groups = new Map<string, AvailableCamp[]>();
+    for (const camp of camps) {
+      // Group by campId+locationId if available, fall back to campName+locationName
+      const key =
+        camp.campId && camp.locationId
+          ? `${camp.campId}-${camp.locationId}`
+          : `${camp.campName}-${camp.locationName}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(camp);
+    }
+    return Array.from(groups.entries()).map(([key, sessions]) => ({
+      key,
+      campName: sessions[0].campName,
+      organizationName: sessions[0].organizationName,
+      locationName: sessions[0].locationName,
+      distanceFromHome: sessions[0].distanceFromHome,
+      dropOffTime: sessions[0].dropOffTime,
+      pickUpTime: sessions[0].pickUpTime,
+      sessions,
+      minPrice: Math.min(...sessions.map((s) => s.price)),
+      maxPrice: Math.max(...sessions.map((s) => s.price)),
+      currency: sessions[0].currency,
+    }));
+  }, [camps]);
+
+  return (
+    <div className="space-y-1">
+      {grouped.map((group) => {
+        const isGrouped = group.sessions.length > 1;
+        const isExpanded = expandedGroup === group.key;
+        const primary = group.sessions[0];
+
+        if (!isGrouped) {
+          // Single session — render as before
+          return (
+            <div
+              key={primary.sessionId}
+              className="flex items-center gap-2 py-1 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded text-xs group"
+            >
+              <a
+                href={`/session/${primary.sessionId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 min-w-0 cursor-pointer"
+                title="Open in new tab"
+              >
+                <div
+                  className="font-medium text-slate-900 dark:text-white truncate group-hover:text-primary dark:group-hover:text-primary-light"
+                  title={primary.campName}
+                >
+                  {primary.campName}
+                  <span className="ml-1 opacity-0 group-hover:opacity-100 text-primary">↗</span>
+                </div>
+                <div
+                  className="text-slate-500 truncate"
+                  title={`${formatTime(primary.dropOffTime)}-${formatTime(primary.pickUpTime)} · ${primary.locationName}${primary.distanceFromHome ? ` · ${primary.distanceFromHome} mi` : ''}`}
+                >
+                  {formatTime(primary.dropOffTime)}-{formatTime(primary.pickUpTime)} · {primary.locationName}
+                  {primary.distanceFromHome !== undefined && (
+                    <span className="ml-1 text-primary dark:text-primary-light">{primary.distanceFromHome} mi</span>
+                  )}
+                </div>
+              </a>
+              <div className="text-right shrink-0">
+                <div className="font-medium text-slate-900 dark:text-white">
+                  {formatPrice(primary.price, primary.currency)}
+                </div>
+                <div className="text-slate-500">{primary.spotsLeft} left</div>
+              </div>
+              {onSaveForChild && (
+                <button
+                  onClick={() => onSaveForChild(primary.sessionId)}
+                  className="shrink-0 px-2 py-1 text-xs bg-primary text-white rounded hover:bg-primary-dark"
+                >
+                  Save
+                </button>
+              )}
+            </div>
+          );
+        }
+
+        // Grouped sessions
+        return (
+          <div key={group.key} className="rounded border border-slate-200 dark:border-slate-700">
+            <button
+              onClick={() => setExpandedGroup(isExpanded ? null : group.key)}
+              className="w-full flex items-center gap-2 py-1.5 px-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 text-xs"
+            >
+              <div className="flex-1 min-w-0 text-left">
+                <div className="font-medium text-slate-900 dark:text-white truncate" title={group.campName}>
+                  {group.campName}
+                  <span className="ml-1.5 text-primary dark:text-primary-light font-normal">
+                    ({group.sessions.length} sessions)
+                  </span>
+                </div>
+                <div className="text-slate-500 truncate">
+                  {formatTime(group.dropOffTime)}-{formatTime(group.pickUpTime)} · {group.locationName}
+                  {group.distanceFromHome !== undefined && (
+                    <span className="ml-1 text-primary dark:text-primary-light">{group.distanceFromHome} mi</span>
+                  )}
+                </div>
+              </div>
+              <div className="text-right shrink-0">
+                <div className="font-medium text-slate-900 dark:text-white">
+                  {group.minPrice === group.maxPrice
+                    ? formatPrice(group.minPrice, group.currency)
+                    : `${formatPrice(group.minPrice, group.currency)}-${formatPrice(group.maxPrice, group.currency)}`}
+                </div>
+              </div>
+              <svg
+                className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {isExpanded && (
+              <div className="border-t border-slate-200 dark:border-slate-700 px-2 py-1 space-y-1">
+                {group.sessions.map((session) => (
+                  <div
+                    key={session.sessionId}
+                    className="flex items-center gap-2 py-1 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded text-xs group"
+                  >
+                    <a
+                      href={`/session/${session.sessionId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 min-w-0 cursor-pointer"
+                      title="Open in new tab"
+                    >
+                      <div className="text-slate-700 dark:text-slate-300 group-hover:text-primary dark:group-hover:text-primary-light">
+                        {formatDateShort(session.startDate)} - {formatDateShort(session.endDate)}
+                        <span className="ml-1 opacity-0 group-hover:opacity-100 text-primary">↗</span>
+                      </div>
+                    </a>
+                    <div className="text-right shrink-0">
+                      <span className="font-medium text-slate-900 dark:text-white">
+                        {formatPrice(session.price, session.currency)}
+                      </span>
+                      <span className="ml-1.5 text-slate-500">{session.spotsLeft} left</span>
+                    </div>
+                    {onSaveForChild && (
+                      <button
+                        onClick={() => onSaveForChild(session.sessionId)}
+                        className="shrink-0 px-2 py-1 text-xs bg-primary text-white rounded hover:bg-primary-dark"
+                      >
+                        Save
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -254,4 +396,9 @@ function formatTime(time: { hour: number; minute: number }): string {
 function formatPrice(cents: number, currency: string): string {
   const amount = cents / 100;
   return '$' + amount.toFixed(0);
+}
+
+function formatDateShort(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }

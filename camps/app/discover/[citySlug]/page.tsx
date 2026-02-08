@@ -13,6 +13,7 @@ import { MapWrapper, MapSession } from '../../../components/map';
 import { AddChildModal } from '../../../components/planner/AddChildModal';
 import { RequestCampModal } from '../../../components/discover/RequestCampModal';
 import { SessionCard } from '../../../components/discover/SessionCard';
+import { GroupedSessionCard, SessionGroup } from '../../../components/discover/GroupedSessionCard';
 import { FilterChip } from '../../../components/discover/FilterControls';
 import { useMarket } from '../../../hooks/useMarket';
 import { useDiscoverFilters } from '../../../hooks/useDiscoverFilters';
@@ -148,6 +149,21 @@ export default function DiscoverPage() {
 
     return result;
   }, [sessions, filters.sortBy]);
+
+  // Group sessions by campId + locationId to deduplicate
+  const groupedSessions: SessionGroup[] = useMemo(() => {
+    if (filteredSessions.length === 0) return [];
+    const groups = new Map<string, typeof filteredSessions>();
+    for (const session of filteredSessions) {
+      const key = `${session.campId}-${session.locationId}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(session);
+    }
+    return Array.from(groups.values()).map((sessions) => ({
+      primary: sessions[0], // already sorted, so first is best match
+      allSessions: sessions,
+    }));
+  }, [filteredSessions]);
 
   // All sorted sessions are already limited by server - just use them
   const displayedSessions = filteredSessions;
@@ -850,14 +866,16 @@ export default function DiscoverPage() {
                 ) : (
                   <span className="flex items-center gap-3 flex-wrap">
                     <span className="font-medium text-slate-900 dark:text-white">
-                      {hasMoreSessions ? `${filteredSessions.length} of ${totalSessionCount}` : totalSessionCount}{' '}
-                      session{totalSessionCount === 1 ? '' : 's'}
+                      {groupedSessions.length} camp{groupedSessions.length === 1 ? '' : 's'}
                     </span>
-                    <span className="text-slate-400 dark:text-slate-500">•</span>
-                    <span>
-                      {new Set(filteredSessions.map((s) => s.campId)).size} camp
-                      {new Set(filteredSessions.map((s) => s.campId)).size === 1 ? '' : 's'}
-                    </span>
+                    {groupedSessions.length !== filteredSessions.length && (
+                      <>
+                        <span className="text-slate-400 dark:text-slate-500">•</span>
+                        <span>
+                          {filteredSessions.length} session{filteredSessions.length === 1 ? '' : 's'}
+                        </span>
+                      </>
+                    )}
                     <span className="text-slate-400 dark:text-slate-500">•</span>
                     <span>
                       {new Set(filteredSessions.map((s) => s.organizationId)).size} org
@@ -1080,13 +1098,15 @@ export default function DiscoverPage() {
               ) : (
                 <>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {displayedSessions.map((session) => (
-                      <SessionCard
-                        key={session._id}
-                        session={session}
+                    {groupedSessions.map((group) => (
+                      <GroupedSessionCard
+                        key={`${group.primary.campId}-${group.primary.locationId}`}
+                        group={group}
                         cityId={city._id}
                         isAdmin={isAdmin ?? false}
-                        distanceFromHome={(session as { distanceFromHome?: number }).distanceFromHome}
+                        distanceFromHome={
+                          (group.primary as { distanceFromHome?: number }).distanceFromHome
+                        }
                         preSelectedChildId={filters.selectedChildId}
                       />
                     ))}
@@ -1097,7 +1117,7 @@ export default function DiscoverPage() {
                         onClick={() => setDisplayCount((prev) => prev + SESSIONS_PER_PAGE)}
                         className="px-6 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                       >
-                        Load more ({totalSessionCount - filteredSessions.length} remaining)
+                        Load more sessions
                       </button>
                     </div>
                   )}

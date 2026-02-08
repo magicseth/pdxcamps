@@ -627,6 +627,8 @@ function WeekDetailContent() {
           const filteredCamps = availableCampsPerChild.get(childData.child._id) ?? [];
           const availableCampsForCard = filteredCamps.slice(0, 25).map((s) => ({
             sessionId: s._id,
+            campId: s.camp?._id,
+            locationId: s.location?._id,
             campName: s.camp?.name ?? 'Unknown Camp',
             organizationName: s.organization?.name ?? 'Unknown',
             startDate: s.startDate,
