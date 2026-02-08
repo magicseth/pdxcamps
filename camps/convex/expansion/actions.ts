@@ -987,6 +987,13 @@ export const setupDnsForDomain = action({
       }
     }
 
+    // Step 4: Trigger SSL provisioning
+    try {
+      await ctx.runAction(api.expansion.actions.provisionSsl, {});
+    } catch (sslError) {
+      console.warn(`SSL provisioning attempt: ${sslError instanceof Error ? sslError.message : 'Unknown error'}`);
+    }
+
     return {
       success: true,
       zoneId: zoneResult.zoneId,
@@ -1097,6 +1104,16 @@ export const ensureDomainConfigured = action({
               nameservers: zoneResult.nameservers,
             });
           }
+        }
+      }
+
+      // Step 3: Provision SSL if we made changes
+      if (addedToSite || createdDnsZone) {
+        try {
+          await ctx.runAction(api.expansion.actions.provisionSsl, {});
+        } catch (sslError) {
+          // SSL provisioning can fail if DNS hasn't propagated yet - non-fatal
+          console.warn(`SSL provisioning attempt: ${sslError instanceof Error ? sslError.message : 'Unknown error'}`);
         }
       }
 

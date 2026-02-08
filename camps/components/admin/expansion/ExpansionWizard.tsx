@@ -34,6 +34,7 @@ interface ExpansionWizardProps {
   onRemoveDomain?: (domain: string) => Promise<void>;
   onSetPrimaryDomain?: (domain: string) => Promise<void>;
   onSetupDomainDns?: (domain: string) => Promise<{ success: boolean; zoneId?: string; error?: string }>;
+  onProvisionSsl?: () => Promise<{ success: boolean; error?: string }>;
 }
 
 type WizardStep = 'overview' | 'domain' | 'purchase' | 'dns' | 'city' | 'launch';
@@ -54,6 +55,7 @@ export function ExpansionWizard({
   onRemoveDomain,
   onSetPrimaryDomain,
   onSetupDomainDns,
+  onProvisionSsl,
 }: ExpansionWizardProps) {
   const [step, setStep] = useState<WizardStep>('overview');
   const [loading, setLoading] = useState(false);
@@ -472,6 +474,30 @@ export function ExpansionWizard({
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Provision SSL */}
+              {market.domains && market.domains.length > 0 && onProvisionSsl && (
+                <div className="flex items-center justify-between bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3">
+                  <span className="text-sm text-amber-800 dark:text-amber-200">
+                    SSL not working? Force certificate regeneration.
+                  </span>
+                  <button
+                    onClick={async () => {
+                      setLoading(true);
+                      setError(null);
+                      const result = await onProvisionSsl();
+                      if (!result.success) {
+                        setError(result.error || 'SSL provisioning failed');
+                      }
+                      setLoading(false);
+                    }}
+                    disabled={loading}
+                    className="text-xs px-3 py-1 bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-50"
+                  >
+                    {loading ? 'Provisioning...' : 'Provision SSL'}
+                  </button>
                 </div>
               )}
 

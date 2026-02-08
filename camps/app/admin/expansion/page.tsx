@@ -78,6 +78,7 @@ function ExpansionContent() {
 
   const purchaseDomain = useAction(api.expansion.actions.purchaseDomain);
   const setupDns = useAction(api.expansion.actions.setupDnsForDomain);
+  const provisionSsl = useAction(api.expansion.actions.provisionSsl);
   const generateIcons = useAction(api.expansion.iconGeneration.generateCityIcons);
   const selectIcon = useAction(api.expansion.iconGeneration.selectCityIcon);
 
@@ -252,6 +253,10 @@ function ExpansionContent() {
               marketKey: selectedMarket.key,
               domain,
             });
+          }}
+          onProvisionSsl={async () => {
+            const result = await provisionSsl({});
+            return result;
           }}
           onSetupDomainDns={async (domain) => {
             const result = await setupDns({ domain });
