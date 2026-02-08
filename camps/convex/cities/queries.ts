@@ -1,4 +1,4 @@
-import { query, internalQuery } from '../_generated/server';
+import { query, internalQuery, DatabaseReader } from '../_generated/server';
 import { v } from 'convex/values';
 
 /**
@@ -67,6 +67,44 @@ export const listNeighborhoods = query({
 });
 
 /**
+ * Shared helper: resolve a city from a domain.
+ * 1. Check city primary domain (indexed)
+ * 2. Strip www. and retry
+ * 3. Fall back to expansion market domains array
+ */
+async function resolveCityByDomain(db: DatabaseReader, domain: string) {
+  // Try exact match on city primary domain
+  const city = await db
+    .query('cities')
+    .withIndex('by_domain', (q) => q.eq('domain', domain))
+    .first();
+  if (city) return city;
+
+  // Try without www prefix
+  const bare = domain.replace(/^www\./, '');
+  if (bare !== domain) {
+    const cityNoWww = await db
+      .query('cities')
+      .withIndex('by_domain', (q) => q.eq('domain', bare))
+      .first();
+    if (cityNoWww) return cityNoWww;
+  }
+
+  // Fall back: check expansion market domains arrays
+  const markets = await db.query('expansionMarkets').collect();
+  for (const market of markets) {
+    const domains = market.domains || [];
+    if (domains.some((d) => d.domain === bare || d.domain === domain)) {
+      if (market.cityId) {
+        return await db.get(market.cityId);
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
  * Get a city by its domain
  * Used for multi-tenant routing
  */
@@ -75,24 +113,7 @@ export const getCityByDomain = query({
     domain: v.string(),
   },
   handler: async (ctx, args) => {
-    // Try exact match first
-    const city = await ctx.db
-      .query('cities')
-      .withIndex('by_domain', (q) => q.eq('domain', args.domain))
-      .first();
-
-    if (city) return city;
-
-    // Also try without www prefix
-    const domainWithoutWww = args.domain.replace(/^www\./, '');
-    if (domainWithoutWww !== args.domain) {
-      return await ctx.db
-        .query('cities')
-        .withIndex('by_domain', (q) => q.eq('domain', domainWithoutWww))
-        .first();
-    }
-
-    return null;
+    return await resolveCityByDomain(ctx.db, args.domain);
   },
 });
 
@@ -121,23 +142,6 @@ export const getCityByDomainInternal = internalQuery({
     domain: v.string(),
   },
   handler: async (ctx, args) => {
-    // Try exact match first
-    const city = await ctx.db
-      .query('cities')
-      .withIndex('by_domain', (q) => q.eq('domain', args.domain))
-      .first();
-
-    if (city) return city;
-
-    // Also try without www prefix
-    const domainWithoutWww = args.domain.replace(/^www\./, '');
-    if (domainWithoutWww !== args.domain) {
-      return await ctx.db
-        .query('cities')
-        .withIndex('by_domain', (q) => q.eq('domain', domainWithoutWww))
-        .first();
-    }
-
-    return null;
+    return await resolveCityByDomain(ctx.db, args.domain);
   },
 });
