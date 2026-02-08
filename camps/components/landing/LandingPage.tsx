@@ -1,13 +1,19 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useQuery } from 'convex/react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { api } from '../../convex/_generated/api';
 import { useMarket, type Market } from '../../hooks/useMarket';
-import { DemoPlanner } from './DemoPlanner';
 import { CampMap } from './CampMap';
+
+const DemoPlanner = dynamic(() => import('./DemoPlanner').then((mod) => ({ default: mod.DemoPlanner })), {
+  loading: () => (
+    <div className="animate-pulse bg-slate-100 rounded-2xl h-64 mb-16" />
+  ),
+});
 
 // Convex HTTP actions URL for serving dynamic assets
 const CONVEX_SITE_URL = process.env.NEXT_PUBLIC_CONVEX_SITE_URL || 'https://deafening-schnauzer-923.convex.site';
