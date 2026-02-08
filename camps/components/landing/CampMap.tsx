@@ -9,6 +9,10 @@ interface CampMapProps {
   cityName: string;
 }
 
+/** Default bounds span for cities with no locations (~15 miles around center) */
+const DEFAULT_SPAN_LAT = 0.2;
+const DEFAULT_SPAN_LNG = 0.25;
+
 function latToMercY(lat: number) {
   const latRad = (lat * Math.PI) / 180;
   return Math.log(Math.tan(Math.PI / 4 + latRad / 2));
@@ -16,8 +20,6 @@ function latToMercY(lat: number) {
 
 /**
  * Compute tight bounds from locations, filtering outliers.
- * Uses IQR-based filtering: locations beyond 1.5x the interquartile range
- * from the median are dropped, then adds 15% padding.
  */
 function computeBounds(locations: { lat: number; lng: number }[]) {
   if (locations.length === 0) return null;
@@ -41,7 +43,7 @@ function computeBounds(locations: { lat: number; lng: number }[]) {
   const latRange = filterIQR(lats);
   const lngRange = filterIQR(lngs);
 
-  // Clamp to max metro-area size (~0.4 degrees lat, ~0.5 degrees lng ≈ 25-30 miles)
+  // Clamp to max metro-area size (~0.4 degrees lat, ~0.5 degrees lng)
   const MAX_LAT_SPAN = 0.4;
   const MAX_LNG_SPAN = 0.5;
   const latCenter = (latRange.min + latRange.max) / 2;
@@ -51,7 +53,6 @@ function computeBounds(locations: { lat: number; lng: number }[]) {
   const clampedLngMin = Math.max(lngRange.min, lngCenter - MAX_LNG_SPAN / 2);
   const clampedLngMax = Math.min(lngRange.max, lngCenter + MAX_LNG_SPAN / 2);
 
-  // Add 15% padding
   const latPad = (clampedLatMax - clampedLatMin) * 0.15 || 0.02;
   const lngPad = (clampedLngMax - clampedLngMin) * 0.15 || 0.02;
 
@@ -65,28 +66,41 @@ function computeBounds(locations: { lat: number; lng: number }[]) {
 
 export function CampMap({ citySlug, cityName }: CampMapProps) {
   const locations = useQuery(api.locations.queries.getLocationCoordinates, { citySlug });
+  const city = useQuery(api.cities.queries.getCityBySlug, { slug: citySlug });
 
   const { bounds, validLocations } = useMemo(() => {
-    if (!locations || locations.length === 0) return { bounds: null, validLocations: null };
-
-    // Filter out locations with obviously bad coordinates (0,0 or null-ish)
-    const nonZero = locations.filter(
+    // Filter out locations with bad coordinates
+    const nonZero = (locations || []).filter(
       (l) => Math.abs(l.lat) > 1 && Math.abs(l.lng) > 1
     );
-    if (nonZero.length === 0) return { bounds: null, validLocations: null };
 
-    const b = computeBounds(nonZero);
-    if (!b) return { bounds: null, validLocations: null };
+    if (nonZero.length > 0) {
+      const b = computeBounds(nonZero);
+      if (b) {
+        const valid = nonZero.filter(
+          (l) => l.lat >= b.minLat && l.lat <= b.maxLat && l.lng >= b.minLng && l.lng <= b.maxLng
+        );
+        return { bounds: b, validLocations: valid };
+      }
+    }
 
-    // Keep only locations within the computed bounds
-    const valid = nonZero.filter(
-      (l) => l.lat >= b.minLat && l.lat <= b.maxLat && l.lng >= b.minLng && l.lng <= b.maxLng
-    );
+    // Fallback: use city center coordinates to show the map without dots
+    if (city?.centerLatitude && city?.centerLongitude) {
+      return {
+        bounds: {
+          minLat: city.centerLatitude - DEFAULT_SPAN_LAT / 2,
+          maxLat: city.centerLatitude + DEFAULT_SPAN_LAT / 2,
+          minLng: city.centerLongitude - DEFAULT_SPAN_LNG / 2,
+          maxLng: city.centerLongitude + DEFAULT_SPAN_LNG / 2,
+        },
+        validLocations: [],
+      };
+    }
 
-    return { bounds: b, validLocations: valid };
-  }, [locations]);
+    return { bounds: null, validLocations: null };
+  }, [locations, city]);
 
-  if (!bounds || !validLocations || validLocations.length === 0) return null;
+  if (!bounds) return null;
 
   const bboxUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${bounds.minLng},${bounds.minLat},${bounds.maxLng},${bounds.maxLat}&layer=mapnik`;
 
@@ -95,7 +109,7 @@ export function CampMap({ citySlug, cityName }: CampMapProps) {
   const mercRangeY = mercMaxY - mercMinY;
   const lngRange = bounds.maxLng - bounds.minLng;
 
-  const dots = validLocations.map((loc) => ({
+  const dots = (validLocations || []).map((loc) => ({
     name: loc.name,
     xPct: ((loc.lng - bounds.minLng) / lngRange) * 100,
     yPct: ((mercMaxY - latToMercY(loc.lat)) / mercRangeY) * 100,
@@ -110,6 +124,8 @@ export function CampMap({ citySlug, cityName }: CampMapProps) {
     height: '130%',
   };
 
+  const hasLocations = dots.length > 0;
+
   return (
     <div className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden border border-slate-200 shadow-lg bg-slate-100">
       <iframe
@@ -121,26 +137,30 @@ export function CampMap({ citySlug, cityName }: CampMapProps) {
       />
 
       {/* Dot overlay — must match the iframe's offset and scale */}
-      <div className="absolute" style={{ ...iframeStyle, pointerEvents: 'none' }}>
-        {dots.map((dot, i) => (
-          <div
-            key={i}
-            className="absolute"
-            style={{
-              left: `${dot.xPct}%`,
-              top: `${dot.yPct}%`,
-              transform: 'translate(-50%, -50%)',
-            }}
-          >
-            <span className="absolute w-4 h-4 -m-1 rounded-full bg-primary/15 animate-pulse" />
-            <span className="relative block w-2.5 h-2.5 rounded-full bg-primary/80 border border-white shadow-sm" />
-          </div>
-        ))}
-      </div>
+      {hasLocations && (
+        <div className="absolute" style={{ ...iframeStyle, pointerEvents: 'none' }}>
+          {dots.map((dot, i) => (
+            <div
+              key={i}
+              className="absolute"
+              style={{
+                left: `${dot.xPct}%`,
+                top: `${dot.yPct}%`,
+                transform: 'translate(-50%, -50%)',
+              }}
+            >
+              <span className="absolute w-4 h-4 -m-1 rounded-full bg-primary/15 animate-pulse" />
+              <span className="relative block w-2.5 h-2.5 rounded-full bg-primary/80 border border-white shadow-sm" />
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Label */}
       <div className="absolute bottom-3 left-3 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm text-sm font-medium text-slate-700 z-10">
-        {dots.length} camp locations across {cityName}
+        {hasLocations
+          ? `${dots.length} camp locations across ${cityName}`
+          : `${cityName} area`}
       </div>
     </div>
   );
