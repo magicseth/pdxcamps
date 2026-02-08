@@ -32,6 +32,7 @@ import { RegistrationProgressBanner } from './RegistrationProgressBanner';
 import { RegistrationChecklist, ChecklistFAB } from './RegistrationChecklist';
 import { CampSelectorDrawer } from './CampSelectorDrawer';
 import { ReferralCallout } from './ReferralCallout';
+import { PlannerTutorial } from './PlannerTutorial';
 
 export function PlannerHub({
   user,
@@ -89,20 +90,6 @@ export function PlannerHub({
     router.replace(`/${queryString ? `?${queryString}` : ''}`, { scroll: false });
   }, [selectedYear, currentYear, router]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
-        return;
-      }
-      if ((e.key === 'e' || e.key === 'E') && !showAddEventModal) {
-        e.preventDefault();
-        setShowAddEventModal(true);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showAddEventModal]);
 
   const coverage = useQuery(api.planner.queries.getSummerCoverage, {
     year: selectedYear,
@@ -424,7 +411,7 @@ export function PlannerHub({
 
           {/* Category filter chips */}
           {availableCategories.length > 0 && (
-            <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide">
+            <div data-tutorial="filters" className="flex items-center gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide">
               {availableCategories.map((cat) => (
                 <button
                   key={cat}
@@ -616,7 +603,7 @@ export function PlannerHub({
             </div>
           ) : (
             <QueryErrorBoundary section="planner">
-              <div key={filterAnimationKey} className={filterAnimationKey > 0 ? 'animate-filter-swoosh' : ''}>
+              <div data-tutorial="grid" key={filterAnimationKey} className={filterAnimationKey > 0 ? 'animate-filter-swoosh' : ''}>
                 <PlannerGrid
                   coverage={filteredCoverage}
                   children={children}
@@ -784,6 +771,9 @@ export function PlannerHub({
 
       {/* Floating Action Button for quick access to checklist */}
       <ChecklistFAB pendingCount={registrationStats.todo} onClick={() => setShowChecklist(true)} />
+
+      {/* First-time tutorial overlay */}
+      <PlannerTutorial onComplete={() => setShowShareModal(true)} />
     </div>
   );
 }

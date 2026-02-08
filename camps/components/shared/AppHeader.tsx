@@ -90,6 +90,7 @@ export function AppHeader({ user, onSignOut, isPremium, yearSelector, onShare }:
           {/* Share button in header */}
           {onShare && (
             <button
+              data-tutorial="share"
               onClick={onShare}
               className="p-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
               title="Share schedule"

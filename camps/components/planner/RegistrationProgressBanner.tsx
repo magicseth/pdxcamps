@@ -26,7 +26,7 @@ export function RegistrationProgressBanner({
   const coveragePercent = totalWeeks > 0 ? Math.round((coveredWeeks / totalWeeks) * 100) : 0;
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 mb-4 shadow-sm">
+    <div data-tutorial="progress" className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 mb-4 shadow-sm">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         {/* Left side: Year and progress bar */}
         <div className="flex items-center gap-4 flex-1">

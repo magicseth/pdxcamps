@@ -18,6 +18,7 @@ import {
   UserIcon,
 } from '../../components/shared/icons';
 import { ReferralSection } from '../../components/settings/ReferralSection';
+import { TutorialReplayButton } from '../../components/planner/PlannerTutorial';
 
 export default function SettingsPage() {
   return (
@@ -101,6 +102,7 @@ function SettingsContent() {
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
         <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Account</h2>
         <div className="space-y-3">
+          <TutorialReplayButton />
           <Link
             href="/sign-out"
             className="block w-full px-4 py-3 text-left text-red-600 border border-red-200 dark:border-red-800 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20"

@@ -244,12 +244,7 @@ export function PlannerGrid({
               className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm"
             >
               {/* Month header with toggle on first month */}
-              <div className="px-4 py-2 text-center text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 relative">
-                {monthIndex === 0 && (
-                  <span className="absolute left-2 top-1/2 -translate-y-1/2">
-                    <RotateButton onClick={toggleViewMode} />
-                  </span>
-                )}
+              <div className="px-4 py-2 text-center text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900">
                 {month}
               </div>
               <div className="overflow-x-auto">
@@ -338,9 +333,7 @@ export function PlannerGrid({
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-slate-100 dark:bg-slate-900">
-                <th className="sticky left-0 z-10 bg-slate-100 dark:bg-slate-900 px-4 py-2 border-b border-slate-200 dark:border-slate-700 min-w-[120px]">
-                  <RotateButton onClick={toggleViewMode} />
-                </th>
+                <th className="sticky left-0 z-10 bg-slate-100 dark:bg-slate-900 px-4 py-2 border-b border-slate-200 dark:border-slate-700 min-w-[120px]"></th>
                 {children.map((child, childIndex) => (
                   <th
                     key={child._id}
@@ -447,12 +440,7 @@ export function PlannerGrid({
             className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm"
           >
             {/* Month header */}
-            <div className="px-4 py-2 text-center text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 relative">
-              {monthIndex === 0 && (
-                <span className="absolute left-2 top-1/2 -translate-y-1/2">
-                  <RotateButton onClick={toggleViewMode} />
-                </span>
-              )}
+            <div className="px-4 py-2 text-center text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900">
               {month}
             </div>
             <div className="overflow-x-auto">
@@ -586,9 +574,7 @@ export function PlannerGrid({
           {/* Month headers */}
           <thead>
             <tr className="bg-slate-100 dark:bg-slate-900">
-              <th className="sticky left-0 z-10 bg-slate-100 dark:bg-slate-900 px-4 py-2 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide border-b border-slate-200 dark:border-slate-700 min-w-[120px]">
-                <RotateButton onClick={toggleViewMode} />
-              </th>
+              <th className="sticky left-0 z-10 bg-slate-100 dark:bg-slate-900 px-4 py-2 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide border-b border-slate-200 dark:border-slate-700 min-w-[120px]"></th>
               {weeksByMonth.map(([month, weeks]) => (
                 <th
                   key={month}
@@ -929,6 +915,7 @@ function CoverageCell({
       return (
         <td className={tdClass}>
           <button
+            data-tutorial="gap"
             onClick={handleClick}
             className="block w-full h-full hover:bg-accent/20 dark:hover:bg-accent/30 transition-colors cursor-pointer"
           >
