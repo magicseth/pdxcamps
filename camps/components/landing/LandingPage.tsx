@@ -85,28 +85,27 @@ export function LandingPage() {
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/20 rounded-full blur-3xl" />
 
           <div className="relative max-w-6xl mx-auto px-4 py-20 md:py-28">
-            <div className="grid md:grid-cols-[1fr,340px] gap-10 items-start">
-            <div>
-              {/* Social proof badge */}
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm border border-slate-200 mb-8">
-                <div className="flex -space-x-2">
-                  {organizationsWithLogos?.slice(0, 4).map((org, i) => (
-                    <div
-                      key={org._id}
-                      className="w-6 h-6 rounded-full bg-white border-2 border-white overflow-hidden shadow-sm"
-                    >
-                      {org.logoUrl && <img src={org.logoUrl} alt="" className="w-full h-full object-contain" />}
-                    </div>
-                  ))}
-                </div>
-                <span className="text-sm text-slate-600">
-                  <span className="font-semibold text-slate-900">{campCount}+ camps</span> from trusted {market.name}{' '}
-                  organizations
-                </span>
+            {/* Social proof badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm border border-slate-200 mb-8">
+              <div className="flex -space-x-2">
+                {organizationsWithLogos?.slice(0, 4).map((org, i) => (
+                  <div
+                    key={org._id}
+                    className="w-6 h-6 rounded-full bg-white border-2 border-white overflow-hidden shadow-sm"
+                  >
+                    {org.logoUrl && <img src={org.logoUrl} alt="" className="w-full h-full object-contain" />}
+                  </div>
+                ))}
               </div>
+              <span className="text-sm text-slate-600">
+                <span className="font-semibold text-slate-900">{campCount}+ camps</span> from trusted {market.name}{' '}
+                organizations
+              </span>
+            </div>
 
-              {/* Main headline - Emotional, benefit-focused */}
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 leading-tight mb-6">
+            {/* Headline + Map side by side on desktop, stacked on mobile */}
+            <div className="grid md:grid-cols-[1fr,340px] gap-8 items-start mb-8">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 leading-tight">
                 Give your kids
                 <br />
                 <span className="relative">
@@ -117,52 +116,45 @@ export function LandingPage() {
                 <span className="text-primary">Without losing your mind.</span>
               </h1>
 
-              {/* Subheadline - Focus on parent benefits */}
-              <p className="text-xl text-slate-600 mb-8 leading-relaxed">
-                Find camps near home, coordinate with friends for carpools, and see your whole summer at a glance.
-                {market.popularOrgs} & 100+ more—all in one place.{' '}
-                <span className="font-semibold text-slate-900">Free for {market.name} families.</span>
-              </p>
-
-              {/* CTA buttons */}
-              <div className="flex flex-wrap gap-4 mb-12">
-                <a
-                  href="/sign-up"
-                  className="group px-8 py-4 text-lg font-semibold bg-accent text-white rounded-xl hover:bg-accent-dark shadow-lg shadow-accent/25 transition-all hover:shadow-xl hover:shadow-accent/30 hover:-translate-y-0.5"
-                >
-                  Start Planning Free
-                  <span className="inline-block ml-2 group-hover:translate-x-1 transition-transform">→</span>
-                </a>
-                <a
-                  href={`/discover/${market.slug}`}
-                  className="px-8 py-4 text-lg font-semibold text-slate-700 bg-white border-2 border-slate-200 rounded-xl hover:border-slate-300 hover:bg-slate-50 transition-all"
-                >
-                  Browse All Camps
-                </a>
-              </div>
-
-              {/* Trust indicators */}
-              <div className="flex flex-wrap items-center gap-6 text-sm text-slate-500">
-                <div className="flex items-center gap-2">
-                  <CheckCircleIcon className="w-5 h-5 text-green-500" />
-                  <span>No credit card required</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircleIcon className="w-5 h-5 text-green-500" />
-                  <span>Camps updated daily</span>
-                </div>
+              <div className="mt-2">
+                <CampMap citySlug={market.slug} cityName={market.name} />
               </div>
             </div>
 
-            {/* Map - shows camp locations to convey "local" */}
-            <div className="hidden md:block">
-              <CampMap citySlug={market.slug} cityName={market.name} />
-            </div>
+            {/* Subheadline - Focus on parent benefits */}
+            <p className="text-xl text-slate-600 mb-8 leading-relaxed max-w-3xl">
+              Find camps near home, coordinate with friends for carpools, and see your whole summer at a glance.
+              {market.popularOrgs} & 100+ more—all in one place.{' '}
+              <span className="font-semibold text-slate-900">Free for {market.name} families.</span>
+            </p>
+
+            {/* CTA buttons */}
+            <div className="flex flex-wrap gap-4 mb-12">
+              <a
+                href="/sign-up"
+                className="group px-8 py-4 text-lg font-semibold bg-accent text-white rounded-xl hover:bg-accent-dark shadow-lg shadow-accent/25 transition-all hover:shadow-xl hover:shadow-accent/30 hover:-translate-y-0.5"
+              >
+                Start Planning Free
+                <span className="inline-block ml-2 group-hover:translate-x-1 transition-transform">→</span>
+              </a>
+              <a
+                href={`/discover/${market.slug}`}
+                className="px-8 py-4 text-lg font-semibold text-slate-700 bg-white border-2 border-slate-200 rounded-xl hover:border-slate-300 hover:bg-slate-50 transition-all"
+              >
+                Browse All Camps
+              </a>
             </div>
 
-            {/* Map on mobile - below hero */}
-            <div className="md:hidden mt-8">
-              <CampMap citySlug={market.slug} cityName={market.name} />
+            {/* Trust indicators */}
+            <div className="flex flex-wrap items-center gap-6 text-sm text-slate-500">
+              <div className="flex items-center gap-2">
+                <CheckCircleIcon className="w-5 h-5 text-green-500" />
+                <span>No credit card required</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircleIcon className="w-5 h-5 text-green-500" />
+                <span>Camps updated daily</span>
+              </div>
             </div>
           </div>
         </section>
