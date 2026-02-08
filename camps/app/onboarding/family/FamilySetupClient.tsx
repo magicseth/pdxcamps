@@ -14,9 +14,10 @@ type CalendarSharingDefault = 'private' | 'friends_only' | 'public';
 
 interface FamilySetupClientProps {
   referralCode: string | null;
+  inviteToken: string | null;
 }
 
-export default function FamilySetupClient({ referralCode }: FamilySetupClientProps) {
+export default function FamilySetupClient({ referralCode, inviteToken }: FamilySetupClientProps) {
   const router = useRouter();
   const { user } = useAuth();
   const market = useMarket();
@@ -64,6 +65,7 @@ export default function FamilySetupClient({ referralCode }: FamilySetupClientPro
         primaryCityId: primaryCityId as Id<'cities'>,
         calendarSharingDefault,
         referralCode: referralCode || undefined,
+        inviteToken: inviteToken || undefined,
       });
 
       // Identify user in PostHog using their email

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useMarket } from '../../hooks/useMarket';
-import { CalendarIcon, SearchIcon, ClipboardListIcon, FriendsIcon } from './icons';
+import { CalendarIcon, SearchIcon, FriendsIcon } from './icons';
 
 interface BottomNavProps {
   citySlug?: string;
@@ -35,7 +35,6 @@ export function BottomNav({ citySlug }: BottomNavProps) {
           icon={<SearchIcon />}
           label="Discover"
         />
-        <NavLink href="/calendar" active={isActive('/calendar')} icon={<ClipboardListIcon />} label="My Camps" />
         <NavLink href="/friends" active={isActive('/friends')} icon={<FriendsIcon />} label="Friends" />
       </div>
     </nav>

@@ -33,10 +33,16 @@ export const sendFriendRequest = mutation({
         return null; // Already invited
       }
 
+      // Generate a unique invite token
+      const inviteToken = Array.from(crypto.getRandomValues(new Uint8Array(12)))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+
       // Store the pending invitation
       await ctx.db.insert('friendInvitations', {
         inviterFamilyId: family._id,
         invitedEmail: args.addresseeEmail,
+        inviteToken,
         status: 'pending',
         createdAt: Date.now(),
       });
@@ -60,7 +66,7 @@ export const sendFriendRequest = mutation({
               <li>Share calendars with friends to coordinate</li>
             </ul>
             <p style="text-align: center; margin: 24px 0;">
-              <a href="https://${domain}" style="display: inline-block; padding: 14px 28px; background-color: #E5A33B; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">Join ${brandName}</a>
+              <a href="https://${domain}/invite/${inviteToken}" style="display: inline-block; padding: 14px 28px; background-color: #E5A33B; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">Join ${brandName}</a>
             </p>
             <p style="color: #666; font-size: 14px; margin-top: 24px; border-top: 1px solid #eee; padding-top: 16px;">
               — The ${brandName} Team<br/>
@@ -68,7 +74,7 @@ export const sendFriendRequest = mutation({
             </p>
           </div>
         `,
-        text: `${family.displayName} invited you to ${brandName}! Sign up at https://${domain} to plan summer camps together.`,
+        text: `${family.displayName} invited you to ${brandName}! Sign up at https://${domain}/invite/${inviteToken} to plan summer camps together.`,
       });
 
       return null; // Signals invite sent (not a friendship ID)

@@ -401,11 +401,13 @@ export default defineSchema({
   friendInvitations: defineTable({
     inviterFamilyId: v.id('families'),
     invitedEmail: v.string(),
+    inviteToken: v.string(),
     status: v.union(v.literal('pending'), v.literal('accepted'), v.literal('expired')),
     createdAt: v.number(),
   })
     .index('by_invited_email', ['invitedEmail', 'status'])
-    .index('by_inviter', ['inviterFamilyId']),
+    .index('by_inviter', ['inviterFamilyId'])
+    .index('by_token', ['inviteToken']),
 
   friendships: defineTable({
     requesterId: v.id('families'),

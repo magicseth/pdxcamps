@@ -18,6 +18,7 @@ export const createFamily = mutation({
     primaryCityId: v.id('cities'),
     calendarSharingDefault: calendarSharingDefaultValidator,
     referralCode: v.optional(v.string()),
+    inviteToken: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await requireAuth(ctx);
@@ -63,21 +64,40 @@ export const createFamily = mutation({
       });
     }
 
-    // Check for pending friend invitations and auto-create friend requests
+    // Check for pending friend invitations by email match
     const pendingInvites = await ctx.db
       .query('friendInvitations')
       .withIndex('by_invited_email', (q) => q.eq('invitedEmail', args.email).eq('status', 'pending'))
       .collect();
 
     for (const invite of pendingInvites) {
-      // Create a friend request from the inviter
       await ctx.db.insert('friendships', {
         requesterId: invite.inviterFamilyId,
         addresseeId: familyId,
         status: 'pending',
       });
-      // Mark the invitation as accepted
       await ctx.db.patch(invite._id, { status: 'accepted' });
+    }
+
+    // Check for pending friend invitation by invite token (supports different email signups)
+    if (args.inviteToken) {
+      const tokenInvite = await ctx.db
+        .query('friendInvitations')
+        .withIndex('by_token', (q) => q.eq('inviteToken', args.inviteToken!))
+        .first();
+
+      if (tokenInvite && tokenInvite.status === 'pending') {
+        // Only create if not already matched by email above
+        const alreadyMatched = pendingInvites.some((i) => i._id === tokenInvite._id);
+        if (!alreadyMatched) {
+          await ctx.db.insert('friendships', {
+            requesterId: tokenInvite.inviterFamilyId,
+            addresseeId: familyId,
+            status: 'pending',
+          });
+          await ctx.db.patch(tokenInvite._id, { status: 'accepted' });
+        }
+      }
     }
 
     // Notify Seth about new signups
