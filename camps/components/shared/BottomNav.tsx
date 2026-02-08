@@ -28,7 +28,8 @@ export function BottomNav({ citySlug }: BottomNavProps) {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 px-4 py-2 z-20"
+      className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 px-4 pt-2 z-20"
+      style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
       role="navigation"
       aria-label="Main navigation"
     >

@@ -30,18 +30,16 @@ const steps: TutorialStep[] = [
     description:
       'Orange cells are weeks that still need a camp. Green means registered. Blue means a family event has that week covered.',
     emoji: '🎨',
-    target: 'gap',
+    target: 'grid',
     placement: 'below',
-    optional: true,
   },
   {
     title: 'Tap a gap to fill it',
     description:
       'Click any orange cell to see camps available that week, already filtered for your child\u2019s age and schedule.',
     emoji: '👆',
-    target: 'gap',
+    target: 'grid',
     placement: 'below',
-    optional: true,
   },
   {
     title: 'Filter by interest',

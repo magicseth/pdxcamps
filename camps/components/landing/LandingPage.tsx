@@ -664,7 +664,7 @@ export function LandingPage() {
                 alt={market.tagline}
                 width={100}
                 height={32}
-                className="h-8 w-auto brightness-0 invert"
+                className="h-8 w-auto"
                 unoptimized={!!market.iconStorageId}
               />
               <p className="text-xs text-slate-500">

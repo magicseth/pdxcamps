@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { headers } from 'next/headers';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { fetchQuery } from 'convex/nextjs';
@@ -64,6 +64,10 @@ async function getMarketSSR(hostname: string): Promise<Market & { iconStorageId?
   // Fallback to static config
   return getMarketFromHostname(hostname);
 }
+
+export const viewport: Viewport = {
+  viewportFit: 'cover',
+};
 
 export async function generateMetadata(): Promise<Metadata> {
   const headersList = await headers();

@@ -142,13 +142,13 @@ export function SharePlanModal({
                       onClick={() => toggleChild(child._id)}
                       className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all ${
                         isSelected
-                          ? 'bg-accent text-white shadow-md'
-                          : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
+                          ? 'bg-primary/10 text-primary border border-primary/30'
+                          : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 border border-transparent'
                       }`}
                     >
                       <span
                         className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 transition-all ${
-                          isSelected ? 'ring-2 ring-white ring-offset-1 ring-offset-accent' : ''
+                          isSelected ? 'ring-2 ring-primary/30 ring-offset-1' : 'opacity-60'
                         }`}
                         style={{ backgroundColor: avatarColor }}
                       >
@@ -156,7 +156,7 @@ export function SharePlanModal({
                       </span>
                       {child.firstName}
                       {isSelected && (
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-4 h-4 text-primary" fill="currentColor" viewBox="0 0 20 20">
                           <path
                             fillRule="evenodd"
                             d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -197,7 +197,7 @@ export function SharePlanModal({
 
               <button
                 onClick={handleShare}
-                className="w-full py-4 bg-gradient-to-r from-accent to-accent-dark text-white font-bold text-lg rounded-xl hover:from-accent-dark hover:to-primary transition-all shadow-lg"
+                className="w-full py-3 bg-primary text-white font-semibold rounded-xl hover:bg-primary-dark transition-all"
               >
                 📤 Share with Friends & Family
               </button>
@@ -216,7 +216,7 @@ export function SharePlanModal({
               <button
                 onClick={handleGenerateLink}
                 disabled={isGenerating || selectedChildren.length === 0}
-                className="w-full py-4 bg-gradient-to-r from-accent to-accent-dark text-white font-bold text-lg rounded-xl hover:from-accent-dark hover:to-primary transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 bg-primary text-white font-semibold rounded-xl hover:bg-primary-dark transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isGenerating ? 'Generating...' : '🔗 Generate Share Link'}
               </button>
