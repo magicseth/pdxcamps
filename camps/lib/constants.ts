@@ -38,6 +38,9 @@ export const CATEGORIES = [
   'Dance',
 ] as const;
 
+// Free tier saved camp limit (must match convex/lib/paywall.ts FREE_SAVED_CAMPS_LIMIT)
+export const FREE_SAVED_CAMPS_LIMIT = 5;
+
 // Grade mapping for display
 export const GRADE_LABELS: Record<number, string> = {
   [-2]: 'Preschool',

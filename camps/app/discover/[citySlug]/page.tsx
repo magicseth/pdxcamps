@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery } from 'convex/react';
@@ -19,7 +19,7 @@ import { useMarket } from '../../../hooks/useMarket';
 import { useDiscoverFilters } from '../../../hooks/useDiscoverFilters';
 import { getChildAge, formatDateShort } from '../../../lib/dateUtils';
 
-import { CATEGORIES, GRADE_LABELS } from '../../../lib/constants';
+import { CATEGORIES, GRADE_LABELS, FREE_SAVED_CAMPS_LIMIT } from '../../../lib/constants';
 import { SettingsIcon, FilterIcon, LocationIcon, ListIcon, MapIcon } from '../../../components/shared/icons';
 import posthog from 'posthog-js';
 
@@ -64,6 +64,27 @@ export default function DiscoverPage() {
     };
   }, [city?.name]);
 
+  // Keyboard shortcuts: M for map toggle, F for filter toggle
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault();
+        filters.setViewMode(filters.viewMode === 'map' ? 'list' : 'map');
+      } else if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        filters.setShowFilters(!filters.showFilters);
+      }
+    },
+    [filters],
+  );
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
+
   // Fetch all organizations with session counts for filter chips
   const allOrganizations = useQuery(
     api.organizations.queries.listOrganizationsWithSessionCounts,
@@ -84,7 +105,7 @@ export default function DiscoverPage() {
   const savedCamps = useQuery(api.registrations.queries.getSavedCamps);
   const isPremium = subscription?.isPremium ?? false;
   const savedCount = savedCamps ? savedCamps.interested.length + savedCamps.waitlisted.length : 0;
-  const FREE_LIMIT = 5;
+  const FREE_LIMIT = FREE_SAVED_CAMPS_LIMIT;
 
   // Fetch family data for home address
   const family = useQuery(api.families.queries.getCurrentFamily);

@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useState, useMemo } from 'react';
 import confetti from 'canvas-confetti';
 import { useMarket } from '@/hooks/useMarket';
+import { FREE_SAVED_CAMPS_LIMIT } from '@/lib/constants';
 
 function formatDate(dateStr: string) {
   const date = new Date(dateStr + 'T00:00:00');
@@ -352,7 +353,7 @@ export default function SavedCampsPage() {
 
   const isPremium = subscription?.isPremium ?? false;
   const savedCount = savedCamps ? savedCamps.interested.length + savedCamps.waitlisted.length : 0;
-  const FREE_LIMIT = 5;
+  const FREE_LIMIT = FREE_SAVED_CAMPS_LIMIT;
 
   const registrationStats = useMemo(() => {
     if (!savedCamps) return { registered: 0, todo: 0, waitlist: 0 };

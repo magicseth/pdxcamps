@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { usePricingVariant } from '../../hooks/usePricingVariant';
+import { FREE_SAVED_CAMPS_LIMIT } from '../../lib/constants';
 
 interface UpgradeModalProps {
   isOpen: boolean;
@@ -25,7 +26,7 @@ export function UpgradeModal({ isOpen, onClose, savedCount = 4 }: UpgradeModalPr
         <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-6 text-white text-center">
           <div className="text-4xl mb-2">⚠️</div>
           <h2 className="text-xl font-bold">You&apos;ve reached the free limit</h2>
-          <p className="text-white/90 text-sm mt-1">{savedCount}/5 saved camps used</p>
+          <p className="text-white/90 text-sm mt-1">{savedCount}/{FREE_SAVED_CAMPS_LIMIT} saved camps used</p>
         </div>
 
         {/* Body */}
