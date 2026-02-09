@@ -220,4 +220,26 @@ crons.daily(
   {},
 );
 
+// ============================================
+// PARTNER COMMISSION CRONS
+// ============================================
+
+// Daily commission check at 5 AM PST (1 PM UTC)
+// Scans partner-referred families for new subscription payments
+crons.daily(
+  'partner commission processing',
+  { hourUTC: 13, minuteUTC: 0 },
+  internal.partners.commissions.processPartnerCommissions,
+  {},
+);
+
+// Monthly partner digest on the 1st at 9 AM PST (5 PM UTC)
+// Sends earnings summary to all approved partners
+crons.monthly(
+  'partner digest emails',
+  { day: 1, hourUTC: 17, minuteUTC: 0 },
+  internal.partners.commissions.sendPartnerDigestBatch,
+  {},
+);
+
 export default crons;

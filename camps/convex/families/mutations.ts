@@ -19,6 +19,7 @@ export const createFamily = mutation({
     calendarSharingDefault: calendarSharingDefaultValidator,
     referralCode: v.optional(v.string()),
     inviteToken: v.optional(v.string()),
+    partnerCode: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await requireAuth(ctx);
@@ -47,6 +48,18 @@ export const createFamily = mutation({
       }
     }
 
+    // Validate partner code if provided
+    let validPartnerCode: string | undefined;
+    if (args.partnerCode) {
+      const partner = await ctx.db
+        .query('partnerApplications')
+        .withIndex('by_partner_code', (q) => q.eq('partnerCode', args.partnerCode!))
+        .first();
+      if (partner && partner.status === 'approved') {
+        validPartnerCode = args.partnerCode;
+      }
+    }
+
     const familyId = await ctx.db.insert('families', {
       workosUserId: identity.subject,
       email: args.email,
@@ -54,6 +67,7 @@ export const createFamily = mutation({
       primaryCityId: args.primaryCityId,
       calendarSharingDefault: args.calendarSharingDefault,
       referredByCode: validReferralCode,
+      referredByPartnerCode: validPartnerCode,
     });
 
     // Create pending referral event if valid code

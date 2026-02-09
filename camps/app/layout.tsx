@@ -136,8 +136,20 @@ export default async function RootLayout({
   const host = headersList.get('host') || 'localhost';
   const market = await getMarketSSR(host);
 
+  // Serialize SSR-resolved market data so client components can hydrate instantly
+  // without waiting for a separate Convex query (prevents broken image flash, wrong brand name, etc.)
+  const ssrMarketData = JSON.stringify({
+    slug: market.slug,
+    name: market.name,
+    tagline: market.tagline,
+    iconStorageId: market.iconStorageId,
+    iconPath: market.iconPath,
+    themeColor: market.themeColor,
+    domains: market.domains,
+  });
+
   return (
-    <html lang="en" data-market-slug={market.slug}>
+    <html lang="en" data-market-slug={market.slug} data-market-ssr={ssrMarketData}>
       <head>
         <link rel="dns-prefetch" href="https://deafening-schnauzer-923.convex.cloud" />
         <link rel="preconnect" href="https://deafening-schnauzer-923.convex.cloud" crossOrigin="anonymous" />

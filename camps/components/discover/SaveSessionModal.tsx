@@ -238,7 +238,7 @@ export function SaveSessionModal({
             ) : children.length === 0 ? (
               <div className="py-8 text-center">
                 <p className="text-slate-600 dark:text-slate-400 mb-4">You need to add a child to your family first.</p>
-                <Link href="/onboarding" className="text-primary hover:text-primary-dark font-medium">
+                <Link href="/onboarding/family" className="text-primary hover:text-primary-dark font-medium">
                   Add a child
                 </Link>
               </div>

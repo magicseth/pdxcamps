@@ -317,7 +317,7 @@ export function LandingPage() {
                 Plan smarter. Drive less. Enjoy more.
               </h2>
               <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-                {campCount}+ camps from every provider in {market.name}. Filter by neighborhood, coordinate with
+                {sessionCount > 0 ? `${sessionCount} camp sessions` : `${campCount}+ camps`} from {orgCount > 0 ? `${orgCount}+` : 'every'} providers in {market.name}. Filter by neighborhood, coordinate with
                 friends, and see your whole summer in one view.
               </p>
             </div>

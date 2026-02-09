@@ -28,13 +28,31 @@ function getSSRMarketSlug(): string | null {
 }
 
 /**
+ * Read SSR-resolved market data from <html data-market-ssr>.
+ * This is fetched from Convex during SSR and includes iconStorageId,
+ * brand name, etc. — available on first paint with no client query needed.
+ */
+function getSSRMarketData(): Partial<Market> & { iconStorageId?: string } | null {
+  if (typeof document === 'undefined') return null;
+  const raw = document.documentElement.dataset.marketSsr;
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Hook to get the current market based on the hostname.
- * Reads the SSR-provided market slug from <html data-market-slug>
- * for instant resolution, then enhances with Convex DB data.
+ * Reads the SSR-provided market data from <html data-market-ssr>
+ * for instant resolution (icon, brand name, etc.), then enhances
+ * with the full Convex DB data once the client query resolves.
  */
 export function useMarket(): Market {
   const hostname = useMemo(getHostname, []);
   const ssrSlug = useMemo(getSSRMarketSlug, []);
+  const ssrData = useMemo(getSSRMarketData, []);
 
   // Resolve static market: prefer SSR slug (works on first render),
   // fall back to hostname lookup
@@ -45,8 +63,17 @@ export function useMarket(): Market {
     return hostname ? getMarketFromHostname(hostname) : DEFAULT_MARKET;
   }, [ssrSlug, hostname]);
 
+  // Merge SSR Convex data into static market for immediate use
+  const ssrMarket = useMemo(() => {
+    if (!ssrData) return staticMarket;
+    return {
+      ...staticMarket,
+      ...ssrData,
+    };
+  }, [staticMarket, ssrData]);
+
   // Query city by domain from database for dynamic fields (icon, brand overrides)
-  const domain = staticMarket.domains?.[0]?.replace(/^www\./, '') || hostname.replace(/^www\./, '');
+  const domain = ssrMarket.domains?.[0]?.replace(/^www\./, '') || hostname.replace(/^www\./, '');
   const city = useQuery(
     api.cities.queries.getCityByDomain,
     domain ? { domain } : 'skip',
@@ -55,14 +82,15 @@ export function useMarket(): Market {
   return useMemo(() => {
     if (city) {
       return {
-        ...staticMarket,
+        ...ssrMarket,
         slug: city.slug,
         name: city.name,
-        tagline: city.brandName || staticMarket.tagline || `${city.name} Camps`,
+        tagline: city.brandName || ssrMarket.tagline || `${city.name} Camps`,
         domains: [city.domain, `www.${city.domain}`].filter(Boolean) as string[],
         iconStorageId: city.iconStorageId,
       };
     }
-    return staticMarket;
-  }, [city, staticMarket]);
+    // Before the query resolves, use SSR data (which already has Convex data)
+    return ssrMarket;
+  }, [city, ssrMarket]);
 }

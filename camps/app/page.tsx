@@ -96,7 +96,7 @@ function OnboardingPrompt({
               : 'Set up your family profile to discover and plan summer camps.'}
           </p>
           <Link
-            href={hasFamily ? '/onboarding/children' : '/onboarding'}
+            href={hasFamily ? '/onboarding/children' : '/onboarding/family'}
             className="inline-block px-8 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary-dark"
           >
             {hasFamily ? 'Add Children' : 'Complete Setup'}

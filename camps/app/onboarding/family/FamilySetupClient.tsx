@@ -6,18 +6,16 @@ import { api } from '../../../convex/_generated/api';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@workos-inc/authkit-nextjs/components';
 import { Id } from '../../../convex/_generated/dataModel';
-import Link from 'next/link';
 import { useMarket } from '../../../hooks/useMarket';
 import posthog from 'posthog-js';
-
-type CalendarSharingDefault = 'private' | 'friends_only' | 'public';
 
 interface FamilySetupClientProps {
   referralCode: string | null;
   inviteToken: string | null;
+  partnerCode: string | null;
 }
 
-export default function FamilySetupClient({ referralCode, inviteToken }: FamilySetupClientProps) {
+export default function FamilySetupClient({ referralCode, inviteToken, partnerCode }: FamilySetupClientProps) {
   const router = useRouter();
   const { user } = useAuth();
   const market = useMarket();
@@ -27,7 +25,6 @@ export default function FamilySetupClient({ referralCode, inviteToken }: FamilyS
 
   const [displayName, setDisplayName] = useState('');
   const [primaryCityId, setPrimaryCityId] = useState<Id<'cities'> | ''>('');
-  const [calendarSharingDefault, setCalendarSharingDefault] = useState<CalendarSharingDefault>('friends_only');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,9 +32,23 @@ export default function FamilySetupClient({ referralCode, inviteToken }: FamilyS
     posthog.capture('onboarding_started', {
       has_referral_code: !!referralCode,
       has_invite_token: !!inviteToken,
+      has_partner_code: !!partnerCode,
       market: market.slug,
     });
   }, []);
+
+  // Auto-select city based on the domain the user is on
+  useEffect(() => {
+    if (!cities || primaryCityId) return;
+    const hostname = typeof window !== 'undefined'
+      ? window.location.hostname.split(':')[0].toLowerCase().replace(/^www\./, '')
+      : '';
+    if (!hostname) return;
+    const matched = cities.find((c) => c.domain === hostname || c.domain === `www.${hostname}`);
+    if (matched) {
+      setPrimaryCityId(matched._id);
+    }
+  }, [cities, primaryCityId]);
 
   // Redirect if user already has a family
   if (existingFamily !== undefined && existingFamily !== null) {
@@ -71,9 +82,10 @@ export default function FamilySetupClient({ referralCode, inviteToken }: FamilyS
         displayName: displayName.trim(),
         email: user.email,
         primaryCityId: primaryCityId as Id<'cities'>,
-        calendarSharingDefault,
+        calendarSharingDefault: 'friends_only',
         referralCode: referralCode || undefined,
         inviteToken: inviteToken || undefined,
+        partnerCode: partnerCode || undefined,
       });
 
       // Identify user in PostHog using their email
@@ -83,8 +95,8 @@ export default function FamilySetupClient({ referralCode, inviteToken }: FamilyS
 
       // Track family creation event
       posthog.capture('family_created', {
-        calendar_sharing_default: calendarSharingDefault,
         has_referral_code: !!referralCode,
+        has_partner_code: !!partnerCode,
         market: market.slug,
       });
 
@@ -121,22 +133,6 @@ export default function FamilySetupClient({ referralCode, inviteToken }: FamilyS
       </a>
 
       <main id="main-content" className="max-w-md mx-auto">
-        {/* Back link */}
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white mb-6"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Back to home
-        </Link>
-
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Welcome to {market.tagline}</h1>
-          <p className="mt-2 text-slate-600 dark:text-slate-400">Let&apos;s set up your family profile</p>
-        </div>
-
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
           <div className="mb-6">
             <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
@@ -202,30 +198,6 @@ export default function FamilySetupClient({ referralCode, inviteToken }: FamilyS
               </select>
               <p id="primaryCity-help" className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                 We&apos;ll show you camps in this area first
-              </p>
-            </div>
-
-            <div>
-              <label
-                htmlFor="calendarSharing"
-                className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
-              >
-                Calendar Sharing Default
-              </label>
-              <select
-                id="calendarSharing"
-                value={calendarSharingDefault}
-                onChange={(e) => setCalendarSharingDefault(e.target.value as CalendarSharingDefault)}
-                aria-describedby="calendarSharing-help"
-                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-primary focus:border-primary dark:bg-slate-700 dark:text-white"
-                disabled={isSubmitting}
-              >
-                <option value="private">Private - Only visible to you</option>
-                <option value="friends_only">Friends Only - Visible to connected families</option>
-                <option value="public">Public - Visible to everyone</option>
-              </select>
-              <p id="calendarSharing-help" className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                Control who can see your camp schedule
               </p>
             </div>
 

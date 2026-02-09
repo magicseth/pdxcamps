@@ -6,6 +6,7 @@ export default async function FamilySetupPage() {
   const cookieStore = await cookies();
   const referralCode = cookieStore.get('referral_code')?.value || null;
   const inviteToken = cookieStore.get('invite_token')?.value || null;
+  const partnerCode = cookieStore.get('partner_code')?.value || null;
 
-  return <FamilySetupClient referralCode={referralCode} inviteToken={inviteToken} />;
+  return <FamilySetupClient referralCode={referralCode} inviteToken={inviteToken} partnerCode={partnerCode} />;
 }
