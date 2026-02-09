@@ -1,3 +1,9 @@
+/**
+ * Netlify middleware entry point.
+ *
+ * Netlify's Next.js adapter uses `proxy.ts` (not `middleware.ts`) as the
+ * middleware entry point. See middleware.ts for a deprecation note.
+ */
 import { authkitMiddleware } from '@workos-inc/authkit-nextjs';
 import { NextRequest } from 'next/server';
 
@@ -11,6 +17,7 @@ const UNAUTHENTICATED_PATHS = [
   '/terms',
   '/privacy',
   '/blog/:path*',
+  '/partners',
   '/:citySlug/:pageSlug',
   '/:citySlug/neighborhoods',
   '/:citySlug/neighborhoods/:neighborhoodSlug',

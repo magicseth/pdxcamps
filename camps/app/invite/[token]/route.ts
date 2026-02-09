@@ -26,6 +26,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     path: '/',
   });
 
-  // Redirect to sign-up page
-  return NextResponse.redirect(new URL('/sign-up', request.url));
+  // Redirect to connect page (handles both existing and new users)
+  return NextResponse.redirect(new URL(`/invite/${token}/connect`, request.url));
 }

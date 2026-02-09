@@ -20,6 +20,8 @@ export const createFamily = mutation({
     referralCode: v.optional(v.string()),
     inviteToken: v.optional(v.string()),
     partnerCode: v.optional(v.string()),
+    shareToken: v.optional(v.string()),
+    shareType: v.optional(v.union(v.literal('child'), v.literal('family'))),
   },
   handler: async (ctx, args) => {
     const identity = await requireAuth(ctx);
@@ -110,6 +112,49 @@ export const createFamily = mutation({
             status: 'pending',
           });
           await ctx.db.patch(tokenInvite._id, { status: 'accepted' });
+        }
+      }
+    }
+
+    // Check for share token — create friendship with the sharer's family
+    if (args.shareToken && args.shareType) {
+      let sharerFamilyId: typeof familyId | null = null;
+
+      if (args.shareType === 'child') {
+        const child = await ctx.db
+          .query('children')
+          .withIndex('by_share_token', (q) => q.eq('shareToken', args.shareToken!))
+          .first();
+        if (child) sharerFamilyId = child.familyId;
+      } else if (args.shareType === 'family') {
+        const share = await ctx.db
+          .query('familyShares')
+          .withIndex('by_token', (q) => q.eq('shareToken', args.shareToken!))
+          .first();
+        if (share) sharerFamilyId = share.familyId;
+      }
+
+      if (sharerFamilyId && sharerFamilyId !== familyId) {
+        // Check no friendship already exists (could have been created by email match above)
+        const existingA = await ctx.db
+          .query('friendships')
+          .withIndex('by_requester_and_addressee', (q) =>
+            q.eq('requesterId', sharerFamilyId!).eq('addresseeId', familyId),
+          )
+          .unique();
+        const existingB = await ctx.db
+          .query('friendships')
+          .withIndex('by_requester_and_addressee', (q) =>
+            q.eq('requesterId', familyId).eq('addresseeId', sharerFamilyId!),
+          )
+          .unique();
+
+        if (!existingA && !existingB) {
+          await ctx.db.insert('friendships', {
+            requesterId: sharerFamilyId,
+            addresseeId: familyId,
+            status: 'pending',
+          });
         }
       }
     }

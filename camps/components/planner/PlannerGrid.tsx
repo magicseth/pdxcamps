@@ -1352,8 +1352,9 @@ function FriendCoverageCell({ data }: { data: ChildCoverage | null }) {
 
   let bgColor = '';
   let tooltip = '';
+  const hasCamp = data && data.registrations.length > 0;
 
-  if (status === 'full' || status === 'partial') {
+  if (hasCamp) {
     if (registrationStatus === 'registered') {
       bgColor = 'bg-green-100/70 dark:bg-green-900/20';
       tooltip = campName ? `${campName} (Registered)` : 'Registered';
@@ -1369,7 +1370,7 @@ function FriendCoverageCell({ data }: { data: ChildCoverage | null }) {
     }
   } else {
     bgColor = '';
-    tooltip = 'No camp';
+    tooltip = '';
   }
 
   return (
@@ -1383,7 +1384,7 @@ function FriendCoverageCell({ data }: { data: ChildCoverage | null }) {
             e.currentTarget.style.display = 'none';
           }}
         />
-      ) : (status === 'full' || status === 'partial') ? (
+      ) : hasCamp ? (
         registrationStatus === 'registered' ? (
           <span className="text-green-600/60 dark:text-green-400/60 font-bold text-xs">✓</span>
         ) : registrationStatus === 'waitlisted' ? (

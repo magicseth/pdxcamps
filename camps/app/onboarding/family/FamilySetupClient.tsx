@@ -13,9 +13,11 @@ interface FamilySetupClientProps {
   referralCode: string | null;
   inviteToken: string | null;
   partnerCode: string | null;
+  shareToken: string | null;
+  shareType: 'child' | 'family' | null;
 }
 
-export default function FamilySetupClient({ referralCode, inviteToken, partnerCode }: FamilySetupClientProps) {
+export default function FamilySetupClient({ referralCode, inviteToken, partnerCode, shareToken, shareType }: FamilySetupClientProps) {
   const router = useRouter();
   const { user } = useAuth();
   const market = useMarket();
@@ -86,6 +88,8 @@ export default function FamilySetupClient({ referralCode, inviteToken, partnerCo
         referralCode: referralCode || undefined,
         inviteToken: inviteToken || undefined,
         partnerCode: partnerCode || undefined,
+        shareToken: shareToken || undefined,
+        shareType: shareType || undefined,
       });
 
       // Identify user in PostHog using their email

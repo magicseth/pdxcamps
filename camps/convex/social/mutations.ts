@@ -521,6 +521,85 @@ export const revokeCalendarShare = mutation({
 });
 
 /**
+ * Auto-connect a friendship from a share token or invite token.
+ * Called when an authenticated user views a shared plan or clicks an invite link.
+ * Creates a pending friendship between the sharer/inviter and the viewer.
+ * Idempotent — silently returns null if friendship already exists or user has no family.
+ */
+export const connectFromShareToken = mutation({
+  args: {
+    shareToken: v.string(),
+    tokenType: v.union(v.literal('child'), v.literal('family'), v.literal('invite')),
+  },
+  handler: async (ctx, args) => {
+    // Use getFamily (non-throwing) so users still in onboarding silently get null
+    const family = await getFamily(ctx);
+    if (!family) return null;
+
+    let sharerFamilyId: typeof family._id | null = null;
+
+    if (args.tokenType === 'child') {
+      const child = await ctx.db
+        .query('children')
+        .withIndex('by_share_token', (q) => q.eq('shareToken', args.shareToken))
+        .first();
+      if (child) sharerFamilyId = child.familyId;
+    } else if (args.tokenType === 'family') {
+      const share = await ctx.db
+        .query('familyShares')
+        .withIndex('by_token', (q) => q.eq('shareToken', args.shareToken))
+        .first();
+      if (share) sharerFamilyId = share.familyId;
+    } else if (args.tokenType === 'invite') {
+      const invite = await ctx.db
+        .query('friendInvitations')
+        .withIndex('by_token', (q) => q.eq('inviteToken', args.shareToken))
+        .first();
+      if (invite) {
+        sharerFamilyId = invite.inviterFamilyId;
+        // Mark invitation as accepted
+        if (invite.status === 'pending') {
+          await ctx.db.patch(invite._id, { status: 'accepted' });
+        }
+      }
+    }
+
+    if (!sharerFamilyId) return null;
+
+    // Don't friend yourself
+    if (sharerFamilyId === family._id) return null;
+
+    // Check if friendship already exists in either direction
+    const existingAsRequester = await ctx.db
+      .query('friendships')
+      .withIndex('by_requester_and_addressee', (q) =>
+        q.eq('requesterId', sharerFamilyId!).eq('addresseeId', family._id),
+      )
+      .unique();
+
+    if (existingAsRequester) return null;
+
+    const existingAsAddressee = await ctx.db
+      .query('friendships')
+      .withIndex('by_requester_and_addressee', (q) =>
+        q.eq('requesterId', family._id).eq('addresseeId', sharerFamilyId!),
+      )
+      .unique();
+
+    if (existingAsAddressee) return null;
+
+    // Create pending friendship (sharer is the requester)
+    const friendshipId = await ctx.db.insert('friendships', {
+      requesterId: sharerFamilyId,
+      addresseeId: family._id,
+      status: 'pending',
+    });
+
+    return friendshipId;
+  },
+});
+
+/**
  * Send "friend request accepted" email notification.
  * Called internally when a friend request is accepted (manually or auto-accepted).
  * Includes kid first names so the recipient knows whose calendars they can view.

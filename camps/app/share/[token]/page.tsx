@@ -1,28 +1,39 @@
 'use client';
 
-import { useQuery } from 'convex/react';
+import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import Link from 'next/link';
-import { use, useEffect, useState } from 'react';
+import { use, useEffect, useRef, useState } from 'react';
+import { useAuth } from '@workos-inc/authkit-nextjs/components';
 import { useMarket } from '@/hooks/useMarket';
 
 export default function SharedPlanPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params);
+  const { user } = useAuth();
+  const isLoggedIn = !!user;
   const plan = useQuery(api.share.queries.getSharedPlan, { shareToken: token });
+  const connectFromShareToken = useMutation(api.social.mutations.connectFromShareToken);
+  const connectCalledRef = useRef(false);
   const market = useMarket();
 
-  // Set referral cookie when viewing shared plan (for attribution)
+  // Set referral cookie and share token cookie when viewing shared plan
   useEffect(() => {
     if (plan?.referralCode) {
       fetch('/api/referral', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: plan.referralCode }),
-      }).catch(() => {
-        // Silently fail - referral attribution is not critical
-      });
+        body: JSON.stringify({ code: plan.referralCode, shareToken: token, shareType: 'child' }),
+      }).catch(() => {});
     }
-  }, [plan?.referralCode]);
+  }, [plan?.referralCode, token]);
+
+  // Auto-connect friendship for authenticated users
+  useEffect(() => {
+    if (isLoggedIn && plan && !connectCalledRef.current) {
+      connectCalledRef.current = true;
+      connectFromShareToken({ shareToken: token, tokenType: 'child' }).catch(() => {});
+    }
+  }, [isLoggedIn, plan, token, connectFromShareToken]);
 
   if (plan === undefined) {
     return (

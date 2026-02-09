@@ -27,7 +27,7 @@ Core user flow: View week-by-week coverage for children (June-August) → identi
 - **Frontend**: Next.js 14 (App Router), React 19, Tailwind CSS v4
 - **Backend**: Convex (real-time database, serverless functions)
 - **Auth**: WorkOS AuthKit
-- **Deployment**: Netlify (frontend) + Convex Cloud (backend)
+- **Deployment**: Netlify (frontend) + Convex Cloud (backend) — middleware is in `proxy.ts` (not `middleware.ts`; Netlify convention)
 - **Analytics**: PostHog
 - **Payments**: Stripe (via @convex-dev/stripe)
 - **Scraping**: Stagehand (browser automation) + Cheerio (HTML parsing) + Claude API
