@@ -101,10 +101,21 @@ crons.interval('recompute weekly availability', { minutes: 30 }, internal.planne
 
 // Backfill camp images every 6 hours
 // Downloads scraped image URLs, then generates AI images for camps without any
+// Automatically skips if fal.ai credits are exhausted (paused flag)
 crons.interval(
   'backfill camp images',
   { hours: 6 },
   internal.scraping.generateImages.startBackfill,
+  {},
+);
+
+// Check fal.ai credit status every hour
+// When credits are exhausted, image generation is paused automatically.
+// This cron checks if credits are restored and resumes generation + sends email.
+crons.interval(
+  'check fal.ai credits',
+  { hours: 1 },
+  internal.scraping.falCreditCheck.checkFalCredits,
   {},
 );
 

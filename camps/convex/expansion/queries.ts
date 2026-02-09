@@ -1,6 +1,7 @@
 import { query } from '../_generated/server';
 import { v } from 'convex/values';
 import { EXPANSION_MARKETS, getExpansionMarketByKey } from '../../lib/expansionMarkets';
+import { sessionsByCityAggregate } from '../lib/sessionAggregate';
 
 /**
  * List all expansion markets with their DB status merged
@@ -26,8 +27,7 @@ export const listExpansionMarkets = query({
     // Batch fetch counts for each city — only collect lightweight tables,
     // count sessions via indexed paginated scan to stay under 16MB read limit
     const statsPromises = cityIds.map(async (cityId) => {
-      // Only collect lightweight tables; count active sessions via narrow index
-      const [sources, directories, activeSessions] = await Promise.all([
+      const [sources, directories, activeSessionCount] = await Promise.all([
         ctx.db
           .query('scrapeSources')
           .withIndex('by_city', (q) => q.eq('cityId', cityId))
@@ -36,10 +36,13 @@ export const listExpansionMarkets = query({
           .query('directories')
           .withIndex('by_city', (q) => q.eq('cityId', cityId))
           .collect(),
-        ctx.db
-          .query('sessions')
-          .withIndex('by_city_and_status', (q) => q.eq('cityId', cityId).eq('status', 'active'))
-          .collect(),
+        sessionsByCityAggregate.count(ctx, {
+          namespace: cityId,
+          bounds: {
+            lower: { key: 'active', inclusive: true },
+            upper: { key: 'active', inclusive: true },
+          },
+        }),
       ]);
 
       const orgIdSet = new Set(sources.map((s) => s.organizationId).filter(Boolean));
@@ -53,7 +56,7 @@ export const listExpansionMarkets = query({
         cityId,
         sources: sources.length,
         orgs: orgCount,
-        sessions: activeSessions.length,
+        sessions: activeSessionCount,
         pipelineStats: {
           directories: {
             total: directories.length,
@@ -72,8 +75,8 @@ export const listExpansionMarkets = query({
             pendingDev: 0,
           },
           sessions: {
-            total: activeSessions.length,
-            active: activeSessions.length,
+            total: activeSessionCount,
+            active: activeSessionCount,
           },
         },
       };
@@ -209,12 +212,14 @@ export const getMarketPipelineStats = query({
       ['pending', 'in_progress', 'testing'].includes(r.status),
     ).length;
 
-    // Query active sessions via narrow index (avoids collecting all sessions)
-    const activeSessions = await ctx.db
-      .query('sessions')
-      .withIndex('by_city_and_status', (q) => q.eq('cityId', args.cityId).eq('status', 'active'))
-      .collect();
-    const activeSessionCount = activeSessions.length;
+    // O(1) active session count from aggregate
+    const activeSessionCount = await sessionsByCityAggregate.count(ctx, {
+      namespace: args.cityId,
+      bounds: {
+        lower: { key: 'active', inclusive: true },
+        upper: { key: 'active', inclusive: true },
+      },
+    });
 
     const withScrapers = activeSources.length;
 

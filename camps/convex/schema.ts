@@ -1163,6 +1163,16 @@ export default defineSchema({
     .index('by_unacknowledged', ['acknowledgedAt'])
     .index('by_severity', ['severity']),
 
+  // ============ SYSTEM FLAGS ============
+  // Simple key-value flags for system-wide state (e.g., fal.ai credit status)
+  systemFlags: defineTable({
+    key: v.string(),
+    value: v.string(),       // "paused" | "active" | etc.
+    updatedAt: v.number(),
+    message: v.optional(v.string()),
+  })
+    .index('by_key', ['key']),
+
   // ============ REVIEWS ============
 
   reviews: defineTable({

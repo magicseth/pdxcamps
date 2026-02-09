@@ -310,6 +310,20 @@ export const generateSingleImage = internalAction({
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       console.error(`[GenerateImages] Failed for ${args.campName}: ${message}`);
+
+      // Detect fal.ai credit exhaustion (Forbidden = no credits)
+      if (message.includes('Forbidden') || message.includes('403')) {
+        // Trigger pause + email notification (fire and forget)
+        await ctx.runAction(internal.scraping.falCreditCheck.pauseAndNotify, {});
+        return {
+          success: false,
+          campId: args.campId,
+          campName: args.campName,
+          storageId: null,
+          error: 'FAL_CREDITS_EXHAUSTED',
+        };
+      }
+
       return {
         success: false,
         campId: args.campId,
@@ -556,7 +570,11 @@ export const generatePromptAndImage = internalAction({
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
-      return { success: false, campName: args.campId, error: message };
+      // Propagate credit exhaustion so the workflow can stop
+      if (message.includes('Forbidden') || message.includes('403') || message.includes('FAL_CREDITS_EXHAUSTED')) {
+        return { success: false, campName: args.campId as string, error: 'FAL_CREDITS_EXHAUSTED' };
+      }
+      return { success: false, campName: args.campId as string, error: message };
     }
   },
 });
@@ -578,6 +596,15 @@ export const startBackfill = internalAction({
     workflowId: string;
     campsQueued: number;
   }> => {
+    // Check if image generation is paused due to credit exhaustion
+    const flag = await ctx.runQuery(internal.scraping.falCreditQueries.getFlag, {
+      key: 'fal_image_generation',
+    });
+    if (flag?.value === 'paused') {
+      console.log('[Backfill] Skipping — fal.ai credits exhausted (paused)');
+      return { workflowId: 'skipped', campsQueued: 0 };
+    }
+
     const limit = args.limit ?? 10000;
 
     // Get camps needing AI generation (no URLs and no stored images)

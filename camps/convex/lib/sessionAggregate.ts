@@ -34,6 +34,24 @@ export const sessionsBySourceAggregate = new TableAggregate<{
 });
 
 /**
+ * Aggregate for counting sessions by cityId.
+ *
+ * Namespace: cityId (string) - sessions are partitioned by their city
+ * Key: status (string) - allows bounded count for active-only queries
+ * SumValue: 1 for each session (gives us count via sum)
+ */
+export const sessionsByCityAggregate = new TableAggregate<{
+  Namespace: string;
+  Key: string;
+  DataModel: DataModel;
+  TableName: 'sessions';
+}>(components.sessionsByCity, {
+  namespace: (doc) => doc.cityId,
+  sortKey: (doc) => doc.status,
+  sumValue: () => 1,
+});
+
+/**
  * Get the namespace key for a session's sourceId.
  * Sessions without a sourceId are grouped under "none".
  */

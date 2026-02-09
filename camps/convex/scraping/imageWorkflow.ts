@@ -72,6 +72,12 @@ export const generateImagesWorkflow = workflow.define({
       } else {
         failed++;
         results.push({ campName: campInfo.campName, success: false, error: result.error });
+
+        // Stop processing if credits are exhausted
+        if (result.error === 'FAL_CREDITS_EXHAUSTED') {
+          console.log(`[GenerateImages] Credits exhausted — stopping workflow.`);
+          break;
+        }
       }
     }
 
@@ -133,6 +139,12 @@ export const backfillImagesWorkflow = workflow.define({
       } else {
         failed++;
         console.log(`[Backfill] Failed: ${result.campName} — ${result.error}`);
+
+        // Stop processing if credits are exhausted
+        if (result.error === 'FAL_CREDITS_EXHAUSTED') {
+          console.log(`[Backfill] Credits exhausted — stopping workflow. ${completed} completed, ${failed} failed, ${args.campIds.length - completed - failed} skipped.`);
+          break;
+        }
       }
     }
 

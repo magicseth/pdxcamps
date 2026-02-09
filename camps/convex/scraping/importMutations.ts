@@ -8,7 +8,7 @@
 import { mutation, internalMutation } from '../_generated/server';
 import { internal } from '../_generated/api';
 import { v } from 'convex/values';
-import { sessionsBySourceAggregate } from '../lib/sessionAggregate';
+import { sessionsBySourceAggregate, sessionsByCityAggregate } from '../lib/sessionAggregate';
 
 /**
  * Update session aggregate count - scheduled separately to avoid write conflicts
@@ -20,6 +20,7 @@ export const updateSessionAggregate = internalMutation({
     const doc = await ctx.db.get(args.sessionId);
     if (doc) {
       await sessionsBySourceAggregate.insert(ctx, doc);
+      await sessionsByCityAggregate.insert(ctx, doc);
     }
   },
 });
@@ -507,8 +508,9 @@ export const deleteSessionWithAggregate = internalMutation({
     const session = await ctx.db.get(args.sessionId);
     if (!session) return;
 
-    // Remove from aggregate
+    // Remove from aggregates
     await sessionsBySourceAggregate.delete(ctx, session);
+    await sessionsByCityAggregate.delete(ctx, session);
 
     // Delete the session
     await ctx.db.delete(args.sessionId);
@@ -541,6 +543,7 @@ export const backfillSessionAggregate = internalMutation({
     for (const session of toProcess) {
       try {
         await sessionsBySourceAggregate.insert(ctx, session);
+        await sessionsByCityAggregate.insert(ctx, session);
         processed++;
       } catch (e) {
         // Item might already exist in aggregate, skip
@@ -578,6 +581,67 @@ export const rebuildSessionAggregate = internalMutation({
 
     for (const session of sessions) {
       await sessionsBySourceAggregate.insert(ctx, session);
+    }
+
+    return { rebuilt: sessions.length };
+  },
+});
+
+/**
+ * Backfill the sessions-by-city aggregate from existing sessions.
+ * Run this once after deploying. Processes in batches to avoid timeout.
+ * Call repeatedly until done.
+ */
+export const backfillSessionByCityAggregate = internalMutation({
+  args: {
+    cursor: v.optional(v.string()),
+    batchSize: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const batchSize = args.batchSize ?? 100;
+
+    const sessions = await ctx.db.query('sessions').take(batchSize + 1);
+    const hasMore = sessions.length > batchSize;
+    const toProcess = hasMore ? sessions.slice(0, batchSize) : sessions;
+
+    let processed = 0;
+    for (const session of toProcess) {
+      try {
+        await sessionsByCityAggregate.insert(ctx, session);
+        processed++;
+      } catch (e) {
+        // Item might already exist in aggregate, skip
+        console.log(`Skipping session ${session._id}: ${e}`);
+      }
+    }
+
+    return {
+      processed,
+      hasMore,
+      nextCursor: hasMore ? toProcess[toProcess.length - 1]._id : undefined,
+    };
+  },
+});
+
+/**
+ * Rebuild the sessions-by-city aggregate for a specific city.
+ */
+export const rebuildSessionByCityAggregate = internalMutation({
+  args: {
+    cityId: v.id('cities'),
+  },
+  handler: async (ctx, args) => {
+    await sessionsByCityAggregate.clear(ctx, {
+      namespace: args.cityId,
+    });
+
+    const sessions = await ctx.db
+      .query('sessions')
+      .withIndex('by_city_and_status', (q) => q.eq('cityId', args.cityId))
+      .collect();
+
+    for (const session of sessions) {
+      await sessionsByCityAggregate.insert(ctx, session);
     }
 
     return { rebuilt: sessions.length };

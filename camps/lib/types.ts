@@ -17,6 +17,14 @@ export interface ChildCoverage {
     organizationLogoUrl?: string | null;
     status: string;
     registrationUrl?: string | null;
+    locationName?: string | null;
+    price?: number | null;
+    startDate?: string;
+    endDate?: string;
+    minAge?: number | null;
+    maxAge?: number | null;
+    minGrade?: number | null;
+    maxGrade?: number | null;
   }[];
   events: {
     eventId: Id<'familyEvents'>;

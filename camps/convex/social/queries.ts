@@ -548,6 +548,14 @@ export const getFriendCalendarsForPlanner = query({
                   status: r.status,
                   overlappingDays,
                   registrationUrl: session.externalRegistrationUrl ?? null,
+                  locationName: session.locationName ?? null,
+                  price: session.price ?? null,
+                  startDate: session.startDate,
+                  endDate: session.endDate,
+                  minAge: session.ageRequirements?.minAge ?? null,
+                  maxAge: session.ageRequirements?.maxAge ?? null,
+                  minGrade: session.ageRequirements?.minGrade ?? null,
+                  maxGrade: session.ageRequirements?.maxGrade ?? null,
                 };
               })
               .filter((r): r is NonNullable<typeof r> => r !== null);

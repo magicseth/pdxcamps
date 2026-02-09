@@ -10,6 +10,7 @@ app.use(workflow);
 app.use(stripe);
 app.use(resend);
 app.use(aggregate, { name: 'sessionsBySource' });
+app.use(aggregate, { name: 'sessionsByCity' });
 app.use(rateLimiter);
 
 export default app;

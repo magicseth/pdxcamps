@@ -444,6 +444,7 @@ export function PlannerGrid({
           weeksByMonth={weeksByMonth}
           isCurrentWeek={isCurrentWeek}
           isPastWeek={isPastWeek}
+          myChildren={children}
         />
       )}
     </>
@@ -764,6 +765,7 @@ export function PlannerGrid({
         weeksByMonth={weeksByMonth}
         isCurrentWeek={isCurrentWeek}
         isPastWeek={isPastWeek}
+        myChildren={children}
       />
     )}
     </>
@@ -797,6 +799,7 @@ function FriendCalendarSection({
   weeksByMonth,
   isCurrentWeek,
   isPastWeek,
+  myChildren,
 }: {
   friendCalendars: FriendCalendarData[];
   hiddenFriends: Set<string>;
@@ -806,8 +809,36 @@ function FriendCalendarSection({
   weeksByMonth: [string, WeekData[]][];
   isCurrentWeek: (week: WeekData) => boolean;
   isPastWeek: (week: WeekData) => boolean;
+  myChildren: {
+    _id: Id<'children'>;
+    firstName: string;
+    birthdate?: string;
+    currentGrade?: number;
+    color?: string;
+  }[];
 }) {
+  const [selectedFriendCamp, setSelectedFriendCamp] = useState<{
+    registration: ChildCoverage['registrations'][0];
+    friendName: string;
+    cellRect: { top: number; left: number; width: number; height: number };
+  } | null>(null);
+
   if (friendCalendars.length === 0) return null;
+
+  const handleFriendCellClick = (
+    data: ChildCoverage | null,
+    friendName: string,
+    e: React.MouseEvent,
+  ) => {
+    if (!data || data.registrations.length === 0) return;
+    const reg = data.registrations[0];
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setSelectedFriendCamp({
+      registration: reg,
+      friendName,
+      cellRect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+    });
+  };
 
   return (
     <>
@@ -849,7 +880,6 @@ function FriendCalendarSection({
                 {/* Mobile layout */}
                 <div className="md:hidden space-y-0">
                   {weeksByMonth.map(([month, weeks]) => {
-                    // Find matching friend weeks for this month
                     const friendWeeksForMonth = weeks.map((week) => {
                       return friend.coverage.find((fw) => fw.week.startDate === week.week.startDate);
                     });
@@ -892,12 +922,22 @@ function FriendCalendarSection({
                                     const childCov = friendWeek?.childCoverage.find(
                                       (c) => c.childId === child.childId,
                                     );
+                                    const hasCamp = childCov && childCov.registrations.length > 0;
                                     return (
                                       <td
                                         key={weekKey}
                                         className="border-b border-l border-slate-100 dark:border-slate-700/50 p-0"
                                       >
-                                        <FriendCoverageCell data={childCov ?? null} />
+                                        {hasCamp ? (
+                                          <button
+                                            className="w-full h-full cursor-pointer hover:ring-2 hover:ring-primary/50 hover:ring-inset transition-all"
+                                            onClick={(e) => handleFriendCellClick(childCov, friend.displayName, e)}
+                                          >
+                                            <FriendCoverageCell data={childCov ?? null} />
+                                          </button>
+                                        ) : (
+                                          <FriendCoverageCell data={childCov ?? null} />
+                                        )}
                                       </td>
                                     );
                                   })}
@@ -914,13 +954,46 @@ function FriendCalendarSection({
                 {/* Desktop layout */}
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full border-collapse">
-                    {/* Invisible header row to establish column widths matching the main grid */}
-                    <thead className="h-0 overflow-hidden" aria-hidden="true">
-                      <tr>
-                        <th className="min-w-[120px] w-[120px] p-0 border-0" />
-                        {coverage.map((week) => (
-                          <th key={week.week.startDate} className="min-w-[48px] p-0 border-0" />
+                    {/* Visible month + week headers matching the main grid */}
+                    <thead>
+                      <tr className="bg-slate-100/80 dark:bg-slate-900/80">
+                        <th className="sticky left-0 z-10 bg-slate-100/80 dark:bg-slate-900/80 px-4 py-1.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide border-b border-slate-200 dark:border-slate-700 min-w-[120px]" />
+                        {weeksByMonth.map(([month, weeks]) => (
+                          <th
+                            key={month}
+                            colSpan={weeks.length}
+                            className="px-2 py-1.5 text-center text-xs font-semibold text-slate-600 dark:text-slate-400 border-b border-l border-slate-200 dark:border-slate-700"
+                          >
+                            {month}
+                          </th>
                         ))}
+                      </tr>
+                      <tr className="bg-slate-50/80 dark:bg-slate-800/50">
+                        <th className="sticky left-0 z-10 bg-slate-50/80 dark:bg-slate-800/50 px-4 py-1 text-left text-xs font-medium text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700 min-w-[120px]" />
+                        {coverage.map((week) => {
+                          const current = isCurrentWeek(week);
+                          const past = isPastWeek(week);
+                          const isMonthStart = monthStartDates.has(week.week.startDate);
+                          return (
+                            <th
+                              key={week.week.startDate}
+                              className={`px-1 py-1 text-center text-[10px] border-b border-slate-200 dark:border-slate-700 min-w-[48px] ${
+                                isMonthStart
+                                  ? 'border-l border-l-slate-300 dark:border-l-slate-600'
+                                  : 'border-l border-l-slate-200 dark:border-l-slate-700'
+                              } ${
+                                current
+                                  ? 'bg-primary/15 dark:bg-primary-dark/25 text-primary-dark dark:text-white/60 font-bold'
+                                  : past
+                                    ? 'text-slate-400 dark:text-slate-500'
+                                    : 'text-slate-500 dark:text-slate-400'
+                              }`}
+                              title={`${week.week.startDate} - ${week.week.endDate}`}
+                            >
+                              {week.week.label.split(' ')[0]}
+                            </th>
+                          );
+                        })}
                       </tr>
                     </thead>
                     <tbody>
@@ -945,6 +1018,7 @@ function FriendCalendarSection({
                               (c) => c.childId === child.childId,
                             );
                             const isMonthStart = monthStartDates.has(week.week.startDate);
+                            const hasCamp = childCov && childCov.registrations.length > 0;
                             return (
                               <td
                                 key={week.week.startDate}
@@ -954,7 +1028,16 @@ function FriendCalendarSection({
                                     : 'border-l border-l-slate-100 dark:border-l-slate-700/50'
                                 }`}
                               >
-                                <FriendCoverageCell data={childCov ?? null} />
+                                {hasCamp ? (
+                                  <button
+                                    className="w-full h-full cursor-pointer hover:ring-2 hover:ring-primary/50 hover:ring-inset transition-all"
+                                    onClick={(e) => handleFriendCellClick(childCov, friend.displayName, e)}
+                                  >
+                                    <FriendCoverageCell data={childCov ?? null} />
+                                  </button>
+                                ) : (
+                                  <FriendCoverageCell data={childCov ?? null} />
+                                )}
                               </td>
                             );
                           })}
@@ -968,7 +1051,236 @@ function FriendCalendarSection({
           </div>
         );
       })}
+
+      {/* Friend camp detail popover */}
+      {selectedFriendCamp && (
+        <FriendCampPopover
+          registration={selectedFriendCamp.registration}
+          friendName={selectedFriendCamp.friendName}
+          myChildren={myChildren}
+          onClose={() => setSelectedFriendCamp(null)}
+        />
+      )}
     </>
+  );
+}
+
+// Popover showing friend's camp details with quick-add for own children
+function FriendCampPopover({
+  registration,
+  friendName,
+  myChildren,
+  onClose,
+}: {
+  registration: ChildCoverage['registrations'][0];
+  friendName: string;
+  myChildren: {
+    _id: Id<'children'>;
+    firstName: string;
+    birthdate?: string;
+    currentGrade?: number;
+    color?: string;
+  }[];
+  onClose: () => void;
+}) {
+  const markInterested = useMutation(api.registrations.mutations.markInterested);
+  const [savingChildId, setSavingChildId] = useState<Id<'children'> | null>(null);
+  const [savedChildIds, setSavedChildIds] = useState<Set<string>>(new Set());
+  const [error, setError] = useState<string | null>(null);
+
+  // Close on Escape
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
+
+  const checkEligibility = (child: { birthdate?: string; currentGrade?: number }): { eligible: boolean; reason?: string } => {
+    if (!child.birthdate) return { eligible: true };
+    const birthDate = new Date(child.birthdate);
+    const now = new Date();
+    let age = now.getFullYear() - birthDate.getFullYear();
+    const monthDiff = now.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birthDate.getDate())) age--;
+
+    if (registration.minAge != null && age < registration.minAge) {
+      return { eligible: false, reason: `Too young (${age}y, needs ${registration.minAge}+)` };
+    }
+    if (registration.maxAge != null && age > registration.maxAge) {
+      return { eligible: false, reason: `Too old (${age}y, max ${registration.maxAge})` };
+    }
+    if (child.currentGrade !== undefined) {
+      if (registration.minGrade != null && child.currentGrade < registration.minGrade) {
+        return { eligible: false, reason: `Grade too low` };
+      }
+      if (registration.maxGrade != null && child.currentGrade > registration.maxGrade) {
+        return { eligible: false, reason: `Grade too high` };
+      }
+    }
+    return { eligible: true };
+  };
+
+  const handleSave = async (childId: Id<'children'>) => {
+    setSavingChildId(childId);
+    setError(null);
+    try {
+      await markInterested({
+        childId,
+        sessionId: registration.sessionId as Id<'sessions'>,
+        notes: `Saving to go with ${friendName}'s kid`,
+      });
+      setSavedChildIds((prev) => new Set([...prev, childId]));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to save';
+      if (msg.includes('PAYWALL') || msg.includes('already')) {
+        setError(msg.includes('PAYWALL') ? 'Upgrade to save more camps' : 'Already saved');
+      } else {
+        setError(msg);
+      }
+    } finally {
+      setSavingChildId(null);
+    }
+  };
+
+  const formatPrice = (price: number) => {
+    if (price === 0) return 'Free';
+    return `$${price}`;
+  };
+
+  const formatDates = (start?: string, end?: string) => {
+    if (!start || !end) return null;
+    try {
+      const s = new Date(start + 'T12:00:00');
+      const e = new Date(end + 'T12:00:00');
+      const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+      if (s.getMonth() === e.getMonth()) {
+        return `${s.toLocaleDateString('en-US', opts)} - ${e.getDate()}`;
+      }
+      return `${s.toLocaleDateString('en-US', opts)} - ${e.toLocaleDateString('en-US', opts)}`;
+    } catch {
+      return `${start} - ${end}`;
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-sm w-full p-5 animate-in fade-in zoom-in-95 duration-150">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-slate-900 dark:text-white truncate">
+              {registration.campName}
+            </h3>
+            {registration.organizationName && (
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                {registration.organizationName}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={onClose}
+            className="ml-2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Details */}
+        <div className="space-y-1.5 mb-4">
+          {registration.locationName && (
+            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span>{registration.locationName}</span>
+            </div>
+          )}
+          {registration.price != null && (
+            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{formatPrice(registration.price)}</span>
+            </div>
+          )}
+          {formatDates(registration.startDate, registration.endDate) && (
+            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span>{formatDates(registration.startDate, registration.endDate)}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Save for my kids */}
+        {myChildren.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+              Save for your kids
+            </p>
+            <div className="space-y-1.5">
+              {myChildren.map((child) => {
+                const { eligible, reason } = checkEligibility(child);
+                const isSaved = savedChildIds.has(child._id);
+                const isSaving = savingChildId === child._id;
+
+                return (
+                  <div
+                    key={child._id}
+                    className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-700/50"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                        style={{ backgroundColor: child.color || '#94a3b8' }}
+                      >
+                        {child.firstName[0]}
+                      </span>
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
+                        {child.firstName}
+                      </span>
+                    </div>
+                    {isSaved ? (
+                      <span className="text-xs font-medium text-green-600 dark:text-green-400 flex items-center gap-1">
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Saved
+                      </span>
+                    ) : !eligible ? (
+                      <span className="text-[11px] text-slate-400">{reason}</span>
+                    ) : (
+                      <button
+                        onClick={() => handleSave(child._id)}
+                        disabled={isSaving}
+                        className="text-xs font-medium px-3 py-1 rounded-md bg-primary text-white hover:bg-primary-dark disabled:opacity-50 transition-colors"
+                      >
+                        {isSaving ? '...' : 'Add'}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <p className="mt-3 text-xs text-red-600 dark:text-red-400 text-center">{error}</p>
+        )}
+      </div>
+    </div>
   );
 }
 
