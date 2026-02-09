@@ -914,6 +914,15 @@ function FriendCalendarSection({
                 {/* Desktop layout */}
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full border-collapse">
+                    {/* Invisible header row to establish column widths matching the main grid */}
+                    <thead className="h-0 overflow-hidden" aria-hidden="true">
+                      <tr>
+                        <th className="min-w-[120px] w-[120px] p-0 border-0" />
+                        {coverage.map((week) => (
+                          <th key={week.week.startDate} className="min-w-[48px] p-0 border-0" />
+                        ))}
+                      </tr>
+                    </thead>
                     <tbody>
                       {friend.children.map((child, ci) => (
                         <tr
@@ -939,7 +948,7 @@ function FriendCalendarSection({
                             return (
                               <td
                                 key={week.week.startDate}
-                                className={`border-b border-slate-100 dark:border-slate-700/50 p-0 ${
+                                className={`border-b border-slate-100 dark:border-slate-700/50 p-0 min-w-[48px] ${
                                   isMonthStart
                                     ? 'border-l border-l-slate-300 dark:border-l-slate-600'
                                     : 'border-l border-l-slate-100 dark:border-l-slate-700/50'
