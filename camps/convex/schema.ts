@@ -55,6 +55,8 @@ export default defineSchema({
     onboardingCompletedAt: v.optional(v.number()),
     // Referral tracking - stores the code used to refer this family
     referredByCode: v.optional(v.string()),
+    // Partner attribution - stores the partner code used to refer this family
+    referredByPartnerCode: v.optional(v.string()),
     // Login tracking for re-engagement emails
     lastLoginAt: v.optional(v.number()),
     // Email preferences for digest/marketing emails
@@ -1278,8 +1280,31 @@ export default defineSchema({
     message: v.optional(v.string()),
     status: v.union(v.literal('pending'), v.literal('approved'), v.literal('rejected')),
     createdAt: v.number(),
+    // Approval/tracking fields
+    partnerCode: v.optional(v.string()), // 16-char hex, set on approval
+    approvedAt: v.optional(v.number()),
+    rejectedAt: v.optional(v.number()),
+    totalEarningsCents: v.optional(v.number()),
+    totalPaidOutCents: v.optional(v.number()),
+    lastPayoutAt: v.optional(v.number()),
   })
-    .index('by_email', ['email']),
+    .index('by_email', ['email'])
+    .index('by_partner_code', ['partnerCode'])
+    .index('by_status', ['status']),
+
+  partnerCommissions: defineTable({
+    partnerApplicationId: v.id('partnerApplications'),
+    familyId: v.id('families'),
+    amountCents: v.number(), // what the family paid
+    commissionCents: v.number(), // 20% of amountCents
+    plan: v.string(), // 'monthly', 'summer', 'weekly', 'monthlyOneshot'
+    period: v.string(), // "2026-02" for monthly, "2026-W06" for weekly — dedup key
+    stripeSubscriptionId: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index('by_partner', ['partnerApplicationId'])
+    .index('by_family', ['familyId'])
+    .index('by_partner_and_period', ['partnerApplicationId', 'period']),
 
   // ============ CHURN TRACKING ============
 

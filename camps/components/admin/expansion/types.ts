@@ -49,6 +49,14 @@ export interface MarketWithStatus {
     sessions: number;
   } | null;
 
+  // Pipeline stats (only available if city exists)
+  pipelineStats?: {
+    directories: { total: number; crawled: number; pending: number };
+    organizations: { total: number; withScrapers: number; percentWithScrapers: number };
+    scrapers: { total: number; healthy: number; failing: number; pendingDev: number };
+    sessions: { total: number; active: number };
+  } | null;
+
   // Icon generation
   iconOptions?: string[] | null;
   iconPrompt?: string;

@@ -72,6 +72,23 @@ export function MarketCard({ market, onSelect, isSelected }: MarketCardProps) {
         </div>
       )}
 
+      {/* Pipeline mini-stats */}
+      {market.pipelineStats && (
+        <div className="flex gap-2 text-[10px] mb-2">
+          <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+            {market.pipelineStats.directories.total} dirs
+          </span>
+          <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+            {market.pipelineStats.organizations.percentWithScrapers}% scraped
+          </span>
+          {market.pipelineStats.scrapers.failing > 0 && (
+            <span className="px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300">
+              {market.pipelineStats.scrapers.failing} failing
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Domain info if purchased */}
       {market.selectedDomain && (
         <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">

@@ -28,7 +28,7 @@ export const listExpansionMarkets = query({
 
     // Batch fetch counts for each city
     const statsPromises = cityIds.map(async (cityId) => {
-      const [sources, sessions] = await Promise.all([
+      const [sources, sessions, directories] = await Promise.all([
         ctx.db
           .query('scrapeSources')
           .withIndex('by_city', (q) => q.eq('cityId', cityId))
@@ -37,14 +37,46 @@ export const listExpansionMarkets = query({
           .query('sessions')
           .withIndex('by_city_and_status', (q) => q.eq('cityId', cityId))
           .collect(),
+        ctx.db
+          .query('directories')
+          .withIndex('by_city', (q) => q.eq('cityId', cityId))
+          .collect(),
       ]);
       // Filter orgs that include this cityId
       const orgsInCity = allOrgs.filter((org) => org.cityIds.includes(cityId));
+      const activeSources = sources.filter((s) => s.isActive && (s.scraperCode || s.scraperModule));
+      const healthySources = activeSources.filter((s) => s.scraperHealth.consecutiveFailures < 3);
+      const failingSources = activeSources.filter((s) => s.scraperHealth.consecutiveFailures >= 3);
+      const orgCount = orgsInCity.length;
+
       return {
         cityId,
         sources: sources.length,
-        orgs: orgsInCity.length,
+        orgs: orgCount,
         sessions: sessions.length,
+        // Pipeline stats
+        pipelineStats: {
+          directories: {
+            total: directories.length,
+            crawled: directories.filter((d) => d.status === 'crawled').length,
+            pending: directories.filter((d) => d.status === 'discovered' || d.status === 'crawling').length,
+          },
+          organizations: {
+            total: orgCount,
+            withScrapers: activeSources.length,
+            percentWithScrapers: orgCount > 0 ? Math.round((activeSources.length / orgCount) * 100) : 0,
+          },
+          scrapers: {
+            total: sources.length,
+            healthy: healthySources.length,
+            failing: failingSources.length,
+            pendingDev: 0, // Lightweight — skip dev request count in list view
+          },
+          sessions: {
+            total: sessions.length,
+            active: sessions.filter((s) => s.status === 'active').length,
+          },
+        },
       };
     });
 
@@ -78,6 +110,8 @@ export const listExpansionMarkets = query({
               sessions: stats.sessions,
             }
           : null,
+        // Pipeline stats
+        pipelineStats: stats?.pipelineStats ?? null,
         // Icons
         iconOptions: dbRecord?.iconOptions,
         iconPrompt: dbRecord?.iconPrompt,
@@ -127,6 +161,90 @@ export const getExpansionMarket = query({
       status: dbRecord?.status ?? 'not_started',
       createdAt: dbRecord?.createdAt,
       updatedAt: dbRecord?.updatedAt,
+    };
+  },
+});
+
+/**
+ * Get pipeline stats for a specific market's city
+ */
+export const getMarketPipelineStats = query({
+  args: {
+    cityId: v.id('cities'),
+  },
+  handler: async (ctx, args) => {
+    // Directories
+    const directories = await ctx.db
+      .query('directories')
+      .withIndex('by_city', (q) => q.eq('cityId', args.cityId))
+      .collect();
+
+    const dirStats = {
+      total: directories.length,
+      crawled: directories.filter((d) => d.status === 'crawled').length,
+      pending: directories.filter((d) => d.status === 'discovered' || d.status === 'crawling').length,
+      failed: directories.filter((d) => d.status === 'failed').length,
+    };
+
+    // Organizations (all orgs in this city)
+    const allOrgs = await ctx.db.query('organizations').collect();
+    const orgsInCity = allOrgs.filter((org) => org.cityIds.includes(args.cityId));
+
+    // Scrapers
+    const sources = await ctx.db
+      .query('scrapeSources')
+      .withIndex('by_city', (q) => q.eq('cityId', args.cityId))
+      .collect();
+
+    const activeSources = sources.filter((s) => s.isActive && (s.scraperCode || s.scraperModule));
+    const healthySources = activeSources.filter((s) => s.scraperHealth.consecutiveFailures < 3);
+    const failingSources = activeSources.filter((s) => s.scraperHealth.consecutiveFailures >= 3);
+
+    // Pending dev requests
+    const devRequests = await ctx.db
+      .query('scraperDevelopmentRequests')
+      .withIndex('by_city', (q) => q.eq('cityId', args.cityId))
+      .collect();
+    const pendingDev = devRequests.filter((r) =>
+      ['pending', 'in_progress', 'testing'].includes(r.status),
+    ).length;
+
+    // Sessions
+    const sessions = await ctx.db
+      .query('sessions')
+      .withIndex('by_city_and_status', (q) => q.eq('cityId', args.cityId))
+      .collect();
+    const activeSessions = sessions.filter((s) => s.status === 'active');
+
+    const orgCount = orgsInCity.length;
+    const withScrapers = activeSources.length;
+
+    // Overall health
+    let overallHealth: 'good' | 'warning' | 'critical' = 'good';
+    if (failingSources.length > activeSources.length * 0.3) {
+      overallHealth = 'critical';
+    } else if (failingSources.length > 0 || pendingDev > activeSources.length * 0.5) {
+      overallHealth = 'warning';
+    }
+
+    return {
+      directories: dirStats,
+      organizations: {
+        total: orgCount,
+        withScrapers,
+        percentWithScrapers: orgCount > 0 ? Math.round((withScrapers / orgCount) * 100) : 0,
+      },
+      scrapers: {
+        total: sources.length,
+        healthy: healthySources.length,
+        failing: failingSources.length,
+        pendingDev,
+      },
+      sessions: {
+        total: sessions.length,
+        active: activeSessions.length,
+      },
+      overallHealth,
     };
   },
 });

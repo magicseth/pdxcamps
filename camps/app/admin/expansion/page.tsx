@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Authenticated, Unauthenticated } from 'convex/react';
 import { StatCard, AdminTabs } from '../../../components/admin';
 import { MarketCard, ExpansionWizard, type MarketWithStatus } from '../../../components/admin/expansion';
+import { MarketPipelinePanel } from '../../../components/admin/expansion/MarketPipelinePanel';
 
 export default function ExpansionPage() {
   return (
@@ -45,6 +46,7 @@ export default function ExpansionPage() {
 function ExpansionContent() {
   const [selectedTier, setSelectedTier] = useState<'all' | '1' | '2' | '3'>('all');
   const [selectedMarketKey, setSelectedMarketKey] = useState<string | null>(null);
+  const [expandedPipelineKey, setExpandedPipelineKey] = useState<string | null>(null);
 
   const isAdmin = useQuery(api.admin.queries.isAdmin);
   const summary = useQuery(api.expansion.queries.getExpansionSummary);
@@ -160,15 +162,38 @@ function ExpansionContent() {
 
       {/* Markets Grid */}
       {markets ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {markets.map((market) => (
-            <MarketCard
-              key={market.key}
-              market={market as MarketWithStatus}
-              onSelect={() => setSelectedMarketKey(market.key)}
-              isSelected={selectedMarket?.key === market.key}
-            />
-          ))}
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {markets.map((market) => (
+              <div key={market.key} className="flex flex-col">
+                <MarketCard
+                  market={market as MarketWithStatus}
+                  onSelect={() => {
+                    if (market.cityId) {
+                      // Toggle pipeline panel for markets with a city
+                      setExpandedPipelineKey(
+                        expandedPipelineKey === market.key ? null : market.key,
+                      );
+                    }
+                    setSelectedMarketKey(market.key);
+                  }}
+                  isSelected={selectedMarket?.key === market.key}
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Inline Pipeline Panel — shown below the grid when a market with a city is expanded */}
+          {expandedPipelineKey && (() => {
+            const expandedMarket = markets.find((m) => m.key === expandedPipelineKey) as MarketWithStatus | undefined;
+            if (!expandedMarket?.cityId) return null;
+            return (
+              <MarketPipelinePanel
+                cityId={expandedMarket.cityId}
+                cityName={expandedMarket.name}
+              />
+            );
+          })()}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
