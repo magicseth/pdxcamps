@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
@@ -751,10 +751,22 @@ export function PlannerGrid({
                 ))}
               </tr>
             )}
+            {/* Friend rows rendered inside the same table for perfect column alignment */}
+            {friendCalendars && friendCalendars.length > 0 && hiddenFriends && onToggleFriend && (
+              <InlineFriendRows
+                friendCalendars={friendCalendars}
+                hiddenFriends={hiddenFriends}
+                onToggleFriend={onToggleFriend}
+                coverage={coverage}
+                monthStartDates={monthStartDates}
+                myChildren={children}
+              />
+            )}
           </tbody>
         </table>
       </div>
     </div>
+    {/* Mobile-only friend calendar section (separate tables are fine on mobile) */}
     {friendCalendars && friendCalendars.length > 0 && hiddenFriends && onToggleFriend && (
       <FriendCalendarSection
         friendCalendars={friendCalendars}
@@ -789,16 +801,162 @@ function EyeIcon({ isHidden }: { isHidden: boolean }) {
   );
 }
 
-// Friend calendar section rendered below the main grid
-function FriendCalendarSection({
+// Desktop-only: friend rows rendered inside the main table for perfect column alignment
+function InlineFriendRows({
   friendCalendars,
   hiddenFriends,
   onToggleFriend,
   coverage,
   monthStartDates,
+  myChildren,
+}: {
+  friendCalendars: FriendCalendarData[];
+  hiddenFriends: Set<string>;
+  onToggleFriend: (familyId: string) => void;
+  coverage: WeekData[];
+  monthStartDates: Set<string>;
+  myChildren: {
+    _id: Id<'children'>;
+    firstName: string;
+    birthdate?: string;
+    currentGrade?: number;
+    color?: string;
+  }[];
+}) {
+  const totalCols = coverage.length + 1; // name col + week cols
+
+  const [selectedFriendCamp, setSelectedFriendCamp] = useState<{
+    registration: ChildCoverage['registrations'][0];
+    friendName: string;
+    cellRect: { top: number; left: number; width: number; height: number };
+  } | null>(null);
+
+  const handleFriendCellClick = (
+    data: ChildCoverage | null,
+    friendName: string,
+    e: React.MouseEvent,
+  ) => {
+    if (!data || data.registrations.length === 0) return;
+    const reg = data.registrations[0];
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setSelectedFriendCamp({
+      registration: reg,
+      friendName,
+      cellRect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+    });
+  };
+
+  return (
+    <>
+      {/* Divider row */}
+      <tr>
+        <td colSpan={totalCols} className="p-0">
+          <div className="flex items-center gap-3 my-3 px-2">
+            <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+            <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+              Friends&apos; Plans
+            </span>
+            <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+          </div>
+        </td>
+      </tr>
+
+      {friendCalendars.map((friend) => {
+        const isHidden = hiddenFriends.has(friend.familyId);
+        return (
+          <React.Fragment key={friend.familyId}>
+            {/* Friend header row */}
+            <tr className="bg-slate-50 dark:bg-slate-800/80">
+              <td colSpan={totalCols} className="p-0">
+                <button
+                  onClick={() => onToggleFriend(friend.familyId)}
+                  className="w-full flex items-center gap-2 px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors"
+                >
+                  <span className="w-6 h-6 rounded-full bg-slate-400 dark:bg-slate-600 flex items-center justify-center text-white text-xs font-bold">
+                    {friend.displayName[0]}
+                  </span>
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300 flex-1 text-left">
+                    {friend.displayName}
+                  </span>
+                  <span className="text-slate-400 dark:text-slate-500">
+                    <EyeIcon isHidden={isHidden} />
+                  </span>
+                </button>
+              </td>
+            </tr>
+
+            {/* Friend's children rows */}
+            {!isHidden && friend.children.map((child, ci) => (
+              <tr
+                key={child.childId}
+                className={`opacity-75 ${ci % 2 === 0 ? 'bg-white/60 dark:bg-slate-800/60' : 'bg-slate-50/30 dark:bg-slate-800/30'}`}
+              >
+                <td className="sticky left-0 z-10 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 border-b border-slate-100 dark:border-slate-700/50 bg-inherit">
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center text-white text-xs font-bold">
+                      {child.childName[0]}
+                    </span>
+                    <span>{child.childName}</span>
+                  </div>
+                </td>
+                {coverage.map((week) => {
+                  const friendWeek = friend.coverage.find(
+                    (fw) => fw.week.startDate === week.week.startDate,
+                  );
+                  const childCov = friendWeek?.childCoverage.find(
+                    (c) => c.childId === child.childId,
+                  );
+                  const isMonthStart = monthStartDates.has(week.week.startDate);
+                  const hasCamp = childCov && childCov.registrations.length > 0;
+                  return (
+                    <td
+                      key={week.week.startDate}
+                      className={`border-b border-slate-100 dark:border-slate-700/50 p-0 ${
+                        isMonthStart
+                          ? 'border-l border-l-slate-300 dark:border-l-slate-600'
+                          : 'border-l border-l-slate-100 dark:border-l-slate-700/50'
+                      }`}
+                    >
+                      {hasCamp ? (
+                        <button
+                          className="w-full h-full cursor-pointer hover:ring-2 hover:ring-primary/50 hover:ring-inset transition-all"
+                          onClick={(e) => handleFriendCellClick(childCov, friend.displayName, e)}
+                        >
+                          <FriendCoverageCell data={childCov ?? null} />
+                        </button>
+                      ) : (
+                        <FriendCoverageCell data={childCov ?? null} />
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </React.Fragment>
+        );
+      })}
+
+      {/* Friend camp detail popover */}
+      {selectedFriendCamp && (
+        <tr className="h-0"><td colSpan={totalCols} className="p-0">
+          <FriendCampPopover
+            registration={selectedFriendCamp.registration}
+            friendName={selectedFriendCamp.friendName}
+            myChildren={myChildren}
+            onClose={() => setSelectedFriendCamp(null)}
+          />
+        </td></tr>
+      )}
+    </>
+  );
+}
+
+// Friend calendar section rendered below the main grid (MOBILE ONLY)
+function FriendCalendarSection({
+  friendCalendars,
+  hiddenFriends,
+  onToggleFriend,
   weeksByMonth,
-  isCurrentWeek,
-  isPastWeek,
   myChildren,
 }: {
   friendCalendars: FriendCalendarData[];
@@ -841,7 +999,7 @@ function FriendCalendarSection({
   };
 
   return (
-    <>
+    <div className="md:hidden">
       {/* Divider */}
       <div className="flex items-center gap-3 my-4 px-2">
         <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
@@ -856,7 +1014,7 @@ function FriendCalendarSection({
         return (
           <div
             key={friend.familyId}
-            className="md:bg-white/60 md:dark:bg-slate-800/60 md:rounded-xl md:border md:border-slate-200 md:dark:border-slate-700 overflow-hidden md:shadow-sm mb-3 opacity-75"
+            className="overflow-hidden mb-3 opacity-75"
           >
             {/* Friend header with toggle */}
             <button
@@ -874,179 +1032,80 @@ function FriendCalendarSection({
               </span>
             </button>
 
-            {/* Friend's children rows - only shown when not hidden */}
+            {/* Friend's children rows - mobile only */}
             {!isHidden && (
-              <>
-                {/* Mobile layout */}
-                <div className="md:hidden space-y-0">
-                  {weeksByMonth.map(([month, weeks]) => {
-                    const friendWeeksForMonth = weeks.map((week) => {
-                      return friend.coverage.find((fw) => fw.week.startDate === week.week.startDate);
-                    });
-                    return (
-                      <div key={month}>
-                        <div className="px-4 py-1.5 text-center text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
-                          {month}
-                        </div>
-                        <div className="overflow-x-auto">
-                          <table className="w-full border-collapse">
-                            <thead>
-                              <tr className="bg-slate-50 dark:bg-slate-800/50">
-                                <th className="sticky left-0 z-10 bg-slate-50 dark:bg-slate-800/50 px-3 py-1 text-left text-xs font-medium text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700 min-w-[90px]" />
-                                {weeks.map((week) => (
-                                  <th
-                                    key={week.week.startDate}
-                                    className="px-1 py-1 text-center text-[10px] border-b border-l border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500"
-                                  >
-                                    {week.week.label.split(' ')[0]}
-                                  </th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {friend.children.map((child, ci) => (
-                                <tr
-                                  key={child.childId}
-                                  className={ci % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50/50 dark:bg-slate-800/50'}
-                                >
-                                  <td className="sticky left-0 z-10 px-3 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 border-b border-slate-100 dark:border-slate-700/50 bg-inherit">
-                                    <div className="flex items-center gap-1.5">
-                                      <span className="w-5 h-5 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
-                                        {child.childName[0]}
-                                      </span>
-                                      <span className="truncate text-xs">{child.childName}</span>
-                                    </div>
-                                  </td>
-                                  {friendWeeksForMonth.map((friendWeek, wi) => {
-                                    const weekKey = weeks[wi].week.startDate;
-                                    const childCov = friendWeek?.childCoverage.find(
-                                      (c) => c.childId === child.childId,
-                                    );
-                                    const hasCamp = childCov && childCov.registrations.length > 0;
-                                    return (
-                                      <td
-                                        key={weekKey}
-                                        className="border-b border-l border-slate-100 dark:border-slate-700/50 p-0"
-                                      >
-                                        {hasCamp ? (
-                                          <button
-                                            className="w-full h-full cursor-pointer hover:ring-2 hover:ring-primary/50 hover:ring-inset transition-all"
-                                            onClick={(e) => handleFriendCellClick(childCov, friend.displayName, e)}
-                                          >
-                                            <FriendCoverageCell data={childCov ?? null} />
-                                          </button>
-                                        ) : (
-                                          <FriendCoverageCell data={childCov ?? null} />
-                                        )}
-                                      </td>
-                                    );
-                                  })}
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
+              <div className="space-y-0">
+                {weeksByMonth.map(([month, weeks]) => {
+                  const friendWeeksForMonth = weeks.map((week) => {
+                    return friend.coverage.find((fw) => fw.week.startDate === week.week.startDate);
+                  });
+                  return (
+                    <div key={month}>
+                      <div className="px-4 py-1.5 text-center text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
+                        {month}
                       </div>
-                    );
-                  })}
-                </div>
-
-                {/* Desktop layout */}
-                <div className="hidden md:block overflow-x-auto">
-                  <table className="w-full border-collapse">
-                    {/* Visible month + week headers matching the main grid */}
-                    <thead>
-                      <tr className="bg-slate-100/80 dark:bg-slate-900/80">
-                        <th className="sticky left-0 z-10 bg-slate-100/80 dark:bg-slate-900/80 px-4 py-1.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide border-b border-slate-200 dark:border-slate-700 min-w-[120px]" />
-                        {weeksByMonth.map(([month, weeks]) => (
-                          <th
-                            key={month}
-                            colSpan={weeks.length}
-                            className="px-2 py-1.5 text-center text-xs font-semibold text-slate-600 dark:text-slate-400 border-b border-l border-slate-200 dark:border-slate-700"
-                          >
-                            {month}
-                          </th>
-                        ))}
-                      </tr>
-                      <tr className="bg-slate-50/80 dark:bg-slate-800/50">
-                        <th className="sticky left-0 z-10 bg-slate-50/80 dark:bg-slate-800/50 px-4 py-1 text-left text-xs font-medium text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700 min-w-[120px]" />
-                        {coverage.map((week) => {
-                          const current = isCurrentWeek(week);
-                          const past = isPastWeek(week);
-                          const isMonthStart = monthStartDates.has(week.week.startDate);
-                          return (
-                            <th
-                              key={week.week.startDate}
-                              className={`px-1 py-1 text-center text-[10px] border-b border-slate-200 dark:border-slate-700 min-w-[48px] ${
-                                isMonthStart
-                                  ? 'border-l border-l-slate-300 dark:border-l-slate-600'
-                                  : 'border-l border-l-slate-200 dark:border-l-slate-700'
-                              } ${
-                                current
-                                  ? 'bg-primary/15 dark:bg-primary-dark/25 text-primary-dark dark:text-white/60 font-bold'
-                                  : past
-                                    ? 'text-slate-400 dark:text-slate-500'
-                                    : 'text-slate-500 dark:text-slate-400'
-                              }`}
-                              title={`${week.week.startDate} - ${week.week.endDate}`}
-                            >
-                              {week.week.label.split(' ')[0]}
-                            </th>
-                          );
-                        })}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {friend.children.map((child, ci) => (
-                        <tr
-                          key={child.childId}
-                          className={ci % 2 === 0 ? 'bg-white/60 dark:bg-slate-800/60' : 'bg-slate-50/30 dark:bg-slate-800/30'}
-                        >
-                          <td className="sticky left-0 z-10 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 border-b border-slate-100 dark:border-slate-700/50 bg-inherit min-w-[120px]">
-                            <div className="flex items-center gap-2">
-                              <span className="w-6 h-6 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center text-white text-xs font-bold">
-                                {child.childName[0]}
-                              </span>
-                              <span>{child.childName}</span>
-                            </div>
-                          </td>
-                          {coverage.map((week) => {
-                            const friendWeek = friend.coverage.find(
-                              (fw) => fw.week.startDate === week.week.startDate,
-                            );
-                            const childCov = friendWeek?.childCoverage.find(
-                              (c) => c.childId === child.childId,
-                            );
-                            const isMonthStart = monthStartDates.has(week.week.startDate);
-                            const hasCamp = childCov && childCov.registrations.length > 0;
-                            return (
-                              <td
-                                key={week.week.startDate}
-                                className={`border-b border-slate-100 dark:border-slate-700/50 p-0 min-w-[48px] ${
-                                  isMonthStart
-                                    ? 'border-l border-l-slate-300 dark:border-l-slate-600'
-                                    : 'border-l border-l-slate-100 dark:border-l-slate-700/50'
-                                }`}
+                      <div className="overflow-x-auto">
+                        <table className="w-full border-collapse">
+                          <thead>
+                            <tr className="bg-slate-50 dark:bg-slate-800/50">
+                              <th className="sticky left-0 z-10 bg-slate-50 dark:bg-slate-800/50 px-3 py-1 text-left text-xs font-medium text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700 min-w-[90px]" />
+                              {weeks.map((week) => (
+                                <th
+                                  key={week.week.startDate}
+                                  className="px-1 py-1 text-center text-[10px] border-b border-l border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500"
+                                >
+                                  {week.week.label.split(' ')[0]}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {friend.children.map((child, ci) => (
+                              <tr
+                                key={child.childId}
+                                className={ci % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50/50 dark:bg-slate-800/50'}
                               >
-                                {hasCamp ? (
-                                  <button
-                                    className="w-full h-full cursor-pointer hover:ring-2 hover:ring-primary/50 hover:ring-inset transition-all"
-                                    onClick={(e) => handleFriendCellClick(childCov, friend.displayName, e)}
-                                  >
-                                    <FriendCoverageCell data={childCov ?? null} />
-                                  </button>
-                                ) : (
-                                  <FriendCoverageCell data={childCov ?? null} />
-                                )}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
+                                <td className="sticky left-0 z-10 px-3 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 border-b border-slate-100 dark:border-slate-700/50 bg-inherit">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="w-5 h-5 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+                                      {child.childName[0]}
+                                    </span>
+                                    <span className="truncate text-xs">{child.childName}</span>
+                                  </div>
+                                </td>
+                                {friendWeeksForMonth.map((friendWeek, wi) => {
+                                  const weekKey = weeks[wi].week.startDate;
+                                  const childCov = friendWeek?.childCoverage.find(
+                                    (c) => c.childId === child.childId,
+                                  );
+                                  const hasCamp = childCov && childCov.registrations.length > 0;
+                                  return (
+                                    <td
+                                      key={weekKey}
+                                      className="border-b border-l border-slate-100 dark:border-slate-700/50 p-0"
+                                    >
+                                      {hasCamp ? (
+                                        <button
+                                          className="w-full h-full cursor-pointer hover:ring-2 hover:ring-primary/50 hover:ring-inset transition-all"
+                                          onClick={(e) => handleFriendCellClick(childCov, friend.displayName, e)}
+                                        >
+                                          <FriendCoverageCell data={childCov ?? null} />
+                                        </button>
+                                      ) : (
+                                        <FriendCoverageCell data={childCov ?? null} />
+                                      )}
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         );
@@ -1061,7 +1120,7 @@ function FriendCalendarSection({
           onClose={() => setSelectedFriendCamp(null)}
         />
       )}
-    </>
+    </div>
   );
 }
 
