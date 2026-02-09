@@ -23,38 +23,49 @@ export const listExpansionMarkets = query({
     // Get stats for all cities that have been created
     const cityIds = dbRecords.filter((r) => r.cityId).map((r) => r.cityId!);
 
-    // Fetch all orgs once (they have cityIds array, no index)
-    const allOrgs = await ctx.db.query('organizations').collect();
-
-    // Batch fetch counts for each city
+    // Batch fetch counts for each city — only collect lightweight tables,
+    // count sessions via indexed paginated scan to stay under 16MB read limit
     const statsPromises = cityIds.map(async (cityId) => {
-      const [sources, sessions, directories] = await Promise.all([
+      const [sources, directories] = await Promise.all([
         ctx.db
           .query('scrapeSources')
           .withIndex('by_city', (q) => q.eq('cityId', cityId))
-          .collect(),
-        ctx.db
-          .query('sessions')
-          .withIndex('by_city_and_status', (q) => q.eq('cityId', cityId))
           .collect(),
         ctx.db
           .query('directories')
           .withIndex('by_city', (q) => q.eq('cityId', cityId))
           .collect(),
       ]);
-      // Filter orgs that include this cityId
-      const orgsInCity = allOrgs.filter((org) => org.cityIds.includes(cityId));
+
+      // Count sessions and active sessions without collecting full docs
+      let sessionCount = 0;
+      let activeSessionCount = 0;
+      let done = false;
+      let cursor: string | null = null;
+      while (!done) {
+        const page: { page: { status: string }[]; isDone: boolean; continueCursor: string } = await ctx.db
+          .query('sessions')
+          .withIndex('by_city_and_status', (q) => q.eq('cityId', cityId))
+          .paginate({ numItems: 1000, cursor: cursor as never });
+        sessionCount += page.page.length;
+        activeSessionCount += page.page.filter((s) => s.status === 'active').length;
+        done = page.isDone;
+        cursor = page.continueCursor;
+      }
+
+      // Count orgs by scanning sources' orgIds (lighter than fetching all orgs)
+      const orgIdSet = new Set(sources.map((s) => s.organizationId).filter(Boolean));
+      const orgCount = orgIdSet.size;
+
       const activeSources = sources.filter((s) => s.isActive && (s.scraperCode || s.scraperModule));
       const healthySources = activeSources.filter((s) => s.scraperHealth.consecutiveFailures < 3);
       const failingSources = activeSources.filter((s) => s.scraperHealth.consecutiveFailures >= 3);
-      const orgCount = orgsInCity.length;
 
       return {
         cityId,
         sources: sources.length,
         orgs: orgCount,
-        sessions: sessions.length,
-        // Pipeline stats
+        sessions: sessionCount,
         pipelineStats: {
           directories: {
             total: directories.length,
@@ -70,11 +81,11 @@ export const listExpansionMarkets = query({
             total: sources.length,
             healthy: healthySources.length,
             failing: failingSources.length,
-            pendingDev: 0, // Lightweight — skip dev request count in list view
+            pendingDev: 0,
           },
           sessions: {
-            total: sessions.length,
-            active: sessions.filter((s) => s.status === 'active').length,
+            total: sessionCount,
+            active: activeSessionCount,
           },
         },
       };
@@ -186,37 +197,46 @@ export const getMarketPipelineStats = query({
       failed: directories.filter((d) => d.status === 'failed').length,
     };
 
-    // Organizations (all orgs in this city)
-    const allOrgs = await ctx.db.query('organizations').collect();
-    const orgsInCity = allOrgs.filter((org) => org.cityIds.includes(args.cityId));
+    // Scrapers (also used to derive org count)
+    const [sources, devRequests] = await Promise.all([
+      ctx.db
+        .query('scrapeSources')
+        .withIndex('by_city', (q) => q.eq('cityId', args.cityId))
+        .collect(),
+      ctx.db
+        .query('scraperDevelopmentRequests')
+        .withIndex('by_city', (q) => q.eq('cityId', args.cityId))
+        .collect(),
+    ]);
 
-    // Scrapers
-    const sources = await ctx.db
-      .query('scrapeSources')
-      .withIndex('by_city', (q) => q.eq('cityId', args.cityId))
-      .collect();
+    // Derive org count from scrape sources instead of fetching all orgs
+    const orgIdSet = new Set(sources.map((s) => s.organizationId).filter(Boolean));
+    const orgCount = orgIdSet.size;
 
     const activeSources = sources.filter((s) => s.isActive && (s.scraperCode || s.scraperModule));
     const healthySources = activeSources.filter((s) => s.scraperHealth.consecutiveFailures < 3);
     const failingSources = activeSources.filter((s) => s.scraperHealth.consecutiveFailures >= 3);
 
-    // Pending dev requests
-    const devRequests = await ctx.db
-      .query('scraperDevelopmentRequests')
-      .withIndex('by_city', (q) => q.eq('cityId', args.cityId))
-      .collect();
     const pendingDev = devRequests.filter((r) =>
       ['pending', 'in_progress', 'testing'].includes(r.status),
     ).length;
 
-    // Sessions
-    const sessions = await ctx.db
-      .query('sessions')
-      .withIndex('by_city_and_status', (q) => q.eq('cityId', args.cityId))
-      .collect();
-    const activeSessions = sessions.filter((s) => s.status === 'active');
+    // Count sessions via pagination to avoid 16MB limit
+    let sessionCount = 0;
+    let activeSessionCount = 0;
+    let done = false;
+    let cursor: string | null = null;
+    while (!done) {
+      const page: { page: { status: string }[]; isDone: boolean; continueCursor: string } = await ctx.db
+        .query('sessions')
+        .withIndex('by_city_and_status', (q) => q.eq('cityId', args.cityId))
+        .paginate({ numItems: 1000, cursor: cursor as never });
+      sessionCount += page.page.length;
+      activeSessionCount += page.page.filter((s) => s.status === 'active').length;
+      done = page.isDone;
+      cursor = page.continueCursor;
+    }
 
-    const orgCount = orgsInCity.length;
     const withScrapers = activeSources.length;
 
     // Overall health
@@ -241,8 +261,8 @@ export const getMarketPipelineStats = query({
         pendingDev,
       },
       sessions: {
-        total: sessions.length,
-        active: activeSessions.length,
+        total: sessionCount,
+        active: activeSessionCount,
       },
       overallHealth,
     };
