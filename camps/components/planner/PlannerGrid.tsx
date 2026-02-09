@@ -7,7 +7,7 @@ import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
 import { CoverageStatus } from './CoverageIndicator';
 import { DEFAULT_CHILD_COLORS } from '../../lib/constants';
-import type { ChildCoverage, WeekData, RegistrationClickData, EventClickData } from '../../lib/types';
+import type { ChildCoverage, WeekData, RegistrationClickData, EventClickData, FriendCalendarData } from '../../lib/types';
 
 export type { RegistrationClickData, EventClickData };
 
@@ -27,6 +27,9 @@ interface PlannerGridProps {
   onRegistrationClick?: (data: RegistrationClickData) => void;
   onEventClick?: (data: EventClickData) => void;
   onAddChild?: () => void;
+  friendCalendars?: FriendCalendarData[];
+  hiddenFriends?: Set<string>;
+  onToggleFriend?: (familyId: string) => void;
 }
 
 type ViewMode = 'kids-rows' | 'weeks-rows';
@@ -56,6 +59,9 @@ export function PlannerGrid({
   onRegistrationClick,
   onEventClick,
   onAddChild,
+  friendCalendars,
+  hiddenFriends,
+  onToggleFriend,
 }: PlannerGridProps) {
   const generateShareToken = useMutation(api.children.mutations.generateShareToken);
   const [generatingToken, setGeneratingToken] = useState<Id<'children'> | null>(null);
@@ -235,6 +241,7 @@ export function PlannerGrid({
 
   if (viewMode === 'weeks-rows') {
     return (
+    <>
       <div className="md:bg-white md:dark:bg-slate-800 md:rounded-xl md:border md:border-slate-200 md:dark:border-slate-700 overflow-hidden md:shadow-sm">
         {/* Mobile weeks-rows layout */}
         <div className="md:hidden space-y-3">
@@ -427,10 +434,24 @@ export function PlannerGrid({
           </table>
         </div>
       </div>
+      {friendCalendars && friendCalendars.length > 0 && hiddenFriends && onToggleFriend && (
+        <FriendCalendarSection
+          friendCalendars={friendCalendars}
+          hiddenFriends={hiddenFriends}
+          onToggleFriend={onToggleFriend}
+          coverage={coverage}
+          monthStartDates={monthStartDates}
+          weeksByMonth={weeksByMonth}
+          isCurrentWeek={isCurrentWeek}
+          isPastWeek={isPastWeek}
+        />
+      )}
+    </>
     );
   }
 
   return (
+    <>
     <div className="md:bg-white md:dark:bg-slate-800 md:rounded-xl md:border md:border-slate-200 md:dark:border-slate-700 overflow-hidden md:shadow-sm">
       {/* Mobile layout: months stacked vertically */}
       <div className="md:hidden space-y-3">
@@ -732,6 +753,267 @@ export function PlannerGrid({
           </tbody>
         </table>
       </div>
+    </div>
+    {friendCalendars && friendCalendars.length > 0 && hiddenFriends && onToggleFriend && (
+      <FriendCalendarSection
+        friendCalendars={friendCalendars}
+        hiddenFriends={hiddenFriends}
+        onToggleFriend={onToggleFriend}
+        coverage={coverage}
+        monthStartDates={monthStartDates}
+        weeksByMonth={weeksByMonth}
+        isCurrentWeek={isCurrentWeek}
+        isPastWeek={isPastWeek}
+      />
+    )}
+    </>
+  );
+}
+
+// Eye icon for show/hide toggle
+function EyeIcon({ isHidden }: { isHidden: boolean }) {
+  if (isHidden) {
+    return (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+      </svg>
+    );
+  }
+  return (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+    </svg>
+  );
+}
+
+// Friend calendar section rendered below the main grid
+function FriendCalendarSection({
+  friendCalendars,
+  hiddenFriends,
+  onToggleFriend,
+  coverage,
+  monthStartDates,
+  weeksByMonth,
+  isCurrentWeek,
+  isPastWeek,
+}: {
+  friendCalendars: FriendCalendarData[];
+  hiddenFriends: Set<string>;
+  onToggleFriend: (familyId: string) => void;
+  coverage: WeekData[];
+  monthStartDates: Set<string>;
+  weeksByMonth: [string, WeekData[]][];
+  isCurrentWeek: (week: WeekData) => boolean;
+  isPastWeek: (week: WeekData) => boolean;
+}) {
+  if (friendCalendars.length === 0) return null;
+
+  return (
+    <>
+      {/* Divider */}
+      <div className="flex items-center gap-3 my-4 px-2">
+        <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+        <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+          Friends&apos; Plans
+        </span>
+        <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+      </div>
+
+      {friendCalendars.map((friend) => {
+        const isHidden = hiddenFriends.has(friend.familyId);
+        return (
+          <div
+            key={friend.familyId}
+            className="md:bg-white/60 md:dark:bg-slate-800/60 md:rounded-xl md:border md:border-slate-200 md:dark:border-slate-700 overflow-hidden md:shadow-sm mb-3 opacity-75"
+          >
+            {/* Friend header with toggle */}
+            <button
+              onClick={() => onToggleFriend(friend.familyId)}
+              className="w-full flex items-center gap-2 px-4 py-2 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors"
+            >
+              <span className="w-6 h-6 rounded-full bg-slate-400 dark:bg-slate-600 flex items-center justify-center text-white text-xs font-bold">
+                {friend.displayName[0]}
+              </span>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300 flex-1 text-left">
+                {friend.displayName}
+              </span>
+              <span className="text-slate-400 dark:text-slate-500">
+                <EyeIcon isHidden={isHidden} />
+              </span>
+            </button>
+
+            {/* Friend's children rows - only shown when not hidden */}
+            {!isHidden && (
+              <>
+                {/* Mobile layout */}
+                <div className="md:hidden space-y-0">
+                  {weeksByMonth.map(([month, weeks]) => {
+                    // Find matching friend weeks for this month
+                    const friendWeeksForMonth = weeks.map((week) => {
+                      return friend.coverage.find((fw) => fw.week.startDate === week.week.startDate);
+                    });
+                    return (
+                      <div key={month}>
+                        <div className="px-4 py-1.5 text-center text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
+                          {month}
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="w-full border-collapse">
+                            <thead>
+                              <tr className="bg-slate-50 dark:bg-slate-800/50">
+                                <th className="sticky left-0 z-10 bg-slate-50 dark:bg-slate-800/50 px-3 py-1 text-left text-xs font-medium text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700 min-w-[90px]" />
+                                {weeks.map((week) => (
+                                  <th
+                                    key={week.week.startDate}
+                                    className="px-1 py-1 text-center text-[10px] border-b border-l border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500"
+                                  >
+                                    {week.week.label.split(' ')[0]}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {friend.children.map((child, ci) => (
+                                <tr
+                                  key={child.childId}
+                                  className={ci % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50/50 dark:bg-slate-800/50'}
+                                >
+                                  <td className="sticky left-0 z-10 px-3 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 border-b border-slate-100 dark:border-slate-700/50 bg-inherit">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="w-5 h-5 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+                                        {child.childName[0]}
+                                      </span>
+                                      <span className="truncate text-xs">{child.childName}</span>
+                                    </div>
+                                  </td>
+                                  {friendWeeksForMonth.map((friendWeek, wi) => {
+                                    const weekKey = weeks[wi].week.startDate;
+                                    const childCov = friendWeek?.childCoverage.find(
+                                      (c) => c.childId === child.childId,
+                                    );
+                                    return (
+                                      <td
+                                        key={weekKey}
+                                        className="border-b border-l border-slate-100 dark:border-slate-700/50 p-0"
+                                      >
+                                        <FriendCoverageCell data={childCov ?? null} />
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Desktop layout */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <tbody>
+                      {friend.children.map((child, ci) => (
+                        <tr
+                          key={child.childId}
+                          className={ci % 2 === 0 ? 'bg-white/60 dark:bg-slate-800/60' : 'bg-slate-50/30 dark:bg-slate-800/30'}
+                        >
+                          <td className="sticky left-0 z-10 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 border-b border-slate-100 dark:border-slate-700/50 bg-inherit min-w-[120px]">
+                            <div className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center text-white text-xs font-bold">
+                                {child.childName[0]}
+                              </span>
+                              <span>{child.childName}</span>
+                            </div>
+                          </td>
+                          {coverage.map((week) => {
+                            const friendWeek = friend.coverage.find(
+                              (fw) => fw.week.startDate === week.week.startDate,
+                            );
+                            const childCov = friendWeek?.childCoverage.find(
+                              (c) => c.childId === child.childId,
+                            );
+                            const isMonthStart = monthStartDates.has(week.week.startDate);
+                            return (
+                              <td
+                                key={week.week.startDate}
+                                className={`border-b border-slate-100 dark:border-slate-700/50 p-0 ${
+                                  isMonthStart
+                                    ? 'border-l border-l-slate-300 dark:border-l-slate-600'
+                                    : 'border-l border-l-slate-100 dark:border-l-slate-700/50'
+                                }`}
+                              >
+                                <FriendCoverageCell data={childCov ?? null} />
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+// Simplified read-only cell for friend calendars
+function FriendCoverageCell({ data }: { data: ChildCoverage | null }) {
+  const status = data?.status || 'gap';
+  const logoUrl = data?.registrations?.[0]?.organizationLogoUrl;
+  const campName = data?.registrations?.[0]?.campName;
+  const registrationStatus = data?.registrations?.[0]?.status;
+
+  let bgColor = '';
+  let tooltip = '';
+
+  if (status === 'full' || status === 'partial') {
+    if (registrationStatus === 'registered') {
+      bgColor = 'bg-green-100/70 dark:bg-green-900/20';
+      tooltip = campName ? `${campName} (Registered)` : 'Registered';
+    } else if (registrationStatus === 'waitlisted') {
+      bgColor = 'bg-yellow-100/70 dark:bg-yellow-900/20';
+      tooltip = campName ? `${campName} (Waitlisted)` : 'Waitlisted';
+    } else if (registrationStatus === 'interested') {
+      bgColor = 'bg-amber-50/70 dark:bg-amber-900/15';
+      tooltip = campName ? `${campName} (Saved)` : 'Saved';
+    } else {
+      bgColor = 'bg-green-100/70 dark:bg-green-900/20';
+      tooltip = campName || 'Covered';
+    }
+  } else {
+    bgColor = '';
+    tooltip = 'No camp';
+  }
+
+  return (
+    <div className={`w-full min-h-[40px] flex items-center justify-center ${bgColor}`} title={tooltip}>
+      {logoUrl ? (
+        <img
+          src={logoUrl}
+          alt={campName || ''}
+          className="w-5 h-5 rounded object-contain opacity-70"
+          onError={(e) => {
+            e.currentTarget.style.display = 'none';
+          }}
+        />
+      ) : (status === 'full' || status === 'partial') ? (
+        registrationStatus === 'registered' ? (
+          <span className="text-green-600/60 dark:text-green-400/60 font-bold text-xs">✓</span>
+        ) : registrationStatus === 'waitlisted' ? (
+          <span className="text-yellow-600/60 dark:text-yellow-400/60 text-xs">⏳</span>
+        ) : registrationStatus === 'interested' ? (
+          <span className="text-amber-500/60 dark:text-amber-400/60 text-sm">○</span>
+        ) : (
+          <span className="text-green-600/60 dark:text-green-400/60 font-bold text-xs">✓</span>
+        )
+      ) : null}
     </div>
   );
 }

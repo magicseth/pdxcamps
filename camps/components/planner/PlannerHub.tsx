@@ -8,7 +8,7 @@ import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
 import type { User } from '@workos-inc/node';
 import { PlannerGrid } from './PlannerGrid';
-import type { RegistrationClickData, EventClickData } from '../../lib/types';
+import type { RegistrationClickData, EventClickData, FriendCalendarData } from '../../lib/types';
 import { RegistrationModal } from './RegistrationModal';
 import { EditEventModal } from './EditEventModal';
 import { AddEventModal } from './AddEventModal';
@@ -244,6 +244,44 @@ export function PlannerHub({
   const familyEvents = useQuery(api.planner.queries.getFamilyEvents, {
     year: selectedYear,
   });
+
+  // Friend calendars
+  const friendCalendarsRaw = useQuery(api.social.queries.getFriendCalendarsForPlanner, {
+    year: selectedYear,
+  });
+  const friendCalendars: FriendCalendarData[] = useMemo(
+    () =>
+      (friendCalendarsRaw ?? []).map((f) => ({
+        familyId: f.familyId as string,
+        displayName: f.displayName,
+        children: f.children.map((c) => ({ childId: c.childId as string, childName: c.childName })),
+        coverage: f.coverage as unknown as import('../../lib/types').WeekData[],
+      })),
+    [friendCalendarsRaw],
+  );
+
+  const [hiddenFriends, setHiddenFriends] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set();
+    try {
+      const stored = localStorage.getItem('planner-hidden-friends');
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
+  const handleToggleFriend = useCallback((familyId: string) => {
+    setHiddenFriends((prev) => {
+      const next = new Set(prev);
+      if (next.has(familyId)) {
+        next.delete(familyId);
+      } else {
+        next.add(familyId);
+      }
+      localStorage.setItem('planner-hidden-friends', JSON.stringify([...next]));
+      return next;
+    });
+  }, []);
 
   // Find the selected event for the edit modal
   const selectedEvent = useMemo(() => {
@@ -606,6 +644,14 @@ export function PlannerHub({
                 </div>
               </div>
             </div>
+          ) : children.length === 0 ? (
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-8 text-center">
+              <p className="text-slate-600 dark:text-slate-300 font-medium mb-2">No children added yet</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                <Link href="/settings" className="text-primary hover:text-primary-dark underline">Add children in Settings</Link> to start planning
+                {friendCalendars.length > 0 ? ', or view your friends\' plans below.' : '.'}
+              </p>
+            </div>
           ) : filteredCoverage.length === 0 ? (
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-8 text-center">
               <p className="text-slate-500 dark:text-slate-400">No weeks found for summer {selectedYear}.</p>
@@ -622,9 +668,65 @@ export function PlannerHub({
                   onRegistrationClick={handleRegistrationClick}
                   onEventClick={handleEventClick}
                   onAddChild={() => setShowAddChildModal(true)}
+                  friendCalendars={friendCalendars}
+                  hiddenFriends={hiddenFriends}
+                  onToggleFriend={handleToggleFriend}
                 />
               </div>
             </QueryErrorBoundary>
+          )}
+
+          {/* Standalone friend calendars for users with no children */}
+          {children.length === 0 && friendCalendars.length > 0 && (
+            <div className="mt-4">
+              <div className="flex items-center gap-3 mb-4 px-2">
+                <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+                <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                  Friends&apos; Plans
+                </span>
+                <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+              </div>
+              {friendCalendars.map((friend) => {
+                const isHidden = hiddenFriends.has(friend.familyId);
+                return (
+                  <div
+                    key={friend.familyId}
+                    className="bg-white/60 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm mb-3 opacity-75"
+                  >
+                    <button
+                      onClick={() => handleToggleFriend(friend.familyId)}
+                      className="w-full flex items-center gap-2 px-4 py-2 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors"
+                    >
+                      <span className="w-6 h-6 rounded-full bg-slate-400 dark:bg-slate-600 flex items-center justify-center text-white text-xs font-bold">
+                        {friend.displayName[0]}
+                      </span>
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300 flex-1 text-left">
+                        {friend.displayName}
+                      </span>
+                      <span className="text-xs text-slate-400">{isHidden ? 'Show' : 'Hide'}</span>
+                    </button>
+                    {!isHidden && (
+                      <div className="px-4 py-3">
+                        {friend.children.map((child) => (
+                          <div key={child.childId} className="flex items-center gap-2 py-1 text-sm text-slate-600 dark:text-slate-400">
+                            <span className="w-5 h-5 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center text-white text-[10px] font-bold">
+                              {child.childName[0]}
+                            </span>
+                            <span>{child.childName}</span>
+                            <span className="text-xs text-slate-400">
+                              {friend.coverage.filter((w) =>
+                                w.childCoverage.find((c) => c.childId === child.childId && (c.status === 'full' || c.status === 'partial')),
+                              ).length}{' '}
+                              weeks planned
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
 

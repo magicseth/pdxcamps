@@ -57,3 +57,15 @@ export interface EventClickData {
   childName: string;
   weekLabel: string;
 }
+
+export interface FriendCalendarChild {
+  childId: string;
+  childName: string;
+}
+
+export interface FriendCalendarData {
+  familyId: string;
+  displayName: string;
+  children: FriendCalendarChild[];
+  coverage: WeekData[];
+}

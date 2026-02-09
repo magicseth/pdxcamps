@@ -1,6 +1,13 @@
 import { query } from '../_generated/server';
 import { v } from 'convex/values';
+import { Doc } from '../_generated/dataModel';
 import { requireFamily, getFamily } from '../lib/auth';
+import {
+  generateSummerWeeks,
+  doDateRangesOverlap,
+  countOverlappingWeekdays,
+  resolveCampName,
+} from '../lib/helpers';
 
 /**
  * List all accepted friendships for the current family.
@@ -435,5 +442,159 @@ export const getFriendCalendar = query({
       permission: share.permission,
       calendar: registrationsByChild,
     };
+  },
+});
+
+/**
+ * Get all friend calendars in a planner-compatible format.
+ * Returns coverage data for each friend who has shared their calendar,
+ * structured identically to the planner's own WeekData[].
+ */
+export const getFriendCalendarsForPlanner = query({
+  args: {
+    year: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const family = await getFamily(ctx);
+    if (!family) {
+      return [];
+    }
+
+    // Get all active calendar shares where this family is the recipient
+    const calendarShares = await ctx.db
+      .query('calendarShares')
+      .withIndex('by_shared_with', (q) => q.eq('sharedWithFamilyId', family._id))
+      .collect();
+
+    const activeShares = calendarShares.filter((share) => share.isActive);
+    if (activeShares.length === 0) {
+      return [];
+    }
+
+    const summerWeeks = generateSummerWeeks(args.year);
+
+    const results = await Promise.all(
+      activeShares.map(async (share) => {
+        const ownerFamily = await ctx.db.get(share.ownerFamilyId);
+        if (!ownerFamily) return null;
+
+        // Load shared children
+        const childDocs = await Promise.all(share.childIds.map((id) => ctx.db.get(id)));
+        const validChildren = childDocs.filter((c): c is Doc<'children'> => c !== null && c.isActive);
+        if (validChildren.length === 0) return null;
+
+        // Get registrations for each shared child
+        const allRegistrations: Doc<'registrations'>[] = [];
+        for (const child of validChildren) {
+          const regs = await ctx.db
+            .query('registrations')
+            .withIndex('by_child', (q) => q.eq('childId', child._id))
+            .collect();
+          allRegistrations.push(...regs.filter((r) => r.status !== 'cancelled'));
+        }
+
+        // Fetch sessions
+        const sessionIds = [...new Set(allRegistrations.map((r) => r.sessionId))];
+        const sessionsRaw = await Promise.all(sessionIds.map((id) => ctx.db.get(id)));
+        const sessions = sessionsRaw.filter((s): s is Doc<'sessions'> => s !== null);
+        const sessionMap = new Map(sessions.map((s) => [s._id, s]));
+
+        // Fetch camps for sessions without denormalized names
+        const sessionsNeedingCamps = sessions.filter((s) => !s.campName);
+        const campIds = [...new Set(sessionsNeedingCamps.map((s) => s.campId))];
+        const campsRaw = await Promise.all(campIds.map((id) => ctx.db.get(id)));
+        const campMap = new Map(
+          campsRaw.filter((c): c is Doc<'camps'> => c !== null).map((c) => [c._id, c]),
+        );
+
+        // Fetch org logos
+        const orgIds = [...new Set(sessions.map((s) => s.organizationId))];
+        const orgsRaw = await Promise.all(orgIds.map((id) => ctx.db.get(id)));
+        const orgs = orgsRaw.filter((o): o is Doc<'organizations'> => o !== null);
+        const orgMap = new Map(orgs.map((o) => [o._id, o]));
+        const orgLogoUrls = new Map<string, string | null>();
+        await Promise.all(
+          orgs
+            .filter((org) => org.logoStorageId)
+            .map(async (org) => {
+              const url = await ctx.storage.getUrl(org.logoStorageId!);
+              orgLogoUrls.set(org._id, url);
+            }),
+        );
+
+        // Build week coverage for each child
+        const coverage = summerWeeks.map((week) => {
+          const childCoverage = validChildren.map((child) => {
+            const childRegs = allRegistrations
+              .filter((r) => r.childId === child._id)
+              .map((r) => {
+                const session = sessionMap.get(r.sessionId);
+                if (!session) return null;
+                const overlappingDays = countOverlappingWeekdays(
+                  session.startDate,
+                  session.endDate,
+                  week.startDate,
+                  week.endDate,
+                );
+                if (overlappingDays === 0) return null;
+                const campName = resolveCampName(session, campMap);
+                const org = orgMap.get(session.organizationId);
+                return {
+                  registrationId: r._id,
+                  sessionId: r.sessionId,
+                  campName,
+                  organizationName: org?.name ?? 'Unknown',
+                  organizationLogoUrl: orgLogoUrls.get(session.organizationId) ?? null,
+                  status: r.status,
+                  overlappingDays,
+                  registrationUrl: session.externalRegistrationUrl ?? null,
+                };
+              })
+              .filter((r): r is NonNullable<typeof r> => r !== null);
+
+            const registeredDays = childRegs
+              .filter((r) => r.status === 'registered')
+              .reduce((sum, r) => sum + r.overlappingDays, 0);
+            const tentativeDays = childRegs
+              .filter((r) => r.status === 'interested' || r.status === 'waitlisted')
+              .reduce((sum, r) => sum + r.overlappingDays, 0);
+            const coveredDays = Math.min(5, registeredDays);
+
+            let status: 'full' | 'partial' | 'gap' | 'tentative' = 'gap';
+            if (coveredDays >= 5) status = 'full';
+            else if (coveredDays > 0) status = 'partial';
+            else if (tentativeDays > 0) status = 'tentative';
+
+            return {
+              childId: child._id,
+              childName: child.firstName,
+              status,
+              coveredDays,
+              registrations: childRegs,
+              events: [],
+            };
+          });
+
+          return {
+            week,
+            childCoverage,
+            hasGap: childCoverage.some((c) => c.status === 'gap'),
+            hasFamilyEvent: false,
+          };
+        });
+
+        return {
+          familyId: ownerFamily._id,
+          displayName: ownerFamily.displayName,
+          children: validChildren.map((c) => ({
+            childId: c._id,
+            childName: c.firstName,
+          })),
+          coverage,
+        };
+      }),
+    );
+
+    return results.filter((r): r is NonNullable<typeof r> => r !== null);
   },
 });

@@ -125,19 +125,14 @@ export default function ChildrenSetupPage() {
   };
 
   const handleCompleteSetup = async () => {
-    if (!children || children.length === 0) {
-      setError('Please add at least one child to continue');
-      return;
-    }
-
     setIsCompleting(true);
 
     try {
       await completeOnboarding({});
 
-      // Track onboarding completion
       posthog.capture('onboarding_completed', {
-        children_count: children.length,
+        children_count: children?.length ?? 0,
+        skipped_children: !children || children.length === 0,
       });
 
       router.push('/');
@@ -390,6 +385,16 @@ export default function ChildrenSetupPage() {
                   </button>
                 )}
               </div>
+              {!hasChildren && (
+                <button
+                  type="button"
+                  onClick={handleCompleteSetup}
+                  disabled={isCompleting || isAddingChild}
+                  className="w-full text-center text-sm text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary-light transition-colors mt-2"
+                >
+                  {isCompleting ? 'Completing...' : 'Continue without adding children'}
+                </button>
+              )}
             </form>
           ) : (
             <button
