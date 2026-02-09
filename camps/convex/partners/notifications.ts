@@ -88,7 +88,7 @@ export const sendPartnerApprovalEmail = internalAction({
           <ul>
             <li>Share your link with families in your community</li>
             <li>When they sign up and upgrade to Premium, you earn <strong>20% commission</strong> on their subscription for the first year</li>
-            <li>We'll send you a monthly earnings summary</li>
+            <li>Track your referrals and earnings on your <a href="https://pdxcamps.com/partner/dashboard" style="color: #0369a1; font-weight: bold;">Partner Dashboard</a></li>
           </ul>
 
           <p>Thanks for helping families in your community discover summer camps!</p>
@@ -96,7 +96,7 @@ export const sendPartnerApprovalEmail = internalAction({
           <p>Best,<br/>Seth<br/><span style="color: #666;">PDX Camps</span></p>
         </div>
       `,
-      text: `Hi ${args.contactName},\n\nYour partner application for ${args.organizationName} has been approved!\n\nYour partner link: ${partnerLink}\n\nShare this link with families. When they sign up and upgrade to Premium, you earn 20% commission for the first year.\n\nThanks!\nSeth, PDX Camps`,
+      text: `Hi ${args.contactName},\n\nYour partner application for ${args.organizationName} has been approved!\n\nYour partner link: ${partnerLink}\n\nShare this link with families. When they sign up and upgrade to Premium, you earn 20% commission for the first year.\n\nTrack your referrals and earnings: https://pdxcamps.com/partner/dashboard\n\nThanks!\nSeth, PDX Camps`,
     });
   },
 });

@@ -305,6 +305,12 @@ function AdminContent() {
         >
           Data Quality
         </Link>
+        <Link
+          href="/admin/partners"
+          className="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 text-sm font-medium"
+        >
+          Partners
+        </Link>
         <button
           onClick={handleSendWelcomeEmails}
           disabled={welcomeEmailStatus === 'sending'}
