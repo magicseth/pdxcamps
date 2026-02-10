@@ -1,24 +1,8 @@
 import { Metadata } from 'next';
+import { headers } from 'next/headers';
 import Link from 'next/link';
 import { fetchQuery } from 'convex/nextjs';
 import { api } from '@/convex/_generated/api';
-import { BlogCityFilter } from './BlogCityFilter';
-
-export const metadata: Metadata = {
-  title: 'Summer Camp Blog | Guides, Tips & Weekly Updates',
-  description:
-    'Expert guides on summer camps — from STEM to arts, budget picks to age-specific recommendations. Real data from hundreds of programs across multiple cities.',
-  openGraph: {
-    title: 'Summer Camp Blog | Guides, Tips & Weekly Updates',
-    description:
-      'Expert guides on summer camps with real data and local recommendations.',
-    url: 'https://pdxcamps.com/blog',
-    type: 'website',
-  },
-  alternates: {
-    canonical: 'https://pdxcamps.com/blog',
-  },
-};
 
 function formatDate(timestamp: number): string {
   return new Date(timestamp).toLocaleDateString('en-US', {
@@ -55,12 +39,61 @@ const CATEGORY_COLORS: Record<string, string> = {
   'weekly-update': 'bg-rose-50 text-rose-700 border-rose-200',
 };
 
+async function resolveCity() {
+  const headersList = await headers();
+  const hostname = headersList.get('host') || 'localhost';
+  const domain = hostname.split(':')[0].toLowerCase().replace(/^www\./, '');
+
+  let cityId: string | undefined;
+  let citySlug = 'portland';
+  let cityName: string | undefined;
+  let cityDomain = 'pdxcamps.com';
+
+  try {
+    const city = await fetchQuery(api.cities.queries.getCityByDomain, { domain });
+    if (city) {
+      cityId = city._id;
+      citySlug = city.slug;
+      cityName = city.name;
+      cityDomain = city.domain || domain;
+    }
+  } catch {
+    // Fall back to defaults
+  }
+
+  return { cityId, citySlug, cityName, cityDomain };
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const { cityName, cityDomain } = await resolveCity();
+  const title = cityName
+    ? `${cityName} Summer Camp Blog | Guides, Tips & Weekly Updates`
+    : 'Summer Camp Blog | Guides, Tips & Weekly Updates';
+
+  return {
+    title,
+    description:
+      'Expert guides on summer camps — from STEM to arts, budget picks to age-specific recommendations. Real data from hundreds of programs.',
+    openGraph: {
+      title,
+      description:
+        'Expert guides on summer camps with real data and local recommendations.',
+      url: `https://${cityDomain}/blog`,
+      type: 'website',
+    },
+    alternates: {
+      canonical: `https://${cityDomain}/blog`,
+    },
+  };
+}
+
 export default async function BlogIndexPage({
   searchParams,
 }: {
-  searchParams: Promise<{ city?: string; category?: string }>;
+  searchParams: Promise<{ category?: string }>;
 }) {
-  const { city: citySlug, category: activeCategory } = await searchParams;
+  const { category: activeCategory } = await searchParams;
+  const { cityId, citySlug, cityName } = await resolveCity();
 
   let posts: Array<{
     _id: string;
@@ -73,20 +106,6 @@ export default async function BlogIndexPage({
     publishedAt?: number;
   }> = [];
 
-  let cityId: string | undefined;
-  let cityName: string | undefined;
-  if (citySlug) {
-    try {
-      const city = await fetchQuery(api.cities.queries.getCityBySlug, { slug: citySlug });
-      if (city) {
-        cityId = city._id;
-        cityName = city.name;
-      }
-    } catch {
-      // Ignore
-    }
-  }
-
   try {
     posts = await fetchQuery(api.blog.queries.listPublished, {
       ...(cityId ? { cityId: cityId as any } : {}),
@@ -94,13 +113,6 @@ export default async function BlogIndexPage({
     });
   } catch {
     // No posts yet
-  }
-
-  let cities: Array<{ _id: string; name: string; slug: string }> = [];
-  try {
-    cities = await fetchQuery(api.cities.queries.listActiveCities, {});
-  } catch {
-    // Ignore
   }
 
   // Separate featured (first) post from the rest
@@ -130,16 +142,6 @@ export default async function BlogIndexPage({
           <p className="mt-3 text-lg text-slate-300 max-w-2xl">
             Data-driven guides, expert tips, and weekly updates to help you plan the perfect summer for your kids.
           </p>
-
-          {/* City filter pills */}
-          {cities.length > 1 && (
-            <div className="mt-6">
-              <BlogCityFilter
-                cities={cities.map((c) => ({ slug: c.slug, name: c.name }))}
-                activeSlug={citySlug}
-              />
-            </div>
-          )}
         </div>
       </header>
 
@@ -148,7 +150,7 @@ export default async function BlogIndexPage({
         {categories.length > 1 && (
           <div className="flex flex-wrap gap-2 mb-8">
             <Link
-              href={citySlug ? `/blog?city=${citySlug}` : '/blog'}
+              href="/blog"
               className={`px-4 py-2 text-sm rounded-lg border font-medium transition-colors ${
                 !activeCategory
                   ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 dark:border-white'
@@ -160,7 +162,7 @@ export default async function BlogIndexPage({
             {categories.map((cat) => (
               <Link
                 key={cat}
-                href={`/blog?${citySlug ? `city=${citySlug}&` : ''}category=${cat}`}
+                href={`/blog?category=${cat}`}
                 className={`px-4 py-2 text-sm rounded-lg border font-medium transition-colors ${
                   activeCategory === cat
                     ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 dark:border-white'
@@ -293,7 +295,7 @@ export default async function BlogIndexPage({
               </p>
               <div className="mt-5 flex gap-3">
                 <Link
-                  href={citySlug ? `/discover/${citySlug}` : '/discover/portland'}
+                  href={`/discover/${citySlug}`}
                   className="px-6 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary-dark transition-colors"
                 >
                   Browse Camps

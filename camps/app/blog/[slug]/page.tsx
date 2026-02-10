@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { fetchQuery } from 'convex/nextjs';
@@ -9,8 +10,38 @@ type Props = {
   params: Promise<{ slug: string }>;
 };
 
+async function resolveCity() {
+  const headersList = await headers();
+  const hostname = headersList.get('host') || 'localhost';
+  const domain = hostname.split(':')[0].toLowerCase().replace(/^www\./, '');
+
+  try {
+    const city = await fetchQuery(api.cities.queries.getCityByDomain, { domain });
+    if (city) {
+      return {
+        cityId: city._id as string,
+        citySlug: city.slug as string,
+        cityName: city.name as string,
+        cityDomain: (city.domain || domain) as string,
+        brandName: (city.brandName || 'Camp Guide') as string,
+      };
+    }
+  } catch {
+    // Fall back to defaults
+  }
+
+  return {
+    cityId: undefined as string | undefined,
+    citySlug: 'portland',
+    cityName: 'Portland',
+    cityDomain: 'pdxcamps.com',
+    brandName: 'Camp Guide',
+  };
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
+  const { cityDomain } = await resolveCity();
 
   try {
     const post = await fetchQuery(api.blog.queries.getBySlug, { slug });
@@ -25,7 +56,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       openGraph: {
         title,
         description,
-        url: `https://pdxcamps.com/blog/${slug}`,
+        url: `https://${cityDomain}/blog/${slug}`,
         type: 'article',
         publishedTime: post.publishedAt
           ? new Date(post.publishedAt).toISOString()
@@ -38,7 +69,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         description,
       },
       alternates: {
-        canonical: `https://pdxcamps.com/blog/${slug}`,
+        canonical: `https://${cityDomain}/blog/${slug}`,
       },
     };
   } catch {
@@ -84,6 +115,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 export default async function BlogPostPage({ params }: Props) {
   const { slug } = await params;
+  const { cityId, citySlug, cityName, cityDomain, brandName } = await resolveCity();
 
   let post: any = null;
   try {
@@ -93,6 +125,11 @@ export default async function BlogPostPage({ params }: Props) {
   }
 
   if (!post) notFound();
+
+  // Gate: post must belong to this domain's city (or be a global post with no cityId)
+  if (post.cityId && cityId && post.cityId !== cityId) {
+    notFound();
+  }
 
   let relatedPosts: Array<{
     _id: string;
@@ -107,26 +144,11 @@ export default async function BlogPostPage({ params }: Props) {
     relatedPosts = await fetchQuery(api.blog.queries.getRelated, {
       slug,
       category: post.category,
+      ...(cityId ? { cityId: cityId as any } : {}),
       limit: 3,
     });
   } catch {
     // Ignore
-  }
-
-  let citySlug = 'portland';
-  let cityName = 'Portland';
-  let brandName = 'Camp Guide';
-  if (post.cityId) {
-    try {
-      const city = await fetchQuery(api.cities.queries.getCityById, { cityId: post.cityId });
-      if (city) {
-        citySlug = city.slug;
-        cityName = city.name;
-        brandName = city.brandName || 'Camp Guide';
-      }
-    } catch {
-      // Use defaults
-    }
   }
 
   const readTime = estimateReadTime(post.content || '');
@@ -149,7 +171,7 @@ export default async function BlogPostPage({ params }: Props) {
       '@type': 'Organization',
       name: brandName,
     },
-    mainEntityOfPage: `https://pdxcamps.com/blog/${slug}`,
+    mainEntityOfPage: `https://${cityDomain}/blog/${slug}`,
     ...(post.heroImageUrl ? { image: post.heroImageUrl } : {}),
   };
 

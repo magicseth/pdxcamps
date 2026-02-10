@@ -14,17 +14,22 @@ export const listPublished = query({
   handler: async (ctx, args) => {
     const limit = Math.min(args.limit ?? 50, 100);
 
-    let posts = await ctx.db
-      .query('blogPosts')
-      .withIndex('by_status', (q) => q.eq('status', 'published'))
-      .collect();
-
-    // Filter by city if specified
+    let posts;
     if (args.cityId) {
-      posts = posts.filter((p) => p.cityId === args.cityId || !p.cityId);
+      // Use compound index to get published posts for this city
+      posts = await ctx.db
+        .query('blogPosts')
+        .withIndex('by_status_city', (q) =>
+          q.eq('status', 'published').eq('cityId', args.cityId)
+        )
+        .collect();
+    } else {
+      posts = await ctx.db
+        .query('blogPosts')
+        .withIndex('by_status', (q) => q.eq('status', 'published'))
+        .collect();
     }
 
-    // Filter by category if specified
     if (args.category) {
       posts = posts.filter((p) => p.category === args.category);
     }
@@ -86,26 +91,33 @@ export const getBySlug = query({
 });
 
 /**
- * Get related posts (same category, excluding current).
+ * Get related posts (same category + city, excluding current).
  */
 export const getRelated = query({
   args: {
     slug: v.string(),
     category: v.string(),
+    cityId: v.optional(v.id('cities')),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const limit = args.limit ?? 3;
 
+    // Use compound index for status+category
     const posts = await ctx.db
       .query('blogPosts')
-      .withIndex('by_category', (q) => q.eq('category', args.category))
+      .withIndex('by_status_category', (q) =>
+        q.eq('status', 'published').eq('category', args.category)
+      )
       .collect();
 
-    const filtered = posts
-      .filter((p) => p.status === 'published' && p.slug !== args.slug)
-      .sort((a, b) => (b.publishedAt ?? 0) - (a.publishedAt ?? 0))
-      .slice(0, limit);
+    let filtered = posts.filter((p) => p.slug !== args.slug);
+    if (args.cityId) {
+      filtered = filtered.filter((p) => p.cityId === args.cityId);
+    }
+
+    filtered.sort((a, b) => (b.publishedAt ?? 0) - (a.publishedAt ?? 0));
+    filtered = filtered.slice(0, limit);
 
     return filtered.map((p) => ({
       _id: p._id,
