@@ -20,6 +20,11 @@ export default function UpgradeSuccessPage() {
     if (!hasTracked.current) {
       hasTracked.current = true;
       posthog.capture('upgrade_completed');
+
+      // Reddit conversion tracking
+      if (typeof window !== 'undefined' && (window as any).rdt) {
+        (window as any).rdt('track', 'Purchase');
+      }
     }
   }, []);
 

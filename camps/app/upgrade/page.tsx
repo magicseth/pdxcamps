@@ -64,6 +64,11 @@ export default function UpgradePage() {
       plan: pricing.stripePlan,
     });
 
+    // Reddit conversion tracking — mid-funnel signal
+    if (typeof window !== 'undefined' && (window as any).rdt) {
+      (window as any).rdt('track', 'AddToCart');
+    }
+
     try {
       const result = await createCheckout({
         plan: pricing.stripePlan,
