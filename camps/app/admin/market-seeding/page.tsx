@@ -262,7 +262,7 @@ function MarketSeedingContent() {
           </p>
           <p className="text-sm text-slate-500 mt-2">
             Make sure the daemon is running:{' '}
-            <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded">npx tsx scripts/scraper-daemon.ts</code>
+            <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded">npx tsx scripts/daemon/index.ts</code>
           </p>
         </div>
       </div>

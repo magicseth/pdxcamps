@@ -309,7 +309,7 @@ export function PlannerHub({
     const totalWeeks = coverage.length;
     const weeksWithGaps = coverage.filter((w) => w.hasGap).length;
     const fullyPlannedWeeks = coverage.filter((w) =>
-      w.childCoverage.every((c) => c.status === 'full' || c.status === 'event'),
+      w.childCoverage.some((c) => c.status === 'full' || c.status === 'event' || c.status === 'partial'),
     ).length;
 
     const registeredSessionIds = new Set<string>();

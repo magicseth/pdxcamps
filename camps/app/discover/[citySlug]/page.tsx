@@ -337,7 +337,7 @@ export default function DiscoverPage() {
                 onClick={() => filters.setShowFilters(!filters.showFilters)}
                 aria-expanded={filters.showFilters}
                 className="md:hidden flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 rounded-lg text-sm"
-                title="Toggle filters (F key)"
+                title="Toggle filters"
               >
                 <FilterIcon />
                 <span>
@@ -375,14 +375,8 @@ export default function DiscoverPage() {
           <aside className={`${filters.showFilters ? 'block' : 'hidden'} md:block w-full md:w-72 flex-shrink-0`}>
             <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 sticky top-24 max-h-[calc(100vh-12rem)] overflow-y-auto">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
                   Filters
-                  <kbd
-                    className="hidden lg:inline px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-400 rounded text-[10px]"
-                    title="Press F to toggle filters"
-                  >
-                    F
-                  </kbd>
                 </h2>
                 <div className="flex items-center gap-3">
                   {filters.hasActiveFilters && <ShareSearchButton />}

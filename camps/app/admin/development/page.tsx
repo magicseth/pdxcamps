@@ -205,7 +205,7 @@ function DevelopmentContent() {
           To process requests, run the scraper daemon in a terminal:
         </p>
         <code className="block mt-2 px-3 py-2 bg-yellow-100 dark:bg-yellow-900/40 rounded text-sm font-mono">
-          npx tsx scripts/scraper-daemon.ts
+          npx tsx scripts/daemon/index.ts
         </code>
       </div>
 

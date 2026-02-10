@@ -600,25 +600,22 @@ export const backfillSessionByCityAggregate = internalMutation({
   handler: async (ctx, args) => {
     const batchSize = args.batchSize ?? 100;
 
-    const sessions = await ctx.db.query('sessions').take(batchSize + 1);
-    const hasMore = sessions.length > batchSize;
-    const toProcess = hasMore ? sessions.slice(0, batchSize) : sessions;
+    const result = await ctx.db.query('sessions').paginate({
+      numItems: batchSize,
+      cursor: (args.cursor as any) ?? null,
+    });
 
     let processed = 0;
-    for (const session of toProcess) {
-      try {
-        await sessionsByCityAggregate.insert(ctx, session);
-        processed++;
-      } catch (e) {
-        // Item might already exist in aggregate, skip
-        console.log(`Skipping session ${session._id}: ${e}`);
-      }
+    for (const session of result.page) {
+      await sessionsByCityAggregate.insertIfDoesNotExist(ctx, session);
+      processed++;
     }
 
+    const isDone = result.isDone;
     return {
       processed,
-      hasMore,
-      nextCursor: hasMore ? toProcess[toProcess.length - 1]._id : undefined,
+      hasMore: !isDone,
+      continueCursor: !isDone ? result.continueCursor : undefined,
     };
   },
 });

@@ -77,26 +77,6 @@ export function useDiscoverFilters(citySlug: string, searchParams: URLSearchPara
     selectedLocations,
   ]);
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if typing in an input, textarea, or select
-      const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
-        return;
-      }
-      if (e.key === 'f' || e.key === 'F') {
-        e.preventDefault();
-        setShowFilters((prev) => !prev);
-      }
-      if (e.key === 'm' || e.key === 'M') {
-        e.preventDefault();
-        setViewMode((prev) => (prev === 'list' ? 'map' : 'list'));
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
 
   // Update URL when filters change
   useEffect(() => {

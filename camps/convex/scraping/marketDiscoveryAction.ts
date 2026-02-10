@@ -147,7 +147,7 @@ export const executeMarketDiscovery = action({
     return {
       success: false,
       message:
-        'Market discovery should be run from the local daemon with Stagehand. Use: npx tsx scripts/scraper-daemon.ts --discovery',
+        'Market discovery should be run from the local daemon with Stagehand. Use: npx tsx scripts/daemon/index.ts --discovery',
     };
   },
 });

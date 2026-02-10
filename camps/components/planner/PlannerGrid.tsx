@@ -1621,7 +1621,7 @@ function CoverageCell({
         organizationName: reg.organizationName,
         organizationLogoUrl: reg.organizationLogoUrl,
         status: reg.status,
-        weekLabel: `${week.week.monthName} ${week.week.label}`,
+        weekLabel: week.week.label,
         registrationUrl: reg.registrationUrl,
       });
     };
@@ -1647,7 +1647,7 @@ function CoverageCell({
         title: evt.title,
         childId,
         childName,
-        weekLabel: `${week.week.monthName} ${week.week.label}`,
+        weekLabel: week.week.label,
       });
     };
 
