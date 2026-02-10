@@ -96,8 +96,14 @@ function SettingsContent() {
       {/* Subscription */}
       <SubscriptionSection />
 
+      {/* Email Preferences */}
+      <EmailPreferencesSection family={family} />
+
       {/* Referrals */}
       <ReferralSection />
+
+      {/* Legal */}
+      <LegalSection family={family} />
 
       {/* Account Actions */}
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
@@ -1142,6 +1148,141 @@ function CancelSubscriptionModal({
               </button>
             </div>
           </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EmailPreferencesSection({
+  family,
+}: {
+  family: {
+    _id: Id<'families'>;
+    emailPreferences?: {
+      weeklyDigest: boolean;
+      marketingEmails: boolean;
+      availabilityAlerts?: boolean;
+    };
+  } | null;
+}) {
+  const updateEmailPreferences = useMutation(api.families.mutations.updateEmailPreferences);
+  const [isSaving, setIsSaving] = useState<string | null>(null);
+
+  if (!family) return null;
+
+  const prefs = family.emailPreferences ?? {
+    weeklyDigest: true,
+    marketingEmails: true,
+    availabilityAlerts: true,
+  };
+
+  const handleToggle = async (key: 'weeklyDigest' | 'marketingEmails' | 'availabilityAlerts') => {
+    setIsSaving(key);
+    try {
+      await updateEmailPreferences({
+        weeklyDigest: key === 'weeklyDigest' ? !prefs.weeklyDigest : prefs.weeklyDigest,
+        marketingEmails: key === 'marketingEmails' ? !prefs.marketingEmails : prefs.marketingEmails,
+        availabilityAlerts: key === 'availabilityAlerts' ? !(prefs.availabilityAlerts ?? true) : (prefs.availabilityAlerts ?? true),
+      });
+    } finally {
+      setIsSaving(null);
+    }
+  };
+
+  const toggles = [
+    {
+      key: 'weeklyDigest' as const,
+      label: 'Weekly Digest',
+      description: 'Weekly summary of new camps and updates',
+      checked: prefs.weeklyDigest,
+    },
+    {
+      key: 'marketingEmails' as const,
+      label: 'Marketing Emails',
+      description: 'Summer countdown reminders and tips',
+      checked: prefs.marketingEmails,
+    },
+    {
+      key: 'availabilityAlerts' as const,
+      label: 'Availability Alerts',
+      description: 'Notifications when saved camps have openings',
+      checked: prefs.availabilityAlerts ?? true,
+    },
+  ];
+
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
+      <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Email Preferences</h2>
+      <div className="space-y-4">
+        {toggles.map((toggle) => (
+          <div key={toggle.key} className="flex items-center justify-between">
+            <div>
+              <p className="font-medium text-slate-900 dark:text-white text-sm">{toggle.label}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{toggle.description}</p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={toggle.checked}
+              aria-label={toggle.label}
+              disabled={isSaving !== null}
+              onClick={() => handleToggle(toggle.key)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                toggle.checked
+                  ? 'bg-primary'
+                  : 'bg-slate-200 dark:bg-slate-600'
+              } ${isSaving === toggle.key ? 'opacity-50' : ''}`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  toggle.checked ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LegalSection({
+  family,
+}: {
+  family: {
+    tosVersion?: string;
+    tosAcceptedAt?: number;
+    privacyVersion?: string;
+    privacyAcceptedAt?: number;
+  } | null;
+}) {
+  if (!family) return null;
+
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
+      <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Legal</h2>
+      <div className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+        <p>
+          You agreed to our{' '}
+          <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+            Terms of Service
+          </a>
+          {family.tosVersion && (
+            <span className="text-slate-400 dark:text-slate-500"> (v{family.tosVersion})</span>
+          )}
+          {' '}and{' '}
+          <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+            Privacy Policy
+          </a>
+          {family.privacyVersion && (
+            <span className="text-slate-400 dark:text-slate-500"> (v{family.privacyVersion})</span>
+          )}
+        </p>
+        {family.tosAcceptedAt && (
+          <p className="text-xs text-slate-400 dark:text-slate-500">
+            Accepted on {new Date(family.tosAcceptedAt).toLocaleDateString()}
+          </p>
         )}
       </div>
     </div>

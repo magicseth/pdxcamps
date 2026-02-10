@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@workos-inc/authkit-nextjs/components';
 import { Id } from '../../../convex/_generated/dataModel';
 import { useMarket } from '../../../hooks/useMarket';
+import { CURRENT_TOS_VERSION, CURRENT_PRIVACY_VERSION } from '../../../lib/legalVersions';
 import posthog from 'posthog-js';
 
 interface FamilySetupClientProps {
@@ -28,6 +29,7 @@ export default function FamilySetupClient({ referralCode, inviteToken, partnerCo
   const [displayName, setDisplayName] = useState('');
   const [primaryCityId, setPrimaryCityId] = useState<Id<'cities'> | ''>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [tosAccepted, setTosAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -72,6 +74,11 @@ export default function FamilySetupClient({ referralCode, inviteToken, partnerCo
       return;
     }
 
+    if (!tosAccepted) {
+      setError('Please agree to the Terms of Service and Privacy Policy');
+      return;
+    }
+
     if (!user?.email) {
       setError('Unable to get user email. Please try again.');
       return;
@@ -90,6 +97,8 @@ export default function FamilySetupClient({ referralCode, inviteToken, partnerCo
         partnerCode: partnerCode || undefined,
         shareToken: shareToken || undefined,
         shareType: shareType || undefined,
+        tosVersion: CURRENT_TOS_VERSION,
+        privacyVersion: CURRENT_PRIVACY_VERSION,
       });
 
       // Identify user in PostHog using their email
@@ -205,6 +214,27 @@ export default function FamilySetupClient({ referralCode, inviteToken, partnerCo
               </p>
             </div>
 
+            <div className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                id="tosAccepted"
+                checked={tosAccepted}
+                onChange={(e) => setTosAccepted(e.target.checked)}
+                className="mt-1 h-4 w-4 accent-primary rounded"
+                disabled={isSubmitting}
+              />
+              <label htmlFor="tosAccepted" className="text-sm text-slate-600 dark:text-slate-400">
+                I agree to the{' '}
+                <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  Terms of Service
+                </a>{' '}
+                and{' '}
+                <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  Privacy Policy
+                </a>
+              </label>
+            </div>
+
             {error && (
               <div
                 role="alert"
@@ -216,7 +246,7 @@ export default function FamilySetupClient({ referralCode, inviteToken, partnerCo
 
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !tosAccepted}
               aria-busy={isSubmitting}
               className="w-full py-3 px-4 bg-primary hover:bg-primary-dark disabled:bg-primary-light text-white font-medium rounded-md transition-colors"
             >

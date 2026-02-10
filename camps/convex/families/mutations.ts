@@ -3,6 +3,7 @@ import { internal } from '../_generated/api';
 import { v } from 'convex/values';
 import { requireAuth, requireFamily, getFamily } from '../lib/auth';
 import { addressValidator, calendarSharingDefaultValidator } from '../lib/validators';
+import { CURRENT_TOS_VERSION, CURRENT_PRIVACY_VERSION } from '../lib/legalVersions';
 
 // Flag to control new user notifications (set to true to enable)
 const NOTIFY_ON_SIGNUP = true;
@@ -22,6 +23,8 @@ export const createFamily = mutation({
     partnerCode: v.optional(v.string()),
     shareToken: v.optional(v.string()),
     shareType: v.optional(v.union(v.literal('child'), v.literal('family'))),
+    tosVersion: v.string(),
+    privacyVersion: v.string(),
   },
   handler: async (ctx, args) => {
     const identity = await requireAuth(ctx);
@@ -70,6 +73,15 @@ export const createFamily = mutation({
       calendarSharingDefault: args.calendarSharingDefault,
       referredByCode: validReferralCode,
       referredByPartnerCode: validPartnerCode,
+      tosAcceptedAt: Date.now(),
+      tosVersion: args.tosVersion,
+      privacyAcceptedAt: Date.now(),
+      privacyVersion: args.privacyVersion,
+      emailPreferences: {
+        weeklyDigest: true,
+        marketingEmails: true,
+        availabilityAlerts: true,
+      },
     });
 
     // Create pending referral event if valid code
@@ -268,6 +280,7 @@ export const updateEmailPreferences = mutation({
   args: {
     weeklyDigest: v.boolean(),
     marketingEmails: v.boolean(),
+    availabilityAlerts: v.boolean(),
   },
   handler: async (ctx, args) => {
     const family = await requireFamily(ctx);
@@ -275,7 +288,29 @@ export const updateEmailPreferences = mutation({
       emailPreferences: {
         weeklyDigest: args.weeklyDigest,
         marketingEmails: args.marketingEmails,
+        availabilityAlerts: args.availabilityAlerts,
       },
+    });
+    return family._id;
+  },
+});
+
+/**
+ * Accept updated Terms of Service and Privacy Policy.
+ * Used for existing users who need to re-accept after policy updates.
+ */
+export const acceptTerms = mutation({
+  args: {
+    tosVersion: v.string(),
+    privacyVersion: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const family = await requireFamily(ctx);
+    await ctx.db.patch(family._id, {
+      tosAcceptedAt: Date.now(),
+      tosVersion: args.tosVersion,
+      privacyAcceptedAt: Date.now(),
+      privacyVersion: args.privacyVersion,
     });
     return family._id;
   },

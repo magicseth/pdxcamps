@@ -1,0 +1,2 @@
+export const CURRENT_TOS_VERSION = '2025-02-03';
+export const CURRENT_PRIVACY_VERSION = '2025-02-03';

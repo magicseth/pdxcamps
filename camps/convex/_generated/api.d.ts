@@ -75,6 +75,7 @@ import type * as lib_auth from "../lib/auth.js";
 import type * as lib_constants from "../lib/constants.js";
 import type * as lib_geocoding from "../lib/geocoding.js";
 import type * as lib_helpers from "../lib/helpers.js";
+import type * as lib_legalVersions from "../lib/legalVersions.js";
 import type * as lib_paywall from "../lib/paywall.js";
 import type * as lib_sessionAggregate from "../lib/sessionAggregate.js";
 import type * as lib_validators from "../lib/validators.js";
@@ -242,6 +243,7 @@ declare const fullApi: ApiFromModules<{
   "lib/constants": typeof lib_constants;
   "lib/geocoding": typeof lib_geocoding;
   "lib/helpers": typeof lib_helpers;
+  "lib/legalVersions": typeof lib_legalVersions;
   "lib/paywall": typeof lib_paywall;
   "lib/sessionAggregate": typeof lib_sessionAggregate;
   "lib/validators": typeof lib_validators;

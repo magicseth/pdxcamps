@@ -45,6 +45,9 @@ export const getFamiliesWithInterestedRegistrations = internalQuery({
       const child = await ctx.db.get(reg.childId);
 
       if (family && child) {
+        // Respect availabilityAlerts preference (default to true for families without the setting)
+        if (family.emailPreferences?.availabilityAlerts === false) continue;
+
         results.push({
           familyId: reg.familyId,
           email: family.email,

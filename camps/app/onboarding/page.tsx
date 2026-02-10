@@ -4,6 +4,7 @@ import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { CURRENT_TOS_VERSION } from '../../lib/legalVersions';
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -19,6 +20,12 @@ export default function OnboardingPage() {
     // No family exists - redirect to family setup
     if (family === null) {
       router.replace('/onboarding/family');
+      return;
+    }
+
+    // Family exists but hasn't accepted current TOS - redirect to legal acceptance
+    if (!family.tosVersion || family.tosVersion !== CURRENT_TOS_VERSION) {
+      router.replace('/onboarding/legal');
       return;
     }
 

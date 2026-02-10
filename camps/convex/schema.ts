@@ -59,11 +59,17 @@ export default defineSchema({
     referredByPartnerCode: v.optional(v.string()),
     // Login tracking for re-engagement emails
     lastLoginAt: v.optional(v.number()),
+    // Legal consent tracking
+    tosAcceptedAt: v.optional(v.number()),
+    tosVersion: v.optional(v.string()),
+    privacyAcceptedAt: v.optional(v.number()),
+    privacyVersion: v.optional(v.string()),
     // Email preferences for digest/marketing emails
     emailPreferences: v.optional(
       v.object({
         weeklyDigest: v.boolean(),
         marketingEmails: v.boolean(),
+        availabilityAlerts: v.boolean(),
       }),
     ),
   })
