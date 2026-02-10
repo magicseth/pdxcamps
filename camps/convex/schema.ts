@@ -1246,7 +1246,9 @@ export default defineSchema({
     .index('by_status', ['status'])
     .index('by_status_and_published', ['status', 'publishedAt'])
     .index('by_city', ['cityId'])
-    .index('by_category', ['category']),
+    .index('by_category', ['category'])
+    .index('by_status_city', ['status', 'cityId'])
+    .index('by_status_category', ['status', 'category']),
 
   // ============ ORG DASHBOARD ============
 
@@ -1307,8 +1309,8 @@ export default defineSchema({
     familyId: v.id('families'),
     amountCents: v.number(), // what the family paid
     commissionCents: v.number(), // 20% of amountCents
-    plan: v.string(), // 'monthly', 'summer', 'weekly', 'monthlyOneshot'
-    period: v.string(), // "2026-02" for monthly, "2026-W06" for weekly — dedup key
+    plan: v.string(), // 'monthly' or 'summer'
+    period: v.string(), // "2026-02" for monthly, "onetime-{familyId}" for summer — dedup key
     stripeSubscriptionId: v.optional(v.string()),
     createdAt: v.number(),
   })

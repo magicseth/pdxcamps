@@ -6,12 +6,12 @@ import { api } from '../../convex/_generated/api';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useMarket } from '../../hooks/useMarket';
-import { usePricingVariant } from '../../hooks/usePricingVariant';
+import { usePricingVariant, WINBACK_PRICING } from '../../hooks/usePricingVariant';
 import posthog from 'posthog-js';
 
 const TESTIMONIALS = [
   {
-    quote: "Best $29 I spent all summer. Found camps for all 3 kids in one evening.",
+    quote: "Found camps for all 3 kids in one evening. Best money I spent all summer.",
     author: "Sarah M.",
     detail: "Mom of 3",
   },
@@ -37,8 +37,10 @@ const SUMMER_YEAR = new Date().getFullYear();
 export default function UpgradePage() {
   const searchParams = useSearchParams();
   const canceled = searchParams.get('canceled') === 'true';
+  const isWinback = searchParams.get('offer') === 'winback';
   const market = useMarket();
-  const pricing = usePricingVariant();
+  const defaultPricing = usePricingVariant();
+  const pricing = isWinback ? WINBACK_PRICING : defaultPricing;
 
   const subscription = useQuery(api.subscriptions.getSubscription);
   const createCheckout = useAction(api.subscriptions.createCheckoutSession);
@@ -47,14 +49,13 @@ export default function UpgradePage() {
 
   useEffect(() => {
     posthog.capture('upgrade_page_viewed', {
-      pricing_variant: pricing?.variant,
+      pricing_variant: pricing.variant,
       canceled,
       market: market.slug,
     });
   }, []);
 
   const handleUpgrade = async () => {
-    if (!pricing) return;
     setLoading(true);
 
     posthog.capture('upgrade_started', {
@@ -64,7 +65,10 @@ export default function UpgradePage() {
     });
 
     try {
-      const result = await createCheckout({ plan: pricing.stripePlan });
+      const result = await createCheckout({
+        plan: pricing.stripePlan,
+        ...(pricing.couponId ? { couponId: pricing.couponId } : {}),
+      });
       if (result.url) {
         window.location.href = result.url;
       }
@@ -100,20 +104,6 @@ export default function UpgradePage() {
     );
   }
 
-  // Loading state while determining variant
-  if (!pricing) {
-    return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 py-16 px-4">
-        <div className="max-w-lg mx-auto text-center">
-          <div className="animate-pulse">
-            <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-48 mx-auto mb-4"></div>
-            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-64 mx-auto"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 py-16 px-4">
       <div className="max-w-2xl mx-auto">
@@ -135,6 +125,12 @@ export default function UpgradePage() {
             </span>
           </div>
 
+          {isWinback && (
+            <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-700/40 rounded-lg text-green-800 dark:text-green-200 text-sm font-medium">
+              Special offer: 40% off your monthly plan. Welcome back!
+            </div>
+          )}
+
           {canceled && (
             <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-accent/30 dark:border-accent/40 rounded-lg text-amber-800 dark:text-amber-200 text-sm">
               Checkout was canceled. No worries — you can try again when you&apos;re ready.
@@ -147,7 +143,7 @@ export default function UpgradePage() {
           {/* Most Popular Badge */}
           <div className="absolute -top-3 left-1/2 -translate-x-1/2">
             <span className="px-4 py-1 bg-accent text-white text-sm font-bold rounded-full shadow-md">
-              Most Popular
+              {isWinback ? '40% Off — Welcome Back' : 'Most Popular'}
             </span>
           </div>
 
@@ -160,7 +156,7 @@ export default function UpgradePage() {
           </div>
 
           <ul className="space-y-3 mb-6">
-            <FeatureItem>All 12 weeks — see your complete summer at a glance</FeatureItem>
+            <FeatureItem>Every week — see your complete summer at a glance</FeatureItem>
             <FeatureItem>Unlimited saved camps — bookmark every option</FeatureItem>
             <FeatureItem>Deadline alerts — never miss registration</FeatureItem>
             <FeatureItem>Unlimited children — plan for the whole family</FeatureItem>
@@ -177,7 +173,7 @@ export default function UpgradePage() {
           </button>
 
           <p className="text-center text-white/60 text-sm mt-3">
-            {pricing.variant === 'weekly' ? 'Cancel anytime, no questions asked' : 'Full summer access — one payment, zero stress'}
+            {pricing.description}
           </p>
         </div>
 
@@ -201,7 +197,7 @@ export default function UpgradePage() {
 
             <ComparisonRow label="Browse camps" free="Yes" premium="Yes" />
             <ComparisonRow label="Saved camps" free="5" premium="Unlimited" highlighted />
-            <ComparisonRow label="Weeks visible" free="4 weeks" premium="All 12 weeks" highlighted />
+            <ComparisonRow label="Weeks visible" free="4 weeks" premium="Every week" highlighted />
             <ComparisonRow label="Deadline alerts" free="No" premium="Yes" highlighted />
             <ComparisonRow label="Weekly digest" free="No" premium="Yes" highlighted />
             <ComparisonRow label="Calendar export" free="No" premium="Yes" highlighted />
@@ -252,16 +248,9 @@ export default function UpgradePage() {
         <div className="mt-12">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 text-center">Questions?</h3>
           <div className="space-y-3">
-            {pricing.variant === 'weekly' ? (
-              <FAQItem question="Can I cancel anytime?">
-                Yes! You can cancel your subscription anytime from your account settings. You&apos;ll retain access until the
-                end of your current billing period.
-              </FAQItem>
-            ) : (
               <FAQItem question="How long does my access last?">
-                Your Summer Pass gives you full access for the entire summer season, from now through August.
-              </FAQItem>
-            )}
+              Your Summer Pass gives you full access for a full year from purchase. Monthly plans can be canceled anytime from your account settings.
+            </FAQItem>
             <FAQItem question="Do I need Premium to browse camps?">
               No! Browsing and searching camps is completely free. Premium unlocks unlimited planning features and
               deadline alerts.

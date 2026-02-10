@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
@@ -909,7 +910,7 @@ function SubscriptionSection() {
               <ul className="text-sm text-green-600 dark:text-green-500 space-y-1">
                 <li className="flex items-center gap-2">
                   <CheckIcon />
-                  All 12 weeks visible
+                  Every week visible
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckIcon />
@@ -986,6 +987,7 @@ function CancelSubscriptionModal({
   onClose: () => void;
   onManageBilling: () => Promise<void>;
 }) {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<'offer' | 'survey'>('offer');
   const [selectedReason, setSelectedReason] = useState('');
@@ -1001,9 +1003,8 @@ function CancelSubscriptionModal({
     { value: 'other', label: 'Other' },
   ];
 
-  const handleDowngrade = async () => {
-    setIsLoading(true);
-    await onManageBilling();
+  const handleDowngrade = () => {
+    router.push('/upgrade?offer=winback');
   };
 
   const handleCancel = async () => {
@@ -1045,7 +1046,7 @@ function CancelSubscriptionModal({
               <div className="flex items-center justify-between mb-2">
                 <span className="font-semibold text-primary-dark dark:text-white/80">Lite Plan</span>
                 <span className="text-2xl font-bold text-primary dark:text-primary-light">
-                  $3<span className="text-sm font-normal">/mo</span>
+                  $2.99<span className="text-sm font-normal">/mo</span>
                 </span>
               </div>
               <p className="text-sm text-primary-dark dark:text-white/60">
@@ -1060,7 +1061,7 @@ function CancelSubscriptionModal({
                 disabled={isLoading}
                 className="w-full px-4 py-3 bg-primary text-white font-medium rounded-md hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLoading ? 'Loading...' : 'Switch to $3/month'}
+                {isLoading ? 'Loading...' : 'Switch to $2.99/month'}
               </button>
               <button
                 type="button"

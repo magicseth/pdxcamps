@@ -4,12 +4,10 @@ import { internalAction } from '../_generated/server';
 import { internal, components } from '../_generated/api';
 import { Id } from '../_generated/dataModel';
 
-// Plan prices in cents
+// Plan prices in cents — must match Stripe prices
 const PLAN_PRICES_CENTS: Record<string, number> = {
-  monthly: 500, // $5/month
-  summer: 2900, // $29 one-time
-  weekly: 499, // $4.99/week
-  monthlyOneshot: 3999, // $39.99 one-time
+  monthly: 499, // $4.99/month
+  summer: 2900, // $29/year Summer Pass (one-time)
 };
 
 const COMMISSION_RATE = 0.2; // 20%
@@ -63,21 +61,13 @@ export const processPartnerCommissions = internalAction({
 
         // Determine plan from metadata or price
         const plan = activeSub.metadata?.plan || 'monthly';
-        const priceCents = PLAN_PRICES_CENTS[plan] || 500;
+        const priceCents = PLAN_PRICES_CENTS[plan] || 499;
         const commissionCents = Math.round(priceCents * COMMISSION_RATE);
 
         // Determine period key for dedup
         const now = new Date();
         let period: string;
-        if (plan === 'weekly') {
-          // ISO week number
-          const startOfYear = new Date(now.getFullYear(), 0, 1);
-          const daysSinceStart = Math.floor(
-            (now.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000),
-          );
-          const weekNum = Math.ceil((daysSinceStart + startOfYear.getDay() + 1) / 7);
-          period = `${now.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
-        } else if (plan === 'summer' || plan === 'monthlyOneshot') {
+        if (plan === 'summer') {
           // One-time: use "onetime-{familyId}" so it only fires once
           period = `onetime-${family._id}`;
         } else {

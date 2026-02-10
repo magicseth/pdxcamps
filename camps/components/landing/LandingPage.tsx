@@ -562,7 +562,7 @@ export function LandingPage() {
                   <PricingFeature included>Plan for all your kids</PricingFeature>
                   <PricingFeature included>See 4 weeks of summer</PricingFeature>
                   <PricingFeature included>Save up to 5 camps</PricingFeature>
-                  <PricingFeature>All 12 weeks visible</PricingFeature>
+                  <PricingFeature>Every week visible</PricingFeature>
                   <PricingFeature>Unlimited saved camps</PricingFeature>
                   <PricingFeature>Calendar export</PricingFeature>
                 </ul>
@@ -582,8 +582,8 @@ export function LandingPage() {
                 </div>
                 <div className="text-center mb-6">
                   <h3 className="text-xl font-bold mb-2">Premium</h3>
-                  <div className="text-4xl font-bold">From $4.99</div>
-                  <p className="text-white/70 mt-1">Plan your entire summer</p>
+                  <div className="text-4xl font-bold">$29<span className="text-xl font-normal text-white/70">/year</span></div>
+                  <p className="text-white/70 mt-1">or $4.99/mo • Plan your entire summer</p>
                 </div>
                 <ul className="space-y-3 mb-8">
                   <PricingFeature included light>
@@ -593,7 +593,7 @@ export function LandingPage() {
                     Plan for all your kids
                   </PricingFeature>
                   <PricingFeature included light>
-                    All 12 weeks of summer
+                    Every week of summer
                   </PricingFeature>
                   <PricingFeature included light>
                     Unlimited saved camps
@@ -633,7 +633,7 @@ export function LandingPage() {
             <div className="space-y-4">
               <FAQItem
                 question="Is this really free? What's the catch?"
-                answer={`The free plan lets you browse all camps, plan for all your kids, and see 4 weeks of summer. That's enough for many families! If you need to see all 12 weeks, save unlimited camps, or export to your calendar, Premium starts at just $4.99. We're ${market.name} parents too—we keep it affordable.`}
+                answer={`The free plan lets you browse all camps, plan for all your kids, and see 4 weeks of summer. That's enough for many families! If you need to see every week, save unlimited camps, or export to your calendar, Premium is just $29/year (or $4.99/mo). We're ${market.name} parents too—we keep it affordable.`}
               />
               <FAQItem
                 question="How do I actually book a camp?"

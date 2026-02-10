@@ -8,9 +8,9 @@
  * - 4 weeks visible
  * - 5 saved camps
  *
- * PREMIUM tier ($5/month or $29/summer):
+ * PREMIUM tier ($4.99/month or $29/year Summer Pass):
  * - Unlimited children
- * - All 12 weeks
+ * - Every week
  * - Unlimited saved camps
  * - Calendar export
  */
@@ -26,21 +26,19 @@ import { FREE_SAVED_CAMPS_LIMIT } from './lib/paywall';
 const stripeClient = new StripeSubscriptions(components.stripe, {});
 
 // Price IDs from Stripe Dashboard (test vs live)
+// Canonical pricing: $4.99/month recurring, $29/year Summer Pass (one-time)
 const LIVE_PRICES = {
-  monthly: 'price_1SwdYiAOaA3WFe0KMiXaSSr6', // $5/month (legacy)
-  summer: 'price_1SwdZOAOaA3WFe0Kv1cQZC3O', // $29 one-time Summer Pass (legacy)
-  // A/B Test prices (simplified pricing)
-  weekly: 'price_1SxLcZAOaA3WFe0KSFecrZrG', // $4.99/week
-  monthlyOneshot: 'price_1SxLdIAOaA3WFe0K3UYbemGZ', // $39.99 one-time
+  monthly: 'price_1SyxjKAOaA3WFe0KmYlWIQpW', // $4.99/month recurring
+  summer: 'price_1SwdZOAOaA3WFe0Kv1cQZC3O', // $29/year Summer Pass (one-time)
 };
 
 const TEST_PRICES = {
-  monthly: 'price_1SweagA8NcUZvwFV3wqpcPLf', // $5/month test
+  monthly: 'price_1SweagA8NcUZvwFV3wqpcPLf', // $4.99/month test
   summer: 'price_1SweatA8NcUZvwFVu7yBk3cu', // $29 Summer Pass test
-  // A/B Test prices - use live prices for now (update with test prices if needed)
-  weekly: 'price_1SxLcZAOaA3WFe0KSFecrZrG', // $4.99/week
-  monthlyOneshot: 'price_1SxLdIAOaA3WFe0K3UYbemGZ', // $39.99 one-time
 };
+
+// Winback coupon: 40% off, created in Stripe Dashboard
+const WINBACK_COUPON_ID = 'PNtPdCsf';
 
 // Select prices based on Stripe key
 const isTestMode = () => process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_');
@@ -111,14 +109,13 @@ export const getSubscription = query({
  * Uses Stripe SDK directly to support promotion codes
  *
  * Plans:
- * - monthly: $5/month recurring (legacy)
- * - summer: $29 one-time (legacy)
- * - weekly: $4.99/week recurring (A/B test)
- * - monthlyOneshot: $39.99 one-time (A/B test)
+ * - monthly: $4.99/month recurring
+ * - summer: $29/year Summer Pass (one-time)
  */
 export const createCheckoutSession = action({
   args: {
-    plan: v.union(v.literal('monthly'), v.literal('summer'), v.literal('weekly'), v.literal('monthlyOneshot')),
+    plan: v.union(v.literal('monthly'), v.literal('summer')),
+    couponId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -137,19 +134,19 @@ export const createCheckoutSession = action({
     const priceMap: Record<string, string> = {
       monthly: PRICES.monthly,
       summer: PRICES.summer,
-      weekly: PRICES.weekly,
-      monthlyOneshot: PRICES.monthlyOneshot,
     };
     const priceId = priceMap[args.plan];
 
     // One-time payments use payment mode, recurring use subscription mode
-    const oneshotPlans = ['summer', 'monthlyOneshot'];
-    const mode = oneshotPlans.includes(args.plan) ? 'payment' : 'subscription';
+    const mode = args.plan === 'summer' ? 'payment' : 'subscription';
 
     const baseUrl = process.env.SITE_URL || 'http://localhost:3000';
 
     // Use Stripe SDK directly to enable promotion codes
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
+    // Validate coupon if provided — only allow the winback coupon
+    const applyCoupon = args.couponId === WINBACK_COUPON_ID ? args.couponId : undefined;
 
     const session = await stripe.checkout.sessions.create({
       customer: customer.customerId,
@@ -157,10 +154,14 @@ export const createCheckoutSession = action({
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${baseUrl}/upgrade/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/upgrade?canceled=true`,
-      allow_promotion_codes: true,
+      // Can't use both discounts and allow_promotion_codes
+      ...(applyCoupon
+        ? { discounts: [{ coupon: applyCoupon }] }
+        : { allow_promotion_codes: true }),
       metadata: {
         userId: identity.subject,
         plan: args.plan,
+        ...(applyCoupon ? { coupon: applyCoupon } : {}),
       },
       subscription_data:
         mode === 'subscription'

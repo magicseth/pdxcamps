@@ -112,7 +112,7 @@ function buildWinbackEmail(
           <p>Hi ${displayName},</p>
           <p>It's been a week since you left ${brand.brandName} Premium. We'd love to have you back.</p>
           <div style="background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 12px; padding: 24px; margin: 20px 0; text-align: center;">
-            <p style="font-size: 20px; font-weight: 700; color: #92400e; margin: 0 0 8px;">Come back for $3/month</p>
+            <p style="font-size: 20px; font-weight: 700; color: #92400e; margin: 0 0 8px;">Come back for $2.99/month</p>
             <p style="color: #a16207; margin: 0; font-size: 14px;">That's 40% off our regular price. All premium features included.</p>
           </div>
           <p style="text-align: center; margin: 24px 0;">
@@ -122,7 +122,7 @@ function buildWinbackEmail(
           ${footer}
         </div>
       `,
-      text: `Hi ${displayName},\n\nIt's been a week since you left ${brand.brandName} Premium. We'd love to have you back.\n\nSpecial offer: Come back for $3/month — that's 40% off. All premium features included.\n\nClaim your discount: https://${brand.domain}/upgrade?offer=winback\n\nThis offer expires in 7 days.${textFooter}`,
+      text: `Hi ${displayName},\n\nIt's been a week since you left ${brand.brandName} Premium. We'd love to have you back.\n\nSpecial offer: Come back for $2.99/month — that's 40% off. All premium features included.\n\nClaim your discount: https://${brand.domain}/upgrade?offer=winback\n\nThis offer expires in 7 days.${textFooter}`,
     };
   }
 
@@ -132,15 +132,15 @@ function buildWinbackEmail(
     html: `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
         <p>Hi ${displayName},</p>
-        <p>This is a final heads-up: your special offer to rejoin ${brand.brandName} Premium at <strong>$3/month</strong> is about to expire.</p>
+        <p>This is a final heads-up: your special offer to rejoin ${brand.brandName} Premium at <strong>$2.99/month</strong> is about to expire.</p>
         ${savedCount > 0 ? `<p>Your ${savedCount} saved camp${savedCount > 1 ? 's are' : ' is'} still waiting for you.</p>` : ''}
         <p style="text-align: center; margin: 24px 0;">
-          <a href="https://${brand.domain}/upgrade?offer=winback" style="display: inline-block; padding: 14px 28px; background-color: #E5A33B; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">Rejoin at $3/month</a>
+          <a href="https://${brand.domain}/upgrade?offer=winback" style="display: inline-block; padding: 14px 28px; background-color: #E5A33B; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">Rejoin at $2.99/month</a>
         </p>
         <p style="color: #666; font-size: 13px;">We hope to see you back. If not, no worries — your account will remain active on the free plan.</p>
         ${footer}
       </div>
     `,
-    text: `Hi ${displayName},\n\nThis is a final heads-up: your special offer to rejoin ${brand.brandName} Premium at $3/month is about to expire.\n\n${savedCount > 0 ? `Your ${savedCount} saved camps are still waiting for you.\n\n` : ''}Rejoin: https://${brand.domain}/upgrade?offer=winback\n\nIf not, no worries — your account will remain active on the free plan.${textFooter}`,
+    text: `Hi ${displayName},\n\nThis is a final heads-up: your special offer to rejoin ${brand.brandName} Premium at $2.99/month is about to expire.\n\n${savedCount > 0 ? `Your ${savedCount} saved camps are still waiting for you.\n\n` : ''}Rejoin: https://${brand.domain}/upgrade?offer=winback\n\nIf not, no worries — your account will remain active on the free plan.${textFooter}`,
   };
 }

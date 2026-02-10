@@ -517,7 +517,7 @@ export const sendPaywallNudgeEmail = internalAction({
 
         <div style="background: linear-gradient(135deg, #eff6ff, #dbeafe); border: 2px solid #93c5fd; border-radius: 12px; padding: 24px; margin: 24px 0; text-align: center;">
           <p style="font-size: 20px; font-weight: bold; color: #1e40af; margin: 0 0 8px 0;">
-            Upgrade for $29/summer
+            Upgrade for $29/year
           </p>
           <p style="color: #3b82f6; margin: 0;">
             Unlimited saved camps &middot; Full summer planner &middot; Priority support
@@ -532,7 +532,7 @@ export const sendPaywallNudgeEmail = internalAction({
       </div>
     `;
 
-    const text = `Hi ${family.displayName},\n\nYou've been busy planning! You've saved 5 camps so far:\n\n${savedCampsText}\n\nWith a ${brand.brandName} Premium subscription, you can save unlimited camps and plan your entire summer without limits.\n\nUpgrade for $29/summer: https://${brand.domain}/settings${textFooter(brand.brandName, brand.domain, true)}`;
+    const text = `Hi ${family.displayName},\n\nYou've been busy planning! You've saved 5 camps so far:\n\n${savedCampsText}\n\nWith a ${brand.brandName} Premium subscription, you can save unlimited camps and plan your entire summer without limits.\n\nUpgrade for $29/year: https://${brand.domain}/settings${textFooter(brand.brandName, brand.domain, true)}`;
 
     const emailId = await resend.sendEmail(ctx, {
       from: `${brand.brandName} <${brand.fromEmail}>`,

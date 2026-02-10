@@ -16,8 +16,7 @@ export function UpgradeModal({ isOpen, onClose, savedCount = 4 }: UpgradeModalPr
 
   if (!isOpen) return null;
 
-  // Format price display for button
-  const priceDisplay = pricing ? `${pricing.price}${pricing.period}` : '$4.99/week';
+  const priceDisplay = `${pricing.price}${pricing.period}`;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -47,7 +46,7 @@ export function UpgradeModal({ isOpen, onClose, savedCount = 4 }: UpgradeModalPr
               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                 <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
               </div>
-              <span className="text-sm text-slate-700 dark:text-slate-300">See all <strong>12 weeks</strong> at a glance</span>
+              <span className="text-sm text-slate-700 dark:text-slate-300">See <strong>every week</strong> at a glance</span>
             </div>
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
