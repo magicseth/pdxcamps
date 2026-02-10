@@ -8,6 +8,7 @@ import { calculateDistance, isAgeInRange, isGradeInRange } from '../lib/helpers'
 export const searchSessions = query({
   args: {
     cityId: v.id('cities'),
+    searchQuery: v.optional(v.string()),
     startDateAfter: v.optional(v.string()),
     startDateBefore: v.optional(v.string()),
     categories: v.optional(v.array(v.string())),
@@ -73,6 +74,16 @@ export const searchSessions = query({
     }
     if (args.childGrade !== undefined) {
       sessions = sessions.filter((session) => isGradeInRange(args.childGrade!, session.ageRequirements));
+    }
+
+    // Apply text search filter (camp name / organization name)
+    if (args.searchQuery) {
+      const q = args.searchQuery.toLowerCase();
+      sessions = sessions.filter(
+        (s) =>
+          (s.campName && s.campName.toLowerCase().includes(q)) ||
+          (s.organizationName && s.organizationName.toLowerCase().includes(q)),
+      );
     }
 
     // Apply category filter - requires fetching camps

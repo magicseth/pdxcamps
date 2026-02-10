@@ -47,8 +47,15 @@ export function useDiscoverFilters(citySlug: string, searchParams: URLSearchPara
     () => getInitialState().maxDistanceMiles,
   );
   const [searchQuery, setSearchQuery] = useState<string>(() => searchParams.get('q') || '');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>(searchQuery);
   const [sortBy, setSortBy] = useState<'date' | 'price-low' | 'price-high' | 'spots' | 'distance'>('date');
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+
+  // Debounce search query so server query doesn't fire on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Ref for results section and initial render tracking
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -188,6 +195,7 @@ export function useDiscoverFilters(citySlug: string, searchParams: URLSearchPara
   return {
     // Filter values
     searchQuery,
+    debouncedSearchQuery,
     startDateAfter,
     startDateBefore,
     selectedCategories,

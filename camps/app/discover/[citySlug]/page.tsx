@@ -108,6 +108,7 @@ export default function DiscoverPage() {
     city
       ? {
           cityId: city._id,
+          searchQuery: filters.debouncedSearchQuery || undefined,
           startDateAfter: filters.startDateAfter || undefined,
           startDateBefore: filters.startDateBefore || undefined,
           categories: filters.selectedCategories.length > 0 ? filters.selectedCategories : undefined,
@@ -141,16 +142,7 @@ export default function DiscoverPage() {
   const filteredSessions = useMemo(() => {
     if (!sessions) return [];
 
-    // Client-side text search filter
-    let result = [...sessions];
-    if (filters.searchQuery) {
-      const q = filters.searchQuery.toLowerCase();
-      result = result.filter(
-        (s) =>
-          (s.campName && s.campName.toLowerCase().includes(q)) ||
-          (s.organizationName && s.organizationName.toLowerCase().includes(q)),
-      );
-    }
+    const result = [...sessions];
 
     // Sort results
     result.sort((a, b) => {
@@ -175,7 +167,7 @@ export default function DiscoverPage() {
     });
 
     return result;
-  }, [sessions, filters.searchQuery, filters.sortBy]);
+  }, [sessions, filters.sortBy]);
 
   // Group sessions by campId + locationId to deduplicate
   const groupedSessions: SessionGroup[] = useMemo(() => {
