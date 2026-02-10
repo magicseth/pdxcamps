@@ -1,39 +1,22 @@
 import { ImageResponse } from 'next/og';
+import { headers } from 'next/headers';
 import { fetchQuery } from 'convex/nextjs';
 import { api } from '@/convex/_generated/api';
+import { getMarketFromHostname } from '@/lib/markets';
+import { OgLayout } from '../../_og/OgLayout';
 
 export const runtime = 'edge';
-export const alt = 'Shared Summer Plan - PDX Camps';
+export const alt = 'Shared Summer Plan';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
-function FallbackImage() {
-  return (
-    <div
-      style={{
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: '60px 80px',
-        background: 'linear-gradient(135deg, #2563eb 0%, #0d9488 100%)',
-        color: 'white',
-      }}
-    >
-      <div style={{ fontSize: 52, fontWeight: 700, marginBottom: 20 }}>
-        Summer Camp Plan
-      </div>
-      <div style={{ fontSize: 26, opacity: 0.85 }}>
-        Shared via pdxcamps.com
-      </div>
-    </div>
-  );
-}
-
 export default async function Image({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
+
+  const headersList = await headers();
+  const hostname = headersList.get('host') || 'localhost';
+  const market = getMarketFromHostname(hostname);
+  const domain = market.domains[0];
 
   let plan: Awaited<ReturnType<typeof fetchQuery<typeof api.share.queries.getSharedPlan>>> | null = null;
   try {
@@ -43,18 +26,35 @@ export default async function Image({ params }: { params: Promise<{ token: strin
   }
 
   if (!plan) {
-    return new ImageResponse(<FallbackImage />, { ...size });
+    return new ImageResponse(
+      (
+        <OgLayout
+          title="Summer Camp Plan"
+          subtitle="See how this family is planning their summer"
+          domain={domain}
+        />
+      ),
+      { ...size },
+    );
   }
 
   const { childName, familyName, year, weeks, stats } = plan;
 
+  // Brand colors
+  const mountain = '#344658';
+  const mountainDark = '#232f3a';
+  const sun = '#e5a33b';
+  const sunLight = '#f0b960';
+  const sky = '#8ba4b4';
+  const snow = '#ffffff';
+
   // Build a row of colored blocks representing weeks
   const weekBlocks = weeks.map((w, i) => {
-    let color = '#6b7280'; // gray for gap
+    let color = mountain; // dark for gap
     if (w.coveredDays >= 5) {
-      color = '#22c55e'; // green for full
+      color = '#4ade80'; // green for full
     } else if (w.coveredDays > 0) {
-      color = '#f97316'; // orange for partial
+      color = sunLight; // golden for partial
     }
     return (
       <div
@@ -80,55 +80,75 @@ export default async function Image({ params }: { params: Promise<{ token: strin
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          padding: '50px 70px',
-          background: 'linear-gradient(180deg, #e0f2fe 0%, #ffffff 40%)',
-          color: '#1e293b',
+          background: `linear-gradient(180deg, ${mountainDark} 0%, ${mountain} 100%)`,
+          color: snow,
+          position: 'relative',
         }}
       >
-        {/* Header */}
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ fontSize: 52, fontWeight: 700, marginBottom: 8 }}>
-            {childName}&apos;s Summer {year}
+        {/* Golden accent bar */}
+        <div
+          style={{
+            width: '100%',
+            height: 6,
+            background: `linear-gradient(90deg, ${sun} 0%, ${sunLight} 50%, ${sun} 100%)`,
+            display: 'flex',
+          }}
+        />
+
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            padding: '40px 70px 36px',
+          }}
+        >
+          {/* Header */}
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ fontSize: 52, fontWeight: 700, marginBottom: 8, display: 'flex' }}>
+              {childName}&apos;s Summer {year}
+            </div>
+            <div style={{ fontSize: 26, color: sky, fontWeight: 400, display: 'flex' }}>
+              Shared by the {familyName} family
+            </div>
           </div>
-          <div style={{ fontSize: 26, color: '#64748b', fontWeight: 400 }}>
-            Shared by the {familyName} family
+
+          {/* Stats */}
+          <div
+            style={{
+              fontSize: 28,
+              fontWeight: 500,
+              color: sunLight,
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            {stats.coveredWeeks} weeks planned &middot; {stats.gapWeeks} open weeks
           </div>
-        </div>
 
-        {/* Stats */}
-        <div
-          style={{
-            fontSize: 28,
-            fontWeight: 500,
-            color: '#334155',
-            display: 'flex',
-            alignItems: 'center',
-          }}
-        >
-          {stats.coveredWeeks} weeks planned &middot; {stats.gapWeeks} open weeks
-        </div>
+          {/* Week blocks */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {weekBlocks}
+          </div>
 
-        {/* Week blocks */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          {weekBlocks}
-        </div>
-
-        {/* Footer */}
-        <div
-          style={{
-            fontSize: 20,
-            color: '#94a3b8',
-            fontWeight: 400,
-            display: 'flex',
-          }}
-        >
-          Plan your summer too at pdxcamps.com
+          {/* Footer */}
+          <div
+            style={{
+              fontSize: 20,
+              color: sky,
+              fontWeight: 400,
+              display: 'flex',
+            }}
+          >
+            Plan your summer too at {domain}
+          </div>
         </div>
       </div>
     ),

@@ -1,10 +1,10 @@
 import { ImageResponse } from 'next/og';
 import { headers } from 'next/headers';
 import { getMarketFromHostname } from '@/lib/markets';
-import { OgLayout } from './_og/OgLayout';
+import { OgLayout } from '../_og/OgLayout';
 
 export const runtime = 'edge';
-export const alt = 'Summer Camp Planner';
+export const alt = 'Summer Camp Blog';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -17,8 +17,9 @@ export default async function Image() {
   return new ImageResponse(
     (
       <OgLayout
-        title="Plan your kids' entire summer"
-        subtitle="Find camps, coordinate with friends, fill every week"
+        title="Summer Camp Blog"
+        subtitle={`Tips, guides & camp picks for ${market.name} families`}
+        badge="Blog"
         domain={domain}
       />
     ),

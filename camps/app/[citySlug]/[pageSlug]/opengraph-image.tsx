@@ -1,5 +1,8 @@
 import { ImageResponse } from 'next/og';
+import { headers } from 'next/headers';
 import { getSeoPageBySlug, interpolate } from '@/lib/seoPages';
+import { getMarketFromHostname } from '@/lib/markets';
+import { OgLayout } from '../../_og/OgLayout';
 
 export const runtime = 'edge';
 export const alt = 'Summer Camps';
@@ -12,6 +15,11 @@ export default async function Image({
   params: Promise<{ citySlug: string; pageSlug: string }>;
 }) {
   const { citySlug, pageSlug } = await params;
+
+  const headersList = await headers();
+  const hostname = headersList.get('host') || 'localhost';
+  const market = getMarketFromHostname(hostname);
+  const domain = market.domains[0];
 
   const page = getSeoPageBySlug(pageSlug);
   const cityName = citySlug
@@ -30,51 +38,11 @@ export default async function Image({
 
   return new ImageResponse(
     (
-      <div
-        style={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          padding: '60px 80px',
-          background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
-          color: 'white',
-        }}
-      >
-        <div
-          style={{
-            fontSize: 52,
-            fontWeight: 700,
-            lineHeight: 1.15,
-            marginBottom: 24,
-          }}
-        >
-          {title}
-        </div>
-        <div
-          style={{
-            fontSize: 26,
-            fontWeight: 400,
-            opacity: 0.9,
-            lineHeight: 1.4,
-            marginBottom: 60,
-            maxWidth: '80%',
-          }}
-        >
-          {description}
-        </div>
-        <div
-          style={{
-            fontSize: 22,
-            fontWeight: 500,
-            opacity: 0.7,
-            display: 'flex',
-          }}
-        >
-          pdxcamps.com
-        </div>
-      </div>
+      <OgLayout
+        title={title}
+        subtitle={description}
+        domain={domain}
+      />
     ),
     { ...size },
   );
