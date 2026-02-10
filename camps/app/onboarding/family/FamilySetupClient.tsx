@@ -113,6 +113,11 @@ export default function FamilySetupClient({ referralCode, inviteToken, partnerCo
         market: market.slug,
       });
 
+      // Reddit conversion tracking
+      if (typeof window !== 'undefined' && (window as any).rdt) {
+        (window as any).rdt('track', 'SignUp');
+      }
+
       router.push('/onboarding/children');
     } catch (err) {
       posthog.captureException(err);

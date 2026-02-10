@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { headers } from 'next/headers';
+import Script from 'next/script';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { fetchQuery } from 'convex/nextjs';
 import './globals.css';
@@ -177,6 +178,17 @@ export default async function RootLayout({
         }} />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <Script
+          id="reddit-pixel"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+!function(w,d){if(!w.rdt){var p=w.rdt=function(){p.sendEvent?p.sendEvent.apply(p,arguments):p.callQueue.push(arguments)};p.callQueue=[];var t=d.createElement("script");t.src="https://www.redditstatic.com/ads/pixel.js";t.async=!0;var s=d.getElementsByTagName("script")[0];s.parentNode.insertBefore(t,s)}}(window,document);
+rdt('init','a2_g4x85lm7fkgd');
+rdt('track', 'PageVisit');
+`,
+          }}
+        />
         <ConvexClientProvider>
           <LoginTracker />
           {children}
