@@ -186,7 +186,7 @@ function ChildCalendar({
                   )}
                   {isDetailed && 'price' in reg.session && reg.session.price != null && (
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                      ${reg.session.price}
+                      ${(reg.session.price / 100).toFixed(2)}
                     </p>
                   )}
                   {isDetailed && 'notes' in reg && reg.notes && (

@@ -146,64 +146,6 @@ export function PartnerLandingPage() {
           </div>
         </section>
 
-        {/* The Math — made concrete */}
-        <section className="py-20 px-4 bg-slate-50">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Real money, real fast</h2>
-              <p className="text-xl text-slate-600">Here&apos;s what a typical school partnership looks like.</p>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-              <div className="grid md:grid-cols-2">
-                {/* Small school */}
-                <div className="p-8 md:border-r border-slate-200">
-                  <div className="text-sm font-medium text-slate-500 uppercase tracking-wider mb-2">Small School (300 families)</div>
-                  <div className="space-y-3 mb-6">
-                    <EarningsRow label="Families that click your link" value="60" detail="20% click rate" />
-                    <EarningsRow label="Sign up (free)" value="45" detail="75% signup rate" />
-                    <EarningsRow label="Upgrade to Premium" value="7" detail="15% convert" />
-                    <div className="border-t border-slate-200 pt-3">
-                      <EarningsRow label="You earn (year 1)" value="$40+" detail="20% of $29/yr" highlight />
-                    </div>
-                  </div>
-                </div>
-                {/* Large school */}
-                <div className="p-8 bg-accent/5">
-                  <div className="text-sm font-medium text-accent-dark uppercase tracking-wider mb-2">Large School (800 families)</div>
-                  <div className="space-y-3 mb-6">
-                    <EarningsRow label="Families that click your link" value="160" detail="20% click rate" />
-                    <EarningsRow label="Sign up (free)" value="120" detail="75% signup rate" />
-                    <EarningsRow label="Upgrade to Premium" value="18" detail="15% convert" />
-                    <div className="border-t border-slate-200 pt-3">
-                      <EarningsRow label="You earn (year 1)" value="$104+" detail="20% of $29/yr" highlight />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-6 mt-8">
-              <div className="bg-white rounded-2xl p-6 border border-slate-200 text-center">
-                <div className="text-3xl font-bold text-primary mb-1">$0</div>
-                <div className="text-slate-600">Cost to your PTA</div>
-              </div>
-              <div className="bg-white rounded-2xl p-6 border border-slate-200 text-center">
-                <div className="text-3xl font-bold text-primary mb-1">Recurring</div>
-                <div className="text-slate-600">Earn on every renewal</div>
-              </div>
-              <div className="bg-white rounded-2xl p-6 border border-slate-200 text-center">
-                <div className="text-3xl font-bold text-primary mb-1">No cap</div>
-                <div className="text-slate-600">On referrals or earnings</div>
-              </div>
-            </div>
-
-            <p className="text-center text-sm text-slate-400 mt-6">
-              Based on Premium at $29/year. Actual earnings vary based on your community size and engagement.
-            </p>
-          </div>
-        </section>
-
         {/* What parents get — make them want to share it */}
         <section className="py-20 px-4">
           <div className="max-w-4xl mx-auto">
@@ -494,17 +436,6 @@ function PartnerSignupForm() {
   );
 }
 
-function EarningsRow({ label, value, detail, highlight }: { label: string; value: string; detail: string; highlight?: boolean }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className={`text-sm ${highlight ? 'font-semibold text-slate-900' : 'text-slate-600'}`}>{label}</span>
-      <div className="text-right">
-        <span className={`text-sm font-semibold ${highlight ? 'text-accent text-base' : 'text-slate-900'}`}>{value}</span>
-        <span className="text-xs text-slate-400 ml-1.5">{detail}</span>
-      </div>
-    </div>
-  );
-}
 
 function FeatureCard({ title, description }: { title: string; description: string }) {
   return (
